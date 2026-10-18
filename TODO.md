@@ -48,9 +48,9 @@ of the current phase and the next one.
 - [ ] Code generation with `buf`
 
 ### Core
-- [ ] HTTP server with `/healthz`
-- [ ] PostgreSQL connection and first migration
-- [ ] Configuration file and environment variables
+- [x] HTTP server with `/healthz`
+- [x] PostgreSQL connection and first migration
+- [x] Configuration file and environment variables
 
 ### Agent
 - [ ] Minimal binary that connects to the core and sends hostname and CPU every 15 s
