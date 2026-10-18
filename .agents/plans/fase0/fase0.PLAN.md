@@ -15,12 +15,14 @@ Ejecutores: AgentRelay (`agentrelay.cmd` en PowerShell, JSON de la tarea en `$en
 | 4 ✅ | Hub mínimo en el core y agente mínimo: el agente se conecta y envía hostname y CPU cada 15 s; configuración en `/etc/talaia/agent.toml` | Ejecutor · esfuerzo medio | `core/internal/hub/**`, `agent/**` | prueba de integración local: el core registra los latidos del agente | 1, 3 |
 | 5 ✅ | Panel: Vite + React + TypeScript, tokens de diseño y tema claro/oscuro tomados de las maquetas, pantalla «Acerca de» con «Talaia — created by CatLinux» | Ejecutor · esfuerzo medio | `web/**` (sin `web/src/i18n/`) | `pnpm build` y `pnpm lint` verdes | 2 |
 | 6 ✅ | i18n restante (i18next y selector ya están en la 5): go-i18n en core y CLI (`core/i18n/locales`, `cli/i18n/locales`) y `scripts/i18n-check.mjs` (Node) que compara las claves de ca/es/en en web y Go | Ejecutor · esfuerzo medio | `core/i18n/**`, `cli/i18n/**`, `scripts/i18n-check.mjs` | el script falla al quitar una clave de un idioma y pasa con todas | 5 |
-| 7 | Entorno de desarrollo: `make dev` (compose con Postgres + core + panel + agente) | Ejecutor · esfuerzo medio | `packaging/dev/**`, objetivo `dev` del `Makefile` | `make dev` levanta todo en local | 3, 4, 5 |
+| 7 ✅ | Entorno de desarrollo: `make dev` (compose con Postgres + core + panel + agente) | Ejecutor · esfuerzo medio | `packaging/dev/**`, objetivo `dev` del `Makefile` | `make dev` levanta todo en local | 3, 4, 5 |
 | 8 | CI en GitHub Actions: build, tests, lint, i18n-check y license-check | Ejecutor · esfuerzo bajo | `.github/workflows/**` | workflow en verde (se consulta con la API pública, sin login) | 2, 6 |
 | 9 | Integración, revisión de cada tarea, cierre de la fase (0.1.0, CHANGELOG, TODO) | **Orquestador** | docs | criterio de la fase cumplido | todas |
 | M | Manual del mantenedor: dos VPS desechables (Debian 12 y 13), descripción/temas del repo, *private vulnerability reporting*, integrar el script de licencias en `license-check` | Mantenedor | — | marcado en `TODO.md` | — |
 
 ## Notas
+
+- **Sin verificar:** `make dev` / `scripts/dev.sh` y `packaging/dev/compose.yaml` solo pasan `bash -n`; falta ejecutarlos en el Debian de pruebas (Docker, Go 1.26, Node 24, pnpm). Es el criterio de cierre de la fase.
 
 - Para la fase 1: el hub registra los agentes por hostname; al reconectar antes de que caiga el stream viejo, éste borra el registro nuevo. Pasar a ID de servidor y borrar solo si la conexión es la misma. El servidor HTTP no tiene ReadTimeout/WriteTimeout (cortarían el stream); poner límites por petición en la API REST.
 

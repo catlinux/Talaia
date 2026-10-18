@@ -1,0 +1,23 @@
+# Development environment for Talaia: PostgreSQL 16 with TimescaleDB.
+#
+# The credentials below are for local development only and must never be used in
+# production. The database port is published on the loopback interface only.
+services:
+  db:
+    image: timescale/timescaledb:latest-pg16
+    environment:
+      POSTGRES_USER: talaia
+      POSTGRES_DB: talaia
+      POSTGRES_PASSWORD: talaia-dev
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U talaia -d talaia"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  db-data:

@@ -5,10 +5,9 @@ GO_MODULES := core agent cli
 
 .PHONY: dev build test lint i18n-check license-check
 
-# Start the development environment (replaced in a later phase).
+# Start the local development environment: database, core, agent and web.
 dev:
-	@echo "dev: not implemented yet"
-	@exit 1
+	@bash scripts/dev.sh
 
 # Build every Go module and write the binaries to bin/.
 build:
