@@ -1,0 +1,6 @@
+{
+  "private": true,
+  "type": "module",
+  "description": "Node 24 treats the --test argument as a glob pattern, so `node --test scripts` resolves the directory to this entry point.",
+  "main": "i18n-check.test.mjs"
+}

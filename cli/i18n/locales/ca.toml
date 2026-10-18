@@ -1,0 +1,8 @@
+[app.name]
+other = "talaiactl"
+
+[version.line]
+other = "talaiactl {{.Version}}"
+
+[error.unknownLanguage]
+other = "avís: idioma desconegut {{.Language}}; s'usa l'anglès"

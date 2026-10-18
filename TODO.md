@@ -63,9 +63,9 @@ of the current phase and the next one.
 - [x] "About" screen with the attribution "Talaia — created by CatLinux" (authorship of CatLinux)
 
 ### i18n
-- [ ] Locale file layout and key naming convention (see [docs/en/i18n.md](docs/en/i18n.md))
-- [ ] Script that fails if any key is missing in `ca`, `es` or `en`
-- [ ] go-i18n set up for core, agent and CLI messages
+- [x] Locale file layout and key naming convention (see [docs/en/i18n.md](docs/en/i18n.md))
+- [x] Script that fails if any key is missing in `ca`, `es` or `en`
+- [x] go-i18n set up for core and CLI messages (the agent shows no text to users)
 
 ### Test environment
 - [ ] Two disposable VPS: Debian 12 and Debian 13

@@ -1,0 +1,5 @@
+[app.name]
+other = "Talaia"
+
+[app.starting]
+other = "s'inicia Talaia {{.Version}}"

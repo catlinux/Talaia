@@ -63,9 +63,9 @@ tareas concretas de la fase actual y de la siguiente.
 - [x] Pantalla «Acerca de» con la atribución «Talaia — created by CatLinux» (autoría de CatLinux)
 
 ### i18n
-- [ ] Estructura de archivos de idioma y convención de claves (ver [docs/es/i18n.md](docs/es/i18n.md))
-- [ ] Script que falle si falta alguna clave en `ca`, `es` o `en`
-- [ ] go-i18n preparado para los mensajes del núcleo, el agente y la CLI
+- [x] Estructura de archivos de idioma y convención de claves (ver [docs/es/i18n.md](docs/es/i18n.md))
+- [x] Script que falle si falta alguna clave en `ca`, `es` o `en`
+- [x] go-i18n preparado para los mensajes del núcleo y la CLI (el agente no muestra texto a los usuarios)
 
 ### Entorno de pruebas
 - [ ] Dos VPS desechables: Debian 12 y Debian 13

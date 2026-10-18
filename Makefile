@@ -32,9 +32,9 @@ lint:
 		(cd $$module && golangci-lint run); \
 	done
 
-# Check that every i18n key is present in ca, es and en (replaced in a later phase).
+# Check that every i18n key is present in ca, es and en.
 i18n-check:
-	@echo "i18n-check: not implemented yet"
+	@node scripts/i18n-check.mjs
 
 # Check that every source file has its license header (replaced in a later phase).
 license-check:

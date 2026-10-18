@@ -1,0 +1,8 @@
+[app.name]
+other = "talaiactl"
+
+[version.line]
+other = "talaiactl {{.Version}}"
+
+[error.unknownLanguage]
+other = "warning: unknown language {{.Language}}; falling back to English"
