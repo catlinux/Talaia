@@ -11,7 +11,7 @@ Ejecutores: AgentRelay (`agentrelay.cmd` en PowerShell, JSON de la tarea en `$en
 |---|---|---|---|---|---|
 | 1 ✅ | Contrato `proto/agent.proto` v0 (`AgentHub.Connect`, `Heartbeat`, `Inventory`, `Metrics`) y `buf.yaml`/`buf.gen.yaml` | **Orquestador** (diseño delicado: no se renumeran campos) | `proto/**` | `buf lint` y `buf generate` sin errores | — |
 | 2 ✅ | Esqueleto del repo: carpetas, `go.work`, `go.mod` de `core`/`agent`/`cli`, `Makefile` (`dev build test lint i18n-check license-check`), `scripts/bump-version.sh` | Ejecutor · esfuerzo bajo | `go.work`, `*/go.mod`, `Makefile`, `scripts/bump-version.sh` | `make build` compila los módulos vacíos; el script actualiza `VERSION` y ambos CHANGELOG | — |
-| 3 | Core: servidor HTTP con `/healthz`, configuración (archivo + variables de entorno), conexión a PostgreSQL y primera migración | Ejecutor · esfuerzo medio | `core/**` (salvo `core/internal/hub/`) | `go test ./core/...` verde; `/healthz` responde 200 con la base de datos arriba | 2 |
+| 3 ✅ | Core: servidor HTTP con `/healthz`, configuración (archivo + variables de entorno), conexión a PostgreSQL y primera migración | Ejecutor · esfuerzo medio | `core/**` (salvo `core/internal/hub/`) | `go test ./core/...` verde; `/healthz` responde 200 con la base de datos arriba | 2 |
 | 4 | Hub mínimo en el core y agente mínimo: el agente se conecta y envía hostname y CPU cada 15 s; configuración en `/etc/talaia/agent.toml` | Ejecutor · esfuerzo medio | `core/internal/hub/**`, `agent/**` | prueba de integración local: el core registra los latidos del agente | 1, 3 |
 | 5 | Panel: Vite + React + TypeScript, tokens de diseño y tema claro/oscuro tomados de las maquetas, pantalla «Acerca de» con «Talaia — created by CatLinux» | Ejecutor · esfuerzo medio | `web/**` (sin `web/src/i18n/`) | `pnpm build` y `pnpm lint` verdes | 2 |
 | 6 | i18n: disposición de los archivos de idioma y convención de claves (`docs/en/i18n.md`), i18next en el panel con `ca`/`es`/`en` y selector, go-i18n en core/agente/CLI, script que falla si falta una clave | Ejecutor · esfuerzo medio | `web/src/i18n/**`, `locales/**`, `scripts/i18n-check.*`, `*/internal/i18n/**` | `make i18n-check` falla al quitar una clave de un idioma y pasa con todas | 5 |
@@ -21,6 +21,8 @@ Ejecutores: AgentRelay (`agentrelay.cmd` en PowerShell, JSON de la tarea en `$en
 | M | Manual del mantenedor: dos VPS desechables (Debian 12 y 13), descripción/temas del repo, *private vulnerability reporting*, integrar el script de licencias en `license-check` | Mantenedor | — | marcado en `TODO.md` | — |
 
 ## Notas
+
+- AgentRelay ejecuta las validaciones con `cmd.exe` en Windows: nada de `test`, `$(...)` ni builtins POSIX en `validation`; solo comandos `go`, y pasar el PATH de Go (C:/Users/msanc/tools/go1.26.9/bin) al lanzar `agentrelay.cmd`. El gofmt se comprueba a mano. Si la validación falla por el entorno y el código está verificado a mano, `review --decision accept --force`.
 
 - Tareas 1 y 2 hechas y verificadas el 2026-10-19: `buf lint`, `buf generate` y `go build`/`go vet` de los cuatro módulos pasan. Herramientas locales sin administrador en `C:\Users\msanc\tools` (Go 1.26.9 en `go1.26.9\bin`, `buf.exe` en `bin`); no hay `make` en Windows: se usan los comandos `go` directamente.
 

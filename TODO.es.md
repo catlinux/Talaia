@@ -48,9 +48,9 @@ tareas concretas de la fase actual y de la siguiente.
 - [ ] Generación de código con `buf`
 
 ### Núcleo
-- [ ] Servidor HTTP con `/healthz`
-- [ ] Conexión a PostgreSQL y primera migración
-- [ ] Archivo de configuración y variables de entorno
+- [x] Servidor HTTP con `/healthz`
+- [x] Conexión a PostgreSQL y primera migración
+- [x] Archivo de configuración y variables de entorno
 
 ### Agente
 - [ ] Binario mínimo que se conecte al núcleo y envíe el hostname y la CPU cada 15 s
