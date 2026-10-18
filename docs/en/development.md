@@ -59,7 +59,18 @@ To get new changes:
 git pull
 ```
 
-Test commands will be documented here from phase 0 (`make dev`, `make test`).
+Commands (requirements: Docker Engine with Compose v2, Go 1.26, Node.js 24 with pnpm):
+
+```bash
+make dev           # PostgreSQL + TimescaleDB (Docker), core, an agent and the web panel
+make test          # Go tests of core, agent and cli
+make lint          # golangci-lint
+make i18n-check    # translation keys in ca, es and en
+bash scripts/dev.sh down   # stop the database (add -v to remove its data)
+```
+
+`make dev` publishes the core on `http://127.0.0.1:8080` (`/healthz`) and the web panel on the Vite port
+shown in its output. The credentials in `packaging/dev/compose.yaml` are for local development only.
 
 ## 4. Branches
 
