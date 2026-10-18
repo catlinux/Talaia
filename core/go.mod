@@ -3,13 +3,18 @@ module github.com/catlinux/Talaia/core
 go 1.26.0
 
 require (
+	connectrpc.com/connect/v2 v2.0.1
 	github.com/go-chi/chi/v5 v5.5.0
 	github.com/jackc/pgx/v5 v5.11.0
 	github.com/pelletier/go-toml/v2 v2.4.3
 	github.com/pressly/goose/v3 v3.29.0
+	golang.org/x/net v0.61.0
 )
 
+require google.golang.org/protobuf v1.36.12 // indirect
+
 require (
+	github.com/catlinux/Talaia/proto v0.0.0-00010101000000-000000000000
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
 	github.com/jackc/puddle/v2 v2.2.3 // indirect
@@ -19,3 +24,5 @@ require (
 	golang.org/x/sync v0.24.0 // indirect
 	golang.org/x/text v0.43.0 // indirect
 )
+
+replace github.com/catlinux/Talaia/proto => ../proto

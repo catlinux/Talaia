@@ -53,8 +53,8 @@ tareas concretas de la fase actual y de la siguiente.
 - [x] Archivo de configuración y variables de entorno
 
 ### Agente
-- [ ] Binario mínimo que se conecte al núcleo y envíe el hostname y la CPU cada 15 s
-- [ ] Configuración en `/etc/talaia/agent.toml`
+- [x] Binario mínimo que se conecte al núcleo y envíe el hostname y la CPU cada 15 s
+- [x] Configuración en `/etc/talaia/agent.toml`
 
 ### Panel web
 - [x] Proyecto Vite + React + TypeScript

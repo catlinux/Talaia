@@ -12,8 +12,12 @@ import (
 	"syscall"
 	"time"
 
+	"golang.org/x/net/http2"
+	"golang.org/x/net/http2/h2c"
+
 	"github.com/catlinux/Talaia/core/internal/api"
 	"github.com/catlinux/Talaia/core/internal/config"
+	"github.com/catlinux/Talaia/core/internal/hub"
 	"github.com/catlinux/Talaia/core/internal/store"
 )
 
@@ -27,6 +31,18 @@ func main() {
 		slog.Error("talaia-core stopped", "error", err)
 		os.Exit(1)
 	}
+}
+
+// newRouter mounts the agent hub next to the existing API router, so /healthz
+// and the agent stream are served by the same listener.
+func newRouter(st *store.Store) http.Handler {
+	mux := http.NewServeMux()
+
+	path, hubHandler := hub.New().Handler()
+	mux.Handle(path, hubHandler)
+	mux.Handle("/", api.NewHandler(st))
+
+	return mux
 }
 
 func run() error {
@@ -53,12 +69,15 @@ func run() error {
 	}
 
 	srv := &http.Server{
-		Addr:              cfg.Listen,
-		Handler:           api.NewHandler(st),
+		Addr: cfg.Listen,
+		// Phase 0 runs the agent stream over plaintext HTTP/2 (h2c) with no TLS
+		// and no enrollment; phase 1 replaces this with mTLS. The hub path is
+		// mounted next to the existing API so /healthz keeps working.
+		Handler:           h2c.NewHandler(newRouter(st), &http2.Server{}),
 		ReadHeaderTimeout: 5 * time.Second,
-		ReadTimeout:       15 * time.Second,
-		WriteTimeout:      30 * time.Second,
-		IdleTimeout:       60 * time.Second,
+		// No ReadTimeout/WriteTimeout: they would cut the long-lived agent stream.
+		// Per-request limits for the REST API come with its handlers.
+		IdleTimeout: 60 * time.Second,
 	}
 
 	serveErr := make(chan error, 1)

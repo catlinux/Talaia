@@ -53,8 +53,8 @@ of the current phase and the next one.
 - [x] Configuration file and environment variables
 
 ### Agent
-- [ ] Minimal binary that connects to the core and sends hostname and CPU every 15 s
-- [ ] Configuration in `/etc/talaia/agent.toml`
+- [x] Minimal binary that connects to the core and sends hostname and CPU every 15 s
+- [x] Configuration in `/etc/talaia/agent.toml`
 
 ### Web panel
 - [x] Vite + React + TypeScript project
