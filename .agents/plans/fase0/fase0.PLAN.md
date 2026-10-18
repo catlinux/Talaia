@@ -22,7 +22,7 @@ Ejecutores: AgentRelay (`agentrelay.cmd` en PowerShell, JSON de la tarea en `$en
 
 ## Notas
 
-- Tareas 1 y 2 hechas el 2026-10-19. **Pendiente de verificar:** `buf lint`/`buf generate` (genera `proto/gen/go`) y `make build`, porque Go, buf y make no están instalados en el PC Windows. Antes de la tarea 3 hay que ejecutarlos (Debian de pruebas o instalando las herramientas) y hacer `go mod tidy` en `proto/`.
+- Tareas 1 y 2 hechas y verificadas el 2026-10-19: `buf lint`, `buf generate` y `go build`/`go vet` de los cuatro módulos pasan. Herramientas locales sin administrador en `C:\Users\msanc\tools` (Go 1.26.9 en `go1.26.9\bin`, `buf.exe` en `bin`); no hay `make` en Windows: se usan los comandos `go` directamente.
 
 - Orden: 1 y 2 en paralelo → 3 y 5 en paralelo → 4 y 6 en paralelo → 7 y 8.
 - Los ficheros nuevos de código necesitan cabeceras de licencia (WNCL-1.0). Hay que acordar el procedimiento antes de la tarea 3 (CLAUDE.md §3 regla 3).
