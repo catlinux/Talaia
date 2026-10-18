@@ -1,0 +1,65 @@
+// Contract between talaia-core and talaia-agent (v0).
+// Rules: fields are added, never renumbered or reused. Typed commands only.
+syntax = "proto3";
+
+package talaia.agent.v1;
+
+import "google/protobuf/timestamp.proto";
+
+// The agent opens the stream (outbound only); both sides then exchange messages.
+service AgentHub {
+  rpc Connect(stream AgentMsg) returns (stream CoreMsg);
+}
+
+// core -> agent
+message CoreMsg {
+  // Idempotency key of the command; empty for plain acknowledgements.
+  string job_id = 1;
+  oneof cmd {
+    HeartbeatAck heartbeat_ack = 2;
+    // Numbers 10 and above are reserved for typed commands
+    // (compose_up, exec_pty, apt_upgrade, read_logs…), added in later phases.
+  }
+}
+
+// agent -> core
+message AgentMsg {
+  // Field 3 is reserved for JobEvent (progress, output, result), added with the first command.
+  reserved 3;
+  reserved "job_event";
+  oneof msg {
+    Heartbeat heartbeat = 1; // every 10 s
+    Metrics metrics = 2;     // every 15 s
+    Inventory inventory = 4; // on connect and on change
+  }
+}
+
+message Heartbeat {
+  // Monotonic per connection, lets the core detect gaps.
+  uint64 seq = 1;
+  google.protobuf.Timestamp sent_at = 2;
+}
+
+message HeartbeatAck {
+  uint64 seq = 1;
+}
+
+message Inventory {
+  string hostname = 1;
+  string os_name = 2;     // e.g. "Debian GNU/Linux"
+  string os_version = 3;  // e.g. "13"
+  string kernel = 4;
+  string arch = 5;        // "amd64" | "arm64"
+  string agent_version = 6;
+  uint32 cpu_count = 7;
+  uint64 mem_total_bytes = 8;
+}
+
+message Metrics {
+  google.protobuf.Timestamp sampled_at = 1;
+  string hostname = 2;
+  double cpu_percent = 3;       // 0-100, whole machine
+  uint64 mem_used_bytes = 4;
+  uint64 disk_used_bytes = 5;   // root filesystem
+  uint64 disk_total_bytes = 6;
+}
