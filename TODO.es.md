@@ -31,10 +31,10 @@ tareas concretas de la fase actual y de la siguiente.
 ## Siguiente · Fase 0: Cimientos (0.1.0)
 
 ### Decisiones a cerrar
-- [ ] Base de datos: PostgreSQL + TimescaleDB *(propuesta)* o SQLite
-- [ ] Framework web: React *(propuesta)* o SvelteKit
-- [ ] Versión mínima de Go
-- [ ] Versión de Node.js y gestor de paquetes (se propone pnpm)
+- [x] Base de datos: PostgreSQL + TimescaleDB (SQLite descartada: la cola de tareas y el historial de métricas encajan mejor en Postgres)
+- [x] Framework web: React + TypeScript (SvelteKit descartado: menos ecosistema de componentes de terminal y editor)
+- [x] Versión mínima de Go: 1.26
+- [x] Node.js 24 LTS y pnpm (fijado con Corepack mediante el campo `packageManager`)
 
 ### Repositorio y CI
 - [ ] Crear carpetas: `core/`, `agent/`, `proto/`, `web/`, `cli/`, `packaging/`, `test/e2e/`

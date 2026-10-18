@@ -47,7 +47,7 @@ Debian 13.
 sudo apt update
 sudo apt install -y git make curl ca-certificates
 # Docker Engine: https://docs.docker.com/engine/install/debian/
-# Go y Node.js: versiones fijadas en la fase 0
+# Go 1.26 y Node.js 24 LTS con pnpm (los pasos de instalación llegan en la fase 0)
 
 git clone https://github.com/catlinux/Talaia.git
 cd Talaia

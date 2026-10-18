@@ -13,6 +13,10 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+### Changed
+
+- Phase 0 decisions closed: PostgreSQL + TimescaleDB, React + TypeScript, Go 1.26, Node.js 24 LTS with pnpm.
+
 ## [0.0.1] - 2026-10-18
 
 ### Added

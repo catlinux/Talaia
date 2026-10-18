@@ -173,10 +173,10 @@ Detalle completo: [docs/es/arquitectura.md](docs/es/arquitectura.md).
 
 | Capa | Elección |
 |---|---|
-| Agente | Go · Docker SDK · go-systemd (D-Bus) · sdjournal · gopsutil · creack/pty |
+| Agente | Go 1.26 · Docker SDK · go-systemd (D-Bus) · sdjournal · gopsutil · creack/pty |
 | Núcleo | Go · chi · connect-go (gRPC) · sqlc · River (cola de tareas) |
-| Base de datos | PostgreSQL 16 + TimescaleDB *(a confirmar en la fase 0)* |
-| Panel web | React · TypeScript · Vite · TanStack Query/Router · Tailwind · xterm.js · Monaco · uPlot *(a confirmar en la fase 0)* |
+| Base de datos | PostgreSQL 16 + TimescaleDB |
+| Panel web | React · TypeScript · Vite · TanStack Query/Router · Tailwind · xterm.js · Monaco · uPlot |
 | i18n | i18next (web) · go-i18n (núcleo, agente, CLI) |
 | Proxy inverso | Caddy (gestionado mediante su API de administración) |
 | Copias | restic |

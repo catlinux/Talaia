@@ -31,10 +31,10 @@ of the current phase and the next one.
 ## Next · Phase 0: Foundations (0.1.0)
 
 ### Decisions to close
-- [ ] Database: PostgreSQL + TimescaleDB *(proposed)* or SQLite
-- [ ] Web framework: React *(proposed)* or SvelteKit
-- [ ] Minimum Go version
-- [ ] Node.js version and package manager (pnpm proposed)
+- [x] Database: PostgreSQL + TimescaleDB (SQLite discarded: the job queue and metrics history fit Postgres better)
+- [x] Web framework: React + TypeScript (SvelteKit discarded: smaller ecosystem for terminal and editor components)
+- [x] Minimum Go version: 1.26
+- [x] Node.js 24 LTS and pnpm (pinned with Corepack through the `packageManager` field)
 
 ### Repository and CI
 - [ ] Create folders: `core/`, `agent/`, `proto/`, `web/`, `cli/`, `packaging/`, `test/e2e/`

@@ -13,6 +13,10 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+### Cambiado
+
+- Decisiones de la fase 0 cerradas: PostgreSQL + TimescaleDB, React + TypeScript, Go 1.26, Node.js 24 LTS con pnpm.
+
 ## [0.0.1] - 2026-10-18
 
 ### Añadido

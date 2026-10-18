@@ -44,7 +44,7 @@ Prepare the ground so that everything else goes fast.
   and a CI check that fails if a key is missing in any language
 - Maintainer's WNCL-1.0 license script integrated in CI
 - Two disposable test VPS (Debian 12 and Debian 13)
-- Close the open decisions: PostgreSQL vs SQLite, React vs Svelte
+- Open decisions closed: PostgreSQL + TimescaleDB, React, Go 1.26, Node.js 24 LTS + pnpm
 
 **Done when:** `make dev` starts core + panel + an empty agent locally, and CI is green.
 

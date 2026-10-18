@@ -44,7 +44,7 @@ Preparar el terreno para que todo lo demás vaya rápido.
   `ca`/`es`/`en` y una comprobación en CI que falla si falta una clave en algún idioma
 - Script de licencia WNCL-1.0 del mantenedor integrado en CI
 - Dos VPS de pruebas desechables (Debian 12 y Debian 13)
-- Cerrar las decisiones abiertas: PostgreSQL o SQLite, React o Svelte
+- Decisiones abiertas cerradas: PostgreSQL + TimescaleDB, React, Go 1.26, Node.js 24 LTS + pnpm
 
 **Terminada cuando:** `make dev` arranca núcleo + panel + un agente vacío en local, y el CI está en verde.
 
