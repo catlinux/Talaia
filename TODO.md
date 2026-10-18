@@ -57,10 +57,10 @@ of the current phase and the next one.
 - [ ] Configuration in `/etc/talaia/agent.toml`
 
 ### Web panel
-- [ ] Vite + React + TypeScript project
-- [ ] Design tokens and light/dark theme from the mockups
-- [ ] i18next with `ca`, `es`, `en` and language selector
-- [ ] "About" screen with the attribution "Talaia — created by CatLinux" (authorship of CatLinux)
+- [x] Vite + React + TypeScript project
+- [x] Design tokens and light/dark theme from the mockups
+- [x] i18next with `ca`, `es`, `en` and language selector
+- [x] "About" screen with the attribution "Talaia — created by CatLinux" (authorship of CatLinux)
 
 ### i18n
 - [ ] Locale file layout and key naming convention (see [docs/en/i18n.md](docs/en/i18n.md))

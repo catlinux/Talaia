@@ -18,6 +18,7 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 - Monorepo skeleton: Go workspace, empty `core`, `agent` and `cli` modules, `Makefile` and `scripts/bump-version.sh`.
 - Agent contract `proto/agent.proto` v0 (`Heartbeat`, `Inventory`, `Metrics`) with `buf` configuration.
 - Core skeleton: HTTP server with `/healthz`, TOML + environment configuration, PostgreSQL connection and first migration.
+- Web panel skeleton: Vite + React + TypeScript, design tokens with light/dark theme, i18next (ca/es/en) with language selector and About screen.
 
 ### Changed
 

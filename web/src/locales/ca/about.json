@@ -1,0 +1,8 @@
+{
+  "title": "Sobre Talaia",
+  "description": "Talaia és un panell de control autoallotjat per a flotes de VPS Debian: gestiona contenidors, stacks i servidors sencers des d'un sol lloc.",
+  "project": "Projecte",
+  "author": "Autor",
+  "license": "Llicència",
+  "version": "Versió"
+}

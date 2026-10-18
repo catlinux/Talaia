@@ -57,10 +57,10 @@ tareas concretas de la fase actual y de la siguiente.
 - [ ] Configuración en `/etc/talaia/agent.toml`
 
 ### Panel web
-- [ ] Proyecto Vite + React + TypeScript
-- [ ] Tokens de diseño y tema claro/oscuro de las maquetas
-- [ ] i18next con `ca`, `es`, `en` y selector de idioma
-- [ ] Pantalla «Acerca de» con la atribución «Talaia — created by CatLinux» (autoría de CatLinux)
+- [x] Proyecto Vite + React + TypeScript
+- [x] Tokens de diseño y tema claro/oscuro de las maquetas
+- [x] i18next con `ca`, `es`, `en` y selector de idioma
+- [x] Pantalla «Acerca de» con la atribución «Talaia — created by CatLinux» (autoría de CatLinux)
 
 ### i18n
 - [ ] Estructura de archivos de idioma y convención de claves (ver [docs/es/i18n.md](docs/es/i18n.md))

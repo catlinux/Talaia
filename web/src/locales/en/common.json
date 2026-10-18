@@ -1,0 +1,15 @@
+{
+  "appName": "Talaia",
+  "language": {
+    "label": "Language",
+    "ca": "Català",
+    "es": "Castellano",
+    "en": "English"
+  },
+  "theme": {
+    "label": "Theme",
+    "light": "Light",
+    "dark": "Dark",
+    "system": "System"
+  }
+}

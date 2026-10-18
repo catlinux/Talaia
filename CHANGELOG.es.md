@@ -18,6 +18,7 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 - Esqueleto del monorepo: workspace de Go, módulos `core`, `agent` y `cli` vacíos, `Makefile` y `scripts/bump-version.sh`.
 - Contrato del agente `proto/agent.proto` v0 (`Heartbeat`, `Inventory`, `Metrics`) con la configuración de `buf`.
 - Esqueleto del core: servidor HTTP con `/healthz`, configuración por TOML y variables de entorno, conexión a PostgreSQL y primera migración.
+- Esqueleto del panel web: Vite + React + TypeScript, tokens de diseño con tema claro/oscuro, i18next (ca/es/en) con selector de idioma y pantalla «Acerca de».
 
 ### Cambiado
 

@@ -1,0 +1,8 @@
+{
+  "title": "About Talaia",
+  "description": "Talaia is a self-hosted control panel for Debian VPS fleets: manage containers, stacks and whole servers from a single place.",
+  "project": "Project",
+  "author": "Author",
+  "license": "License",
+  "version": "Version"
+}
