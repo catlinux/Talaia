@@ -1,3 +1,3 @@
 module github.com/catlinux/Talaia/agent
 
-go 1.26
+go 1.26.0

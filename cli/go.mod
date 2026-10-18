@@ -1,3 +1,3 @@
 module github.com/catlinux/Talaia/cli
 
-go 1.26
+go 1.26.0
