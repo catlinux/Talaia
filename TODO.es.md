@@ -37,14 +37,14 @@ tareas concretas de la fase actual y de la siguiente.
 - [x] Node.js 24 LTS y pnpm (fijado con Corepack mediante el campo `packageManager`)
 
 ### Repositorio y CI
-- [ ] Crear carpetas: `core/`, `agent/`, `proto/`, `web/`, `cli/`, `packaging/`, `test/e2e/`
-- [ ] Workspace de Go (`go.work`) con `core`, `agent`, `cli`
-- [ ] `Makefile` con `dev`, `build`, `test`, `lint`, `i18n-check`, `license-check`
+- [x] Crear carpetas: `core/`, `agent/`, `proto/`, `web/`, `cli/`, `packaging/`, `test/e2e/`
+- [x] Workspace de Go (`go.work`) con `core`, `agent`, `cli`
+- [x] `Makefile` con `dev`, `build`, `test`, `lint`, `i18n-check`, `license-check`
 - [ ] GitHub Actions: compilación, pruebas, lint, comprobación i18n, comprobación de licencia
-- [ ] `scripts/bump-version.sh` que actualice `VERSION` y los dos changelogs
+- [x] `scripts/bump-version.sh` que actualice `VERSION` y los dos changelogs
 
 ### Contrato
-- [ ] `proto/agent.proto` v0: `Heartbeat`, `Inventory`, `Metrics`
+- [x] `proto/agent.proto` v0: `Heartbeat`, `Inventory`, `Metrics`
 - [ ] Generación de código con `buf`
 
 ### Núcleo

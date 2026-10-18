@@ -37,14 +37,14 @@ of the current phase and the next one.
 - [x] Node.js 24 LTS and pnpm (pinned with Corepack through the `packageManager` field)
 
 ### Repository and CI
-- [ ] Create folders: `core/`, `agent/`, `proto/`, `web/`, `cli/`, `packaging/`, `test/e2e/`
-- [ ] Go workspace (`go.work`) with `core`, `agent`, `cli`
-- [ ] `Makefile` with `dev`, `build`, `test`, `lint`, `i18n-check`, `license-check`
+- [x] Create folders: `core/`, `agent/`, `proto/`, `web/`, `cli/`, `packaging/`, `test/e2e/`
+- [x] Go workspace (`go.work`) with `core`, `agent`, `cli`
+- [x] `Makefile` with `dev`, `build`, `test`, `lint`, `i18n-check`, `license-check`
 - [ ] GitHub Actions: build, tests, lint, i18n check, license check
-- [ ] `scripts/bump-version.sh` that updates `VERSION` and both changelogs
+- [x] `scripts/bump-version.sh` that updates `VERSION` and both changelogs
 
 ### Contract
-- [ ] `proto/agent.proto` v0: `Heartbeat`, `Inventory`, `Metrics`
+- [x] `proto/agent.proto` v0: `Heartbeat`, `Inventory`, `Metrics`
 - [ ] Code generation with `buf`
 
 ### Core

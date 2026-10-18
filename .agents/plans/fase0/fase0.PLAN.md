@@ -9,8 +9,8 @@ Ejecutores: AgentRelay (`agentrelay.cmd` en PowerShell, JSON de la tarea en `$en
 
 | # | Tarea | Quién | Archivos | Terminada cuando | Depende de |
 |---|---|---|---|---|---|
-| 1 | Contrato `proto/agent.proto` v0 (`AgentHub.Connect`, `Heartbeat`, `Inventory`, `Metrics`) y `buf.yaml`/`buf.gen.yaml` | **Orquestador** (diseño delicado: no se renumeran campos) | `proto/**` | `buf lint` y `buf generate` sin errores | — |
-| 2 | Esqueleto del repo: carpetas, `go.work`, `go.mod` de `core`/`agent`/`cli`, `Makefile` (`dev build test lint i18n-check license-check`), `scripts/bump-version.sh` | Ejecutor · esfuerzo bajo | `go.work`, `*/go.mod`, `Makefile`, `scripts/bump-version.sh` | `make build` compila los módulos vacíos; el script actualiza `VERSION` y ambos CHANGELOG | — |
+| 1 ✅ | Contrato `proto/agent.proto` v0 (`AgentHub.Connect`, `Heartbeat`, `Inventory`, `Metrics`) y `buf.yaml`/`buf.gen.yaml` | **Orquestador** (diseño delicado: no se renumeran campos) | `proto/**` | `buf lint` y `buf generate` sin errores | — |
+| 2 ✅ | Esqueleto del repo: carpetas, `go.work`, `go.mod` de `core`/`agent`/`cli`, `Makefile` (`dev build test lint i18n-check license-check`), `scripts/bump-version.sh` | Ejecutor · esfuerzo bajo | `go.work`, `*/go.mod`, `Makefile`, `scripts/bump-version.sh` | `make build` compila los módulos vacíos; el script actualiza `VERSION` y ambos CHANGELOG | — |
 | 3 | Core: servidor HTTP con `/healthz`, configuración (archivo + variables de entorno), conexión a PostgreSQL y primera migración | Ejecutor · esfuerzo medio | `core/**` (salvo `core/internal/hub/`) | `go test ./core/...` verde; `/healthz` responde 200 con la base de datos arriba | 2 |
 | 4 | Hub mínimo en el core y agente mínimo: el agente se conecta y envía hostname y CPU cada 15 s; configuración en `/etc/talaia/agent.toml` | Ejecutor · esfuerzo medio | `core/internal/hub/**`, `agent/**` | prueba de integración local: el core registra los latidos del agente | 1, 3 |
 | 5 | Panel: Vite + React + TypeScript, tokens de diseño y tema claro/oscuro tomados de las maquetas, pantalla «Acerca de» con «Talaia — created by CatLinux» | Ejecutor · esfuerzo medio | `web/**` (sin `web/src/i18n/`) | `pnpm build` y `pnpm lint` verdes | 2 |
@@ -21,6 +21,8 @@ Ejecutores: AgentRelay (`agentrelay.cmd` en PowerShell, JSON de la tarea en `$en
 | M | Manual del mantenedor: dos VPS desechables (Debian 12 y 13), descripción/temas del repo, *private vulnerability reporting*, integrar el script de licencias en `license-check` | Mantenedor | — | marcado en `TODO.md` | — |
 
 ## Notas
+
+- Tareas 1 y 2 hechas el 2026-10-19. **Pendiente de verificar:** `buf lint`/`buf generate` (genera `proto/gen/go`) y `make build`, porque Go, buf y make no están instalados en el PC Windows. Antes de la tarea 3 hay que ejecutarlos (Debian de pruebas o instalando las herramientas) y hacer `go mod tidy` en `proto/`.
 
 - Orden: 1 y 2 en paralelo → 3 y 5 en paralelo → 4 y 6 en paralelo → 7 y 8.
 - Los ficheros nuevos de código necesitan cabeceras de licencia (WNCL-1.0). Hay que acordar el procedimiento antes de la tarea 3 (CLAUDE.md §3 regla 3).
