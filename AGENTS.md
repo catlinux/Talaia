@@ -1,3 +1,49 @@
+# AGENTS.md — Executor instructions
+
+This file is for every AI agent that works on Talaia as an **executor**. Work is assigned by the
+**orchestrator** (Claude Code) through Agent Relay. The orchestrator's rules are in
+[CLAUDE.md](CLAUDE.md).
+
+## What Talaia is
+
+A self-hosted control panel for Debian VPS fleets. It manages one container/stack or a whole server.
+Components: `core/` (Go + PostgreSQL), `agent/` (Go, one per VPS, outbound gRPC + mTLS), `web/` (React +
+TypeScript), `cli/` (`talaiactl`), `proto/` (shared contract). Details:
+[docs/en/architecture.md](docs/en/architecture.md).
+
+## Orders
+
+1. **Do only your brief.** Implement exactly the task the orchestrator gave you. If something outside it
+   looks wrong, mention it in your report; do not fix it.
+2. **Edit only the files you own** (listed in the brief). Read anything else you need.
+3. **Do not commit, push, tag, or change git configuration.** The orchestrator integrates and commits.
+4. **Ask instead of guessing** when the brief is ambiguous about behaviour or interfaces. Send the
+   question to the orchestrator and continue with any part that is not blocked.
+5. **Report back** with: list of changed files, how you tested (commands and results), anything left
+   undone, and open questions.
+
+## Rules
+
+- **i18n:** never hard-code user-facing text. Add the key to the `ca`, `es` **and** `en` locale files.
+  If you are unsure of a Catalan or Spanish translation, write your best version and flag it in the
+  report. See [docs/en/i18n.md](docs/en/i18n.md).
+- **Docs:** if you change documentation, change both the English and Spanish versions.
+- **License (WNCL-1.0):** never write, edit or remove `LICENSE`, license headers, copyright notices or
+  the in-app attribution "Talaia — created by CatLinux". Headers are added by the maintainer's script.
+- **Tests:** new logic comes with tests. Run the tests of the component you touched before reporting.
+- **Line endings:** LF only. Shell scripts start with `#!/usr/bin/env bash`.
+- **No secrets:** no real tokens, keys, IPs or hostnames. Use `example.com` and `192.0.2.x`.
+- **Phase scope:** do not add features from later roadmap phases.
+- **Security:** the agent only executes typed commands; validate every input; permission checks live in
+  `core`, never only in the web panel.
+
+## Code style
+
+- Go: `gofmt`, `golangci-lint`, wrap errors with `%w`, pass `context.Context`, table-driven tests.
+- TypeScript: strict mode, ESLint + Prettier.
+- Proto: never renumber or reuse field numbers.
+- Identifiers, comments and logs in English.
+
 <!-- agentrelay:start -->
 ## Delegación con AgentRelay
 

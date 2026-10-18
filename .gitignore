@@ -1,19 +1,61 @@
-# Creado por AgentRelay para no confirmar secretos en el repositorio.
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editors (shared VS Code settings are versioned)
+.idea/
+*.swp
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+!.vscode/launch.json
+!.vscode/tasks.json
+
+# Claude Code local settings (shared settings.json is versioned)
+.claude/settings.local.json
+
+# Secrets and local configuration
 .env
 .env.*
+!.env.example
 *.pem
 *.key
-*.p12
-*.pfx
+*.crt
+/certs/
+
+# Go
+/bin/
+/dist/
+*.exe
+*.test
+*.out
+coverage.*
+go.work.sum
+
+# Node / web
+node_modules/
+web/dist/
+.vite/
+*.tsbuildinfo
+npm-debug.log*
+pnpm-debug.log*
+
+# Local data
+*.db
+*.sqlite
+/tmp/
+/data/
+
+# AgentRelay
 id_rsa*
 id_ed25519*
+*.p12
+*.pfx
 credentials.json
 secrets.json
 wp-config.php
 .htpasswd
-node_modules/
 .agentrelay/
 agentrelay.config.json
 *.log
-.DS_Store
-Thumbs.db

@@ -1,0 +1,25 @@
+# Normalize all text files to LF, on every platform (Windows editing, Linux runtime)
+* text=auto eol=lf
+
+# Scripts must always be LF
+*.sh   text eol=lf
+*.bash text eol=lf
+
+# Windows-only scripts keep CRLF
+*.ps1  text eol=crlf
+*.bat  text eol=crlf
+*.cmd  text eol=crlf
+
+# Binary files
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.ico  binary
+*.webp binary
+*.woff binary
+*.woff2 binary
+*.pdf  binary
+*.deb  binary
+*.gz   binary
+*.zip  binary

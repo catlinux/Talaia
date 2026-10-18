@@ -1,0 +1,988 @@
+<!doctype html>
+<html lang="ca">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Talaia · Full de ruta</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: document amb índex lateral fix; les maquetes ocupen tota l'amplada de la columna i fan scroll horitzontal dins el seu marc en mòbil */
+:root{
+  --bg:#F4F6F7; --surface:#FFFFFF; --surface-2:#ECF0F2; --line:#D5DDE1; --ink:#12212B; --muted:#56666F;
+  --accent:#0B7285; --accent-ink:#FFFFFF; --accent-soft:#DDEFF2; --signal:#B86E00;
+  --ok:#2B8A3E; --warn:#B86E00; --crit:#C92A2A; --ok-soft:#E3F4E6; --warn-soft:#FBF0DC; --crit-soft:#FBE4E4;
+  --code-bg:#0F1C22; --code-ink:#D8E4E8; --code-key:#66D9E8; --code-str:#FFC078; --code-com:#7A8E97;
+  --f-display:"Familjen Grotesk", "Helvetica Neue", Arial, sans-serif;
+  --f-body:"IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono:"JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0C1418; --surface:#121D23; --surface-2:#18262D; --line:#273841; --ink:#E2EBEE; --muted:#8EA2AC;
+  --accent:#3BC9DB; --accent-ink:#04242A; --accent-soft:#113139; --signal:#F2A93B;
+  --ok:#51CF66; --warn:#F2A93B; --crit:#FF6B6B; --ok-soft:#14301C; --warn-soft:#33270F; --crit-soft:#3A1919;
+  --code-bg:#081014; --code-ink:#D8E4E8; --code-key:#66D9E8; --code-str:#FFC078; --code-com:#6F838C;
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0C1418; --surface:#121D23; --surface-2:#18262D; --line:#273841; --ink:#E2EBEE; --muted:#8EA2AC;
+  --accent:#3BC9DB; --accent-ink:#04242A; --accent-soft:#113139; --signal:#F2A93B;
+  --ok:#51CF66; --warn:#F2A93B; --crit:#FF6B6B; --ok-soft:#14301C; --warn-soft:#33270F; --crit-soft:#3A1919;
+  --code-bg:#081014; --code-ink:#D8E4E8; --code-key:#66D9E8; --code-str:#FFC078; --code-com:#6F838C;
+  color-scheme:dark}
+
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.6;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+h1,h2,h3,h4{font-family:var(--f-display);line-height:1.15;text-wrap:balance;margin:0}
+h1{font-size:clamp(2.4rem,6vw,3.6rem);font-weight:700;letter-spacing:-.02em}
+h2{font-size:clamp(1.6rem,3.4vw,2.1rem);font-weight:700;letter-spacing:-.01em}
+h3{font-size:1.2rem;font-weight:600}
+h4{font-size:1rem;font-weight:600}
+p{margin:0}
+code{font-family:var(--f-mono);font-size:.86em;background:var(--surface-2);padding:.1em .35em;border-radius:4px}
+.eyebrow{font-family:var(--f-mono);font-size:.74rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.wrap{max-width:1240px;margin:0 auto;display:grid;grid-template-columns:210px minmax(0,1fr);gap:56px;padding-block:48px 96px}
+nav.toc{position:sticky;top:calc(24px + env(safe-area-inset-top,0px));align-self:start;display:flex;flex-direction:column;gap:2px;font-size:.9rem}
+nav.toc .eyebrow{margin-bottom:10px}
+nav.toc a{color:var(--muted);text-decoration:none;padding:4px 10px;border-left:2px solid var(--line)}
+nav.toc a:hover{color:var(--ink);border-left-color:var(--accent)}
+main{min-width:0;display:flex;flex-direction:column;gap:72px}
+section{display:flex;flex-direction:column;gap:20px;scroll-margin-top:24px}
+.prose{max-width:68ch;display:flex;flex-direction:column;gap:14px}
+.lead{font-size:1.15rem;color:var(--muted);max-width:62ch}
+.muted{color:var(--muted)}
+@media (max-width:900px){.wrap{grid-template-columns:minmax(0,1fr);gap:32px;padding-block:28px 64px} nav.toc{display:none}}
+
+/* hero */
+.hero{display:flex;flex-direction:column;gap:18px;padding-bottom:8px;border-bottom:1px solid var(--line)}
+.hero .tag{display:flex;flex-wrap:wrap;gap:8px}
+.chip{font-family:var(--f-mono);font-size:.74rem;padding:3px 9px;border-radius:999px;border:1px solid var(--line);color:var(--muted);background:var(--surface);white-space:nowrap}
+.names{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.name{padding:14px 16px;border:1px solid var(--line);border-radius:10px;background:var(--surface);display:flex;flex-direction:column;gap:4px}
+.name.pick{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.name b{font-family:var(--f-display);font-size:1.25rem}
+.name span{font-size:.9rem;color:var(--muted)}
+
+/* tables */
+.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:.93rem}
+th,td{text-align:left;padding:10px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-family:var(--f-mono);font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:500;background:var(--surface-2)}
+tr:last-child td{border-bottom:0}
+td:first-child{font-weight:600;white-space:nowrap}
+
+/* architecture diagram */
+.arch{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--surface);padding:24px}
+.arch-in{min-width:820px;display:grid;grid-template-columns:1fr 70px 1.25fr 70px 1.35fr;align-items:center;gap:0}
+.box{border:1px solid var(--line);border-radius:10px;padding:14px;background:var(--surface-2);display:flex;flex-direction:column;gap:6px}
+.box h4{display:flex;justify-content:space-between;gap:8px}
+.box h4 small{font-family:var(--f-mono);font-weight:400;font-size:.7rem;color:var(--muted)}
+.box ul{margin:0;padding-left:18px;font-size:.84rem;color:var(--muted)}
+.box.core{border-color:var(--accent);background:var(--accent-soft)}
+.col{display:flex;flex-direction:column;gap:12px}
+.link{display:flex;flex-direction:column;align-items:center;gap:4px;font-family:var(--f-mono);font-size:.66rem;color:var(--muted);text-align:center}
+.link i{display:block;width:100%;height:2px;background:var(--accent);position:relative}
+.link i::after{content:"";position:absolute;right:-1px;top:-4px;border:5px solid transparent;border-left-color:var(--accent)}
+.link i.both::before{content:"";position:absolute;left:-1px;top:-4px;border:5px solid transparent;border-right-color:var(--accent)}
+
+/* cards grid */
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+.card{border:1px solid var(--line);border-radius:10px;padding:18px;background:var(--surface);display:flex;flex-direction:column;gap:8px;min-width:0}
+.card .eyebrow{font-size:.68rem}
+.card ul{margin:0;padding-left:18px;font-size:.92rem;display:flex;flex-direction:column;gap:3px}
+.card p{font-size:.94rem;color:var(--muted)}
+
+/* two modes */
+.modes{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media (max-width:720px){.modes{grid-template-columns:1fr}}
+.mode{border-radius:12px;padding:22px;border:1px solid var(--line);background:var(--surface);display:flex;flex-direction:column;gap:10px}
+.mode.a{border-top:4px solid var(--accent)}
+.mode.b{border-top:4px solid var(--signal)}
+.mode ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px;font-size:.94rem}
+.scope{overflow-x:auto}
+.scope-in{display:flex;align-items:center;gap:8px;min-width:640px;font-family:var(--f-mono);font-size:.8rem}
+.scope-in span.s{padding:8px 12px;border:1px solid var(--line);border-radius:8px;background:var(--surface)}
+.scope-in span.arr{color:var(--muted)}
+
+/* code */
+pre.code{margin:0;background:var(--code-bg);color:var(--code-ink);font-family:var(--f-mono);font-size:.82rem;line-height:1.6;padding:16px 18px;border-radius:10px;overflow-x:auto}
+pre.code .k{color:var(--code-key)} pre.code .s{color:var(--code-str)} pre.code .c{color:var(--code-com)}
+.two{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px}
+.two > *{min-width:0}
+
+/* steps (real sequence) */
+ol.steps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:0;counter-reset:st}
+ol.steps li{counter-increment:st;display:grid;grid-template-columns:40px minmax(0,1fr);gap:14px;padding:12px 0;border-bottom:1px dashed var(--line)}
+ol.steps li::before{content:counter(st);font-family:var(--f-mono);font-size:.85rem;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:var(--accent-soft);color:var(--accent);font-weight:500}
+ol.steps li b{display:block}
+ol.steps li span{color:var(--muted);font-size:.94rem}
+
+/* roadmap */
+.road{display:flex;flex-direction:column;gap:0;border-left:2px solid var(--line);margin-left:8px}
+.ph{position:relative;padding:0 0 26px 28px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:8px 28px}
+.ph::before{content:"";position:absolute;left:-8px;top:5px;width:14px;height:14px;border-radius:50%;background:var(--surface);border:2px solid var(--accent)}
+.ph.mvp::before{background:var(--accent)}
+.ph .hd{display:flex;flex-direction:column;gap:4px}
+.ph .hd .eyebrow{color:var(--accent)}
+.ph .hd p{color:var(--muted);font-size:.93rem}
+.ph ul{margin:0;padding-left:18px;font-size:.92rem;display:flex;flex-direction:column;gap:2px}
+.ph .done{grid-column:1/-1;font-size:.86rem;color:var(--muted);border-top:1px dashed var(--line);padding-top:6px}
+.ph .done b{color:var(--ink);font-weight:600}
+@media (max-width:720px){.ph{grid-template-columns:minmax(0,1fr)}}
+.milestone{margin:-6px 0 22px 28px;padding:10px 14px;border-radius:8px;background:var(--accent-soft);color:var(--ink);font-size:.92rem}
+.milestone b{color:var(--accent)}
+
+.bar{display:flex;height:30px;border-radius:8px;overflow:hidden;border:1px solid var(--line);font-family:var(--f-mono);font-size:.7rem}
+.bar div{display:grid;place-items:center;border-right:1px solid var(--bg);color:var(--accent-ink);background:var(--accent);white-space:nowrap;overflow:hidden}
+.bar div.l{background:var(--surface-2);color:var(--muted)}
+.bar-legend{display:flex;justify-content:space-between;font-family:var(--f-mono);font-size:.72rem;color:var(--muted)}
+
+.pill{display:inline-block;font-family:var(--f-mono);font-size:.68rem;padding:1px 7px;border-radius:999px;font-weight:500;white-space:nowrap;vertical-align:middle}
+.p-mvp{background:var(--accent-soft);color:var(--accent)}
+.p-v1{background:var(--warn-soft);color:var(--warn)}
+.p-fut{background:var(--surface-2);color:var(--muted)}
+
+/* ================= MAQUETES ================= */
+.mk-cap{display:flex;flex-direction:column;gap:4px;max-width:70ch}
+.mk-cap .eyebrow{color:var(--accent)}
+.mk-cap p{color:var(--muted);font-size:.95rem}
+.mk-frame{overflow-x:auto;border-radius:12px;border:1px solid var(--line);background:var(--surface);box-shadow:0 1px 0 var(--line),0 18px 40px -28px rgba(10,30,40,.45)}
+.mk{min-width:1000px;font-size:13px;line-height:1.45;font-family:var(--f-body)}
+.mk-url{display:flex;align-items:center;gap:10px;padding:8px 12px;border-bottom:1px solid var(--line);background:var(--surface-2)}
+.mk-url .dots{display:flex;gap:6px}.mk-url .dots i{width:10px;height:10px;border-radius:50%;background:var(--line);display:block}
+.mk-url .u{flex:1;font-family:var(--f-mono);font-size:11.5px;color:var(--muted);background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:3px 10px}
+.mk-app{display:grid;grid-template-columns:196px minmax(0,1fr)}
+.mk-side{background:var(--surface-2);border-right:1px solid var(--line);padding:14px 10px;display:flex;flex-direction:column;gap:2px;min-height:100%}
+.mk-logo{display:flex;align-items:center;gap:8px;font-family:var(--f-display);font-weight:700;font-size:16px;padding:2px 8px 14px}
+.mk-logo svg{flex:none}
+.mk-side .sec{font-family:var(--f-mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);padding:12px 8px 4px}
+.mk-side a{display:flex;justify-content:space-between;align-items:center;padding:6px 8px;border-radius:6px;color:var(--ink);text-decoration:none;font-size:12.5px}
+.mk-side a.on{background:var(--surface);box-shadow:0 0 0 1px var(--line);font-weight:600}
+.mk-side a em{font-style:normal;font-family:var(--f-mono);font-size:10.5px;color:var(--muted)}
+.mk-side a em.w{color:var(--warn)}
+.mk-main{padding:16px 20px 22px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.mk-top{display:flex;align-items:center;gap:12px}
+.mk-search{flex:1;border:1px solid var(--line);border-radius:7px;padding:6px 10px;color:var(--muted);background:var(--surface);display:flex;justify-content:space-between}
+.mk-search kbd{font-family:var(--f-mono);font-size:10.5px;border:1px solid var(--line);border-radius:4px;padding:0 5px}
+.mk-avatar{width:28px;height:28px;border-radius:50%;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;font-weight:600;font-size:11px}
+.mk-h{display:flex;align-items:flex-end;justify-content:space-between;gap:12px}
+.mk-h h3{font-size:19px}
+.mk-h .sub{color:var(--muted);font-size:12px;font-family:var(--f-mono)}
+.btns{display:flex;gap:6px;flex-wrap:wrap}
+.btn{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:6px;padding:5px 10px;font-size:12px;font-weight:500;white-space:nowrap;font-family:var(--f-body)}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.dan{color:var(--crit)}
+.st{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:500;white-space:nowrap}
+.st::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+.st.ok{color:var(--ok)}.st.warn{color:var(--warn)}.st.crit{color:var(--crit)}.st.off{color:var(--muted)}
+.mk-kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
+.kpi{border:1px solid var(--line);border-radius:8px;padding:10px 12px;background:var(--surface);display:flex;flex-direction:column;gap:2px}
+.kpi small{color:var(--muted);font-size:11px}
+.kpi b{font-family:var(--f-display);font-size:22px;font-variant-numeric:tabular-nums}
+.kpi .d{font-size:11px;color:var(--muted)}
+.kpi.w{border-left:3px solid var(--warn)}
+.kpi.c{border-left:3px solid var(--crit)}
+.mk-cols{display:grid;grid-template-columns:minmax(0,1fr) 270px;gap:14px}
+.srv-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.srv{border:1px solid var(--line);border-radius:9px;padding:12px;background:var(--surface);display:flex;flex-direction:column;gap:8px}
+.srv.w{border-left:3px solid var(--warn)}
+.srv.c{border-left:3px solid var(--crit)}
+.srv .t{display:flex;justify-content:space-between;align-items:center;gap:6px}
+.srv .t b{font-family:var(--f-mono);font-size:12.5px}
+.srv .os{font-size:11px;color:var(--muted)}
+.meter{display:grid;grid-template-columns:36px 1fr 34px;align-items:center;gap:6px;font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
+.meter span:last-child{text-align:right;color:var(--ink)}
+.meter i{display:block;height:5px;border-radius:3px;background:var(--surface-2);position:relative;overflow:hidden}
+.meter i::after{content:"";position:absolute;inset:0 auto 0 0;width:var(--v);background:var(--accent);border-radius:3px}
+.meter i.w::after{background:var(--warn)}
+.meter i.c::after{background:var(--crit)}
+.srv .ft{display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--muted);border-top:1px solid var(--line);padding-top:7px}
+.tags{display:flex;gap:4px;flex-wrap:wrap}
+.tg{font-family:var(--f-mono);font-size:10px;padding:0 6px;border-radius:4px;background:var(--surface-2);color:var(--muted)}
+.panel{border:1px solid var(--line);border-radius:9px;background:var(--surface);display:flex;flex-direction:column;min-width:0}
+.panel > h5{margin:0;font-family:var(--f-display);font-size:13px;font-weight:600;padding:10px 12px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}
+.panel > h5 small{font-family:var(--f-mono);font-weight:400;font-size:10.5px;color:var(--muted)}
+.feed{list-style:none;margin:0;padding:4px 0}
+.feed li{padding:8px 12px;display:grid;grid-template-columns:8px 1fr;gap:9px;font-size:12px;border-bottom:1px solid var(--line)}
+.feed li:last-child{border-bottom:0}
+.feed li i{width:8px;height:8px;border-radius:50%;margin-top:5px;background:var(--accent)}
+.feed li i.w{background:var(--warn)} .feed li i.c{background:var(--crit)} .feed li i.o{background:var(--ok)}
+.feed li small{display:block;color:var(--muted);font-family:var(--f-mono);font-size:10.5px}
+.mk-tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);overflow:hidden}
+.mk-tabs span{padding:7px 11px;font-size:12px;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap}
+.mk-tabs span.on{color:var(--ink);border-bottom-color:var(--accent);font-weight:600}
+.facts{display:flex;gap:18px;flex-wrap:wrap;font-size:11.5px;color:var(--muted);font-family:var(--f-mono)}
+.facts b{color:var(--ink);font-weight:500}
+.mt{width:100%;border-collapse:collapse;font-size:12px}
+.mt th{font-family:var(--f-mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:500;padding:7px 12px;border-bottom:1px solid var(--line);background:var(--surface-2);text-align:left}
+.mt td{padding:7px 12px;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums;white-space:nowrap}
+.mt td:first-child{font-weight:500}
+.mt tr:last-child td{border-bottom:0}
+.mt .mono{font-family:var(--f-mono);font-size:11.5px}
+.mt .r{text-align:right}
+.upd{font-family:var(--f-mono);font-size:10px;padding:1px 6px;border-radius:4px;background:var(--warn-soft);color:var(--warn)}
+.sec-b{font-family:var(--f-mono);font-size:10px;padding:1px 6px;border-radius:4px;background:var(--crit-soft);color:var(--crit)}
+.chart{padding:10px 12px 8px}
+.chart svg{display:block;width:100%;height:auto}
+.chart .lg{display:flex;gap:14px;font-size:11px;color:var(--muted);padding-bottom:4px}
+.chart .lg span::before{content:"";display:inline-block;width:10px;height:3px;border-radius:2px;margin-right:5px;vertical-align:middle;background:var(--c)}
+.g2{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:12px}
+.g3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.yaml{margin:0;background:var(--code-bg);color:var(--code-ink);font-family:var(--f-mono);font-size:11.5px;line-height:1.65;padding:10px 0;border-radius:0 0 9px 9px;overflow:hidden;counter-reset:ln}
+.yaml span.l{display:block;padding:0 12px 0 0;white-space:pre}
+.yaml span.l::before{counter-increment:ln;content:counter(ln);display:inline-block;width:30px;padding-right:10px;text-align:right;color:var(--code-com)}
+.yaml .k{color:var(--code-key)}.yaml .s{color:var(--code-str)}.yaml .c{color:var(--code-com)}
+.logs{margin:0;background:var(--code-bg);color:var(--code-ink);font-family:var(--f-mono);font-size:11px;line-height:1.6;padding:10px 12px;border-radius:0 0 9px 9px;white-space:pre;overflow:hidden}
+.logs .t{color:var(--code-com)} .logs .w{color:var(--code-str)} .logs .e{color:#FF8787} .logs .i{color:var(--code-key)}
+.crumb{font-family:var(--f-mono);font-size:11.5px;color:var(--muted)}
+.crumb b{color:var(--ink);font-weight:500}
+.wiz{display:grid;grid-template-columns:200px minmax(0,1fr) 260px;gap:16px}
+.wsteps{display:flex;flex-direction:column;gap:2px;list-style:none;margin:0;padding:0}
+.wsteps li{display:flex;gap:9px;align-items:center;padding:8px 10px;border-radius:7px;font-size:12.5px;color:var(--muted)}
+.wsteps li b{width:20px;height:20px;border-radius:50%;display:grid;place-items:center;font-family:var(--f-mono);font-size:10.5px;border:1px solid var(--line);font-weight:500}
+.wsteps li.d b{background:var(--ok);border-color:var(--ok);color:var(--surface)}
+.wsteps li.on{background:var(--surface-2);color:var(--ink);font-weight:600}
+.wsteps li.on b{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.form{display:flex;flex-direction:column;gap:12px}
+.fld{display:flex;flex-direction:column;gap:4px}
+.fld label{font-size:11.5px;font-weight:600}
+.fld .in{border:1px solid var(--line);border-radius:6px;padding:7px 10px;background:var(--surface);font-size:12.5px;display:flex;justify-content:space-between;align-items:center}
+.fld .in.mono{font-family:var(--f-mono);font-size:12px}
+.fld .hint{font-size:11px;color:var(--muted)}
+.opts{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.opt{border:1px solid var(--line);border-radius:8px;padding:9px 10px;font-size:12px;display:flex;flex-direction:column;gap:2px}
+.opt small{color:var(--muted);font-size:11px}
+.opt.on{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent);background:var(--accent-soft)}
+.chk{display:flex;gap:8px;align-items:center;font-size:12px}
+.chk i{width:15px;height:15px;border-radius:4px;border:1px solid var(--line);display:grid;place-items:center;font-style:normal;font-size:10px}
+.chk i.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.perm{display:grid;grid-template-columns:repeat(7,1fr);gap:0}
+.dot{width:16px;height:16px;border-radius:4px;display:inline-grid;place-items:center;font-size:10px;font-weight:700}
+.dot.y{background:var(--accent);color:var(--accent-ink)}
+.dot.n{background:var(--surface-2);color:var(--muted)}
+.dot.i{background:var(--accent-soft);color:var(--accent)}
+.term{margin:0;background:var(--code-bg);color:var(--code-ink);font-family:var(--f-mono);font-size:11.5px;line-height:1.6;padding:12px 14px;border-radius:0 0 9px 9px;white-space:pre;overflow:hidden}
+.term .p{color:var(--code-key)} .term .s{color:var(--code-str)} .term .c{color:var(--code-com)}
+.notice{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--line);border-left:3px solid var(--warn);border-radius:8px;padding:9px 12px;background:var(--warn-soft);font-size:12px}
+.notice b{color:var(--warn)}
+@media (prefers-reduced-motion:no-preference){.live::after{content:"▍";animation:blink 1s steps(1) infinite;color:var(--code-key)}}
+@keyframes blink{50%{opacity:0}}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+<nav class="toc" aria-label="Índex">
+  <span class="eyebrow">Talaia · índex</span>
+  <a href="#visio">Visió i nom</a>
+  <a href="#inspiracio">El millor de cadascun</a>
+  <a href="#arquitectura">Arquitectura</a>
+  <a href="#components">Components</a>
+  <a href="#modes">Contenidor o servidor</a>
+  <a href="#maquetes">Maquetes</a>
+  <a href="#funcions">Funcionalitats</a>
+  <a href="#connexio">Connexió i seguretat</a>
+  <a href="#sistemes">Sistemes suportats</a>
+  <a href="#stack">Stack tecnològic</a>
+  <a href="#dades">Dades i repositori</a>
+  <a href="#fullderuta">Full de ruta</a>
+  <a href="#riscos">Riscos i decisions</a>
+</nav>
+
+<main>
+
+<!-- ============ VISIÓ ============ -->
+<section id="visio" class="hero">
+  <span class="eyebrow">Proposta de projecte · octubre 2026</span>
+  <h1>Talaia</h1>
+  <p class="lead">Un panell autoallotjat per gestionar una flota de VPS Debian: cada contenidor per separat quan només vols tocar una app, o el servidor sencer quan cal anar a fons. Combina el millor de Portainer, Komodo, Coolify, Dockge i Cockpit en una sola eina.</p>
+  <div class="tag">
+    <span class="chip">Autoallotjat</span><span class="chip">Llicència WNCL-1.0</span><span class="chip">Agent lleuger en Go</span><span class="chip">Sense ports oberts als VPS</span><span class="chip">Sense dependència: res deixa de funcionar si el treus</span>
+  </div>
+  <div class="prose">
+    <p>Una <b>talaia</b> és la torre de guaita de la costa: des d'un sol punt veus tot el litoral i avises si alguna cosa no va bé. És exactament el que ha de fer el panell. A més, és curt, es pronuncia bé en qualsevol idioma i el domini i el binari queden nets: <code>talaia</code>, <code>talaia-agent</code>, <code>talaiactl</code>.</p>
+  </div>
+  <div class="names">
+    <div class="name pick"><span class="eyebrow">Proposta principal</span><b>Talaia</b><span>Torre de guaita. Vista global i alertes.</span></div>
+    <div class="name"><span class="eyebrow">Alternativa</span><b>Timó</b><span>Qui porta el timó dirigeix la flota.</span></div>
+    <div class="name"><span class="eyebrow">Alternativa</span><b>Far</b><span>Curt i visual. Més difícil de buscar a internet.</span></div>
+    <div class="name"><span class="eyebrow">Alternativa</span><b>Masover</b><span>Qui cuida la masia. Més local i amb caràcter.</span></div>
+  </div>
+</section>
+
+<!-- ============ INSPIRACIÓ ============ -->
+<section id="inspiracio">
+  <span class="eyebrow">Anàlisi</span>
+  <h2>El millor de cadascun</h2>
+  <p class="prose muted">Cap eina actual cobreix contenidors i servidor alhora. Aquestes són les idees que agafem de cadascuna, i el que deixem fora.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Eina</th><th>Què n'agafem</th><th>Què millorem</th></tr></thead>
+    <tbody>
+      <tr><td>Portainer</td><td>Gestió visual de contenidors, imatges, xarxes i volums. Permisos per equips. Plantilles d'apps.</td><td>Els permisos fins i el multi-servidor seriós són de pagament. A Talaia venen inclosos.</td></tr>
+      <tr><td>Komodo</td><td>Agent a cada servidor. Stacks des de Git. Sincronització declarativa (GitOps). Procediments encadenats.</td><td>Interfície més pensada per a l'ús diari. Afegim tota la part de sistema.</td></tr>
+      <tr><td>Coolify / Dokploy</td><td>Desplegar apps des de Git amb un clic. Dominis amb SSL automàtic. Bases de dades amb còpies a S3. Webhooks de deploy.</td><td>Integrat amb stacks normals de Compose, sense formats propis que et lliguin.</td></tr>
+      <tr><td>Dockge</td><td>El fitxer <code>compose.yaml</code> viu al disc i és la font de veritat. Editor directe. Sortida en temps real.</td><td>El mantenim tal qual, però amb versions i historial a la base de dades.</td></tr>
+      <tr><td>Cockpit / Webmin</td><td>Gestió del servidor sencer: systemd, journald, paquets, xarxa, discos, usuaris, terminal.</td><td>Per a molts servidors alhora, no un per un.</td></tr>
+      <tr><td>Beszel / Netdata</td><td>Mètriques lleugeres per servidor i per contenidor, amb historial.</td><td>Integrades a les alertes i a la vista de flota.</td></tr>
+      <tr><td>Uptime Kuma</td><td>Comprovacions HTTP/TCP/ping i notificacions per Telegram, ntfy, correu…</td><td>Lligades a cada app i domini, sense configurar-les a part.</td></tr>
+      <tr><td>Ansible / Semaphore</td><td>Executar la mateixa tasca a molts servidors alhora, amb registre.</td><td>Accions predefinides (actualitzar, endurir SSH…) sense escriure YAML.</td></tr>
+      <tr><td>Watchtower / Diun</td><td>Detectar imatges noves.</td><td>Avisa i proposa, però mai actualitza sol sense permís.</td></tr>
+      <tr><td>Teleport</td><td>Terminal web auditada i gravació de sessions.</td><td>Versió simple dins del panell, sense infraestructura extra.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- ============ ARQUITECTURA ============ -->
+<section id="arquitectura">
+  <span class="eyebrow">Com encaixa tot</span>
+  <h2>Arquitectura</h2>
+  <div class="prose muted"><p>Un nucli central i un agent a cada VPS. Els agents són els que obren la connexió cap al nucli, així els VPS no necessiten cap port obert. El nucli no executa res directament als servidors: envia ordres als agents i aquests les executen i en tornen el resultat.</p></div>
+  <div class="arch"><div class="arch-in">
+    <div class="col">
+      <div class="box"><h4>Navegador <small>web</small></h4><ul><li>Panell React</li><li>Terminal xterm.js</li><li>Editor Monaco</li></ul></div>
+      <div class="box"><h4>talaiactl <small>CLI</small></h4><ul><li>Scripts i CI</li><li>Mateixa API</li></ul></div>
+      <div class="box"><h4>Git <small>webhooks</small></h4><ul><li>GitHub, Gitea, GitLab</li><li>Push → deploy</li></ul></div>
+    </div>
+    <div class="link"><span>HTTPS<br>REST + WS</span><i></i></div>
+    <div class="box core">
+      <h4>talaia-core <small>servidor central</small></h4>
+      <ul>
+        <li>API i autenticació (2FA, passkeys, OIDC)</li>
+        <li>Permisos per abast i auditoria</li>
+        <li>Hub d'agents (gRPC bidireccional)</li>
+        <li>Cua de tasques i planificador</li>
+        <li>Motor d'alertes i notificacions</li>
+        <li>Pipeline de deploys i builds</li>
+        <li>Caixa forta de secrets (xifrat age)</li>
+      </ul>
+      <div class="tags" style="margin-top:4px"><span class="tg">PostgreSQL 16</span><span class="tg">TimescaleDB</span></div>
+    </div>
+    <div class="link"><span>gRPC · mTLS<br>port 443 sortint<br>(iniciat per l'agent)</span><i class="both"></i></div>
+    <div class="col">
+      <div class="box"><h4>talaia-agent <small>vps-web-01</small></h4><ul><li>Docker / Compose</li><li>systemd, journald, apt</li><li>Mètriques, PTY, fitxers</li><li>Caddy (dominis + SSL)</li></ul></div>
+      <div class="box"><h4>talaia-agent <small>vps-db-01</small></h4><ul><li>Mateix binari</li><li>Restic → S3 / B2</li></ul></div>
+      <div class="box"><h4>talaia-agent <small>rpi-casa (arm64)</small></h4><ul><li>Darrere de NAT, sense problema</li></ul></div>
+    </div>
+  </div></div>
+</section>
+
+<!-- ============ COMPONENTS ============ -->
+<section id="components">
+  <span class="eyebrow">Peces del sistema</span>
+  <h2>Components</h2>
+  <div class="grid">
+    <div class="card"><span class="eyebrow">talaia-core</span><h3>Nucli</h3>
+      <p>Binari únic en Go. Es desplega amb un <code>compose.yaml</code> (nucli + Postgres) en un VPS petit o a casa.</p>
+      <ul><li>API REST + WebSocket per al panell</li><li>Servidor gRPC per als agents</li><li>Cua de tasques persistent (River, sobre Postgres)</li><li>Emissió de certificats per als agents (CA interna)</li><li>Serveix el panell web ja compilat</li></ul></div>
+    <div class="card"><span class="eyebrow">talaia-agent</span><h3>Agent</h3>
+      <p>Binari de ~15 MB, paquet <code>.deb</code> i servei systemd. Consum objectiu: &lt;30 MB de RAM i &lt;1% de CPU en repòs.</p>
+      <ul><li>Mòduls: docker, compose, systemd, journal, apt, metrics, files, firewall, cron, users, pty, backup, proxy</li><li>Memòria local de mètriques (24 h) per si cau la connexió</li><li>Reconnexió automàtica amb espera progressiva</li></ul></div>
+    <div class="card"><span class="eyebrow">talaia-web</span><h3>Panell</h3>
+      <p>React + TypeScript. Tema clar i fosc, paleta d'ordres (⌘K) i funciona bé al mòbil per a consultes ràpides.</p>
+      <ul><li>Terminal web (xterm.js)</li><li>Editor de compose i fitxers (Monaco)</li><li>Gràfics lleugers (uPlot)</li><li>Logs i estat en temps real</li></ul></div>
+    <div class="card"><span class="eyebrow">talaiactl</span><h3>CLI</h3>
+      <p>Tot el que fa el panell, des del terminal o des d'un pipeline de CI.</p>
+      <ul><li><code>talaiactl deploy botiga</code></li><li><code>talaiactl exec vps-web-01 -- df -h</code></li><li><code>talaiactl sync ./infra</code> (GitOps)</li></ul></div>
+    <div class="card"><span class="eyebrow">Proxy</span><h3>Dominis i SSL</h3>
+      <p>Caddy a cada servidor, gestionat per l'agent via la seva API d'administració. HTTPS automàtic amb Let's Encrypt.</p>
+      <ul><li>Assignar domini a un contenidor en un clic</li><li>Redireccions, autenticació bàsica, capçaleres</li></ul></div>
+    <div class="card"><span class="eyebrow">Plantilles</span><h3>Catàleg d'apps</h3>
+      <p>Repositori de plantilles Compose amb variables: Postgres, MariaDB, Redis, n8n, Nextcloud, Gitea, Vaultwarden, Uptime Kuma, WordPress…</p>
+      <ul><li>Catàlegs propis afegint un repo Git</li></ul></div>
+  </div>
+</section>
+
+<!-- ============ MODES ============ -->
+<section id="modes">
+  <span class="eyebrow">El requisit clau</span>
+  <h2>Gestionar un contenidor o el servidor sencer</h2>
+  <div class="prose muted"><p>Talaia té dos nivells de treball sobre el mateix model. Pots entrar a un sol contenidor o stack sense veure res més, o obrir el servidor i gestionar-ho tot. Els permisos segueixen la mateixa jerarquia: pots donar accés només a una app (a un client, per exemple) sense que pugui tocar el servidor.</p></div>
+  <div class="modes">
+    <div class="mode a"><span class="eyebrow">Mode contenidor</span><h3>Una app, aïllada</h3>
+      <ul><li>Stacks Compose i contenidors solts</li><li>Editar compose i variables, amb historial de versions</li><li>Logs, estadístiques, terminal dins el contenidor</li><li>Desplegar, reiniciar, revertir a la versió anterior</li><li>Domini i SSL, còpies de volums, webhooks</li><li>Adoptar contenidors existents creats fora de Talaia</li></ul></div>
+    <div class="mode b"><span class="eyebrow">Mode servidor</span><h3>La màquina sencera</h3>
+      <ul><li>Mètriques del sistema, discos, xarxa</li><li>Serveis systemd i logs de journald</li><li>Paquets apt i actualitzacions de seguretat, avís de reinici necessari</li><li>Tallafoc (nftables/ufw), fail2ban, ports oberts</li><li>Usuaris, claus SSH, cron i timers</li><li>Explorador de fitxers, terminal de l'amfitrió, auditoria d'enduriment</li></ul></div>
+  </div>
+  <div class="scope"><div class="scope-in">
+    <span class="s">Organització</span><span class="arr">→</span><span class="s">Grup (prod, clients…)</span><span class="arr">→</span><span class="s">Servidor</span><span class="arr">→</span><span class="s">Stack / App</span><span class="arr">→</span><span class="s">Contenidor</span>
+  </div></div>
+  <p class="prose muted" style="font-size:.93rem">Un permís donat en un nivell s'hereta cap avall. <i>Lector</i> a «prod» veu tots els servidors de producció. <i>Operador</i> a l'stack «botiga» pot veure logs, reiniciar i desplegar aquella app i res més.</p>
+  <p class="prose muted" style="font-size:.93rem"><b style="color:var(--ink)">Sense dependència:</b> els stacks es guarden a <code>/opt/talaia/stacks/&lt;nom&gt;/compose.yaml</code>, igual que a Dockge. Si desinstal·les Talaia, tot continua funcionant i ho pots gestionar amb <code>docker compose</code> com sempre.</p>
+</section>
+
+<!-- ============ MAQUETES ============ -->
+<section id="maquetes">
+  <span class="eyebrow">Com es veuria</span>
+  <h2>Maquetes</h2>
+  <p class="prose muted">Cinc pantalles clau, amb dades d'exemple. Segueixen el tema clar o fosc del teu dispositiu, igual que ho faria el panell. En mòbil, llisca cada maqueta de costat.</p>
+
+  <!-- MAQUETA 1 : FLOTA -->
+  <div class="mk-cap"><span class="eyebrow">Pantalla 1 · Flota</span><h3>Tots els servidors d'un cop d'ull</h3><p>La pantalla d'inici. El que necessita atenció es veu primer: la vora de color marca els avisos i les alertes.</p></div>
+  <div class="mk-frame"><div class="mk">
+    <div class="mk-url"><div class="dots"><i></i><i></i><i></i></div><div class="u">talaia.exemple.cat/flota</div></div>
+    <div class="mk-app">
+      <aside class="mk-side">
+        <div class="mk-logo"><svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2 L14 7 L13 18 L7 18 L6 7 Z" fill="var(--accent)"/><rect x="5" y="6" width="10" height="2" fill="var(--signal)"/></svg>Talaia</div>
+        <a class="on">Flota <em>6</em></a>
+        <a>Stacks <em>14</em></a>
+        <a>Apps <em>9</em></a>
+        <a>Dominis <em>17</em></a>
+        <span class="sec">Operacions</span>
+        <a>Alertes <em class="w">2</em></a>
+        <a>Còpies de seguretat</a>
+        <a>Automatitzacions</a>
+        <a>Plantilles</a>
+        <span class="sec">Administració</span>
+        <a>Usuaris i permisos</a>
+        <a>Auditoria</a>
+        <a>Configuració</a>
+      </aside>
+      <div class="mk-main">
+        <div class="mk-top"><div class="mk-search"><span>Cerca servidors, contenidors, dominis…</span><kbd>⌘K</kbd></div><span class="btn pri">+ Afegir servidor</span><div class="mk-avatar">MS</div></div>
+        <div class="mk-h"><div><h3>Flota</h3><span class="sub">6 servidors · 3 grups · actualitzat fa 4 s</span></div><div class="btns"><span class="btn">Tots els grups ▾</span><span class="btn">Acció en bloc ▾</span></div></div>
+        <div class="mk-kpis">
+          <div class="kpi"><small>Servidors en línia</small><b>5 / 6</b><span class="d">1 sense connexió</span></div>
+          <div class="kpi"><small>Contenidors actius</small><b>47</b><span class="d">2 aturats</span></div>
+          <div class="kpi w"><small>Actualitzacions de seguretat</small><b>7</b><span class="d">a 3 servidors</span></div>
+          <div class="kpi c"><small>Alertes actives</small><b>2</b><span class="d">1 crítica</span></div>
+          <div class="kpi"><small>Darrera còpia correcta</small><b>03:12</b><span class="d">avui · 14 de 14 tasques</span></div>
+        </div>
+        <div class="mk-cols">
+          <div class="srv-grid">
+            <div class="srv"><div class="t"><b>vps-web-01</b><span class="st ok">En línia</span></div><span class="os">Debian 12 · Hetzner FSN1 · 4 vCPU / 8 GB</span>
+              <div class="meter"><span>CPU</span><i style="--v:23%"></i><span>23%</span></div>
+              <div class="meter"><span>RAM</span><i style="--v:61%"></i><span>61%</span></div>
+              <div class="meter"><span>Disc</span><i style="--v:48%"></i><span>48%</span></div>
+              <div class="ft"><span>14 contenidors · 5 stacks</span><div class="tags"><span class="tg">prod</span><span class="tg">web</span></div></div></div>
+            <div class="srv c"><div class="t"><b>vps-db-01</b><span class="st crit">Disc al 91%</span></div><span class="os">Debian 12 · Hetzner FSN1 · 4 vCPU / 16 GB</span>
+              <div class="meter"><span>CPU</span><i style="--v:12%"></i><span>12%</span></div>
+              <div class="meter"><span>RAM</span><i class="w" style="--v:78%"></i><span>78%</span></div>
+              <div class="meter"><span>Disc</span><i class="c" style="--v:91%"></i><span>91%</span></div>
+              <div class="ft"><span>4 contenidors · 2 stacks</span><div class="tags"><span class="tg">prod</span><span class="tg">db</span></div></div></div>
+            <div class="srv w"><div class="t"><b>vps-mail</b><span class="st warn">Cal reiniciar</span></div><span class="os">Debian 13 · OVH GRA · 2 vCPU / 4 GB</span>
+              <div class="meter"><span>CPU</span><i style="--v:6%"></i><span>6%</span></div>
+              <div class="meter"><span>RAM</span><i style="--v:44%"></i><span>44%</span></div>
+              <div class="meter"><span>Disc</span><i style="--v:37%"></i><span>37%</span></div>
+              <div class="ft"><span>Sense Docker · 11 serveis</span><div class="tags"><span class="tg">prod</span><span class="tg">correu</span></div></div></div>
+            <div class="srv"><div class="t"><b>vps-dev</b><span class="st ok">En línia</span></div><span class="os">Ubuntu 24.04 · Hetzner HEL1 · 2 vCPU / 4 GB</span>
+              <div class="meter"><span>CPU</span><i style="--v:41%"></i><span>41%</span></div>
+              <div class="meter"><span>RAM</span><i style="--v:52%"></i><span>52%</span></div>
+              <div class="meter"><span>Disc</span><i style="--v:29%"></i><span>29%</span></div>
+              <div class="ft"><span>19 contenidors · 6 stacks</span><div class="tags"><span class="tg">dev</span></div></div></div>
+            <div class="srv"><div class="t"><b>vps-backup</b><span class="st ok">En línia</span></div><span class="os">Debian 12 · Contabo · 2 vCPU / 4 GB</span>
+              <div class="meter"><span>CPU</span><i style="--v:3%"></i><span>3%</span></div>
+              <div class="meter"><span>RAM</span><i style="--v:21%"></i><span>21%</span></div>
+              <div class="meter"><span>Disc</span><i style="--v:66%"></i><span>66%</span></div>
+              <div class="ft"><span>2 contenidors · 1 stack</span><div class="tags"><span class="tg">infra</span></div></div></div>
+            <div class="srv"><div class="t"><b>rpi-casa</b><span class="st off">Sense connexió</span></div><span class="os">Raspberry Pi OS 12 · arm64 · 4 GB</span>
+              <div class="meter"><span>CPU</span><i style="--v:0%"></i><span>—</span></div>
+              <div class="meter"><span>RAM</span><i style="--v:0%"></i><span>—</span></div>
+              <div class="meter"><span>Disc</span><i style="--v:0%"></i><span>—</span></div>
+              <div class="ft"><span>Vist per últim cop fa 2 h</span><div class="tags"><span class="tg">casa</span></div></div></div>
+          </div>
+          <div class="panel"><h5>Activitat <small>en directe</small></h5>
+            <ul class="feed">
+              <li><i class="c"></i><div>Disc per sobre del 90% a <b>vps-db-01</b><small>fa 6 min · alerta</small></div></li>
+              <li><i class="o"></i><div>Deploy <b>botiga</b> #142 completat (42 s)<small>fa 18 min · push a main</small></div></li>
+              <li><i class="w"></i><div>3 paquets de seguretat a <b>vps-mail</b>: openssl, libssl3, linux-image<small>fa 1 h · apt</small></div></li>
+              <li><i></i><div>Has obert una terminal a <b>vps-dev</b> (sessió gravada)<small>fa 2 h · auditoria</small></div></li>
+              <li><i class="o"></i><div>Còpia nocturna: 14 de 14 tasques correctes, 3,2 GB a B2<small>03:12 · restic</small></div></li>
+              <li><i class="w"></i><div>Imatge nova disponible: <b>postgres:16.6</b><small>ahir · 2 contenidors afectats</small></div></li>
+            </ul></div>
+        </div>
+      </div>
+    </div>
+  </div></div>
+
+  <!-- MAQUETA 2 : SERVIDOR SENCER -->
+  <div class="mk-cap"><span class="eyebrow">Pantalla 2 · Mode servidor</span><h3>vps-db-01, la màquina sencera</h3><p>Les pestanyes cobreixen tot el que faries per SSH. L'avís de disc porta directament a l'acció que el resol.</p></div>
+  <div class="mk-frame"><div class="mk">
+    <div class="mk-url"><div class="dots"><i></i><i></i><i></i></div><div class="u">talaia.exemple.cat/servidors/vps-db-01</div></div>
+    <div class="mk-app">
+      <aside class="mk-side">
+        <div class="mk-logo"><svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2 L14 7 L13 18 L7 18 L6 7 Z" fill="var(--accent)"/><rect x="5" y="6" width="10" height="2" fill="var(--signal)"/></svg>Talaia</div>
+        <a>Flota <em>6</em></a>
+        <span class="sec">Servidors</span>
+        <a>vps-web-01</a>
+        <a class="on">vps-db-01 <em class="w">●</em></a>
+        <a>vps-mail</a>
+        <a>vps-dev</a>
+        <a>vps-backup</a>
+        <a>rpi-casa</a>
+        <span class="sec">Operacions</span>
+        <a>Alertes <em class="w">2</em></a>
+        <a>Còpies de seguretat</a>
+        <a>Automatitzacions</a>
+      </aside>
+      <div class="mk-main">
+        <div class="crumb">Flota / prod / <b>vps-db-01</b></div>
+        <div class="mk-h"><div><h3>vps-db-01 <span class="st ok" style="margin-left:6px">En línia</span></h3>
+          <div class="facts" style="margin-top:6px"><span>IP <b>49.12.88.14</b></span><span>SO <b>Debian 12.8</b></span><span>Kernel <b>6.1.0-28</b></span><span>Actiu <b>41 dies</b></span><span>Agent <b>v0.9.2</b></span></div></div>
+          <div class="btns"><span class="btn">Terminal</span><span class="btn">Fitxers</span><span class="btn">Actualitzar paquets</span><span class="btn dan">Reiniciar…</span></div></div>
+        <div class="mk-tabs"><span class="on">Resum</span><span>Contenidors 4</span><span>Serveis</span><span>Logs</span><span>Paquets 2</span><span>Xarxa i tallafoc</span><span>Discos</span><span>Usuaris i SSH</span><span>Cron</span><span>Enduriment</span><span>Còpies</span></div>
+        <div class="notice"><b>Disc / al 91%.</b><span>El volum <code>pg_data</code> ha crescut 18 GB en 7 dies. Al ritme actual s'omplirà en uns 4 dies. <u>Veure què ocupa</u> · <u>Netejar imatges sense ús (3,4 GB)</u></span></div>
+        <div class="g2">
+          <div class="panel"><h5>CPU i memòria <small>darreres 24 h</small></h5>
+            <div class="chart">
+              <div class="lg"><span style="--c:var(--accent)">CPU %</span><span style="--c:var(--signal)">RAM %</span></div>
+              <svg viewBox="0 0 520 150" role="img" aria-label="Gràfic d'exemple de CPU i RAM de 24 hores">
+                <g stroke="var(--line)" stroke-width="1"><line x1="30" y1="10" x2="515" y2="10"/><line x1="30" y1="55" x2="515" y2="55"/><line x1="30" y1="100" x2="515" y2="100"/><line x1="30" y1="130" x2="515" y2="130"/></g>
+                <g fill="var(--muted)" font-size="9" font-family="JetBrains Mono, monospace"><text x="2" y="13">100</text><text x="8" y="58">60</text><text x="8" y="103">20</text><text x="14" y="133">0</text><text x="30" y="146">00h</text><text x="148" y="146">06h</text><text x="268" y="146">12h</text><text x="388" y="146">18h</text><text x="494" y="146">ara</text></g>
+                <polyline fill="none" stroke="var(--signal)" stroke-width="2" points="30,52 70,51 110,50 150,49 190,48 230,46 270,45 310,44 350,44 390,43 430,42 470,42 515,41"/>
+                <path d="M30,122 L50,120 L70,121 L90,117 L110,110 L130,96 L150,104 L170,118 L190,121 L210,116 L230,112 L250,114 L270,108 L290,111 L310,116 L330,119 L350,113 L370,106 L390,109 L410,117 L430,120 L450,118 L470,115 L490,117 L515,116 L515,130 L30,130 Z" fill="var(--accent)" opacity=".16"/>
+                <polyline fill="none" stroke="var(--accent)" stroke-width="2" points="30,122 50,120 70,121 90,117 110,110 130,96 150,104 170,118 190,121 210,116 230,112 250,114 270,108 290,111 310,116 330,119 350,113 370,106 390,109 410,117 430,120 450,118 470,115 490,117 515,116"/>
+                <circle cx="515" cy="116" r="3.5" fill="var(--accent)"/><circle cx="515" cy="41" r="3.5" fill="var(--signal)"/>
+              </svg>
+            </div></div>
+          <div class="panel"><h5>Discos</h5>
+            <div style="padding:10px 12px;display:flex;flex-direction:column;gap:10px">
+              <div class="meter" style="grid-template-columns:90px 1fr 70px"><span class="mono">/</span><i class="c" style="--v:91%"></i><span>146 / 160 GB</span></div>
+              <div class="meter" style="grid-template-columns:90px 1fr 70px"><span class="mono">/boot</span><i style="--v:22%"></i><span>0,2 / 1 GB</span></div>
+              <div class="meter" style="grid-template-columns:90px 1fr 70px"><span class="mono">/mnt/vol1</span><i style="--v:34%"></i><span>68 / 200 GB</span></div>
+              <div class="meter" style="grid-template-columns:90px 1fr 70px"><span>Swap</span><i style="--v:8%"></i><span>0,3 / 4 GB</span></div>
+            </div></div>
+        </div>
+        <div class="g3">
+          <div class="panel"><h5>Serveis systemd <small>3 de 38</small></h5>
+            <table class="mt"><tbody>
+              <tr><td class="mono">docker.service</td><td><span class="st ok">actiu</span></td></tr>
+              <tr><td class="mono">fail2ban.service</td><td><span class="st ok">actiu</span></td></tr>
+              <tr><td class="mono">pg-dump.timer</td><td><span class="st crit">ha fallat</span></td></tr>
+            </tbody></table></div>
+          <div class="panel"><h5>Paquets <small>apt</small></h5>
+            <table class="mt"><tbody>
+              <tr><td class="mono">openssl</td><td class="mono">3.0.15-1</td><td><span class="sec-b">seguretat</span></td></tr>
+              <tr><td class="mono">libssl3</td><td class="mono">3.0.15-1</td><td><span class="sec-b">seguretat</span></td></tr>
+              <tr><td class="mono">unattended-upgrades</td><td colspan="2" class="muted">actiu ✓</td></tr>
+            </tbody></table></div>
+          <div class="panel"><h5>Tallafoc <small>nftables</small></h5>
+            <table class="mt"><tbody>
+              <tr><td class="mono">22/tcp</td><td>Només des de WireGuard</td></tr>
+              <tr><td class="mono">5432/tcp</td><td>Només des de vps-web-01</td></tr>
+              <tr><td class="mono">entrada</td><td>Denegar per defecte</td></tr>
+            </tbody></table></div>
+        </div>
+      </div>
+    </div>
+  </div></div>
+
+  <!-- MAQUETA 3 : MODE CONTENIDOR -->
+  <div class="mk-cap"><span class="eyebrow">Pantalla 3 · Mode contenidor</span><h3>L'stack «botiga», sense res més al voltant</h3><p>El compose al disc és la font de veritat. Cada desplegament queda versionat i es pot revertir en un clic.</p></div>
+  <div class="mk-frame"><div class="mk">
+    <div class="mk-url"><div class="dots"><i></i><i></i><i></i></div><div class="u">talaia.exemple.cat/stacks/vps-web-01/botiga</div></div>
+    <div class="mk-app">
+      <aside class="mk-side">
+        <div class="mk-logo"><svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2 L14 7 L13 18 L7 18 L6 7 Z" fill="var(--accent)"/><rect x="5" y="6" width="10" height="2" fill="var(--signal)"/></svg>Talaia</div>
+        <a>Flota <em>6</em></a>
+        <span class="sec">Stacks a vps-web-01</span>
+        <a class="on">botiga <em>3</em></a>
+        <a>blog <em>2</em></a>
+        <a>n8n <em>2</em></a>
+        <a>uptime <em>1</em></a>
+        <a>caddy <em>1</em></a>
+        <span class="sec">Contenidors solts</span>
+        <a>portainer-old <em class="w">adoptar</em></a>
+      </aside>
+      <div class="mk-main">
+        <div class="crumb">vps-web-01 / Stacks / <b>botiga</b></div>
+        <div class="mk-h"><div><h3>botiga <span class="st ok" style="margin-left:6px">3 de 3 en marxa</span></h3>
+          <div class="facts" style="margin-top:6px"><span>Origen <b>git · botiga/main</b></span><span>Versió <b>#142 · a3f9e1c</b></span><span>Domini <b>botiga.exemple.cat</b></span><span>Còpia <b>avui 03:05</b></span></div></div>
+          <div class="btns"><span class="btn">Historial</span><span class="btn">Reiniciar</span><span class="btn">Aturar</span><span class="btn pri">Desplegar</span></div></div>
+        <div class="mk-tabs"><span>Contenidors</span><span class="on">Compose</span><span>Variables 9</span><span>Logs</span><span>Volums</span><span>Domini i SSL</span><span>Còpies</span><span>Webhooks</span><span>Accés</span></div>
+        <div class="g2">
+          <div class="panel"><h5>compose.yaml <small>/opt/talaia/stacks/botiga · canvis sense desar</small></h5>
+<pre class="yaml"><span class="l"><span class="k">services</span>:</span><span class="l">  <span class="k">web</span>:</span><span class="l">    <span class="k">image</span>: <span class="s">ghcr.io/exemple/botiga:${TAG}</span></span><span class="l">    <span class="k">restart</span>: unless-stopped</span><span class="l">    <span class="k">env_file</span>: .env</span><span class="l">    <span class="k">depends_on</span>: [db, redis]</span><span class="l">    <span class="k">labels</span>:</span><span class="l">      <span class="k">talaia.domain</span>: <span class="s">botiga.exemple.cat</span></span><span class="l">      <span class="k">talaia.port</span>: <span class="s">"3000"</span></span><span class="l">  <span class="k">db</span>:</span><span class="l">    <span class="k">image</span>: <span class="s">postgres:16.4</span>   <span class="c"># 16.6 disponible</span></span><span class="l">    <span class="k">volumes</span>: [<span class="s">pg_data:/var/lib/postgresql/data</span>]</span><span class="l">    <span class="k">labels</span>:</span><span class="l">      <span class="k">talaia.backup</span>: <span class="s">pg_dump</span></span><span class="l">  <span class="k">redis</span>:</span><span class="l">    <span class="k">image</span>: <span class="s">redis:7-alpine</span></span><span class="l"><span class="k">volumes</span>: { <span class="k">pg_data</span>: {} }</span></pre></div>
+          <div style="display:flex;flex-direction:column;gap:12px;min-width:0">
+            <div class="panel"><h5>Contenidors</h5>
+              <table class="mt"><thead><tr><th>Nom</th><th>Estat</th><th class="r">CPU</th><th class="r">RAM</th></tr></thead><tbody>
+                <tr><td class="mono">botiga-web-1</td><td><span class="st ok">2 d</span></td><td class="r">4,1%</td><td class="r">212 MB</td></tr>
+                <tr><td class="mono">botiga-db-1</td><td><span class="st ok">12 d</span> <span class="upd">16.6</span></td><td class="r">1,3%</td><td class="r">486 MB</td></tr>
+                <tr><td class="mono">botiga-redis-1</td><td><span class="st ok">12 d</span></td><td class="r">0,2%</td><td class="r">18 MB</td></tr>
+              </tbody></table></div>
+            <div class="panel"><h5>Logs · botiga-web-1 <small>en directe</small></h5>
+<pre class="logs"><span class="t">10:42:07</span> <span class="i">INFO</span>  GET /api/products 200 38ms
+<span class="t">10:42:09</span> <span class="i">INFO</span>  POST /api/cart 201 61ms
+<span class="t">10:42:11</span> <span class="w">WARN</span>  slow query 812ms orders_by_user
+<span class="t">10:42:12</span> <span class="i">INFO</span>  GET /checkout 200 104ms
+<span class="t">10:42:15</span> <span class="e">ERR </span>  stripe webhook: signature mismatch
+<span class="t">10:42:16</span> <span class="i">INFO</span>  GET /api/products 200 31ms<span class="live"></span></pre></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div></div>
+
+  <!-- MAQUETA 4 : NOVA APP -->
+  <div class="mk-cap"><span class="eyebrow">Pantalla 4 · Nova app</span><h3>Desplegar des de Git en cinc passos</h3><p>Com a Coolify, però el resultat és un stack Compose normal que pots editar a mà després.</p></div>
+  <div class="mk-frame"><div class="mk">
+    <div class="mk-url"><div class="dots"><i></i><i></i><i></i></div><div class="u">talaia.exemple.cat/apps/nova</div></div>
+    <div class="mk-app">
+      <aside class="mk-side">
+        <div class="mk-logo"><svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2 L14 7 L13 18 L7 18 L6 7 Z" fill="var(--accent)"/><rect x="5" y="6" width="10" height="2" fill="var(--signal)"/></svg>Talaia</div>
+        <a>Flota <em>6</em></a>
+        <a>Stacks <em>14</em></a>
+        <a class="on">Apps <em>9</em></a>
+        <a>Dominis <em>17</em></a>
+        <span class="sec">Operacions</span>
+        <a>Alertes <em class="w">2</em></a>
+        <a>Plantilles</a>
+      </aside>
+      <div class="mk-main">
+        <div class="mk-h"><div><h3>Nova app</h3><span class="sub">Des d'un repositori Git</span></div><div class="btns"><span class="btn">Des d'una plantilla</span><span class="btn">Des d'una imatge</span></div></div>
+        <div class="wiz">
+          <ol class="wsteps">
+            <li class="d"><b>✓</b>Origen</li>
+            <li class="d"><b>✓</b>Construcció</li>
+            <li class="on"><b>3</b>Destí</li>
+            <li><b>4</b>Domini</li>
+            <li><b>5</b>Revisió</li>
+          </ol>
+          <div class="form">
+            <div class="fld"><label>Servidor on s'executarà</label>
+              <div class="opts">
+                <div class="opt on"><b class="mono" style="font-family:var(--f-mono)">vps-web-01</b><small>RAM lliure 3,1 GB · prod</small></div>
+                <div class="opt"><b style="font-family:var(--f-mono)">vps-dev</b><small>RAM lliure 1,9 GB · dev</small></div>
+                <div class="opt"><b style="font-family:var(--f-mono)">vps-backup</b><small>RAM lliure 3,2 GB · infra</small></div>
+              </div></div>
+            <div class="fld"><label>Nom de l'stack</label><div class="in mono">reserves</div><span class="hint">Es crearà a /opt/talaia/stacks/reserves</span></div>
+            <div class="fld"><label>Recursos</label><div class="in"><span>Límit 1 vCPU · 512 MB</span><span class="muted">▾</span></div></div>
+            <div class="fld"><label>Quan es desplega</label>
+              <div style="display:flex;flex-direction:column;gap:6px">
+                <span class="chk"><i class="on">✓</i>En cada push a <code>main</code></span>
+                <span class="chk"><i class="on">✓</i>Sense temps d'aturada (arrenca el nou abans d'aturar el vell)</span>
+                <span class="chk"><i></i>Entorns de prova per a cada pull request</span>
+              </div></div>
+            <div class="btns" style="justify-content:flex-end"><span class="btn">Enrere</span><span class="btn pri">Continuar: domini</span></div>
+          </div>
+          <div class="panel"><h5>Resum fins ara</h5>
+            <table class="mt"><tbody>
+              <tr><td>Repo</td><td class="mono">exemple/reserves</td></tr>
+              <tr><td>Branca</td><td class="mono">main</td></tr>
+              <tr><td>Build</td><td>Dockerfile</td></tr>
+              <tr><td>Port</td><td class="mono">8080</td></tr>
+              <tr><td>Variables</td><td>6 (2 secretes)</td></tr>
+              <tr><td>Servidor</td><td class="mono">vps-web-01</td></tr>
+            </tbody></table></div>
+        </div>
+      </div>
+    </div>
+  </div></div>
+
+  <!-- MAQUETA 5 : PERMISOS -->
+  <div class="mk-cap"><span class="eyebrow">Pantalla 5 · Permisos per abast</span><h3>Donar accés a una sola app</h3><p>Aquí es veu el model de dos nivells. «Client botiga» només veu el seu stack. L'equip de desenvolupament té el servidor de dev sencer.</p></div>
+  <div class="mk-frame"><div class="mk">
+    <div class="mk-url"><div class="dots"><i></i><i></i><i></i></div><div class="u">talaia.exemple.cat/admin/permisos</div></div>
+    <div class="mk-app">
+      <aside class="mk-side">
+        <div class="mk-logo"><svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2 L14 7 L13 18 L7 18 L6 7 Z" fill="var(--accent)"/><rect x="5" y="6" width="10" height="2" fill="var(--signal)"/></svg>Talaia</div>
+        <a>Flota <em>6</em></a>
+        <span class="sec">Administració</span>
+        <a class="on">Usuaris i permisos</a>
+        <a>Equips</a>
+        <a>Claus d'API</a>
+        <a>Auditoria</a>
+        <a>Notificacions</a>
+        <a>Configuració</a>
+      </aside>
+      <div class="mk-main">
+        <div class="mk-h"><div><h3>Usuaris i permisos</h3><span class="sub">4 usuaris · 2 equips · 2FA obligatori</span></div><div class="btns"><span class="btn pri">+ Convidar</span></div></div>
+        <div class="panel">
+          <table class="mt"><thead><tr><th>Usuari / equip</th><th>Abast</th><th>Rol</th><th>Veure</th><th>Logs</th><th>Reiniciar</th><th>Desplegar</th><th>Terminal</th><th>Sistema</th><th>2FA</th></tr></thead><tbody>
+            <tr><td>Tu (propietari)</td><td class="mono">organització</td><td>Administrador</td><td><span class="dot y">✓</span></td><td><span class="dot y">✓</span></td><td><span class="dot y">✓</span></td><td><span class="dot y">✓</span></td><td><span class="dot y">✓</span></td><td><span class="dot y">✓</span></td><td><span class="st ok">passkey</span></td></tr>
+            <tr><td>Equip dev</td><td class="mono">servidor · vps-dev</td><td>Operador de servidor</td><td><span class="dot y">✓</span></td><td><span class="dot y">✓</span></td><td><span class="dot y">✓</span></td><td><span class="dot y">✓</span></td><td><span class="dot y">✓</span></td><td><span class="dot y">✓</span></td><td><span class="st ok">TOTP</span></td></tr>
+            <tr><td>Equip dev</td><td class="mono">grup · prod</td><td>Lector</td><td><span class="dot i">✓</span></td><td><span class="dot i">✓</span></td><td><span class="dot n">–</span></td><td><span class="dot n">–</span></td><td><span class="dot n">–</span></td><td><span class="dot n">–</span></td><td><span class="st ok">TOTP</span></td></tr>
+            <tr><td>Client botiga</td><td class="mono">stack · vps-web-01/botiga</td><td>Operador d'app</td><td><span class="dot y">✓</span></td><td><span class="dot y">✓</span></td><td><span class="dot y">✓</span></td><td><span class="dot y">✓</span></td><td><span class="dot n">–</span></td><td><span class="dot n">–</span></td><td><span class="st ok">TOTP</span></td></tr>
+            <tr><td>Monitor extern</td><td class="mono">organització</td><td>Només mètriques</td><td><span class="dot i">✓</span></td><td><span class="dot n">–</span></td><td><span class="dot n">–</span></td><td><span class="dot n">–</span></td><td><span class="dot n">–</span></td><td><span class="dot n">–</span></td><td><span class="st off">clau d'API</span></td></tr>
+          </tbody></table>
+        </div>
+        <div class="g2">
+          <div class="panel"><h5>Què veu «Client botiga» en entrar</h5>
+<pre class="term"><span class="c"># Només una entrada al menú, sense veure servidors</span>
+Stacks
+ └─ botiga    <span class="p">3 de 3 en marxa</span>   botiga.exemple.cat
+    ├─ Logs · Reiniciar · Desplegar · Historial
+    └─ <span class="c">Terminal, Variables secretes, Sistema: ocults</span></pre></div>
+          <div class="panel"><h5>Auditoria recent</h5>
+            <ul class="feed">
+              <li><i></i><div>Client botiga ha desplegat <b>botiga</b> #142<small>avui 10:24 · 88.12.x.x</small></div></li>
+              <li><i class="w"></i><div>Equip dev ha obert terminal a <b>vps-dev</b><small>ahir 18:02 · gravació 14 min</small></div></li>
+              <li><i class="c"></i><div>Intent denegat: Client botiga → Terminal<small>ahir 11:40 · sense permís</small></div></li>
+            </ul></div>
+        </div>
+      </div>
+    </div>
+  </div></div>
+</section>
+
+<!-- ============ FUNCIONALITATS ============ -->
+<section id="funcions">
+  <span class="eyebrow">Què podrà fer</span>
+  <h2>Funcionalitats</h2>
+  <p class="prose muted">Cada funció està marcada amb la fase on entra: <span class="pill p-mvp">MVP</span> és el que tindràs útil en uns quatre mesos, <span class="pill p-v1">v1</span> és la versió completa i <span class="pill p-fut">Futur</span> és per després.</p>
+  <div class="grid">
+    <div class="card"><span class="eyebrow">Contenidors i stacks</span><ul>
+      <li>Llistar, arrencar, aturar, reiniciar, eliminar <span class="pill p-mvp">MVP</span></li>
+      <li>Logs en directe i cerca <span class="pill p-mvp">MVP</span></li>
+      <li>Editor de compose + .env amb validació <span class="pill p-mvp">MVP</span></li>
+      <li>Terminal dins el contenidor <span class="pill p-mvp">MVP</span></li>
+      <li>Imatges, xarxes, volums, neteja <span class="pill p-mvp">MVP</span></li>
+      <li>Adoptar contenidors i projectes existents <span class="pill p-mvp">MVP</span></li>
+      <li>Historial de versions i revertir <span class="pill p-v1">v1</span></li>
+      <li>Avís d'imatges noves amb canvis <span class="pill p-v1">v1</span></li>
+      <li>Podman <span class="pill p-fut">Futur</span></li></ul></div>
+    <div class="card"><span class="eyebrow">Servidor sencer</span><ul>
+      <li>Mètriques CPU, RAM, disc, xarxa <span class="pill p-mvp">MVP</span></li>
+      <li>Serveis systemd i journald <span class="pill p-mvp">MVP</span></li>
+      <li>Paquets apt i actualitzacions de seguretat <span class="pill p-mvp">MVP</span></li>
+      <li>Terminal de l'amfitrió <span class="pill p-mvp">MVP</span></li>
+      <li>Tallafoc nftables/ufw i fail2ban <span class="pill p-v1">v1</span></li>
+      <li>Usuaris, claus SSH, sudo <span class="pill p-v1">v1</span></li>
+      <li>Cron i timers <span class="pill p-v1">v1</span></li>
+      <li>Explorador i editor de fitxers <span class="pill p-v1">v1</span></li>
+      <li>Auditoria d'enduriment (SSH, ports, kernel) <span class="pill p-v1">v1</span></li></ul></div>
+    <div class="card"><span class="eyebrow">Deploys i apps</span><ul>
+      <li>Stacks des de repositori Git <span class="pill p-v1">v1</span></li>
+      <li>Build amb Dockerfile o Nixpacks <span class="pill p-v1">v1</span></li>
+      <li>Webhooks de push i deploy sense aturada <span class="pill p-v1">v1</span></li>
+      <li>Dominis + SSL automàtic (Caddy) <span class="pill p-v1">v1</span></li>
+      <li>Catàleg de plantilles d'un clic <span class="pill p-v1">v1</span></li>
+      <li>Entorns de prova per pull request <span class="pill p-fut">Futur</span></li></ul></div>
+    <div class="card"><span class="eyebrow">Monitoratge i alertes</span><ul>
+      <li>Historial de mètriques (30 dies, després agregat) <span class="pill p-v1">v1</span></li>
+      <li>Regles: disc, RAM, contenidor caigut, servidor sense connexió <span class="pill p-v1">v1</span></li>
+      <li>Comprovacions HTTP/TCP de cada domini <span class="pill p-v1">v1</span></li>
+      <li>Telegram, ntfy, correu, Discord, webhook <span class="pill p-v1">v1</span></li>
+      <li>Caducitat de certificats <span class="pill p-v1">v1</span></li>
+      <li>Pàgina d'estat pública <span class="pill p-fut">Futur</span></li></ul></div>
+    <div class="card"><span class="eyebrow">Còpies de seguretat</span><ul>
+      <li>Volums i carpetes amb restic <span class="pill p-v1">v1</span></li>
+      <li>Bolcats de Postgres/MariaDB coherents <span class="pill p-v1">v1</span></li>
+      <li>Destins: S3, B2, SFTP, un altre VPS <span class="pill p-v1">v1</span></li>
+      <li>Restaurar des del panell <span class="pill p-v1">v1</span></li>
+      <li>Prova de restauració automàtica mensual <span class="pill p-fut">Futur</span></li></ul></div>
+    <div class="card"><span class="eyebrow">Flota i automatització</span><ul>
+      <li>Accions en bloc (actualitzar tot «prod») <span class="pill p-v1">v1</span></li>
+      <li>Procediments: passos encadenats amb horari <span class="pill p-v1">v1</span></li>
+      <li>GitOps: tota la configuració en fitxers TOML a un repo <span class="pill p-v1">v1</span></li>
+      <li>Executar scripts o playbooks Ansible <span class="pill p-fut">Futur</span></li>
+      <li>Crear VPS a Hetzner via API <span class="pill p-fut">Futur</span></li></ul></div>
+    <div class="card"><span class="eyebrow">Usuaris i seguretat</span><ul>
+      <li>Usuari únic amb 2FA <span class="pill p-mvp">MVP</span></li>
+      <li>Registre d'auditoria <span class="pill p-mvp">MVP</span></li>
+      <li>Usuaris, equips i rols per abast <span class="pill p-v1">v1</span></li>
+      <li>Passkeys (WebAuthn) i SSO OIDC <span class="pill p-v1">v1</span></li>
+      <li>Gravació de sessions de terminal <span class="pill p-v1">v1</span></li>
+      <li>Claus d'API amb permisos limitats <span class="pill p-v1">v1</span></li></ul></div>
+  </div>
+</section>
+
+<!-- ============ CONNEXIÓ ============ -->
+<section id="connexio">
+  <span class="eyebrow">Com s'uneix un VPS</span>
+  <h2>Connexió i seguretat</h2>
+  <div class="prose muted"><p>Afegir un servidor és una sola ordre. A partir d'aquí, tota la comunicació va xifrada amb certificats mútues i cada ordre queda registrada.</p></div>
+  <div class="two">
+    <ol class="steps">
+      <li><div><b>Generes un testimoni al panell</b><span>«Afegir servidor» crea un testimoni d'un sol ús que caduca en 15 minuts.</span></div></li>
+      <li><div><b>Executes l'instal·lador al VPS</b><span>Afegeix el repositori apt signat, instal·la <code>talaia-agent</code> i activa el servei systemd.</span></div></li>
+      <li><div><b>L'agent genera la seva clau</b><span>Crea una clau privada que no surt mai del servidor i envia una sol·licitud de certificat amb el testimoni.</span></div></li>
+      <li><div><b>El nucli signa el certificat</b><span>La CA interna emet un certificat de 90 dies lligat a l'ID del servidor. Es renova sol.</span></div></li>
+      <li><div><b>Connexió permanent</b><span>L'agent obre un túnel gRPC sobre mTLS cap al port 443 del nucli. Heartbeat cada 10 s, mètriques cada 15 s.</span></div></li>
+      <li><div><b>Inventari inicial</b><span>L'agent envia SO, maquinari, contenidors, projectes Compose i serveis. El servidor apareix a la flota.</span></div></li>
+    </ol>
+    <div style="display:flex;flex-direction:column;gap:12px;min-width:0">
+<pre class="code"><span class="c"># Pas 2: al VPS, com a root</span>
+curl -fsSL https://talaia.exemple.cat/install.sh \
+  | bash -s -- --token <span class="s">tl_enr_8fK2…q9</span>
+
+<span class="c"># o bé, manualment</span>
+apt install talaia-agent
+talaia-agent enroll --url https://talaia.exemple.cat \
+  --token <span class="s">tl_enr_8fK2…q9</span></pre>
+<pre class="code"><span class="c">// proto/agent.proto (resum)</span>
+<span class="k">service</span> AgentHub {
+  <span class="k">rpc</span> Connect(stream AgentMsg) returns (stream CoreMsg);
+}
+<span class="k">message</span> CoreMsg {             <span class="c">// nucli → agent</span>
+  string job_id = 1;          <span class="c">// idempotent</span>
+  oneof cmd { ComposeUp up = 2; ExecPty pty = 3;
+              AptUpgrade apt = 4; ReadLogs logs = 5; … }
+}
+<span class="k">message</span> AgentMsg {            <span class="c">// agent → nucli</span>
+  oneof msg { Heartbeat hb = 1; Metrics m = 2;
+              JobEvent ev = 3; Inventory inv = 4; … }
+}</pre>
+    </div>
+  </div>
+  <div class="grid">
+    <div class="card"><span class="eyebrow">Xarxa</span><p>Els VPS no obren cap port per a Talaia. El nucli només necessita el 443. Opcionalment, el panell pot quedar visible només dins de WireGuard o Tailscale.</p></div>
+    <div class="card"><span class="eyebrow">Privilegis</span><p>L'agent necessita root (accedir al socket de Docker ja ho equival). Per limitar el risc, cada mòdul es pot desactivar a <code>/etc/talaia/agent.toml</code>, i el nucli mai pot executar res que no sigui una ordre tipada o una terminal explícita.</p></div>
+    <div class="card"><span class="eyebrow">Si cau el nucli</span><p>Els contenidors i serveis continuen funcionant. L'agent guarda mètriques i esdeveniments 24 h i els envia en reconnectar.</p></div>
+    <div class="card"><span class="eyebrow">Secrets</span><p>Les variables secretes es xifren amb age al nucli i només es desxifren a l'agent destí en el moment del deploy. Mai apareixen als logs.</p></div>
+    <div class="card"><span class="eyebrow">Accés</span><p>Contrasenya + 2FA obligatori, passkeys, límit d'intents, sessions revocables, i cada acció a l'auditoria amb usuari, IP i resultat.</p></div>
+    <div class="card"><span class="eyebrow">Cadena de subministrament</span><p>Binaris reproduïbles, paquets i imatges signats (cosign), i l'agent verifica la signatura abans d'auto-actualitzar-se.</p></div>
+  </div>
+</section>
+
+<!-- ============ SISTEMES ============ -->
+<section id="sistemes">
+  <span class="eyebrow">On funcionarà</span>
+  <h2>Sistemes suportats</h2>
+  <div class="tbl"><table>
+    <thead><tr><th>Sistema</th><th>Agent</th><th>Nucli</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td>Debian 12 / 13</td><td><span class="pill p-mvp">MVP</span></td><td><span class="pill p-mvp">MVP</span></td><td>Plataforma principal. Tot es prova primer aquí.</td></tr>
+      <tr><td>Ubuntu 22.04 / 24.04 LTS</td><td><span class="pill p-mvp">MVP</span></td><td><span class="pill p-mvp">MVP</span></td><td>Mateix gestor apt i systemd; gairebé gratis.</td></tr>
+      <tr><td>Raspberry Pi OS (arm64)</td><td><span class="pill p-v1">v1</span></td><td><span class="pill p-v1">v1</span></td><td>Compilació creuada amb Go, sense canvis de codi.</td></tr>
+      <tr><td>Rocky / Alma / Fedora</td><td><span class="pill p-fut">Futur</span></td><td><span class="pill p-v1">v1</span></td><td>Cal un mòdul dnf i firewalld.</td></tr>
+      <tr><td>Alpine</td><td><span class="pill p-fut">Futur</span></td><td><span class="pill p-v1">v1</span></td><td>Sense systemd (OpenRC); mòdul a part.</td></tr>
+      <tr><td>Arquitectures</td><td colspan="2">amd64 i arm64</td><td>Un binari per arquitectura.</td></tr>
+      <tr><td>Contenidors</td><td colspan="2">Docker Engine 24+ amb Compose v2</td><td>Podman més endavant (API compatible).</td></tr>
+      <tr><td>Navegadors</td><td colspan="2">Chrome, Firefox, Safari, Edge recents</td><td>Panell adaptat a mòbil per a consultes i accions ràpides.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- ============ STACK ============ -->
+<section id="stack">
+  <span class="eyebrow">Amb què es construeix</span>
+  <h2>Stack tecnològic</h2>
+  <div class="tbl"><table>
+    <thead><tr><th>Capa</th><th>Tria</th><th>Per què</th></tr></thead>
+    <tbody>
+      <tr><td>Agent</td><td>Go · Docker SDK · go-systemd (D-Bus) · sdjournal · gopsutil · creack/pty</td><td>Binari estàtic sense dependències, poc consum, i les millors llibreries per a Docker i systemd.</td></tr>
+      <tr><td>Nucli</td><td>Go · chi · connect-go (gRPC) · sqlc · River (cua)</td><td>Mateix llenguatge que l'agent: tipus i protocol compartits.</td></tr>
+      <tr><td>Base de dades</td><td>PostgreSQL 16 + TimescaleDB</td><td>Dades i mètriques en un sol lloc; agregació automàtica de l'historial.</td></tr>
+      <tr><td>Panell</td><td>React · TypeScript · Vite · TanStack Query/Router · Tailwind</td><td>Ecosistema més gran per a xterm.js, Monaco i components de taula.</td></tr>
+      <tr><td>Temps real</td><td>WebSocket (panell) · gRPC streaming (agents)</td><td>Logs, terminal i estat sense refrescar.</td></tr>
+      <tr><td>Proxy</td><td>Caddy</td><td>SSL automàtic i API d'administració JSON fàcil de controlar des de l'agent.</td></tr>
+      <tr><td>Còpies</td><td>restic</td><td>Deduplicació, xifrat i molts destins.</td></tr>
+      <tr><td>Autenticació</td><td>sessions + TOTP · go-webauthn · OIDC</td><td>Passkeys i SSO amb Authentik o Keycloak.</td></tr>
+      <tr><td>Empaquetat</td><td>GoReleaser · nfpm (.deb) · cosign · GitHub Actions</td><td>Versions signades i repositori apt automàtic.</td></tr>
+      <tr><td>Proves</td><td>go test · testcontainers · Playwright · VMs Debian amb Vagrant</td><td>L'agent es prova contra Debian i Docker reals, no contra simulacions.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- ============ DADES I REPO ============ -->
+<section id="dades">
+  <span class="eyebrow">Estructura</span>
+  <h2>Model de dades i repositori</h2>
+  <div class="two">
+<pre class="code"><span class="c">-- Entitats principals</span>
+<span class="k">organization</span>  id, name
+<span class="k">user</span>          id, email, pass_hash, totp, passkeys
+<span class="k">team</span>          id, name, members[]
+<span class="k">server_group</span>  id, name, tags[]
+<span class="k">server</span>        id, group_id, name, os, arch, agent_ver,
+              cert_fingerprint, last_seen, status
+<span class="k">stack</span>         id, server_id, name, source(git|local),
+              compose, env_enc, current_rev
+<span class="k">stack_rev</span>     id, stack_id, compose, author, created_at
+<span class="k">container</span>     id, server_id, stack_id?, docker_id,
+              image, state   <span class="c">-- cache de l'inventari</span>
+<span class="k">domain</span>        id, stack_id, host, port, tls_status
+<span class="k">role_binding</span>  subject(user|team), scope_type,
+              scope_id, role
+<span class="k">job</span>           id, server_id, kind, payload, status, log
+<span class="k">alert_rule</span>    id, scope, metric, threshold, channels[]
+<span class="k">backup_plan</span>   id, target, schedule, destination, keep
+<span class="k">audit_event</span>   id, actor, action, scope, ip, result, at
+<span class="k">metric</span>        <span class="c">(hypertable) server_id, container_id?, ts, …</span></pre>
+<pre class="code">talaia/
+├─ <span class="k">core/</span>          <span class="c"># API, hub d'agents, cua, alertes</span>
+│  ├─ api/  auth/  rbac/  jobs/  alerts/  deploy/
+│  └─ store/        <span class="c"># consultes sqlc + migracions</span>
+├─ <span class="k">agent/</span>         <span class="c"># talaia-agent</span>
+│  └─ modules/
+│     docker/ compose/ systemd/ journal/ apt/
+│     metrics/ pty/ files/ firewall/ backup/ proxy/
+├─ <span class="k">proto/</span>         <span class="c"># contracte gRPC compartit</span>
+├─ <span class="k">web/</span>           <span class="c"># panell React</span>
+├─ <span class="k">cli/</span>           <span class="c"># talaiactl</span>
+├─ <span class="k">templates/</span>     <span class="c"># catàleg d'apps (compose + metadades)</span>
+├─ <span class="k">packaging/</span>     <span class="c"># .deb, unitats systemd, install.sh,</span>
+│                 <span class="c"># compose.yaml del nucli</span>
+├─ <span class="k">test/e2e/</span>      <span class="c"># VMs Debian + Playwright</span>
+└─ <span class="k">docs/</span>          <span class="c"># guies i decisions d'arquitectura</span></pre>
+  </div>
+</section>
+
+<!-- ============ FULL DE RUTA ============ -->
+<section id="fullderuta">
+  <span class="eyebrow">Pla de treball</span>
+  <h2>Full de ruta</h2>
+  <p class="prose muted">Estimació per a una persona dedicant-hi unes 15–20 hores per setmana. Cada fase acaba amb alguna cosa que pots fer servir de debò als teus VPS, i la següent fase no comença fins que l'anterior compleix el seu criteri de «llest».</p>
+  <div>
+    <div class="bar" role="img" aria-label="Durada de cada fase en setmanes; total 38 setmanes">
+      <div style="flex:2">F0</div><div style="flex:4">F1</div><div style="flex:5">F2</div><div style="flex:5">F3</div><div class="l" style="flex:3">F4</div><div class="l" style="flex:3">F5</div><div class="l" style="flex:6">F6</div><div class="l" style="flex:3">F7</div><div class="l" style="flex:4">F8</div><div class="l" style="flex:3">F9</div>
+    </div>
+    <div class="bar-legend"><span>setmana 0</span><span>MVP · setmana 16</span><span>v1.0 · setmana 38</span></div>
+  </div>
+  <div class="road">
+    <div class="ph mvp"><div class="hd"><span class="eyebrow">Fase 0 · setmanes 1–2</span><h3>Fonaments</h3><p>Preparar el terreny perquè després tot vagi ràpid.</p></div>
+      <ul><li>Monorepo, CI amb proves i lint</li><li>Contracte <code>proto/</code> v0 i generació de codi</li><li>Esquelet del nucli amb Postgres i migracions</li><li>Esquelet del panell, tokens de disseny, tema clar/fosc</li><li>Dos VPS de prova amb Debian 12 i 13</li></ul>
+      <p class="done"><b>Llest quan:</b> <code>make dev</code> aixeca nucli + panell + un agent buit en local.</p></div>
+    <div class="ph mvp"><div class="hd"><span class="eyebrow">Fase 1 · setmanes 3–6</span><h3>Agent, connexió i inventari</h3><p>El cor del sistema. Si això és sòlid, la resta és afegir mòduls.</p></div>
+      <ul><li>Alta amb testimoni, CA interna, mTLS</li><li>Túnel gRPC amb reconnexió i heartbeat</li><li>Inventari: SO, maquinari, contenidors, serveis</li><li>Mètriques en directe</li><li>Pantalla de Flota (maqueta 1)</li><li>Paquet .deb i install.sh</li></ul>
+      <p class="done"><b>Llest quan:</b> els teus VPS reals apareixen a la flota amb mètriques, i sobreviuen a un reinici del nucli.</p></div>
+    <div class="ph mvp"><div class="hd"><span class="eyebrow">Fase 2 · setmanes 7–11</span><h3>Contenidors i stacks</h3><p>El substitut de Portainer i Dockge.</p></div>
+      <ul><li>Contenidors: accions, logs, estadístiques, terminal</li><li>Stacks Compose a <code>/opt/talaia/stacks</code></li><li>Editor de compose i .env</li><li>Adoptar projectes existents</li><li>Imatges, volums, xarxes, neteja</li><li>Pantalla d'stack (maqueta 3)</li></ul>
+      <p class="done"><b>Llest quan:</b> pots deixar d'usar Portainer per a tot el que fas ara.</p></div>
+    <div class="ph mvp"><div class="hd"><span class="eyebrow">Fase 3 · setmanes 12–16</span><h3>Servidor sencer</h3><p>El substitut de Cockpit, multi-servidor.</p></div>
+      <ul><li>systemd: estat, arrencar/aturar, habilitar</li><li>journald amb filtres i cerca</li><li>apt: pendents, seguretat, actualitzar, reinici necessari</li><li>Terminal de l'amfitrió</li><li>Usuari únic amb 2FA i auditoria</li><li>Pantalla de servidor (maqueta 2)</li></ul>
+      <p class="done"><b>Llest quan:</b> passes una setmana sense entrar per SSH als VPS.</p></div>
+    <div class="milestone"><b>Fita MVP · ~4 mesos.</b> Talaia ja és la teva eina diària. A partir d'aquí, cada fase afegeix potència.</div>
+    <div class="ph"><div class="hd"><span class="eyebrow">Fase 4 · setmanes 17–19</span><h3>Usuaris, permisos i auditoria</h3><p>Obrir l'eina a altres persones amb seguretat.</p></div>
+      <ul><li>Usuaris, equips, rols i abasts</li><li>Passkeys i OIDC</li><li>Gravació de sessions de terminal</li><li>Claus d'API; primera versió de <code>talaiactl</code></li><li>Pantalla de permisos (maqueta 5)</li></ul>
+      <p class="done"><b>Llest quan:</b> un usuari amb accés a un sol stack no pot veure ni tocar res més, verificat amb proves automàtiques.</p></div>
+    <div class="ph"><div class="hd"><span class="eyebrow">Fase 5 · setmanes 20–22</span><h3>Monitoratge i alertes</h3><p>Que Talaia t'avisi abans que t'avisin els usuaris.</p></div>
+      <ul><li>Historial en TimescaleDB amb agregació</li><li>Regles d'alerta i silenciament</li><li>Comprovacions HTTP/TCP i certificats</li><li>Telegram, ntfy, correu, Discord, webhook</li></ul>
+      <p class="done"><b>Llest quan:</b> si s'atura un contenidor o un disc passa del 90%, reps l'avís en menys d'un minut.</p></div>
+    <div class="ph"><div class="hd"><span class="eyebrow">Fase 6 · setmanes 23–28</span><h3>Deploys, dominis i plantilles</h3><p>La part de Coolify.</p></div>
+      <ul><li>Stacks des de Git i webhooks</li><li>Build amb Dockerfile i Nixpacks</li><li>Deploy sense aturada i revertir</li><li>Caddy gestionat: dominis + SSL</li><li>Catàleg de plantilles (15 apps inicials)</li><li>Assistent de nova app (maqueta 4)</li></ul>
+      <p class="done"><b>Llest quan:</b> fer push a <code>main</code> publica l'app amb HTTPS sense tocar res més.</p></div>
+    <div class="ph"><div class="hd"><span class="eyebrow">Fase 7 · setmanes 29–31</span><h3>Còpies de seguretat</h3><p>La funció que no vols necessitar però que ha de funcionar.</p></div>
+      <ul><li>Plans amb restic per volums i carpetes</li><li>Bolcats de bases de dades coherents</li><li>Destins S3, B2, SFTP</li><li>Restaurar des del panell</li></ul>
+      <p class="done"><b>Llest quan:</b> has restaurat una base de dades real en un servidor nou des del panell.</p></div>
+    <div class="ph"><div class="hd"><span class="eyebrow">Fase 8 · setmanes 32–35</span><h3>Flota i automatització</h3><p>La part de Komodo i Ansible.</p></div>
+      <ul><li>Accions en bloc per grup</li><li>Procediments programats</li><li>Tallafoc, usuaris SSH, cron, fitxers</li><li>Auditoria d'enduriment</li><li>Sincronització GitOps (TOML)</li></ul>
+      <p class="done"><b>Llest quan:</b> pots recrear tota la configuració de Talaia des d'un repo Git.</p></div>
+    <div class="ph"><div class="hd"><span class="eyebrow">Fase 9 · setmanes 36–38</span><h3>Versió 1.0</h3><p>Polir, documentar i publicar.</p></div>
+      <ul><li>Revisió de seguretat i proves de càrrega (50 agents)</li><li>Auto-actualització signada de l'agent</li><li>Documentació i guia d'instal·lació</li><li>Suport arm64, paquets signats</li></ul>
+      <p class="done"><b>Llest quan:</b> algú altre l'instal·la seguint només la documentació.</p></div>
+  </div>
+</section>
+
+<!-- ============ RISCOS ============ -->
+<section id="riscos">
+  <span class="eyebrow">Abans de començar</span>
+  <h2>Riscos i decisions obertes</h2>
+  <div class="grid">
+    <div class="card"><span class="eyebrow">Risc · abast</span><h3>Voler-ho tot alhora</h3><p>És el risc més gran. Defensa: no començar una fase fins que l'anterior compleix el criteri de «llest», i apuntar idees noves en una llista per a després.</p></div>
+    <div class="card"><span class="eyebrow">Risc · seguretat</span><h3>Una clau per a tots els servidors</h3><p>Si algú entra al panell, entra a tot. Defensa: 2FA obligatori, panell darrere de VPN, auditoria i la possibilitat de desactivar mòduls perillosos per servidor.</p></div>
+    <div class="card"><span class="eyebrow">Risc · manteniment</span><h3>Plantilles i versions de Docker</h3><p>El catàleg envelleix ràpid. Defensa: poques plantilles ben provades i catàlegs externs per a la resta.</p></div>
+    <div class="card"><span class="eyebrow">Decisió oberta</span><h3>Postgres o SQLite</h3><p>Proposta: Postgres. SQLite simplificaria la instal·lació per a una sola persona, però les mètriques i la cua van millor amb Postgres. Es pot revisar a la fase 0.</p></div>
+    <div class="card"><span class="eyebrow">Decisió oberta</span><h3>React o SvelteKit</h3><p>Proposta: React, per l'ecosistema. Si ja domines Svelte, és igual de vàlid i més lleuger.</p></div>
+    <div class="card"><span class="eyebrow">Decisió presa</span><h3>Llicència</h3><p>WNCL-1.0: ús i còpia lliures, prohibit lucrar-se'n i autoria de CatLinux sempre visible.</p></div>
+  </div>
+  <div class="card" style="border-color:var(--accent)">
+    <span class="eyebrow">Aquesta setmana</span><h3>Primers passos concrets</h3>
+    <ul>
+      <li>Decidir nom i reservar domini i organització a GitHub.</li>
+      <li>Crear el monorepo amb l'estructura de dalt i el CI bàsic.</li>
+      <li>Escriure <code>proto/agent.proto</code> v0: heartbeat, inventari i mètriques.</li>
+      <li>Fer un agent mínim que es connecti al nucli i enviï el hostname i la CPU cada 15 s.</li>
+      <li>Muntar dos VPS de prova barats (Debian 12 i 13) que puguis trencar sense por.</li>
+    </ul>
+  </div>
+</section>
+
+</main>
+</div>
+</body>
+</html>

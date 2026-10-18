@@ -1,0 +1,21 @@
+{
+  "recommendations": [
+    "anthropic.claude-code",
+    "golang.go",
+    "dbaeumer.vscode-eslint",
+    "esbenp.prettier-vscode",
+    "editorconfig.editorconfig",
+    "bufbuild.vscode-buf",
+    "lokalise.i18n-ally",
+    "davidanson.vscode-markdownlint",
+    "streetsidesoftware.code-spell-checker",
+    "streetsidesoftware.code-spell-checker-catalan",
+    "streetsidesoftware.code-spell-checker-spanish",
+    "redhat.vscode-yaml",
+    "tamasfe.even-better-toml",
+    "ms-azuretools.vscode-docker",
+    "timonwong.shellcheck",
+    "ms-vscode-remote.remote-wsl",
+    "eamodio.gitlens"
+  ]
+}

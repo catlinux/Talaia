@@ -1,0 +1,31 @@
+{
+  "files.eol": "\n",
+  "files.encoding": "utf8",
+  "files.insertFinalNewline": true,
+  "files.trimTrailingWhitespace": true,
+  "editor.formatOnSave": true,
+  "editor.rulers": [100],
+  "[markdown]": {
+    "files.trimTrailingWhitespace": false,
+    "editor.formatOnSave": false
+  },
+  "[go]": {
+    "editor.defaultFormatter": "golang.go"
+  },
+  "[typescript][typescriptreact][json][jsonc]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "go.useLanguageServer": true,
+  "go.lintTool": "golangci-lint",
+  "i18n-ally.localesPaths": ["web/src/locales"],
+  "i18n-ally.pathMatcher": "{locale}/{namespace}.json",
+  "i18n-ally.namespace": true,
+  "i18n-ally.keystyle": "nested",
+  "i18n-ally.sourceLanguage": "ca",
+  "i18n-ally.displayLanguage": "ca",
+  "i18n-ally.enabledFrameworks": ["react-i18next"],
+  "cSpell.language": "en,ca,es",
+  "cSpell.words": ["Talaia", "talaiactl", "CatLinux", "journald", "nftables", "restic", "Dockge", "Komodo", "Coolify", "Dokploy", "mTLS"],
+  "git.autofetch": false,
+  "terminal.integrated.defaultProfile.windows": "Git Bash"
+}
