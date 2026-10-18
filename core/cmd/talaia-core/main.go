@@ -12,9 +12,6 @@ import (
 	"syscall"
 	"time"
 
-	"golang.org/x/net/http2"
-	"golang.org/x/net/http2/h2c"
-
 	"github.com/catlinux/Talaia/core/internal/api"
 	"github.com/catlinux/Talaia/core/internal/config"
 	"github.com/catlinux/Talaia/core/internal/hub"
@@ -45,6 +42,15 @@ func newRouter(st *store.Store) http.Handler {
 	return mux
 }
 
+// newProtocols enables plaintext HTTP/2 next to HTTP/1.1, which the agent
+// stream needs until phase 1 adds mTLS.
+func newProtocols() *http.Protocols {
+	var protocols http.Protocols
+	protocols.SetHTTP1(true)
+	protocols.SetUnencryptedHTTP2(true)
+	return &protocols
+}
+
 func run() error {
 	cfg, err := config.Load()
 	if err != nil {
@@ -62,7 +68,7 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	defer st.Close()
+	defer func() { _ = st.Close() }()
 
 	if err := st.Migrate(ctx); err != nil {
 		return err
@@ -70,10 +76,11 @@ func run() error {
 
 	srv := &http.Server{
 		Addr: cfg.Listen,
-		// Phase 0 runs the agent stream over plaintext HTTP/2 (h2c) with no TLS
+		// Phase 0 runs the agent stream over plaintext HTTP/2 with no TLS
 		// and no enrollment; phase 1 replaces this with mTLS. The hub path is
 		// mounted next to the existing API so /healthz keeps working.
-		Handler:           h2c.NewHandler(newRouter(st), &http2.Server{}),
+		Handler:           newRouter(st),
+		Protocols:         newProtocols(),
 		ReadHeaderTimeout: 5 * time.Second,
 		// No ReadTimeout/WriteTimeout: they would cut the long-lived agent stream.
 		// Per-request limits for the REST API come with its handlers.

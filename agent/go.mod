@@ -7,7 +7,6 @@ require (
 	github.com/catlinux/Talaia/proto v0.0.0-00010101000000-000000000000
 	github.com/pelletier/go-toml/v2 v2.4.3
 	github.com/shirou/gopsutil/v4 v4.26.9
-	golang.org/x/net v0.61.0
 	google.golang.org/protobuf v1.36.12
 )
 
@@ -20,7 +19,6 @@ require (
 	github.com/tklauser/numcpus v0.12.0 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	golang.org/x/sys v0.49.0 // indirect
-	golang.org/x/text v0.43.0 // indirect
 )
 
 replace github.com/catlinux/Talaia/proto => ../proto

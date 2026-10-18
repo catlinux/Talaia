@@ -5,19 +5,16 @@ package link
 
 import (
 	"context"
-	"crypto/tls"
 	"errors"
 	"fmt"
 	"io"
 	"log/slog"
 	"math/rand/v2"
-	"net"
 	"net/http"
 	"time"
 
 	"connectrpc.com/connect/v2"
 	"connectrpc.com/connect/v2/connecthttp"
-	"golang.org/x/net/http2"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/catlinux/Talaia/agent/internal/collect"
@@ -103,7 +100,7 @@ func (l *Link) session(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("connect to core: %w", err)
 	}
-	defer stream.Close()
+	defer func() { _ = stream.Close() }()
 
 	inventory, err := l.collector.Inventory()
 	if err != nil {
@@ -190,14 +187,10 @@ func inventoryMsg(inventory *agentv1.Inventory) *agentv1.AgentMsg {
 
 // newH2CTransport speaks HTTP/2 without TLS (h2c). It is temporary: phase 1
 // replaces it with mTLS.
-func newH2CTransport() *http2.Transport {
-	return &http2.Transport{
-		AllowHTTP: true,
-		DialTLSContext: func(ctx context.Context, network, address string, _ *tls.Config) (net.Conn, error) {
-			var dialer net.Dialer
-			return dialer.DialContext(ctx, network, address)
-		},
-	}
+func newH2CTransport() *http.Transport {
+	var protocols http.Protocols
+	protocols.SetUnencryptedHTTP2(true)
+	return &http.Transport{Protocols: &protocols}
 }
 
 // jitter returns a delay between half of backoff and backoff, to avoid

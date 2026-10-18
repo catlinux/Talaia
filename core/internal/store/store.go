@@ -50,7 +50,7 @@ func (s *Store) Migrate(ctx context.Context) error {
 	}
 
 	db := stdlib.OpenDBFromPool(s.pool)
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	provider, err := goose.NewProvider(goose.DialectPostgres, db, sub)
 	if err != nil {

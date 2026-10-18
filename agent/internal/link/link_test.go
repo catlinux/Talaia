@@ -10,8 +10,6 @@ import (
 
 	"connectrpc.com/connect/v2"
 	"connectrpc.com/connect/v2/connecthttp"
-	"golang.org/x/net/http2"
-	"golang.org/x/net/http2/h2c"
 
 	"github.com/catlinux/Talaia/agent/internal/config"
 	agentv1 "github.com/catlinux/Talaia/proto/gen/go"
@@ -132,7 +130,12 @@ func TestLinkReportsAndReconnects(t *testing.T) {
 	agentv1connect.RegisterAgentHubHandler(server, hub)
 	mux := http.NewServeMux()
 	connecthttp.Mount(mux, server)
-	httpServer := httptest.NewServer(h2c.NewHandler(mux, &http2.Server{}))
+	httpServer := httptest.NewUnstartedServer(mux)
+	var protocols http.Protocols
+	protocols.SetHTTP1(true)
+	protocols.SetUnencryptedHTTP2(true)
+	httpServer.Config.Protocols = &protocols
+	httpServer.Start()
 	defer httpServer.Close()
 
 	cfg := config.Config{CoreURL: httpServer.URL, LogLevel: "info"}
