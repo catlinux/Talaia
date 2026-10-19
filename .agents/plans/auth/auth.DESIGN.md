@@ -64,6 +64,6 @@ Varios usuarios, roles, passkeys y OIDC (fase 4); código QR en el alta del TOTP
 | # | Alcance | Archivos | Ejecutor |
 |---|---|---|---|
 | A1 ✅ | Migración 0004, paquete `core/internal/auth` (argon2id, TOTP con los vectores del RFC 6238, tokens, AES-GCM con `secrets.key`), métodos del store (usuarios, sesiones, recuperación, auditoría) | `core/internal/auth/**`, `core/internal/store/**` | AgentRelay, alto |
-| A2 | API de autenticación, middleware de sesión, CSRF/Origin, cabeceras, límites, auditoría, `web_dir`, `allowed_origins`, comandos `user create`, `user reset-2fa`, `session revoke-all` | `core/internal/api/**`, `core/internal/config/**`, `core/cmd/**` | AgentRelay, alto |
+| A2 ✅ | API de autenticación, middleware de sesión, CSRF/Origin, cabeceras, límites, auditoría, `web_dir`, `allowed_origins`, comandos `user create`, `user reset-2fa`, `session revoke-all` | `core/internal/api/**`, `core/internal/config/**`, `core/cmd/**` | AgentRelay, alto |
 | A3 | Panel: cliente de autenticación, pantallas de login, alta y verificación del TOTP, códigos de recuperación, cierre de sesión, protección de rutas, i18n ca/es/en, proxy de Vite | `web/**` | AgentRelay, medio |
 | A4 | Prueba real extremo a extremo y documentación EN/ES | docs | Orquestador |

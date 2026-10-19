@@ -10,6 +10,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/jackc/pgx/v5"
+
 	"github.com/catlinux/Talaia/core/internal/ca"
 	"github.com/catlinux/Talaia/core/internal/config"
 	"github.com/catlinux/Talaia/core/internal/store"
@@ -21,14 +23,20 @@ const defaultTokenTTL = 15 * time.Minute
 // commandTimeout bounds the database work of a command.
 const commandTimeout = 30 * time.Second
 
+// cliActor is the audit actor of the console commands.
+const cliActor = "cli"
+
 // printUsage writes the command help.
 func printUsage(w io.Writer) {
 	fmt.Fprint(w, `Usage: talaia-core [command] [options]
 
 Commands:
-  serve                        start the core server (default)
-  token create --name <name>   create a one-time enrollment token
-  server revoke <id>           revoke an enrolled server
+  serve                               start the core server (default)
+  token create --name <name>          create a one-time enrollment token
+  server revoke <id>                  revoke an enrolled server
+  user create --username <name>       create the administrator (asks for the password)
+  user reset-2fa                      clear the second factor of the administrator
+  session revoke-all                  revoke every panel session
 `)
 }
 
@@ -72,6 +80,136 @@ func runServer(args []string, stdout, stderr io.Writer) int {
 		printUsage(stderr)
 		return 2
 	}
+}
+
+func runUser(args []string, in io.Reader, stdout, stderr io.Writer) int {
+	if len(args) == 0 {
+		fmt.Fprintln(stderr, "user: missing subcommand")
+		printUsage(stderr)
+		return 2
+	}
+
+	switch args[0] {
+	case "create":
+		if err := userCreateCommand(args[1:], in, stdout, stderr); err != nil {
+			fmt.Fprintf(stderr, "user create: %v\n", err)
+			return 1
+		}
+		return 0
+	case "reset-2fa":
+		if err := userReset2FACommand(args[1:], stdout, stderr); err != nil {
+			fmt.Fprintf(stderr, "user reset-2fa: %v\n", err)
+			return 1
+		}
+		return 0
+	default:
+		fmt.Fprintf(stderr, "user: unknown subcommand %q\n\n", args[0])
+		printUsage(stderr)
+		return 2
+	}
+}
+
+func runSession(args []string, stdout, stderr io.Writer) int {
+	if len(args) == 0 {
+		fmt.Fprintln(stderr, "session: missing subcommand")
+		printUsage(stderr)
+		return 2
+	}
+
+	switch args[0] {
+	case "revoke-all":
+		if err := sessionRevokeAllCommand(args[1:], stdout, stderr); err != nil {
+			fmt.Fprintf(stderr, "session revoke-all: %v\n", err)
+			return 1
+		}
+		return 0
+	default:
+		fmt.Fprintf(stderr, "session: unknown subcommand %q\n\n", args[0])
+		printUsage(stderr)
+		return 2
+	}
+}
+
+// openCore loads the configuration, opens the database and applies the
+// migrations.
+func openCore(ctx context.Context) (config.Config, *store.Store, error) {
+	cfg, err := config.Load()
+	if err != nil {
+		return config.Config{}, nil, err
+	}
+
+	st, err := store.Open(ctx, cfg.DatabaseURL)
+	if err != nil {
+		return config.Config{}, nil, err
+	}
+	if err := st.Migrate(ctx); err != nil {
+		_ = st.Close()
+		return config.Config{}, nil, err
+	}
+	return cfg, st, nil
+}
+
+// singleUserID returns the id of the only administrator. The store has no list
+// method and this phase allows a single user, so it is one query against the
+// database the command is already using.
+func singleUserID(ctx context.Context, databaseURL string) (string, error) {
+	conn, err := pgx.Connect(ctx, databaseURL)
+	if err != nil {
+		return "", fmt.Errorf("connect to the database: %w", err)
+	}
+	defer func() { _ = conn.Close(ctx) }()
+
+	var id string
+	err = conn.QueryRow(ctx, `SELECT id FROM app_user LIMIT 1`).Scan(&id)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return "", errors.New("there is no user yet: run talaia-core user create first")
+	}
+	if err != nil {
+		return "", fmt.Errorf("look up the user: %w", err)
+	}
+	return id, nil
+}
+
+// sessionRevokeAllCommand revokes every panel session of the only user.
+func sessionRevokeAllCommand(args []string, stdout, stderr io.Writer) error {
+	flags := flag.NewFlagSet("session revoke-all", flag.ContinueOnError)
+	flags.SetOutput(stderr)
+	if err := flags.Parse(args); err != nil {
+		return err
+	}
+	if flags.NArg() != 0 {
+		return errors.New("usage: talaia-core session revoke-all")
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), commandTimeout)
+	defer cancel()
+
+	cfg, st, err := openCore(ctx)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = st.Close() }()
+
+	userID, err := singleUserID(ctx, cfg.DatabaseURL)
+	if err != nil {
+		return err
+	}
+	revoked, err := st.RevokeUserSessions(ctx, userID, "")
+	if err != nil {
+		return err
+	}
+
+	if err := st.AppendAudit(ctx, store.AuditEvent{
+		Actor:   cliActor,
+		Action:  "sessions_revoked",
+		Result:  "success",
+		Details: map[string]any{"count": revoked},
+	}); err != nil {
+		return err
+	}
+
+	fmt.Fprintf(stdout, "revoked %d session(s)\n", revoked)
+	return nil
 }
 
 // tokenCreator is the part of the store the token command needs.

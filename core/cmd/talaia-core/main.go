@@ -16,10 +16,12 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"syscall"
 	"time"
 
 	"github.com/catlinux/Talaia/core/internal/api"
+	"github.com/catlinux/Talaia/core/internal/auth"
 	"github.com/catlinux/Talaia/core/internal/ca"
 	"github.com/catlinux/Talaia/core/internal/config"
 	"github.com/catlinux/Talaia/core/internal/hub"
@@ -56,6 +58,10 @@ func run(args []string, stdout, stderr io.Writer) int {
 		return runToken(rest, stdout, stderr)
 	case "server":
 		return runServer(rest, stdout, stderr)
+	case "user":
+		return runUser(rest, os.Stdin, stdout, stderr)
+	case "session":
+		return runSession(rest, stdout, stderr)
 	default:
 		fmt.Fprintf(stderr, "unknown command %q\n\n", command)
 		printUsage(stderr)
@@ -72,27 +78,58 @@ func splitCommand(args []string) (string, []string) {
 	return args[0], args[1:]
 }
 
-// newPlainRouter serves the health endpoint and the agent stream over plaintext
-// HTTP/2. It is only used in insecure development mode, and it does not mount
-// the enrollment endpoints.
-func newPlainRouter(st *store.Store) http.Handler {
+// panelOptions are the settings of the authentication API and the web panel,
+// shared by the TLS and the insecure development modes.
+type panelOptions struct {
+	Box          *auth.SecretBox
+	WebDir       string
+	Origins      []string
+	TLS          bool
+	Limiter      *api.RateLimiter
+	Now          func() time.Time
+	LockDuration time.Duration
+}
+
+// newCoreRouter returns the handler of the health endpoint, the authentication
+// API and the panel.
+func newCoreRouter(st *store.Store, options panelOptions) http.Handler {
+	return api.NewRouter(api.RouterDeps{
+		DB:       st,
+		WebDir:   options.WebDir,
+		Security: api.SecurityConfig{TLS: options.TLS, Origins: options.Origins},
+		Session:  api.SessionDeps{Store: st, Now: options.Now},
+		Auth: api.AuthDeps{
+			Store:        st,
+			Box:          options.Box,
+			Limiter:      options.Limiter,
+			Now:          options.Now,
+			LockDuration: options.LockDuration,
+		},
+	})
+}
+
+// newPlainRouter serves the health endpoint, the authentication API and the
+// panel over plaintext HTTP/2, plus the agent stream. It is only used in
+// insecure development mode, and it does not mount the enrollment endpoints.
+func newPlainRouter(st *store.Store, options panelOptions) http.Handler {
 	mux := http.NewServeMux()
 
 	path, hubHandler := hub.NewInsecure().Handler()
 	mux.Handle(path, hubHandler)
-	mux.Handle("/", api.NewHandler(st))
+	mux.Handle("/", newCoreRouter(st, options))
 
 	return mux
 }
 
-// newTLSRouter serves the health endpoint, the enrollment endpoints and the
-// agent hub, which requires a client certificate.
-func newTLSRouter(st *store.Store, authority *ca.CA) http.Handler {
-	return newTLSRouterWithHub(st, authority, hub.New(st))
+// newTLSRouter serves the health endpoint, the authentication API, the panel,
+// the enrollment endpoints and the agent hub, which requires a client
+// certificate.
+func newTLSRouter(st *store.Store, authority *ca.CA, options panelOptions) http.Handler {
+	return newTLSRouterWithHub(st, authority, hub.New(st), options)
 }
 
 // newTLSRouterWithHub is newTLSRouter with the hub injected, for the tests.
-func newTLSRouterWithHub(st *store.Store, authority *ca.CA, h *hub.Hub) http.Handler {
+func newTLSRouterWithHub(st *store.Store, authority *ca.CA, h *hub.Hub, options panelOptions) http.Handler {
 	enrollment := api.NewEnrollmentHandler(api.EnrollmentDeps{
 		Store:   st,
 		Signer:  authority,
@@ -107,7 +144,7 @@ func newTLSRouterWithHub(st *store.Store, authority *ca.CA, h *hub.Hub) http.Han
 	mux.Handle("/ca.pem", enrollment)
 	mux.Handle("/enroll", enrollment)
 	mux.Handle("/renew", enrollment)
-	mux.Handle("/", api.NewHandler(st))
+	mux.Handle("/", newCoreRouter(st, options))
 
 	return mux
 }
@@ -185,6 +222,24 @@ func serve() error {
 		IdleTimeout: 60 * time.Second,
 	}
 
+	// The TOTP secrets are sealed with this key, created on first use.
+	key, err := auth.LoadOrCreateKey(filepath.Join(cfg.DataDir, "secrets.key"))
+	if err != nil {
+		return fmt.Errorf("load the secrets key: %w", err)
+	}
+	box, err := auth.NewSecretBox(key)
+	if err != nil {
+		return fmt.Errorf("create the secret box: %w", err)
+	}
+
+	panel := panelOptions{
+		Box:     box,
+		WebDir:  cfg.WebDir,
+		Origins: cfg.AllowedOrigins,
+		TLS:     !cfg.InsecureDev,
+		Limiter: api.NewAuthRateLimiter(),
+	}
+
 	tlsEnabled := !cfg.InsecureDev
 	if tlsEnabled {
 		if err := cfg.ValidateCertificateHosts(); err != nil {
@@ -200,7 +255,7 @@ func serve() error {
 			return err
 		}
 
-		srv.Handler = newTLSRouter(st, authority)
+		srv.Handler = newTLSRouter(st, authority, panel)
 		srv.Protocols = newTLSProtocols()
 		srv.TLSConfig = &tls.Config{
 			MinVersion:   tls.VersionTLS13,
@@ -210,8 +265,8 @@ func serve() error {
 			NextProtos:   []string{"h2", "http/1.1"},
 		}
 	} else {
-		logger.Warn("insecure development mode: no TLS, no authentication")
-		srv.Handler = newPlainRouter(st)
+		logger.Warn("insecure development mode: no TLS and no agent authentication")
+		srv.Handler = newPlainRouter(st, panel)
 		srv.Protocols = newProtocols()
 	}
 

@@ -95,7 +95,7 @@ func TestRunUnknownCommand(t *testing.T) {
 }
 
 func TestRunMissingSubcommands(t *testing.T) {
-	for _, command := range []string{"token", "server"} {
+	for _, command := range []string{"token", "server", "user", "session"} {
 		t.Run(command, func(t *testing.T) {
 			var stdout, stderr bytes.Buffer
 
@@ -110,7 +110,7 @@ func TestRunMissingSubcommands(t *testing.T) {
 }
 
 func TestRunUnknownSubcommands(t *testing.T) {
-	for _, args := range [][]string{{"token", "nope"}, {"server", "nope"}} {
+	for _, args := range [][]string{{"token", "nope"}, {"server", "nope"}, {"user", "nope"}, {"session", "nope"}} {
 		t.Run(strings.Join(args, " "), func(t *testing.T) {
 			var stdout, stderr bytes.Buffer
 

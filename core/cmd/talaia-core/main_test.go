@@ -28,12 +28,28 @@ import (
 	"connectrpc.com/connect/v2/connecthttp"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/catlinux/Talaia/core/internal/auth"
 	"github.com/catlinux/Talaia/core/internal/ca"
 	"github.com/catlinux/Talaia/core/internal/hub"
 	"github.com/catlinux/Talaia/core/internal/store"
 	agentv1 "github.com/catlinux/Talaia/proto/gen/go"
 	"github.com/catlinux/Talaia/proto/gen/go/agentv1connect"
 )
+
+// newTestSecretBox returns a secret box with a key in a temporary directory.
+func newTestSecretBox(t *testing.T) *auth.SecretBox {
+	t.Helper()
+
+	key, err := auth.LoadOrCreateKey(filepath.Join(t.TempDir(), "secrets.key"))
+	if err != nil {
+		t.Fatalf("secrets key: %v", err)
+	}
+	box, err := auth.NewSecretBox(key)
+	if err != nil {
+		t.Fatalf("secret box: %v", err)
+	}
+	return box
+}
 
 // testCore is the core running over TLS against the test database.
 type testCore struct {
@@ -72,7 +88,18 @@ func newTestCore(t *testing.T) *testCore {
 		t.Fatalf("server certificate: %v", err)
 	}
 
-	server := httptest.NewUnstartedServer(newTLSRouterWithHub(st, authority, h))
+	webDir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(webDir, "index.html"), []byte("<!doctype html><title>Talaia panel</title>"), 0o600); err != nil {
+		t.Fatalf("write the panel: %v", err)
+	}
+	panel := panelOptions{
+		Box:     newTestSecretBox(t),
+		WebDir:  webDir,
+		Origins: []string{"https://localhost"},
+		TLS:     true,
+	}
+
+	server := httptest.NewUnstartedServer(newTLSRouterWithHub(st, authority, h, panel))
 	server.TLS = &tls.Config{
 		MinVersion:   tls.VersionTLS13,
 		ClientAuth:   tls.VerifyClientCertIfGiven,
@@ -468,6 +495,113 @@ func TestHubRequiresACertificateAndRejectsRevokedServers(t *testing.T) {
 	client := core.hubClient(t, &enrolled.certificate)
 	if err := core.streamError(t, client, "vps-web-01"); err == nil {
 		t.Fatal("the revoked server could open a stream")
+	}
+}
+
+func TestPanelAndAuthAPIOverTLS(t *testing.T) {
+	core := newTestCore(t)
+	client := core.client(t, nil)
+
+	// The panel answers at the root and for the client-side routes.
+	for _, path := range []string{"/", "/servers/42"} {
+		response, err := client.Get(core.server.URL + path)
+		if err != nil {
+			t.Fatalf("get %s: %v", path, err)
+		}
+		body, err := io.ReadAll(response.Body)
+		_ = response.Body.Close()
+		if err != nil {
+			t.Fatalf("read %s: %v", path, err)
+		}
+		if response.StatusCode != http.StatusOK || !strings.Contains(string(body), "Talaia panel") {
+			t.Errorf("%s = %d %q, want the panel", path, response.StatusCode, body)
+		}
+	}
+
+	// The security headers are there, HSTS included because this is TLS.
+	response, err := client.Get(core.server.URL + "/")
+	if err != nil {
+		t.Fatalf("get the panel: %v", err)
+	}
+	_ = response.Body.Close()
+	if response.Header.Get("Content-Security-Policy") == "" {
+		t.Error("the Content-Security-Policy header is missing")
+	}
+	if got := response.Header.Get("Strict-Transport-Security"); got != "max-age=31536000" {
+		t.Errorf("Strict-Transport-Security = %q", got)
+	}
+
+	// The authentication API answers with a stable code and no caching.
+	response, err = client.Get(core.server.URL + "/api/v1/auth/session")
+	if err != nil {
+		t.Fatalf("get the session: %v", err)
+	}
+	body, err := io.ReadAll(response.Body)
+	_ = response.Body.Close()
+	if err != nil {
+		t.Fatalf("read the session: %v", err)
+	}
+	if response.StatusCode != http.StatusUnauthorized {
+		t.Fatalf("session status = %d, want 401", response.StatusCode)
+	}
+	if !strings.Contains(string(body), "session_required") {
+		t.Errorf("body = %q, want the session_required code", body)
+	}
+	if got := response.Header.Get("Cache-Control"); got != "no-store" {
+		t.Errorf("Cache-Control = %q, want no-store", got)
+	}
+}
+
+func TestPlainRouterServesThePanelAndTheAuthAPI(t *testing.T) {
+	core := newTestCore(t)
+
+	webDir := t.TempDir()
+	index := "<!doctype html><title>Talaia panel</title>"
+	if err := os.WriteFile(filepath.Join(webDir, "index.html"), []byte(index), 0o600); err != nil {
+		t.Fatalf("write the panel: %v", err)
+	}
+
+	panel := panelOptions{
+		Box:     newTestSecretBox(t),
+		WebDir:  webDir,
+		Origins: []string{"http://localhost:5173"},
+		TLS:     false,
+	}
+	server := httptest.NewServer(newPlainRouter(core.store, panel))
+	t.Cleanup(server.Close)
+
+	client := server.Client()
+
+	response, err := client.Get(server.URL + "/")
+	if err != nil {
+		t.Fatalf("get the panel: %v", err)
+	}
+	body, err := io.ReadAll(response.Body)
+	_ = response.Body.Close()
+	if err != nil {
+		t.Fatalf("read the panel: %v", err)
+	}
+	if response.StatusCode != http.StatusOK || !strings.Contains(string(body), "Talaia panel") {
+		t.Errorf("the panel = %d %q", response.StatusCode, body)
+	}
+
+	response, err = client.Get(server.URL + "/api/v1/auth/session")
+	if err != nil {
+		t.Fatalf("get the session: %v", err)
+	}
+	_ = response.Body.Close()
+	if response.StatusCode != http.StatusUnauthorized {
+		t.Errorf("session status = %d, want 401", response.StatusCode)
+	}
+
+	// The enrollment endpoints stay out of the insecure mode.
+	response, err = client.Get(server.URL + "/ca.pem")
+	if err != nil {
+		t.Fatalf("get ca.pem: %v", err)
+	}
+	_ = response.Body.Close()
+	if response.StatusCode != http.StatusNotFound {
+		t.Errorf("ca.pem status = %d, want 404 in insecure mode", response.StatusCode)
 	}
 }
 

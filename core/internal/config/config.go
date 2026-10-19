@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net"
+	"net/url"
 	"os"
 	"strings"
 
@@ -22,6 +23,8 @@ const (
 	DefaultLogLevel = "info"
 	// DefaultDataDir holds the CA, the certificates and the state of the core.
 	DefaultDataDir = "/var/lib/talaia"
+	// DefaultWebDir holds the compiled web panel.
+	DefaultWebDir = "/usr/share/talaia/web"
 )
 
 // Config is the runtime configuration of talaia-core.
@@ -30,9 +33,14 @@ type Config struct {
 	DatabaseURL string
 	LogLevel    string
 	DataDir     string
+	// WebDir is the directory of the compiled panel.
+	WebDir string
 	// PublicHostnames are the names and addresses the server certificate of the
-	// core must be valid for. TLS arrives in task E2.
+	// core must be valid for.
 	PublicHostnames []string
+	// AllowedOrigins are the browser origins the panel may be served from, as
+	// scheme://host[:port]. They are derived from PublicHostnames when unset.
+	AllowedOrigins []string
 	// InsecureDev disables TLS. It must never be used in production.
 	InsecureDev bool
 }
@@ -44,7 +52,9 @@ type fileConfig struct {
 	DatabaseURL     *string   `toml:"database_url"`
 	LogLevel        *string   `toml:"log_level"`
 	DataDir         *string   `toml:"data_dir"`
+	WebDir          *string   `toml:"web_dir"`
 	PublicHostnames *[]string `toml:"public_hostnames"`
+	AllowedOrigins  *[]string `toml:"allowed_origins"`
 	InsecureDev     *bool     `toml:"insecure_dev"`
 }
 
@@ -74,6 +84,7 @@ func load(lookup func(string) (string, bool), defaultPath string) (Config, error
 		Listen:   DefaultListen,
 		LogLevel: DefaultLogLevel,
 		DataDir:  DefaultDataDir,
+		WebDir:   DefaultWebDir,
 	}
 
 	path := defaultPath
@@ -99,8 +110,14 @@ func load(lookup func(string) (string, bool), defaultPath string) (Config, error
 	if value, ok := lookup("TALAIA_DATA_DIR"); ok {
 		cfg.DataDir = value
 	}
+	if value, ok := lookup("TALAIA_WEB_DIR"); ok {
+		cfg.WebDir = value
+	}
 	if value, ok := lookup("TALAIA_PUBLIC_HOSTNAMES"); ok {
 		cfg.PublicHostnames = splitList(value)
+	}
+	if value, ok := lookup("TALAIA_ALLOWED_ORIGINS"); ok {
+		cfg.AllowedOrigins = splitList(value)
 	}
 	if value, ok := lookup("TALAIA_INSECURE_DEV"); ok {
 		insecure, err := parseInsecureDev(value)
@@ -158,8 +175,14 @@ func applyFile(cfg *Config, path string, explicit bool) error {
 	if file.DataDir != nil {
 		cfg.DataDir = *file.DataDir
 	}
+	if file.WebDir != nil {
+		cfg.WebDir = *file.WebDir
+	}
 	if file.PublicHostnames != nil {
 		cfg.PublicHostnames = *file.PublicHostnames
+	}
+	if file.AllowedOrigins != nil {
+		cfg.AllowedOrigins = *file.AllowedOrigins
 	}
 	if file.InsecureDev != nil {
 		cfg.InsecureDev = *file.InsecureDev
@@ -204,6 +227,35 @@ func (c *Config) validate() error {
 	if strings.TrimSpace(c.DataDir) == "" {
 		return errors.New("data_dir is required")
 	}
+	if strings.TrimSpace(c.WebDir) == "" {
+		return errors.New("web_dir is required")
+	}
+
+	// The allowed origins default to the panel's own address; a deployment
+	// behind a proxy can override them.
+	origins := c.AllowedOrigins
+	if len(origins) == 0 {
+		origins = defaultOrigins(c.PublicHostnames, c.Listen, c.InsecureDev)
+	}
+	normalized := make([]string, 0, len(origins))
+	seen := make(map[string]bool, len(origins))
+	for _, origin := range origins {
+		value, err := normalizeOrigin(origin)
+		if err != nil {
+			return err
+		}
+		// Two spellings of the same origin (a trailing slash, the default port)
+		// collapse into one.
+		if seen[value] {
+			continue
+		}
+		seen[value] = true
+		normalized = append(normalized, value)
+	}
+	if len(normalized) == 0 {
+		normalized = nil
+	}
+	c.AllowedOrigins = normalized
 	// Without TLS anyone who reaches the port can impersonate an agent, so the
 	// development mode only listens on the loopback interface.
 	if c.InsecureDev && !isLoopbackListen(c.Listen) {
@@ -230,4 +282,59 @@ func isLoopbackListen(listen string) bool {
 	}
 	ip := net.ParseIP(host)
 	return ip != nil && ip.IsLoopback()
+}
+
+// defaultOrigins derives the allowed browser origins from the public hostnames
+// and the listen address.
+func defaultOrigins(hostnames []string, listen string, insecure bool) []string {
+	origins := make([]string, 0, len(hostnames)+2)
+	port := listenPort(listen)
+
+	for _, host := range hostnames {
+		origins = append(origins, (&url.URL{Scheme: "https", Host: host}).String())
+		if port != "" && port != "443" {
+			origins = append(origins, (&url.URL{Scheme: "https", Host: net.JoinHostPort(host, port)}).String())
+		}
+	}
+	if insecure {
+		// The Vite development server serves the panel and proxies the API.
+		origins = append(origins, "http://localhost:5173", "http://127.0.0.1:5173")
+	}
+	return origins
+}
+
+// listenPort returns the port of a listen address, or "" when it has none.
+func listenPort(listen string) string {
+	_, port, err := net.SplitHostPort(strings.TrimSpace(listen))
+	if err != nil {
+		return ""
+	}
+	return port
+}
+
+// normalizeOrigin checks that an allowed origin is scheme://host[:port] and
+// returns the lower-case form browsers use, without the default port.
+func normalizeOrigin(value string) (string, error) {
+	trimmed := strings.TrimSpace(value)
+	parsed, err := url.Parse(trimmed)
+	if err != nil {
+		return "", fmt.Errorf("invalid allowed origin %q: %w", trimmed, err)
+	}
+	if parsed.Scheme != "http" && parsed.Scheme != "https" {
+		return "", fmt.Errorf("allowed origin %q must start with http:// or https://", trimmed)
+	}
+	if parsed.Host == "" {
+		return "", fmt.Errorf("allowed origin %q has no host", trimmed)
+	}
+	if parsed.User != nil || parsed.RawQuery != "" || parsed.Fragment != "" || (parsed.Path != "" && parsed.Path != "/") {
+		return "", fmt.Errorf("allowed origin %q must be scheme://host[:port] without a path", trimmed)
+	}
+
+	scheme := strings.ToLower(parsed.Scheme)
+	host := strings.ToLower(parsed.Host)
+	defaultPort := map[string]string{"http": ":80", "https": ":443"}[scheme]
+	if defaultPort != "" {
+		host = strings.TrimSuffix(host, defaultPort)
+	}
+	return scheme + "://" + host, nil
 }
