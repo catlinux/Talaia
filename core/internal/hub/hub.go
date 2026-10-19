@@ -21,8 +21,13 @@ import (
 	"github.com/catlinux/Talaia/proto/gen/go/agentv1connect"
 )
 
+// touchInterval is how often at most the hub writes last_seen for a connection.
+const touchInterval = 30 * time.Second
+
 // AgentInfo is a snapshot of a connected agent.
 type AgentInfo struct {
+	// ServerID is the id of the enrolled server; empty in insecure dev mode.
+	ServerID          string
 	Hostname          string
 	AgentVersion      string
 	LastSeen          time.Time
@@ -37,6 +42,13 @@ type AgentInfo struct {
 	RunningContainers int
 	ComposeProjects   int
 	Services          int
+
+	// key is the registry key: the server id with certificates, the hostname
+	// in insecure dev mode.
+	key string
+	// token identifies the connection that wrote this entry, so a stale
+	// connection does not delete the entry of a newer one.
+	token uint64
 }
 
 // applyInventory copies the facts of an inventory message, including the docker
@@ -69,29 +81,50 @@ type agentStream interface {
 type Hub struct {
 	server *connect.Server
 
+	// servers is nil in insecure dev mode: no certificate is checked then.
+	servers ServerStore
+
 	mu     sync.RWMutex
 	agents map[string]AgentInfo
+	tokens uint64
 
 	now func() time.Time
 }
 
-// New returns a Hub ready to be served by Handler.
-func New() *Hub {
+// New returns a Hub that authenticates the agents with their client certificate
+// and keys the registry by server id.
+func New(servers ServerStore) *Hub {
+	return newHub(servers)
+}
+
+// NewInsecure returns a Hub that requires no certificate and keys the registry
+// by hostname. It is only for insecure development mode.
+func NewInsecure() *Hub {
+	return newHub(nil)
+}
+
+func newHub(servers ServerStore) *Hub {
 	h := &Hub{
-		server: connect.NewServer(),
-		agents: make(map[string]AgentInfo),
-		now:    time.Now,
+		server:  connect.NewServer(),
+		servers: servers,
+		agents:  make(map[string]AgentInfo),
+		now:     time.Now,
 	}
 	agentv1connect.RegisterAgentHubHandler(h.server, h)
 	return h
 }
 
 // Handler returns the path of the AgentHub.Connect procedure and the HTTP
-// handler that serves it, ready to be mounted on the main router.
+// handler that serves it. With certificates the handler requires a verified
+// client certificate of an enrolled, not revoked server.
 func (h *Hub) Handler() (path string, handler http.Handler) {
 	mux := http.NewServeMux()
 	connecthttp.Mount(mux, h.server)
-	return agentv1connect.AgentHubConnectProcedure, mux
+
+	if h.servers == nil {
+		return agentv1connect.AgentHubConnectProcedure, mux
+	}
+	return agentv1connect.AgentHubConnectProcedure, authenticate(h.servers, mux)
 }
 
 // Connected returns a copy of the connected agents, ordered by hostname.
@@ -112,7 +145,11 @@ func (h *Hub) Connect(ctx context.Context, stream agentv1connect.AgentHubConnect
 	return h.serve(ctx, stream)
 }
 
-func (h *Hub) serve(_ context.Context, stream agentStream) error {
+func (h *Hub) serve(ctx context.Context, stream agentStream) error {
+	// The server id comes from the client certificate; it is empty in insecure
+	// dev mode, where the registry is keyed by hostname instead.
+	serverID, _ := serverIDFromContext(ctx)
+
 	first, err := stream.Receive()
 	if err != nil {
 		if errors.Is(err, io.EOF) {
@@ -130,17 +167,29 @@ func (h *Hub) serve(_ context.Context, stream agentStream) error {
 		return connect.NewError(connect.CodeInvalidArgument, "inventory hostname is empty")
 	}
 
+	key := hostname
+	if serverID != "" {
+		key = serverID
+	}
+
 	info := AgentInfo{
+		ServerID: serverID,
 		Hostname: hostname,
 		LastSeen: h.now(),
+		key:      key,
+		token:    h.newConnectionToken(),
 	}
 	info.applyInventory(inventory)
 	h.store(info)
-	slog.Info("agent connected", "hostname", hostname, "agent_version", info.AgentVersion)
+	h.touchServer(ctx, serverID)
+	slog.Info("agent connected", "server_id", serverID, "hostname", hostname, "agent_version", info.AgentVersion)
+
 	defer func() {
-		h.remove(hostname)
-		slog.Info("agent disconnected", "hostname", hostname)
+		h.remove(info)
+		slog.Info("agent disconnected", "server_id", serverID, "hostname", hostname)
 	}()
+
+	lastTouch := h.now()
 
 	for {
 		msg, err := stream.Receive()
@@ -156,6 +205,10 @@ func (h *Hub) serve(_ context.Context, stream agentStream) error {
 			heartbeat := msg.GetHeartbeat()
 			info.LastSeen = h.now()
 			h.store(info)
+			if info.LastSeen.Sub(lastTouch) >= touchInterval {
+				lastTouch = info.LastSeen
+				h.touchServer(ctx, serverID)
+			}
 			slog.Debug("heartbeat received", "hostname", hostname, "seq", heartbeat.GetSeq())
 
 			ack := &agentv1.CoreMsg{
@@ -192,14 +245,39 @@ func (h *Hub) serve(_ context.Context, stream agentStream) error {
 	}
 }
 
+// touchServer records that the server has been seen, when the hub has a server
+// store.
+func (h *Hub) touchServer(ctx context.Context, serverID string) {
+	if h.servers == nil || serverID == "" {
+		return
+	}
+	if err := h.servers.TouchServer(ctx, serverID); err != nil {
+		slog.Warn("touch server", "server_id", serverID, "error", err)
+	}
+}
+
 func (h *Hub) store(info AgentInfo) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
-	h.agents[info.Hostname] = info
+	h.agents[info.key] = info
 }
 
-func (h *Hub) remove(hostname string) {
+// remove drops the entry only when it still belongs to this connection, so the
+// previous connection of a reconnecting agent does not remove the new one.
+func (h *Hub) remove(info AgentInfo) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
-	delete(h.agents, hostname)
+
+	current, ok := h.agents[info.key]
+	if ok && current.token == info.token {
+		delete(h.agents, info.key)
+	}
+}
+
+// newConnectionToken identifies a new connection.
+func (h *Hub) newConnectionToken() uint64 {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	h.tokens++
+	return h.tokens
 }

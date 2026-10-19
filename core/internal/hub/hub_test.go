@@ -4,11 +4,13 @@ import (
 	"context"
 	"errors"
 	"io"
+	"sync"
 	"testing"
 	"time"
 
 	"connectrpc.com/connect/v2"
 
+	"github.com/catlinux/Talaia/core/internal/store"
 	agentv1 "github.com/catlinux/Talaia/proto/gen/go"
 )
 
@@ -73,8 +75,149 @@ func waitFor(t *testing.T, condition func() bool) {
 	t.Fatal("condition not met within the timeout")
 }
 
+// fakeServerStore is a ServerStore for the tests.
+type fakeServerStore struct {
+	mu      sync.Mutex
+	servers map[string]store.Server
+	touched []string
+}
+
+func newFakeServerStore(servers ...store.Server) *fakeServerStore {
+	f := &fakeServerStore{servers: make(map[string]store.Server)}
+	for _, server := range servers {
+		f.servers[server.ID] = server
+	}
+	return f
+}
+
+func (f *fakeServerStore) GetServer(_ context.Context, id string) (store.Server, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+
+	server, ok := f.servers[id]
+	if !ok {
+		return store.Server{}, store.ErrNotFound
+	}
+	return server, nil
+}
+
+func (f *fakeServerStore) TouchServer(_ context.Context, id string) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.touched = append(f.touched, id)
+	return nil
+}
+
+func (f *fakeServerStore) touchCount() int {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return len(f.touched)
+}
+
+// storedToken returns the connection token of a registry entry.
+func storedToken(h *Hub, key string) uint64 {
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+	return h.agents[key].token
+}
+
+func TestServeKeysTheRegistryByServerID(t *testing.T) {
+	h := New(newFakeServerStore(store.Server{ID: "server-1"}))
+	stream := newFakeStream()
+	done := make(chan error, 1)
+	go func() {
+		done <- h.serve(withServerID(context.Background(), "server-1"), stream)
+	}()
+
+	stream.in <- inventoryMsg("vps-web-01")
+	waitFor(t, func() bool { return len(h.Connected()) == 1 })
+
+	info := h.Connected()[0]
+	if info.ServerID != "server-1" {
+		t.Errorf("server id = %q, want server-1", info.ServerID)
+	}
+	if info.Hostname != "vps-web-01" {
+		t.Errorf("hostname = %q, want the one from the inventory", info.Hostname)
+	}
+	if _, ok := h.agents["server-1"]; !ok {
+		t.Error("the registry is not keyed by server id")
+	}
+
+	stream.close()
+	waitServe(t, done)
+}
+
+func TestServeKeepsTheNewConnectionWhenTheOldOneEnds(t *testing.T) {
+	h := New(newFakeServerStore(store.Server{ID: "server-1"}))
+
+	first := newFakeStream()
+	firstDone := make(chan error, 1)
+	go func() {
+		firstDone <- h.serve(withServerID(context.Background(), "server-1"), first)
+	}()
+	first.in <- inventoryMsg("vps-web-01")
+	waitFor(t, func() bool { return len(h.Connected()) == 1 })
+	firstToken := storedToken(h, "server-1")
+
+	// The agent reconnects before the old connection has ended.
+	second := newFakeStream()
+	secondDone := make(chan error, 1)
+	go func() {
+		secondDone <- h.serve(withServerID(context.Background(), "server-1"), second)
+	}()
+	second.in <- inventoryMsg("vps-web-01")
+	waitFor(t, func() bool { return storedToken(h, "server-1") != firstToken })
+
+	// The old connection ending must not remove the new entry.
+	first.close()
+	waitServe(t, firstDone)
+	if len(h.Connected()) != 1 {
+		t.Fatal("the old connection removed the entry of the new one")
+	}
+	if storedToken(h, "server-1") == firstToken {
+		t.Fatal("the registry kept the old connection")
+	}
+
+	second.close()
+	waitServe(t, secondDone)
+	if len(h.Connected()) != 0 {
+		t.Fatal("the agent was not removed when the stream ended")
+	}
+}
+
+func TestServeTouchesTheServerAtMostOncePerInterval(t *testing.T) {
+	servers := newFakeServerStore(store.Server{ID: "server-1"})
+	h := New(servers)
+	stream := newFakeStream()
+	done := make(chan error, 1)
+	go func() {
+		done <- h.serve(withServerID(context.Background(), "server-1"), stream)
+	}()
+
+	stream.in <- inventoryMsg("vps-web-01")
+	waitFor(t, func() bool { return len(h.Connected()) == 1 })
+
+	for seq := uint64(1); seq <= 3; seq++ {
+		stream.in <- &agentv1.AgentMsg{
+			Msg: &agentv1.AgentMsg_Heartbeat{Heartbeat: &agentv1.Heartbeat{Seq: seq}},
+		}
+		select {
+		case <-stream.out:
+		case <-time.After(time.Second):
+			t.Fatal("no heartbeat acknowledgement")
+		}
+	}
+
+	if got := servers.touchCount(); got != 1 {
+		t.Errorf("touch calls = %d, want only the one made on connect", got)
+	}
+
+	stream.close()
+	waitServe(t, done)
+}
+
 func TestServeRejectsFirstMessageThatIsNotInventory(t *testing.T) {
-	h := New()
+	h := NewInsecure()
 	stream := newFakeStream()
 	stream.in <- &agentv1.AgentMsg{
 		Msg: &agentv1.AgentMsg_Heartbeat{Heartbeat: &agentv1.Heartbeat{Seq: 1}},
@@ -95,7 +238,7 @@ func TestServeRejectsFirstMessageThatIsNotInventory(t *testing.T) {
 }
 
 func TestServeRegistersAgentAndTracksState(t *testing.T) {
-	h := New()
+	h := NewInsecure()
 	stream := newFakeStream()
 	done := make(chan error, 1)
 	go func() {
@@ -198,5 +341,18 @@ func TestServeRegistersAgentAndTracksState(t *testing.T) {
 	}
 	if connected := h.Connected(); len(connected) != 0 {
 		t.Fatalf("agent was not unregistered: %+v", connected)
+	}
+}
+
+// waitServe waits for a serve call to return and checks that it ended cleanly.
+func waitServe(t *testing.T, done <-chan error) {
+	t.Helper()
+	select {
+	case err := <-done:
+		if err != nil {
+			t.Errorf("serve returned an error: %v", err)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("serve did not return")
 	}
 }

@@ -28,6 +28,7 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 - Fleet screen (mockup 1) with sample data behind an API-client interface, and Fleet/About navigation.
 - Agent inventory of Docker containers, Compose projects and systemd services, re-sent only when it changes.
 - Core enrollment foundation: internal CA (ECDSA P-256), `server` and `enrollment_token` tables, and the commands `talaia-core token create` and `talaia-core server revoke`.
+- Core over TLS 1.3 with mutual authentication: `GET /ca.pem`, `POST /enroll`, `POST /renew`, agent identity taken from the client certificate, and a plaintext `insecure_dev` mode for development.
 
 ### Changed
 

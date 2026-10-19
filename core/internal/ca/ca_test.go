@@ -279,3 +279,37 @@ func TestSignServerCert(t *testing.T) {
 		t.Error("expected an error without hosts")
 	}
 }
+
+func TestValidateCSR(t *testing.T) {
+	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	if err != nil {
+		t.Fatalf("generate key: %v", err)
+	}
+	if err := ValidateCSR(requestCSR(t, key)); err != nil {
+		t.Errorf("valid csr: %v", err)
+	}
+
+	rsaKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		t.Fatalf("generate rsa key: %v", err)
+	}
+	if err := ValidateCSR(requestCSR(t, rsaKey)); err == nil {
+		t.Error("expected an error for a csr with an RSA key")
+	}
+
+	if err := ValidateCSR([]byte("not a pem")); err == nil {
+		t.Error("expected an error for bytes that are not PEM")
+	}
+}
+
+func TestPoolTrustsTheCA(t *testing.T) {
+	authority := newCA(t)
+
+	_, err := authority.cert.Verify(x509.VerifyOptions{
+		Roots:     authority.Pool(),
+		KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageAny},
+	})
+	if err != nil {
+		t.Errorf("the CA certificate must verify against its own pool: %v", err)
+	}
+}

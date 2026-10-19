@@ -40,6 +40,41 @@ func (f *fakeRevoker) RevokeServer(_ context.Context, id string) error {
 	return f.err
 }
 
+func TestSplitCommand(t *testing.T) {
+	tests := []struct {
+		name        string
+		args        []string
+		wantCommand string
+		wantRest    []string
+	}{
+		{name: "no arguments", args: nil, wantCommand: "", wantRest: nil},
+		{name: "serve", args: []string{"serve"}, wantCommand: "serve", wantRest: nil},
+		{
+			name:        "token create",
+			args:        []string{"token", "create", "--name", "vps-1"},
+			wantCommand: "token",
+			wantRest:    []string{"create", "--name", "vps-1"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			command, rest := splitCommand(tt.args)
+			if command != tt.wantCommand {
+				t.Fatalf("command = %q, want %q", command, tt.wantCommand)
+			}
+			if len(rest) != len(tt.wantRest) {
+				t.Fatalf("rest = %v, want %v", rest, tt.wantRest)
+			}
+			for i := range rest {
+				if rest[i] != tt.wantRest[i] {
+					t.Fatalf("rest = %v, want %v", rest, tt.wantRest)
+				}
+			}
+		})
+	}
+}
+
 func TestRunUnknownCommand(t *testing.T) {
 	var stdout, stderr bytes.Buffer
 

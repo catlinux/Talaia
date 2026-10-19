@@ -95,6 +95,41 @@ func (c *CA) CertPEM() []byte {
 	return c.certPEM
 }
 
+// Pool returns a certificate pool holding the CA certificate, for TLS.
+func (c *CA) Pool() *x509.CertPool {
+	pool := x509.NewCertPool()
+	pool.AddCert(c.cert)
+	return pool
+}
+
+// ValidateCSR checks that the bytes are a PEM certificate request with a valid
+// signature and an ECDSA P-256 public key.
+func ValidateCSR(csrPEM []byte) error {
+	_, err := parseCSR(csrPEM)
+	return err
+}
+
+// parseCSR decodes and validates a certificate request.
+func parseCSR(csrPEM []byte) (*x509.CertificateRequest, error) {
+	block, _ := pem.Decode(csrPEM)
+	if block == nil {
+		return nil, errors.New("csr is not PEM encoded")
+	}
+	csr, err := x509.ParseCertificateRequest(block.Bytes)
+	if err != nil {
+		return nil, fmt.Errorf("parse csr: %w", err)
+	}
+	if err := csr.CheckSignature(); err != nil {
+		return nil, fmt.Errorf("csr signature: %w", err)
+	}
+
+	publicKey, ok := csr.PublicKey.(*ecdsa.PublicKey)
+	if !ok || publicKey.Curve != elliptic.P256() {
+		return nil, errors.New("the csr must contain an ECDSA P-256 public key")
+	}
+	return csr, nil
+}
+
 // SignServerCert signs the TLS certificate of the core for the given hosts
 // (DNS names or IP addresses) and public key.
 func (c *CA) SignServerCert(hosts []string, pub crypto.PublicKey, validity time.Duration) ([]byte, error) {
@@ -141,20 +176,13 @@ func (c *CA) SignClientCert(csrPEM []byte, serverID string, validity time.Durati
 		return nil, time.Time{}, "", errors.New("validity must be positive")
 	}
 
-	block, _ := pem.Decode(csrPEM)
-	if block == nil {
-		return nil, time.Time{}, "", errors.New("csr is not PEM encoded")
-	}
-	csr, err := x509.ParseCertificateRequest(block.Bytes)
+	csr, err := parseCSR(csrPEM)
 	if err != nil {
-		return nil, time.Time{}, "", fmt.Errorf("parse csr: %w", err)
-	}
-	if err := csr.CheckSignature(); err != nil {
-		return nil, time.Time{}, "", fmt.Errorf("csr signature: %w", err)
+		return nil, time.Time{}, "", err
 	}
 
 	publicKey, ok := csr.PublicKey.(*ecdsa.PublicKey)
-	if !ok || publicKey.Curve != elliptic.P256() {
+	if !ok {
 		return nil, time.Time{}, "", errors.New("the csr must contain an ECDSA P-256 public key")
 	}
 

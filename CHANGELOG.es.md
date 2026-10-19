@@ -28,6 +28,7 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 - Pantalla de flota (maqueta 1) con datos de ejemplo tras una interfaz de cliente de API, y navegación Flota/Acerca de.
 - Inventario del agente con contenedores Docker, proyectos Compose y servicios systemd, reenviado solo cuando cambia.
 - Base del enrolamiento en el core: CA interna (ECDSA P-256), tablas `server` y `enrollment_token`, y los comandos `talaia-core token create` y `talaia-core server revoke`.
+- Core sobre TLS 1.3 con autenticación mutua: `GET /ca.pem`, `POST /enroll`, `POST /renew`, identidad del agente tomada del certificado de cliente y modo `insecure_dev` sin cifrar para desarrollo.
 
 ### Cambiado
 
