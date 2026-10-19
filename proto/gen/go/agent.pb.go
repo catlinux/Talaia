@@ -307,8 +307,14 @@ type Inventory struct {
 	AgentVersion  string                 `protobuf:"bytes,6,opt,name=agent_version,json=agentVersion,proto3" json:"agent_version,omitempty"`
 	CpuCount      uint32                 `protobuf:"varint,7,opt,name=cpu_count,json=cpuCount,proto3" json:"cpu_count,omitempty"`
 	MemTotalBytes uint64                 `protobuf:"varint,8,opt,name=mem_total_bytes,json=memTotalBytes,proto3" json:"mem_total_bytes,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	// False when the Docker socket is missing or unreachable; the lists below are then empty.
+	DockerAvailable bool              `protobuf:"varint,9,opt,name=docker_available,json=dockerAvailable,proto3" json:"docker_available,omitempty"`
+	DockerVersion   string            `protobuf:"bytes,10,opt,name=docker_version,json=dockerVersion,proto3" json:"docker_version,omitempty"`
+	Containers      []*Container      `protobuf:"bytes,11,rep,name=containers,proto3" json:"containers,omitempty"`
+	ComposeProjects []*ComposeProject `protobuf:"bytes,12,rep,name=compose_projects,json=composeProjects,proto3" json:"compose_projects,omitempty"`
+	Services        []*SystemdUnit    `protobuf:"bytes,13,rep,name=services,proto3" json:"services,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
 }
 
 func (x *Inventory) Reset() {
@@ -397,6 +403,285 @@ func (x *Inventory) GetMemTotalBytes() uint64 {
 	return 0
 }
 
+func (x *Inventory) GetDockerAvailable() bool {
+	if x != nil {
+		return x.DockerAvailable
+	}
+	return false
+}
+
+func (x *Inventory) GetDockerVersion() string {
+	if x != nil {
+		return x.DockerVersion
+	}
+	return ""
+}
+
+func (x *Inventory) GetContainers() []*Container {
+	if x != nil {
+		return x.Containers
+	}
+	return nil
+}
+
+func (x *Inventory) GetComposeProjects() []*ComposeProject {
+	if x != nil {
+		return x.ComposeProjects
+	}
+	return nil
+}
+
+func (x *Inventory) GetServices() []*SystemdUnit {
+	if x != nil {
+		return x.Services
+	}
+	return nil
+}
+
+type Container struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	Id             string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`     // short id (12 chars)
+	Name           string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"` // without the leading slash
+	Image          string                 `protobuf:"bytes,3,opt,name=image,proto3" json:"image,omitempty"`
+	State          string                 `protobuf:"bytes,4,opt,name=state,proto3" json:"state,omitempty"`                                         // running | exited | paused | restarting | created | dead
+	Status         string                 `protobuf:"bytes,5,opt,name=status,proto3" json:"status,omitempty"`                                       // human readable, as reported by Docker
+	ComposeProject string                 `protobuf:"bytes,6,opt,name=compose_project,json=composeProject,proto3" json:"compose_project,omitempty"` // empty when not part of a Compose project
+	ComposeService string                 `protobuf:"bytes,7,opt,name=compose_service,json=composeService,proto3" json:"compose_service,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *Container) Reset() {
+	*x = Container{}
+	mi := &file_agent_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Container) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Container) ProtoMessage() {}
+
+func (x *Container) ProtoReflect() protoreflect.Message {
+	mi := &file_agent_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Container.ProtoReflect.Descriptor instead.
+func (*Container) Descriptor() ([]byte, []int) {
+	return file_agent_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *Container) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *Container) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *Container) GetImage() string {
+	if x != nil {
+		return x.Image
+	}
+	return ""
+}
+
+func (x *Container) GetState() string {
+	if x != nil {
+		return x.State
+	}
+	return ""
+}
+
+func (x *Container) GetStatus() string {
+	if x != nil {
+		return x.Status
+	}
+	return ""
+}
+
+func (x *Container) GetComposeProject() string {
+	if x != nil {
+		return x.ComposeProject
+	}
+	return ""
+}
+
+func (x *Container) GetComposeService() string {
+	if x != nil {
+		return x.ComposeService
+	}
+	return ""
+}
+
+type ComposeProject struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	Name           string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	WorkingDir     string                 `protobuf:"bytes,2,opt,name=working_dir,json=workingDir,proto3" json:"working_dir,omitempty"`
+	ConfigFiles    []string               `protobuf:"bytes,3,rep,name=config_files,json=configFiles,proto3" json:"config_files,omitempty"`
+	ContainerCount uint32                 `protobuf:"varint,4,opt,name=container_count,json=containerCount,proto3" json:"container_count,omitempty"`
+	RunningCount   uint32                 `protobuf:"varint,5,opt,name=running_count,json=runningCount,proto3" json:"running_count,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *ComposeProject) Reset() {
+	*x = ComposeProject{}
+	mi := &file_agent_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ComposeProject) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ComposeProject) ProtoMessage() {}
+
+func (x *ComposeProject) ProtoReflect() protoreflect.Message {
+	mi := &file_agent_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ComposeProject.ProtoReflect.Descriptor instead.
+func (*ComposeProject) Descriptor() ([]byte, []int) {
+	return file_agent_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *ComposeProject) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *ComposeProject) GetWorkingDir() string {
+	if x != nil {
+		return x.WorkingDir
+	}
+	return ""
+}
+
+func (x *ComposeProject) GetConfigFiles() []string {
+	if x != nil {
+		return x.ConfigFiles
+	}
+	return nil
+}
+
+func (x *ComposeProject) GetContainerCount() uint32 {
+	if x != nil {
+		return x.ContainerCount
+	}
+	return 0
+}
+
+func (x *ComposeProject) GetRunningCount() uint32 {
+	if x != nil {
+		return x.RunningCount
+	}
+	return 0
+}
+
+type SystemdUnit struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"` // e.g. "docker.service"
+	Description   string                 `protobuf:"bytes,2,opt,name=description,proto3" json:"description,omitempty"`
+	LoadState     string                 `protobuf:"bytes,3,opt,name=load_state,json=loadState,proto3" json:"load_state,omitempty"`       // loaded | not-found | masked ...
+	ActiveState   string                 `protobuf:"bytes,4,opt,name=active_state,json=activeState,proto3" json:"active_state,omitempty"` // active | inactive | failed ...
+	SubState      string                 `protobuf:"bytes,5,opt,name=sub_state,json=subState,proto3" json:"sub_state,omitempty"`          // running | exited | dead | failed ...
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SystemdUnit) Reset() {
+	*x = SystemdUnit{}
+	mi := &file_agent_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SystemdUnit) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SystemdUnit) ProtoMessage() {}
+
+func (x *SystemdUnit) ProtoReflect() protoreflect.Message {
+	mi := &file_agent_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SystemdUnit.ProtoReflect.Descriptor instead.
+func (*SystemdUnit) Descriptor() ([]byte, []int) {
+	return file_agent_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *SystemdUnit) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *SystemdUnit) GetDescription() string {
+	if x != nil {
+		return x.Description
+	}
+	return ""
+}
+
+func (x *SystemdUnit) GetLoadState() string {
+	if x != nil {
+		return x.LoadState
+	}
+	return ""
+}
+
+func (x *SystemdUnit) GetActiveState() string {
+	if x != nil {
+		return x.ActiveState
+	}
+	return ""
+}
+
+func (x *SystemdUnit) GetSubState() string {
+	if x != nil {
+		return x.SubState
+	}
+	return ""
+}
+
 type Metrics struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	SampledAt      *timestamppb.Timestamp `protobuf:"bytes,1,opt,name=sampled_at,json=sampledAt,proto3" json:"sampled_at,omitempty"`
@@ -414,7 +699,7 @@ type Metrics struct {
 
 func (x *Metrics) Reset() {
 	*x = Metrics{}
-	mi := &file_agent_proto_msgTypes[5]
+	mi := &file_agent_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -426,7 +711,7 @@ func (x *Metrics) String() string {
 func (*Metrics) ProtoMessage() {}
 
 func (x *Metrics) ProtoReflect() protoreflect.Message {
-	mi := &file_agent_proto_msgTypes[5]
+	mi := &file_agent_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -439,7 +724,7 @@ func (x *Metrics) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Metrics.ProtoReflect.Descriptor instead.
 func (*Metrics) Descriptor() ([]byte, []int) {
-	return file_agent_proto_rawDescGZIP(), []int{5}
+	return file_agent_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *Metrics) GetSampledAt() *timestamppb.Timestamp {
@@ -516,7 +801,7 @@ const file_agent_proto_rawDesc = "" +
 	"\x03seq\x18\x01 \x01(\x04R\x03seq\x123\n" +
 	"\asent_at\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\x06sentAt\" \n" +
 	"\fHeartbeatAck\x12\x10\n" +
-	"\x03seq\x18\x01 \x01(\x04R\x03seq\"\xf5\x01\n" +
+	"\x03seq\x18\x01 \x01(\x04R\x03seq\"\x89\x04\n" +
 	"\tInventory\x12\x1a\n" +
 	"\bhostname\x18\x01 \x01(\tR\bhostname\x12\x17\n" +
 	"\aos_name\x18\x02 \x01(\tR\x06osName\x12\x1d\n" +
@@ -526,7 +811,37 @@ const file_agent_proto_rawDesc = "" +
 	"\x04arch\x18\x05 \x01(\tR\x04arch\x12#\n" +
 	"\ragent_version\x18\x06 \x01(\tR\fagentVersion\x12\x1b\n" +
 	"\tcpu_count\x18\a \x01(\rR\bcpuCount\x12&\n" +
-	"\x0fmem_total_bytes\x18\b \x01(\x04R\rmemTotalBytes\"\xbd\x02\n" +
+	"\x0fmem_total_bytes\x18\b \x01(\x04R\rmemTotalBytes\x12)\n" +
+	"\x10docker_available\x18\t \x01(\bR\x0fdockerAvailable\x12%\n" +
+	"\x0edocker_version\x18\n" +
+	" \x01(\tR\rdockerVersion\x12:\n" +
+	"\n" +
+	"containers\x18\v \x03(\v2\x1a.talaia.agent.v1.ContainerR\n" +
+	"containers\x12J\n" +
+	"\x10compose_projects\x18\f \x03(\v2\x1f.talaia.agent.v1.ComposeProjectR\x0fcomposeProjects\x128\n" +
+	"\bservices\x18\r \x03(\v2\x1c.talaia.agent.v1.SystemdUnitR\bservices\"\xc5\x01\n" +
+	"\tContainer\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
+	"\x04name\x18\x02 \x01(\tR\x04name\x12\x14\n" +
+	"\x05image\x18\x03 \x01(\tR\x05image\x12\x14\n" +
+	"\x05state\x18\x04 \x01(\tR\x05state\x12\x16\n" +
+	"\x06status\x18\x05 \x01(\tR\x06status\x12'\n" +
+	"\x0fcompose_project\x18\x06 \x01(\tR\x0ecomposeProject\x12'\n" +
+	"\x0fcompose_service\x18\a \x01(\tR\x0ecomposeService\"\xb6\x01\n" +
+	"\x0eComposeProject\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1f\n" +
+	"\vworking_dir\x18\x02 \x01(\tR\n" +
+	"workingDir\x12!\n" +
+	"\fconfig_files\x18\x03 \x03(\tR\vconfigFiles\x12'\n" +
+	"\x0fcontainer_count\x18\x04 \x01(\rR\x0econtainerCount\x12#\n" +
+	"\rrunning_count\x18\x05 \x01(\rR\frunningCount\"\xa2\x01\n" +
+	"\vSystemdUnit\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12 \n" +
+	"\vdescription\x18\x02 \x01(\tR\vdescription\x12\x1d\n" +
+	"\n" +
+	"load_state\x18\x03 \x01(\tR\tloadState\x12!\n" +
+	"\factive_state\x18\x04 \x01(\tR\vactiveState\x12\x1b\n" +
+	"\tsub_state\x18\x05 \x01(\tR\bsubState\"\xbd\x02\n" +
 	"\aMetrics\x129\n" +
 	"\n" +
 	"sampled_at\x18\x01 \x01(\v2\x1a.google.protobuf.TimestampR\tsampledAt\x12\x1a\n" +
@@ -557,30 +872,36 @@ func file_agent_proto_rawDescGZIP() []byte {
 	return file_agent_proto_rawDescData
 }
 
-var file_agent_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
+var file_agent_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
 var file_agent_proto_goTypes = []any{
 	(*CoreMsg)(nil),               // 0: talaia.agent.v1.CoreMsg
 	(*AgentMsg)(nil),              // 1: talaia.agent.v1.AgentMsg
 	(*Heartbeat)(nil),             // 2: talaia.agent.v1.Heartbeat
 	(*HeartbeatAck)(nil),          // 3: talaia.agent.v1.HeartbeatAck
 	(*Inventory)(nil),             // 4: talaia.agent.v1.Inventory
-	(*Metrics)(nil),               // 5: talaia.agent.v1.Metrics
-	(*timestamppb.Timestamp)(nil), // 6: google.protobuf.Timestamp
+	(*Container)(nil),             // 5: talaia.agent.v1.Container
+	(*ComposeProject)(nil),        // 6: talaia.agent.v1.ComposeProject
+	(*SystemdUnit)(nil),           // 7: talaia.agent.v1.SystemdUnit
+	(*Metrics)(nil),               // 8: talaia.agent.v1.Metrics
+	(*timestamppb.Timestamp)(nil), // 9: google.protobuf.Timestamp
 }
 var file_agent_proto_depIdxs = []int32{
-	3, // 0: talaia.agent.v1.CoreMsg.heartbeat_ack:type_name -> talaia.agent.v1.HeartbeatAck
-	2, // 1: talaia.agent.v1.AgentMsg.heartbeat:type_name -> talaia.agent.v1.Heartbeat
-	5, // 2: talaia.agent.v1.AgentMsg.metrics:type_name -> talaia.agent.v1.Metrics
-	4, // 3: talaia.agent.v1.AgentMsg.inventory:type_name -> talaia.agent.v1.Inventory
-	6, // 4: talaia.agent.v1.Heartbeat.sent_at:type_name -> google.protobuf.Timestamp
-	6, // 5: talaia.agent.v1.Metrics.sampled_at:type_name -> google.protobuf.Timestamp
-	1, // 6: talaia.agent.v1.AgentHub.Connect:input_type -> talaia.agent.v1.AgentMsg
-	0, // 7: talaia.agent.v1.AgentHub.Connect:output_type -> talaia.agent.v1.CoreMsg
-	7, // [7:8] is the sub-list for method output_type
-	6, // [6:7] is the sub-list for method input_type
-	6, // [6:6] is the sub-list for extension type_name
-	6, // [6:6] is the sub-list for extension extendee
-	0, // [0:6] is the sub-list for field type_name
+	3,  // 0: talaia.agent.v1.CoreMsg.heartbeat_ack:type_name -> talaia.agent.v1.HeartbeatAck
+	2,  // 1: talaia.agent.v1.AgentMsg.heartbeat:type_name -> talaia.agent.v1.Heartbeat
+	8,  // 2: talaia.agent.v1.AgentMsg.metrics:type_name -> talaia.agent.v1.Metrics
+	4,  // 3: talaia.agent.v1.AgentMsg.inventory:type_name -> talaia.agent.v1.Inventory
+	9,  // 4: talaia.agent.v1.Heartbeat.sent_at:type_name -> google.protobuf.Timestamp
+	5,  // 5: talaia.agent.v1.Inventory.containers:type_name -> talaia.agent.v1.Container
+	6,  // 6: talaia.agent.v1.Inventory.compose_projects:type_name -> talaia.agent.v1.ComposeProject
+	7,  // 7: talaia.agent.v1.Inventory.services:type_name -> talaia.agent.v1.SystemdUnit
+	9,  // 8: talaia.agent.v1.Metrics.sampled_at:type_name -> google.protobuf.Timestamp
+	1,  // 9: talaia.agent.v1.AgentHub.Connect:input_type -> talaia.agent.v1.AgentMsg
+	0,  // 10: talaia.agent.v1.AgentHub.Connect:output_type -> talaia.agent.v1.CoreMsg
+	10, // [10:11] is the sub-list for method output_type
+	9,  // [9:10] is the sub-list for method input_type
+	9,  // [9:9] is the sub-list for extension type_name
+	9,  // [9:9] is the sub-list for extension extendee
+	0,  // [0:9] is the sub-list for field type_name
 }
 
 func init() { file_agent_proto_init() }
@@ -602,7 +923,7 @@ func file_agent_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_agent_proto_rawDesc), len(file_agent_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   6,
+			NumMessages:   9,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

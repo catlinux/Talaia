@@ -53,6 +53,38 @@ message Inventory {
   string agent_version = 6;
   uint32 cpu_count = 7;
   uint64 mem_total_bytes = 8;
+  // False when the Docker socket is missing or unreachable; the lists below are then empty.
+  bool docker_available = 9;
+  string docker_version = 10;
+  repeated Container containers = 11;
+  repeated ComposeProject compose_projects = 12;
+  repeated SystemdUnit services = 13;
+}
+
+message Container {
+  string id = 1;              // short id (12 chars)
+  string name = 2;            // without the leading slash
+  string image = 3;
+  string state = 4;           // running | exited | paused | restarting | created | dead
+  string status = 5;          // human readable, as reported by Docker
+  string compose_project = 6; // empty when not part of a Compose project
+  string compose_service = 7;
+}
+
+message ComposeProject {
+  string name = 1;
+  string working_dir = 2;
+  repeated string config_files = 3;
+  uint32 container_count = 4;
+  uint32 running_count = 5;
+}
+
+message SystemdUnit {
+  string name = 1;         // e.g. "docker.service"
+  string description = 2;
+  string load_state = 3;   // loaded | not-found | masked ...
+  string active_state = 4; // active | inactive | failed ...
+  string sub_state = 5;    // running | exited | dead | failed ...
 }
 
 message Metrics {
