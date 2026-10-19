@@ -67,6 +67,7 @@ describe('panel authentication', () => {
     expect(
       screen.getByRole('link', { name: 'Open the authenticator app' }).getAttribute('href'),
     ).toBe('otpauth://totp/Talaia:admin?secret=JBSWY3DPEHPK3PXP')
+    expect(screen.getByRole('img', { name: 'QR code for the authenticator app' })).toBeTruthy()
 
     fireEvent.change(screen.getByLabelText('Six-digit code'), { target: { value: '12a3456' } })
     fireEvent.submit(screen.getByRole('form'))

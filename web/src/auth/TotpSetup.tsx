@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 
 import type { TotpSetup as Setup } from '../api/auth'
 import { errorMessage } from './AuthGate'
+import { QrCode } from './QrCode'
 
 export interface TotpSetupProps {
   start: () => Promise<Setup>
@@ -73,6 +74,7 @@ export function TotpSetup({ start, confirm }: TotpSetupProps) {
         ) : (
           <form aria-labelledby="setup-title" onSubmit={submit}>
             <p className="auth__intro">{t('auth:setup.steps')}</p>
+            <QrCode value={setup.uri} label={t('auth:setup.qrLabel')} />
             <p className="auth__label" id="setup-secret-label">
               {t('auth:setup.secretLabel')}
             </p>

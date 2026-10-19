@@ -85,6 +85,15 @@
   letter-spacing: 0.12em;
 }
 
+.auth__qr {
+  display: block;
+  width: 200px;
+  max-width: 100%;
+  height: auto;
+  margin: 0 auto 16px;
+  border-radius: 6px;
+}
+
 .auth__secret {
   display: block;
   padding: 10px 12px;
