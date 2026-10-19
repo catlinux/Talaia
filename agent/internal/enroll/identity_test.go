@@ -1,6 +1,7 @@
 package enroll
 
 import (
+	"bytes"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
@@ -13,6 +14,7 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -112,32 +114,57 @@ func (i *testIssuer) issueServer(ips ...net.IP) (tls.Certificate, error) {
 	return tls.Certificate{Certificate: [][]byte{der}, PrivateKey: key, Leaf: leaf}, nil
 }
 
-// writeTestIdentity writes the identity files and loads the identity.
-func writeTestIdentity(t *testing.T, dir string, issuer *testIssuer, serverID string, notBefore, notAfter time.Time) *Identity {
+// clientFiles issues a client certificate and its private key for serverID.
+func (i *testIssuer) clientFiles(t *testing.T, serverID string, notBefore, notAfter time.Time) (certPEM, keyPEM []byte) {
 	t.Helper()
 
 	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	if err != nil {
 		t.Fatalf("generate key: %v", err)
 	}
-	certPEM, err := issuer.issue(serverID, &key.PublicKey, x509.ExtKeyUsageClientAuth, notBefore, notAfter)
+	certPEM, err = i.issue(serverID, &key.PublicKey, x509.ExtKeyUsageClientAuth, notBefore, notAfter)
 	if err != nil {
 		t.Fatalf("issue certificate: %v", err)
 	}
-	keyPEM, err := marshalKey(key)
+	keyPEM, err = marshalKey(key)
 	if err != nil {
 		t.Fatalf("marshal key: %v", err)
 	}
+	return certPEM, keyPEM
+}
+
+// writeFiles writes the given files into dir, creating it.
+func writeFiles(t *testing.T, dir string, files map[string][]byte) {
+	t.Helper()
 
 	if err := os.MkdirAll(dir, dirMode); err != nil {
 		t.Fatalf("create dir: %v", err)
 	}
-	files := map[string][]byte{keyFileName: keyPEM, certFileName: certPEM, caFileName: issuer.certPEM}
 	for name, data := range files {
-		if err := os.WriteFile(filepath.Join(dir, name), data, keyMode); err != nil {
+		if err := os.WriteFile(filepath.Join(dir, name), data, identityMode); err != nil {
 			t.Fatalf("write %s: %v", name, err)
 		}
 	}
+}
+
+// requireNoFile fails when the file exists.
+func requireNoFile(t *testing.T, dir, name string) {
+	t.Helper()
+
+	if _, err := os.Stat(filepath.Join(dir, name)); !errors.Is(err, os.ErrNotExist) {
+		t.Errorf("%s must not exist", filepath.Join(dir, name))
+	}
+}
+
+// writeTestIdentity writes an identity in the current layout and loads it.
+func writeTestIdentity(t *testing.T, dir string, issuer *testIssuer, serverID string, notBefore, notAfter time.Time) *Identity {
+	t.Helper()
+
+	certPEM, keyPEM := issuer.clientFiles(t, serverID, notBefore, notAfter)
+	writeFiles(t, dir, map[string][]byte{
+		identityFileName: joinIdentity(keyPEM, certPEM),
+		caFileName:       issuer.certPEM,
+	})
 
 	identity, err := LoadIdentity(dir)
 	if err != nil {
@@ -146,9 +173,167 @@ func writeTestIdentity(t *testing.T, dir string, issuer *testIssuer, serverID st
 	return identity
 }
 
+// writeLegacyIdentity writes an identity in the first layout, key and
+// certificate apart.
+func writeLegacyIdentity(t *testing.T, dir string, issuer *testIssuer, serverID string, notBefore, notAfter time.Time) {
+	t.Helper()
+
+	certPEM, keyPEM := issuer.clientFiles(t, serverID, notBefore, notAfter)
+	writeFiles(t, dir, map[string][]byte{
+		legacyKeyFileName:  keyPEM,
+		legacyCertFileName: certPEM,
+		caFileName:         issuer.certPEM,
+	})
+}
+
 func TestLoadIdentityNotEnrolled(t *testing.T) {
 	if _, err := LoadIdentity(t.TempDir()); !errors.Is(err, ErrNotEnrolled) {
 		t.Fatalf("error = %v, want ErrNotEnrolled", err)
+	}
+}
+
+func TestIdentitySaveLoadRoundTrip(t *testing.T) {
+	issuer := newTestIssuer(t)
+	dir := filepath.Join(t.TempDir(), "certs")
+	now := time.Now()
+	identity := writeTestIdentity(t, dir, issuer, "server-1", now, now.Add(24*time.Hour))
+
+	// A renewal replaces the file: the key and the certificate come from it, in
+	// this order.
+	certPEM, keyPEM := issuer.clientFiles(t, "server-2", now, now.Add(48*time.Hour))
+	if err := identity.save(keyPEM, certPEM); err != nil {
+		t.Fatalf("save: %v", err)
+	}
+
+	reloaded, err := LoadIdentity(dir)
+	if err != nil {
+		t.Fatalf("load identity: %v", err)
+	}
+	if reloaded.ServerID() != "server-2" {
+		t.Errorf("server id = %q, want server-2", reloaded.ServerID())
+	}
+
+	stored, err := os.ReadFile(filepath.Join(dir, identityFileName))
+	if err != nil {
+		t.Fatalf("read %s: %v", identityFileName, err)
+	}
+	if !bytes.HasPrefix(stored, bytes.TrimRight(keyPEM, "\r\n")) {
+		t.Error("the identity file must start with the private key")
+	}
+	if !bytes.HasPrefix(stored, []byte("-----BEGIN PRIVATE KEY-----")) {
+		t.Error("the key must be a PKCS#8 PRIVATE KEY block")
+	}
+	if !bytes.HasSuffix(stored, certPEM) {
+		t.Error("the identity file must end with the certificate")
+	}
+}
+
+func TestLoadIdentityMigratesLegacyFiles(t *testing.T) {
+	issuer := newTestIssuer(t)
+	dir := filepath.Join(t.TempDir(), "certs")
+	now := time.Now()
+	writeLegacyIdentity(t, dir, issuer, "server-1", now, now.Add(24*time.Hour))
+
+	identity, err := LoadIdentity(dir)
+	if err != nil {
+		t.Fatalf("load identity: %v", err)
+	}
+	if identity.ServerID() != "server-1" {
+		t.Errorf("server id = %q, want server-1", identity.ServerID())
+	}
+
+	if _, err := os.Stat(filepath.Join(dir, identityFileName)); err != nil {
+		t.Errorf("%s was not written: %v", identityFileName, err)
+	}
+	for _, name := range []string{legacyKeyFileName, legacyCertFileName} {
+		requireNoFile(t, dir, name)
+	}
+
+	// The migrated identity loads again, now from the single file.
+	if _, err := LoadIdentity(dir); err != nil {
+		t.Fatalf("load the migrated identity: %v", err)
+	}
+}
+
+func TestLoadIdentityDoesNotMigrateABrokenLegacyPair(t *testing.T) {
+	issuer := newTestIssuer(t)
+	dir := filepath.Join(t.TempDir(), "certs")
+	now := time.Now()
+	writeLegacyIdentity(t, dir, issuer, "server-1", now, now.Add(24*time.Hour))
+
+	// The key belongs to another identity.
+	_, otherKeyPEM := issuer.clientFiles(t, "server-2", now, now.Add(24*time.Hour))
+	if err := os.WriteFile(filepath.Join(dir, legacyKeyFileName), otherKeyPEM, identityMode); err != nil {
+		t.Fatalf("write %s: %v", legacyKeyFileName, err)
+	}
+
+	_, err := LoadIdentity(dir)
+	if err == nil || errors.Is(err, ErrNotEnrolled) {
+		t.Fatalf("error = %v, want an error that is not ErrNotEnrolled", err)
+	}
+	if !strings.Contains(err.Error(), legacyKeyFileName) {
+		t.Errorf("error = %v, must name %s", err, legacyKeyFileName)
+	}
+
+	// Nothing was migrated and the legacy files are still there.
+	requireNoFile(t, dir, identityFileName)
+	for _, name := range []string{legacyKeyFileName, legacyCertFileName} {
+		if _, err := os.Stat(filepath.Join(dir, name)); err != nil {
+			t.Errorf("the legacy %s was removed: %v", name, err)
+		}
+	}
+}
+
+func TestLoadIdentityIncompleteLegacyPair(t *testing.T) {
+	issuer := newTestIssuer(t)
+	dir := filepath.Join(t.TempDir(), "certs")
+	now := time.Now()
+	_, keyPEM := issuer.clientFiles(t, "server-1", now, now.Add(24*time.Hour))
+	writeFiles(t, dir, map[string][]byte{legacyKeyFileName: keyPEM, caFileName: issuer.certPEM})
+
+	_, err := LoadIdentity(dir)
+	if err == nil || errors.Is(err, ErrNotEnrolled) {
+		t.Fatalf("error = %v, want an error that is not ErrNotEnrolled", err)
+	}
+	if !strings.Contains(err.Error(), legacyCertFileName) {
+		t.Errorf("error = %v, must name %s", err, legacyCertFileName)
+	}
+}
+
+func TestLoadIdentityCorruptIdentityFile(t *testing.T) {
+	issuer := newTestIssuer(t)
+	dir := filepath.Join(t.TempDir(), "certs")
+	writeFiles(t, dir, map[string][]byte{
+		identityFileName: []byte("this is not a certificate\n"),
+		caFileName:       issuer.certPEM,
+	})
+
+	_, err := LoadIdentity(dir)
+	if err == nil || errors.Is(err, ErrNotEnrolled) {
+		t.Fatalf("error = %v, want an error that is not ErrNotEnrolled", err)
+	}
+	if !strings.Contains(err.Error(), identityFileName) {
+		t.Errorf("error = %v, must name %s", err, identityFileName)
+	}
+}
+
+func TestLoadIdentityRejectsAKeyThatDoesNotMatch(t *testing.T) {
+	issuer := newTestIssuer(t)
+	dir := filepath.Join(t.TempDir(), "certs")
+	now := time.Now()
+	certPEM, _ := issuer.clientFiles(t, "server-1", now, now.Add(24*time.Hour))
+	_, otherKeyPEM := issuer.clientFiles(t, "server-2", now, now.Add(24*time.Hour))
+	writeFiles(t, dir, map[string][]byte{
+		identityFileName: joinIdentity(otherKeyPEM, certPEM),
+		caFileName:       issuer.certPEM,
+	})
+
+	_, err := LoadIdentity(dir)
+	if err == nil || errors.Is(err, ErrNotEnrolled) {
+		t.Fatalf("error = %v, want an error that is not ErrNotEnrolled", err)
+	}
+	if !strings.Contains(err.Error(), identityFileName) {
+		t.Errorf("error = %v, must name %s", err, identityFileName)
 	}
 }
 

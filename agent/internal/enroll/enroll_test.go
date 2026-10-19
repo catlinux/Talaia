@@ -232,10 +232,14 @@ func TestEnrollHappyPath(t *testing.T) {
 	if identity.ServerID() != core.serverID {
 		t.Errorf("server id = %q, want %q", identity.ServerID(), core.serverID)
 	}
-	for _, name := range []string{keyFileName, certFileName, caFileName} {
+	for _, name := range []string{identityFileName, caFileName} {
 		if _, err := os.Stat(filepath.Join(dir, name)); err != nil {
 			t.Errorf("%s: %v", name, err)
 		}
+	}
+	// The key and the certificate live together in one file.
+	for _, name := range []string{legacyKeyFileName, legacyCertFileName} {
+		requireNoFile(t, dir, name)
 	}
 	if _, err := os.Stat(tokenFile); !errors.Is(err, os.ErrNotExist) {
 		t.Error("the token file must be removed after enrolling")
@@ -251,8 +255,8 @@ func TestEnrollHappyPath(t *testing.T) {
 		path string
 		mode os.FileMode
 	}{
-		{filepath.Join(dir, keyFileName), keyMode},
-		{filepath.Join(dir, certFileName), certMode},
+		{filepath.Join(dir, identityFileName), identityMode},
+		{filepath.Join(dir, caFileName), caMode},
 		{dir, dirMode},
 	} {
 		info, err := os.Stat(tt.path)
@@ -279,9 +283,7 @@ func TestEnrollWrongFingerprint(t *testing.T) {
 	if !IsPermanent(ErrFingerprintMismatch) {
 		t.Error("a fingerprint mismatch must be permanent")
 	}
-	if _, err := os.Stat(filepath.Join(dir, keyFileName)); !errors.Is(err, os.ErrNotExist) {
-		t.Error("nothing must be written on a fingerprint mismatch")
-	}
+	requireNoIdentity(t, dir)
 	if _, err := os.Stat(tokenFile); err != nil {
 		t.Error("the token file must be kept on a fingerprint mismatch")
 	}
@@ -304,9 +306,7 @@ func TestEnrollInvalidToken(t *testing.T) {
 	if !IsPermanent(ErrInvalidToken) {
 		t.Error("an invalid token must be permanent")
 	}
-	if _, err := os.Stat(filepath.Join(dir, keyFileName)); !errors.Is(err, os.ErrNotExist) {
-		t.Error("nothing must be written with an invalid token")
-	}
+	requireNoIdentity(t, dir)
 	if _, err := os.Stat(tokenFile); err != nil {
 		t.Error("the token file must be kept with an invalid token")
 	}
@@ -322,9 +322,7 @@ func TestEnrollRejectsACertificateForAnotherKey(t *testing.T) {
 	if err == nil || !strings.Contains(err.Error(), "does not match the generated key") {
 		t.Fatalf("error = %v, want the key mismatch", err)
 	}
-	if _, err := os.Stat(filepath.Join(dir, keyFileName)); !errors.Is(err, os.ErrNotExist) {
-		t.Error("nothing must be written when the certificate does not match the key")
-	}
+	requireNoIdentity(t, dir)
 	if _, err := os.Stat(tokenFile); err != nil {
 		t.Error("the token file must be kept when the certificate does not match the key")
 	}
@@ -340,33 +338,36 @@ func TestRenewReplacesKeyAndCertificate(t *testing.T) {
 		t.Fatalf("enroll: %v", err)
 	}
 
-	oldKey, err := os.ReadFile(filepath.Join(dir, keyFileName))
+	oldIdentity, err := os.ReadFile(filepath.Join(dir, identityFileName))
 	if err != nil {
-		t.Fatalf("read key: %v", err)
+		t.Fatalf("read %s: %v", identityFileName, err)
 	}
-	oldCert, err := os.ReadFile(filepath.Join(dir, certFileName))
+	oldCA, err := os.ReadFile(filepath.Join(dir, caFileName))
 	if err != nil {
-		t.Fatalf("read certificate: %v", err)
+		t.Fatalf("read %s: %v", caFileName, err)
 	}
 
 	if err := Renew(context.Background(), identity, core.serverURL); err != nil {
 		t.Fatalf("renew: %v", err)
 	}
 
-	newKey, err := os.ReadFile(filepath.Join(dir, keyFileName))
+	// The renewal rewrites the identity file only: the CA certificate is not
+	// touched.
+	newIdentity, err := os.ReadFile(filepath.Join(dir, identityFileName))
 	if err != nil {
-		t.Fatalf("read the new key: %v", err)
+		t.Fatalf("read the renewed identity: %v", err)
 	}
-	newCert, err := os.ReadFile(filepath.Join(dir, certFileName))
+	if bytes.Equal(oldIdentity, newIdentity) {
+		t.Error("the identity file was not replaced")
+	}
+	newCA, err := os.ReadFile(filepath.Join(dir, caFileName))
 	if err != nil {
-		t.Fatalf("read the new certificate: %v", err)
+		t.Fatalf("read %s: %v", caFileName, err)
 	}
-	if bytes.Equal(oldKey, newKey) {
-		t.Error("the key was not replaced")
+	if !bytes.Equal(oldCA, newCA) {
+		t.Error("the renewal must not rewrite the ca certificate")
 	}
-	if bytes.Equal(oldCert, newCert) {
-		t.Error("the certificate was not replaced")
-	}
+
 	if _, renews := core.counters(); renews != 1 {
 		t.Errorf("renewals = %d, want 1", renews)
 	}
@@ -374,7 +375,7 @@ func TestRenewReplacesKeyAndCertificate(t *testing.T) {
 		t.Errorf("server id = %q, want %q", identity.ServerID(), core.serverID)
 	}
 
-	// The TLS config returns the renewed certificate.
+	// The certificate in the file is the one the identity presents.
 	certificate, err := identity.TLSConfig("localhost").GetClientCertificate(&tls.CertificateRequestInfo{})
 	if err != nil {
 		t.Fatalf("get client certificate: %v", err)
@@ -382,26 +383,45 @@ func TestRenewReplacesKeyAndCertificate(t *testing.T) {
 	if len(certificate.Certificate) == 0 {
 		t.Fatal("the TLS config does not return a certificate")
 	}
-	renewed, err := x509.ParseCertificate(certificate.Certificate[0])
-	if err != nil {
-		t.Fatalf("parse the current certificate: %v", err)
-	}
-	stored := parseTestCertificate(t, string(newCert))
-	if !bytes.Equal(renewed.Raw, stored.Raw) {
+	stored := certificateInPEM(t, newIdentity)
+	if !bytes.Equal(certificate.Certificate[0], stored.Raw) {
 		t.Error("the identity does not use the renewed certificate")
+	}
+
+	// The renewed identity loads from disk as well.
+	reloaded, err := LoadIdentity(dir)
+	if err != nil {
+		t.Fatalf("load the renewed identity: %v", err)
+	}
+	if reloaded.ServerID() != core.serverID {
+		t.Errorf("reloaded server id = %q, want %q", reloaded.ServerID(), core.serverID)
 	}
 }
 
-func parseTestCertificate(t *testing.T, certPEM string) *x509.Certificate {
+// certificateInPEM returns the certificate of a PEM document that also holds a
+// private key.
+func certificateInPEM(t *testing.T, pemData []byte) *x509.Certificate {
 	t.Helper()
 
-	block, _ := pem.Decode([]byte(certPEM))
-	if block == nil {
-		t.Fatal("the certificate is not PEM encoded")
+	for block, rest := pem.Decode(pemData); block != nil; block, rest = pem.Decode(rest) {
+		if block.Type != "CERTIFICATE" {
+			continue
+		}
+		cert, err := x509.ParseCertificate(block.Bytes)
+		if err != nil {
+			t.Fatalf("parse certificate: %v", err)
+		}
+		return cert
 	}
-	cert, err := x509.ParseCertificate(block.Bytes)
-	if err != nil {
-		t.Fatalf("parse certificate: %v", err)
+	t.Fatal("the file holds no certificate")
+	return nil
+}
+
+// requireNoIdentity fails when any identity file was written.
+func requireNoIdentity(t *testing.T, dir string) {
+	t.Helper()
+
+	for _, name := range []string{identityFileName, legacyKeyFileName, legacyCertFileName} {
+		requireNoFile(t, dir, name)
 	}
-	return cert
 }

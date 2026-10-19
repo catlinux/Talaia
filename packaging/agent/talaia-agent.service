@@ -9,6 +9,9 @@ Type=simple
 ExecStart=/usr/bin/talaia-agent
 Restart=always
 RestartSec=5
+# Exit 78 (EX_CONFIG) means only an operator can fix it: stop restarting the
+# agent then.
+RestartPreventExitStatus=78
 
 # The agent manages the host (files, systemd, Docker), so it runs as root.
 User=root

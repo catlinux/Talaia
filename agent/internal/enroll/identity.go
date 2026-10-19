@@ -3,6 +3,7 @@
 package enroll
 
 import (
+	"bytes"
 	"crypto/tls"
 	"crypto/x509"
 	"errors"
@@ -13,18 +14,24 @@ import (
 	"time"
 )
 
-// ErrNotEnrolled is returned when the identity files are not there yet.
+// ErrNotEnrolled is returned when the identity is not there yet.
 var ErrNotEnrolled = errors.New("not enrolled")
 
 const (
-	// keyFileName, certFileName and caFileName are the identity files.
-	keyFileName  = "agent.key"
-	certFileName = "agent.crt"
-	caFileName   = "ca.crt"
+	// identityFileName holds the private key block followed by the certificate
+	// block. One file means one atomic rename, so a crash can never leave a key
+	// and a certificate that do not match.
+	identityFileName = "agent.pem"
+	// caFileName holds the CA certificate of the core, written at enrollment.
+	caFileName = "ca.crt"
+	// legacyKeyFileName and legacyCertFileName are the separate files of the
+	// first layout. They are only read to migrate them into identityFileName.
+	legacyKeyFileName  = "agent.key"
+	legacyCertFileName = "agent.crt"
 
-	dirMode  os.FileMode = 0o700
-	keyMode  os.FileMode = 0o600
-	certMode os.FileMode = 0o644
+	dirMode      os.FileMode = 0o700
+	identityMode os.FileMode = 0o600
+	caMode       os.FileMode = 0o644
 )
 
 // Identity is the TLS identity of the agent: its key, its client certificate
@@ -40,53 +47,118 @@ type Identity struct {
 }
 
 // LoadIdentity reads the identity from dir. It returns ErrNotEnrolled when the
-// files are missing.
+// identity is not there yet. A file that does not parse, or whose key does not
+// match its certificate, is an error naming the file: it is a broken identity,
+// not a missing one, and re-enrolling is not the answer.
 func LoadIdentity(dir string) (*Identity, error) {
-	keyPEM, err := os.ReadFile(filepath.Join(dir, keyFileName))
+	caPath := filepath.Join(dir, caFileName)
+	caPEM, err := os.ReadFile(caPath)
 	if errors.Is(err, os.ErrNotExist) {
 		return nil, ErrNotEnrolled
 	}
 	if err != nil {
-		return nil, fmt.Errorf("read agent key: %w", err)
+		return nil, fmt.Errorf("read %s: %w", caPath, err)
 	}
-
-	certPEM, err := os.ReadFile(filepath.Join(dir, certFileName))
-	if errors.Is(err, os.ErrNotExist) {
-		return nil, ErrNotEnrolled
-	}
-	if err != nil {
-		return nil, fmt.Errorf("read agent certificate: %w", err)
-	}
-
-	caPEM, err := os.ReadFile(filepath.Join(dir, caFileName))
-	if errors.Is(err, os.ErrNotExist) {
-		return nil, ErrNotEnrolled
-	}
-	if err != nil {
-		return nil, fmt.Errorf("read ca certificate: %w", err)
-	}
-
 	pool := x509.NewCertPool()
 	if !pool.AppendCertsFromPEM(caPEM) {
-		return nil, fmt.Errorf("%s does not contain a certificate", filepath.Join(dir, caFileName))
+		return nil, fmt.Errorf("%s does not contain a certificate", caPath)
 	}
 
-	pair, err := tls.X509KeyPair(certPEM, keyPEM)
-	if err != nil {
-		return nil, fmt.Errorf("load agent certificate: %w", err)
+	identityPath := filepath.Join(dir, identityFileName)
+	identityPEM, err := os.ReadFile(identityPath)
+	switch {
+	case err == nil:
+		pair, err := keyPair(identityPath, identityPEM, identityPEM)
+		if err != nil {
+			return nil, err
+		}
+		return newIdentity(dir, pair, caPEM), nil
+
+	case errors.Is(err, os.ErrNotExist):
+		return loadLegacyIdentity(dir, caPEM)
+
+	default:
+		return nil, fmt.Errorf("read %s: %w", identityPath, err)
 	}
-	leaf, err := leafOf(pair)
+}
+
+// loadLegacyIdentity loads an identity stored as separate files and migrates it
+// to the single identity file. A pair that does not load correctly is left
+// untouched.
+func loadLegacyIdentity(dir string, caPEM []byte) (*Identity, error) {
+	keyPath := filepath.Join(dir, legacyKeyFileName)
+	certPath := filepath.Join(dir, legacyCertFileName)
+
+	keyPEM, keyErr := os.ReadFile(keyPath)
+	certPEM, certErr := os.ReadFile(certPath)
+	if errors.Is(keyErr, os.ErrNotExist) && errors.Is(certErr, os.ErrNotExist) {
+		return nil, ErrNotEnrolled
+	}
+	if keyErr != nil {
+		return nil, fmt.Errorf("read %s: %w", keyPath, keyErr)
+	}
+	if certErr != nil {
+		return nil, fmt.Errorf("read %s: %w", certPath, certErr)
+	}
+
+	pair, err := keyPair(keyPath+" and "+certPath, certPEM, keyPEM)
 	if err != nil {
 		return nil, err
 	}
+	if err := migrateLegacy(dir, keyPEM, certPEM); err != nil {
+		return nil, err
+	}
+	return newIdentity(dir, pair, caPEM), nil
+}
 
+// migrateLegacy writes the single identity file and then removes the files it
+// replaces.
+func migrateLegacy(dir string, keyPEM, certPEM []byte) error {
+	if err := writeFileAtomic(filepath.Join(dir, identityFileName), joinIdentity(keyPEM, certPEM), identityMode); err != nil {
+		return err
+	}
+
+	for _, name := range []string{legacyKeyFileName, legacyCertFileName} {
+		path := filepath.Join(dir, name)
+		if err := os.Remove(path); err != nil && !errors.Is(err, os.ErrNotExist) {
+			return fmt.Errorf("remove the legacy %s: %w", path, err)
+		}
+	}
+	return nil
+}
+
+// keyPair parses a certificate and its private key. Both arguments may be the
+// same document, which is how the identity file stores them together.
+func keyPair(name string, certPEM, keyPEM []byte) (tls.Certificate, error) {
+	pair, err := tls.X509KeyPair(certPEM, keyPEM)
+	if err != nil {
+		return tls.Certificate{}, fmt.Errorf("%s: %w", name, err)
+	}
+
+	leaf, err := leafOf(pair)
+	if err != nil {
+		return tls.Certificate{}, fmt.Errorf("%s: %w", name, err)
+	}
+	pair.Leaf = leaf
+	return pair, nil
+}
+
+// joinIdentity returns the private key block followed by the certificate block.
+func joinIdentity(keyPEM, certPEM []byte) []byte {
+	joined := make([]byte, 0, len(keyPEM)+len(certPEM)+1)
+	joined = append(joined, bytes.TrimRight(keyPEM, "\r\n")...)
+	joined = append(joined, '\n')
+	return append(joined, certPEM...)
+}
+
+func newIdentity(dir string, pair tls.Certificate, caPEM []byte) *Identity {
 	return &Identity{
 		dir:      dir,
 		cert:     pair,
 		caPEM:    caPEM,
-		serverID: leaf.Subject.CommonName,
-		notAfter: leaf.NotAfter,
-	}, nil
+		serverID: pair.Leaf.Subject.CommonName,
+		notAfter: pair.Leaf.NotAfter,
+	}
 }
 
 // ServerID returns the server id of the identity, the common name of the
@@ -160,23 +232,22 @@ func (i *Identity) update(pair tls.Certificate, leaf *x509.Certificate) {
 	i.notAfter = leaf.NotAfter
 }
 
-// save writes the key and the certificate atomically.
+// save writes the identity atomically: the key and the certificate go to the
+// same file, so a single rename replaces both.
 func (i *Identity) save(keyPEM, certPEM []byte) error {
 	if err := ensureDir(i.dir); err != nil {
 		return err
 	}
-	if err := writeFileAtomic(filepath.Join(i.dir, keyFileName), keyPEM, keyMode); err != nil {
-		return err
-	}
-	return writeFileAtomic(filepath.Join(i.dir, certFileName), certPEM, certMode)
+	return writeFileAtomic(filepath.Join(i.dir, identityFileName), joinIdentity(keyPEM, certPEM), identityMode)
 }
 
-// saveAll writes the key, the certificate and the CA certificate.
+// saveAll writes the identity and the CA certificate. The CA is only written
+// when enrolling, it never changes.
 func (i *Identity) saveAll(keyPEM, certPEM, caPEM []byte) error {
 	if err := ensureDir(i.dir); err != nil {
 		return err
 	}
-	if err := writeFileAtomic(filepath.Join(i.dir, caFileName), caPEM, certMode); err != nil {
+	if err := writeFileAtomic(filepath.Join(i.dir, caFileName), caPEM, caMode); err != nil {
 		return err
 	}
 	return i.save(keyPEM, certPEM)
@@ -191,7 +262,7 @@ func leafOf(pair tls.Certificate) (*x509.Certificate, error) {
 	}
 	leaf, err := x509.ParseCertificate(pair.Certificate[0])
 	if err != nil {
-		return nil, fmt.Errorf("parse agent certificate: %w", err)
+		return nil, fmt.Errorf("parse certificate: %w", err)
 	}
 	return leaf, nil
 }

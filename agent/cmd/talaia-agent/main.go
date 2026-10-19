@@ -24,17 +24,46 @@ const (
 	enrollBackoffMax  = 60 * time.Second
 )
 
+// exitConfig is the exit status of the failures only an operator can fix, the
+// EX_CONFIG status of sysexits.h. The systemd unit sets
+// RestartPreventExitStatus=78, so the agent is not restarted for them.
+const exitConfig = 78
+
+// errNotEnrolled is the message of an agent that has neither an identity nor a
+// token to get one: retrying cannot help.
+var errNotEnrolled = errors.New("not enrolled: no certificate and no enrollment token")
+
 func main() {
 	if err := run(); err != nil {
 		slog.Error("talaia-agent stopped", "error", err)
-		os.Exit(1)
+		os.Exit(exitStatus(err))
 	}
 }
+
+// exitStatus returns the status of a failure: EX_CONFIG for the errors that no
+// restart can fix, 1 otherwise.
+func exitStatus(err error) int {
+	var configErr configError
+	if errors.As(err, &configErr) {
+		return exitConfig
+	}
+	return 1
+}
+
+// configError marks a failure that needs an operator: a bad configuration, a
+// wrong CA fingerprint, an invalid token or nothing to enroll with.
+type configError struct{ err error }
+
+func (e configError) Error() string { return e.err.Error() }
+func (e configError) Unwrap() error { return e.err }
+
+// permanent marks err so that main exits with EX_CONFIG.
+func permanent(err error) error { return configError{err} }
 
 func run() error {
 	cfg, err := config.Load()
 	if err != nil {
-		return fmt.Errorf("load configuration: %w", err)
+		return permanent(fmt.Errorf("load configuration: %w", err))
 	}
 
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: cfg.Level()}))
@@ -77,7 +106,7 @@ func loadOrEnroll(ctx context.Context, cfg config.Config, logger *slog.Logger) (
 
 	token, err := os.ReadFile(cfg.EnrollTokenFile)
 	if errors.Is(err, os.ErrNotExist) {
-		return nil, errors.New("not enrolled: no certificate and no enrollment token")
+		return nil, permanent(errNotEnrolled)
 	}
 	if err != nil {
 		return nil, fmt.Errorf("read the enrollment token: %w", err)
@@ -105,7 +134,7 @@ func loadOrEnroll(ctx context.Context, cfg config.Config, logger *slog.Logger) (
 			return identity, nil
 		}
 		if enroll.IsPermanent(err) {
-			return nil, fmt.Errorf("enroll: %w", err)
+			return nil, permanent(fmt.Errorf("enroll: %w", err))
 		}
 
 		logger.Warn("enrollment failed, retrying", "error", err, "retry_in", backoff)
