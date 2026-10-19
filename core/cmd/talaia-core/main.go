@@ -83,6 +83,7 @@ func splitCommand(args []string) (string, []string) {
 type panelOptions struct {
 	Box          *auth.SecretBox
 	WebDir       string
+	DistDir      string
 	Origins      []string
 	TLS          bool
 	Limiter      *api.RateLimiter
@@ -147,6 +148,10 @@ func newTLSRouterWithHub(st *store.Store, authority *ca.CA, h *hub.Hub, options 
 	mux.Handle("/ca.pem", enrollment)
 	mux.Handle("/enroll", enrollment)
 	mux.Handle("/renew", enrollment)
+
+	dist := api.NewDistHandler(options.DistDir)
+	mux.Handle("/install.sh", dist)
+	mux.Handle("/agent/", dist)
 	mux.Handle("/", newCoreRouter(st, h, options))
 
 	return mux
@@ -238,6 +243,7 @@ func serve() error {
 	panel := panelOptions{
 		Box:     box,
 		WebDir:  cfg.WebDir,
+		DistDir: cfg.DistDir,
 		Origins: cfg.AllowedOrigins,
 		TLS:     !cfg.InsecureDev,
 		Limiter: api.NewAuthRateLimiter(),

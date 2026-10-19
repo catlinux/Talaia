@@ -19,6 +19,7 @@ var reservedExact = []string{
 	"/enroll",
 	"/renew",
 	"/ca.pem",
+	"/install.sh",
 	agentv1connect.AgentHubConnectProcedure,
 }
 
@@ -73,7 +74,7 @@ func (h *staticHandler) available() bool {
 
 // reserved reports whether a path belongs to the API or the agent protocol.
 func reserved(requestPath string) bool {
-	if strings.HasPrefix(requestPath, "/api/") {
+	if strings.HasPrefix(requestPath, "/api/") || strings.HasPrefix(requestPath, "/agent/") {
 		return true
 	}
 	for _, exact := range reservedExact {

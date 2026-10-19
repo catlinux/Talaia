@@ -3,7 +3,7 @@
 # Installs talaia-agent on a Debian or Ubuntu server. Run it as root.
 #
 # Usage:
-#   install.sh --url <https-core-url> --deb <path-or-https-url> --token <token> --ca-fingerprint <sha256-hex>
+#   install.sh --url <https-core-url> --token <token> --ca-fingerprint <sha256-hex> [--deb <path-or-https-url>]
 #
 # The agent enrolls on its first start: it fetches the core CA, checks it against
 # --ca-fingerprint (the trust anchor), and exchanges the one-time token for its
@@ -15,10 +15,11 @@ TOKEN_FILE=/etc/talaia/enroll.token
 
 usage() {
     cat >&2 <<'EOF'
-Usage: install.sh --url <https-core-url> --deb <path-or-https-url> --token <token> --ca-fingerprint <sha256-hex>
+Usage: install.sh --url <https-core-url> --token <token> --ca-fingerprint <sha256-hex> [--deb <path-or-https-url>]
 
   --url <core_url>  core URL the agent connects to (required)
-  --deb <source>    path to a .deb file or an https:// URL to download (required)
+  --deb <source>    path to a .deb file or an https:// URL; by default the package is
+                    downloaded from the core, after checking the CA fingerprint
   --token <token>   one-time enrollment token (from "talaia-core token create")
   --ca-fingerprint <hex>  SHA-256 fingerprint of the core CA (printed with the token)
   -h, --help        show this help
@@ -98,12 +99,6 @@ if [ "${#ca_fingerprint}" -ne 64 ]; then
     exit 1
 fi
 
-if [ -z "$deb_source" ]; then
-    echo "error: --deb is required" >&2
-    usage
-    exit 1
-fi
-
 # The package is only built for Debian and Ubuntu.
 if [ ! -r /etc/os-release ]; then
     echo "error: /etc/os-release not found; Debian or Ubuntu is required" >&2
@@ -136,6 +131,49 @@ cleanup() {
     fi
 }
 trap cleanup EXIT
+
+# Without --deb the package comes from the core itself. The core certificate is
+# signed by its own CA, so the CA is fetched without verification and accepted
+# only when its SHA-256 fingerprint is the one given with --ca-fingerprint; the
+# package is then downloaded over a connection that trusts that CA alone.
+if [ -z "$deb_source" ]; then
+    if ! command -v curl >/dev/null 2>&1; then
+        echo "error: curl is required to download the package" >&2
+        exit 1
+    fi
+    case "$(dpkg --print-architecture 2>/dev/null)" in
+        amd64) package_arch=amd64 ;;
+        arm64) package_arch=arm64 ;;
+        *)
+            echo "error: unsupported architecture; pass --deb with a package built for it" >&2
+            exit 1
+            ;;
+    esac
+
+    workdir="$(mktemp -d)"
+    ca_file="$workdir/ca.pem"
+    echo "fetching the core CA from $core_url"
+    curl --fail --silent --show-error --insecure --proto '=https' --tlsv1.2 -o "$ca_file" "$core_url/ca.pem"
+
+    # The fingerprint is the SHA-256 of the DER certificate: decode the PEM body.
+    fetched="$(sed '/^-----/d' "$ca_file" | base64 -d | sha256sum | cut -d' ' -f1)"
+    expected="$(printf '%s' "$ca_fingerprint" | tr 'A-F' 'a-f')"
+    if [ "$fetched" != "$expected" ]; then
+        echo "error: the CA of $core_url does not match --ca-fingerprint; not installing" >&2
+        echo "  expected: $expected" >&2
+        echo "  received: $fetched" >&2
+        exit 1
+    fi
+
+    deb_file="$workdir/talaia-agent.deb"
+    echo "downloading the agent package (CA verified)"
+    curl --fail --silent --show-error --proto '=https' --tlsv1.2 --cacert "$ca_file" \
+        -o "$deb_file" "$core_url/agent/talaia-agent_${package_arch}.deb"
+    # apt runs as _apt, which cannot read a private temporary directory.
+    chmod 0755 "$workdir"
+    chmod 0644 "$deb_file"
+    deb_source="$deb_file"
+fi
 
 case "$deb_source" in
     https://*)

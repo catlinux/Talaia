@@ -35,6 +35,12 @@ type Config struct {
 	DataDir     string
 	// WebDir is the directory of the compiled panel.
 	WebDir string
+	// DistDir holds install.sh and the agent packages the core serves to new
+	// servers. Without it the core answers 404 to those downloads.
+	DistDir string
+	// PublicPort is the port browsers and agents use to reach the core, when it
+	// differs from the listen port (a container that publishes another one).
+	PublicPort string
 	// PublicHostnames are the names and addresses the server certificate of the
 	// core must be valid for.
 	PublicHostnames []string
@@ -53,6 +59,8 @@ type fileConfig struct {
 	LogLevel        *string   `toml:"log_level"`
 	DataDir         *string   `toml:"data_dir"`
 	WebDir          *string   `toml:"web_dir"`
+	DistDir         *string   `toml:"dist_dir"`
+	PublicPort      *string   `toml:"public_port"`
 	PublicHostnames *[]string `toml:"public_hostnames"`
 	AllowedOrigins  *[]string `toml:"allowed_origins"`
 	InsecureDev     *bool     `toml:"insecure_dev"`
@@ -112,6 +120,12 @@ func load(lookup func(string) (string, bool), defaultPath string) (Config, error
 	}
 	if value, ok := lookup("TALAIA_WEB_DIR"); ok {
 		cfg.WebDir = value
+	}
+	if value, ok := lookup("TALAIA_DIST_DIR"); ok {
+		cfg.DistDir = value
+	}
+	if value, ok := lookup("TALAIA_PUBLIC_PORT"); ok {
+		cfg.PublicPort = strings.TrimSpace(value)
 	}
 	if value, ok := lookup("TALAIA_PUBLIC_HOSTNAMES"); ok {
 		cfg.PublicHostnames = splitList(value)
@@ -178,6 +192,12 @@ func applyFile(cfg *Config, path string, explicit bool) error {
 	if file.WebDir != nil {
 		cfg.WebDir = *file.WebDir
 	}
+	if file.DistDir != nil {
+		cfg.DistDir = *file.DistDir
+	}
+	if file.PublicPort != nil {
+		cfg.PublicPort = strings.TrimSpace(*file.PublicPort)
+	}
 	if file.PublicHostnames != nil {
 		cfg.PublicHostnames = *file.PublicHostnames
 	}
@@ -235,7 +255,7 @@ func (c *Config) validate() error {
 	// behind a proxy can override them.
 	origins := c.AllowedOrigins
 	if len(origins) == 0 {
-		origins = defaultOrigins(c.PublicHostnames, c.Listen, c.InsecureDev)
+		origins = defaultOrigins(c.PublicHostnames, c.publicPort(), c.InsecureDev)
 	}
 	normalized := make([]string, 0, len(origins))
 	seen := make(map[string]bool, len(origins))
@@ -285,10 +305,9 @@ func isLoopbackListen(listen string) bool {
 }
 
 // defaultOrigins derives the allowed browser origins from the public hostnames
-// and the listen address.
-func defaultOrigins(hostnames []string, listen string, insecure bool) []string {
+// and the port the core is reached at.
+func defaultOrigins(hostnames []string, port string, insecure bool) []string {
 	origins := make([]string, 0, len(hostnames)+2)
-	port := listenPort(listen)
 
 	for _, host := range hostnames {
 		origins = append(origins, (&url.URL{Scheme: "https", Host: host}).String())
@@ -301,6 +320,28 @@ func defaultOrigins(hostnames []string, listen string, insecure bool) []string {
 		origins = append(origins, "http://localhost:5173", "http://127.0.0.1:5173")
 	}
 	return origins
+}
+
+// publicPort returns the port the core is reached at: the configured public
+// port, or the one it listens on.
+func (c Config) publicPort() string {
+	if c.PublicPort != "" {
+		return c.PublicPort
+	}
+	return listenPort(c.Listen)
+}
+
+// PublicURL returns the https address agents and browsers reach the core at,
+// built from the first public hostname, or "" when there is none.
+func (c Config) PublicURL() string {
+	if len(c.PublicHostnames) == 0 {
+		return ""
+	}
+	host := c.PublicHostnames[0]
+	if port := c.publicPort(); port != "" && port != "443" {
+		host = net.JoinHostPort(host, port)
+	}
+	return (&url.URL{Scheme: "https", Host: host}).String()
 }
 
 // listenPort returns the port of a listen address, or "" when it has none.

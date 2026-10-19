@@ -129,7 +129,7 @@ func TestTokenCreatePrintsTheToken(t *testing.T) {
 	fingerprint := strings.Repeat("ab", 32)
 	var stdout bytes.Buffer
 
-	if err := tokenCreate(context.Background(), &stdout, creator, "vps-web-01", 15*time.Minute, fingerprint); err != nil {
+	if err := tokenCreate(context.Background(), &stdout, creator, "vps-web-01", 15*time.Minute, fingerprint, "https://192.0.2.10:8443"); err != nil {
 		t.Fatalf("tokenCreate: %v", err)
 	}
 
@@ -138,6 +138,7 @@ func TestTokenCreatePrintsTheToken(t *testing.T) {
 		"token: tl_enr_dGVzdA",
 		"ca-fingerprint: " + fingerprint,
 		"shown only once",
+		"curl -fsSk https://192.0.2.10:8443/install.sh | sudo bash -s -- --url https://192.0.2.10:8443 --token tl_enr_dGVzdA --ca-fingerprint " + fingerprint,
 	} {
 		if !strings.Contains(printed, want) {
 			t.Errorf("output %q does not contain %q", printed, want)
@@ -152,7 +153,7 @@ func TestTokenCreateReportsErrors(t *testing.T) {
 	creator := &fakeTokenCreator{err: errors.New("server is already enrolled")}
 	var stdout bytes.Buffer
 
-	err := tokenCreate(context.Background(), &stdout, creator, "vps-web-01", time.Minute, "abcd")
+	err := tokenCreate(context.Background(), &stdout, creator, "vps-web-01", time.Minute, "abcd", "")
 
 	if err == nil {
 		t.Fatal("expected an error")

@@ -53,12 +53,37 @@ RUN version="${VERSION:-$(cat VERSION)}" && \
     CGO_ENABLED=0 go build -trimpath -ldflags "-s -w -X main.version=${version}" \
     -o /out/talaia-core ./core/cmd/talaia-core
 
-# Stage 3: the runtime. distroless has no shell, so a HEALTHCHECK is not
+# Stage 3: the agent packages the core hands to new servers (amd64 and arm64).
+FROM golang:1.26-bookworm AS agentpkg
+
+RUN go install github.com/goreleaser/nfpm/v2/cmd/nfpm@v2.48.0
+
+WORKDIR /src
+COPY go.work ./
+COPY core/go.mod core/go.sum ./core/
+COPY cli/go.mod cli/go.sum ./cli/
+COPY proto ./proto
+COPY agent ./agent
+COPY VERSION ./VERSION
+COPY scripts/build-deb.sh ./scripts/build-deb.sh
+COPY packaging/agent ./packaging/agent
+
+ARG VERSION=""
+RUN version="${VERSION:-$(cat VERSION)}" && mkdir -p /out && \
+    for arch in amd64 arm64; do \
+        bash scripts/build-deb.sh "${version}" "${arch}" && \
+        mv "dist/talaia-agent_${version}_${arch}.deb" "/out/talaia-agent_${arch}.deb"; \
+    done
+
+# Stage 4: the runtime. distroless has no shell, so a HEALTHCHECK is not
 # possible here: compose checks the database and the core answers on its port.
 FROM gcr.io/distroless/static-debian12:nonroot
 
 COPY --from=build /out/talaia-core /usr/local/bin/talaia-core
 COPY --from=web /build/web/dist /usr/share/talaia/web
+# install.sh and the agent packages, served at /install.sh and /agent/*.deb.
+COPY --from=agentpkg /out /usr/share/talaia/dist
+COPY packaging/install.sh /usr/share/talaia/dist/install.sh
 
 # The nonroot user (uid 65532) owns the data volume; compose prepares it.
 USER nonroot

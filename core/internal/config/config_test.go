@@ -382,9 +382,29 @@ func TestDefaultOrigins(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := defaultOrigins(tt.hostnames, tt.listen, tt.insecure)
+			got := defaultOrigins(tt.hostnames, listenPort(tt.listen), tt.insecure)
 			if !slices.Equal(got, tt.want) {
 				t.Fatalf("origins = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestPublicURL(t *testing.T) {
+	tests := []struct {
+		name string
+		cfg  Config
+		want string
+	}{
+		{"no hostname", Config{Listen: ":8443"}, ""},
+		{"listen port", Config{Listen: ":8443", PublicHostnames: []string{"192.0.2.10"}}, "https://192.0.2.10:8443"},
+		{"public port wins", Config{Listen: ":8443", PublicPort: "9000", PublicHostnames: []string{"core.example.com", "b.example.com"}}, "https://core.example.com:9000"},
+		{"default port is left out", Config{Listen: ":8443", PublicPort: "443", PublicHostnames: []string{"core.example.com"}}, "https://core.example.com"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.cfg.PublicURL(); got != tt.want {
+				t.Fatalf("PublicURL() = %q, want %q", got, tt.want)
 			}
 		})
 	}
