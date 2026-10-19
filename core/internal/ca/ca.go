@@ -57,6 +57,11 @@ func LoadOrCreate(dir string) (*CA, error) {
 	if err := os.MkdirAll(dir, dirMode); err != nil {
 		return nil, fmt.Errorf("create ca directory %s: %w", dir, err)
 	}
+	// MkdirAll keeps the mode of an existing directory: tighten it, the
+	// directory holds the CA private key.
+	if err := os.Chmod(dir, dirMode); err != nil {
+		return nil, fmt.Errorf("set mode of ca directory %s: %w", dir, err)
+	}
 
 	certPath := filepath.Join(dir, certFileName)
 	keyPath := filepath.Join(dir, keyFileName)

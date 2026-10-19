@@ -200,6 +200,11 @@ func ensureDir(dir string) error {
 	if err := os.MkdirAll(dir, dirMode); err != nil {
 		return fmt.Errorf("create cert directory %s: %w", dir, err)
 	}
+	// MkdirAll keeps the mode of an existing directory: tighten it, the
+	// directory holds the agent private key.
+	if err := os.Chmod(dir, dirMode); err != nil {
+		return fmt.Errorf("set mode of cert directory %s: %w", dir, err)
+	}
 	return nil
 }
 
