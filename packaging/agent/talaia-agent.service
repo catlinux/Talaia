@@ -1,0 +1,22 @@
+[Unit]
+Description=Talaia agent
+Documentation=https://github.com/catlinux/Talaia
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/talaia-agent
+Restart=always
+RestartSec=5
+
+# The agent manages the host (files, systemd, Docker), so it runs as root.
+User=root
+
+# Hardening is deliberately minimal: the agent needs broad access to the host.
+NoNewPrivileges=true
+# ProtectSystem=full is not used: the agent must write to /etc, /opt and the
+# Docker socket. The same applies to ProtectHome and similar sandboxing.
+
+[Install]
+WantedBy=multi-user.target

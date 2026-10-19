@@ -24,6 +24,7 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 - `make dev`: entorno de desarrollo local (PostgreSQL + TimescaleDB en Docker Compose, core, agente y servidor de desarrollo del panel).
 - CI en GitHub Actions: compilación, vet y pruebas de Go, golangci-lint, buf lint y comprobación del código generado, compilación, lint, formato y pruebas del panel, y la comprobación de i18n.
 - Métricas en vivo del agente (CPU, RAM, disco raíz, contadores de red), que guarda el hub del core.
+- Paquete `.deb` del agente (nfpm), unidad systemd e `install.sh` (`scripts/build-deb.sh`). El enrolamiento aún no está implementado.
 
 ### Cambiado
 

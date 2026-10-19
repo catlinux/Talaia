@@ -1,0 +1,14 @@
+#!/bin/sh
+# Pre-removal script for talaia-agent: stop the service before removing or
+# upgrading.
+set -eu
+
+case "${1:-}" in
+    remove|upgrade|deconfigure)
+        if command -v systemctl >/dev/null 2>&1 && [ -d /run/systemd/system ]; then
+            systemctl stop talaia-agent || true
+        fi
+        ;;
+esac
+
+exit 0

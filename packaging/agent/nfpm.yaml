@@ -1,0 +1,44 @@
+# nfpm configuration for the talaia-agent Debian package.
+#
+# Version and architecture are taken from the environment (see
+# scripts/build-deb.sh), so the same file builds any release.
+name: talaia-agent
+arch: ${ARCH}
+version: ${VERSION}
+maintainer: CatLinux <marc.catlinux@gmail.com>
+description: Talaia agent; manages one Debian server for the Talaia control panel.
+homepage: https://github.com/catlinux/Talaia
+section: admin
+license: WNCL-1.0
+
+contents:
+  - src: ../../dist/talaia-agent
+    dst: /usr/bin/talaia-agent
+    file_info:
+      mode: 0755
+
+  - src: talaia-agent.service
+    dst: /lib/systemd/system/talaia-agent.service
+    file_info:
+      mode: 0644
+
+  - src: agent.toml
+    dst: /etc/talaia/agent.toml
+    type: config|noreplace
+    file_info:
+      mode: 0600
+
+  - dst: /etc/talaia/certs
+    type: dir
+    file_info:
+      mode: 0700
+
+  - dst: /var/lib/talaia
+    type: dir
+    file_info:
+      mode: 0755
+
+scripts:
+  postinstall: postinst
+  preremove: prerm
+  postremove: postrm

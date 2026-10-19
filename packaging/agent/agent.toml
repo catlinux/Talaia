@@ -1,0 +1,8 @@
+# Talaia agent configuration.
+
+# URL of the talaia-core the agent connects to. Enrollment and mTLS arrive in a
+# later phase; until then core_url is written here by packaging/install.sh.
+# core_url = "https://talaia.example.com"
+
+# Log level: debug, info, warn or error.
+log_level = "info"
