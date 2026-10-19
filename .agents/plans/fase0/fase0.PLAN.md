@@ -22,6 +22,8 @@ Ejecutores: AgentRelay (`agentrelay.cmd` en PowerShell, JSON de la tarea en `$en
 
 ## Notas
 
+- Prueba extremo a extremo en Windows (2026-10-19) con PostgreSQL 16.11 portable (C:/Users/msanc/tools/pg-extract, datos en tools/pgdata, puerto 54329; sin TimescaleDB ni Docker): migración aplicada, `/healthz` 200, test de integración del store en verde, agente real conectado durante 50 s (más que los antiguos timeouts) con 4 latidos y 3 métricas recibidos y desconexión limpia. Sigue sin verificar solo la parte de Docker/Compose de `make dev` y la imagen TimescaleDB.
+
 - CI escrito (`.github/workflows/ci.yml`, `.golangci.yml`); el lint se verificó en local con golangci-lint v2.15.0 (`C:/Users/msanc/tools/bin`). El CI pasó en verde en GitHub con el commit da12eb5 (10 jobs). Falta el trabajo `license-check` (depende del script de licencias del mantenedor). Riesgo conocido: el job `proto` regenera el código con plugins remotos de buf; si cambian de versión puede dar diferencias.
 
 - **Sin verificar:** `make dev` / `scripts/dev.sh` y `packaging/dev/compose.yaml` solo pasan `bash -n`; falta ejecutarlos en el Debian de pruebas (Docker, Go 1.26, Node 24, pnpm). Es el criterio de cierre de la fase.
