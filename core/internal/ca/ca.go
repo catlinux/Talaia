@@ -152,19 +152,23 @@ func (c *CA) SignServerCert(hosts []string, pub crypto.PublicKey, validity time.
 		return nil, err
 	}
 
+	var commonName string
+	if len(dnsNames) > 0 {
+		commonName = dnsNames[0]
+	} else {
+		commonName = ips[0].String()
+	}
+
 	now := time.Now()
 	template := &x509.Certificate{
 		SerialNumber: serial,
-		Subject:      pkix.Name{CommonName: dnsNames[0]},
+		Subject:      pkix.Name{CommonName: commonName},
 		NotBefore:    now.Add(-time.Minute),
 		NotAfter:     now.Add(validity),
 		KeyUsage:     x509.KeyUsageDigitalSignature,
 		ExtKeyUsage:  []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
 		DNSNames:     dnsNames,
 		IPAddresses:  ips,
-	}
-	if len(dnsNames) == 0 {
-		template.Subject = pkix.Name{CommonName: ips[0].String()}
 	}
 
 	return c.sign(template, pub)

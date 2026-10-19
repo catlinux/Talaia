@@ -280,6 +280,30 @@ func TestSignServerCert(t *testing.T) {
 	}
 }
 
+func TestSignServerCertIPOnly(t *testing.T) {
+	authority := newCA(t)
+	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	if err != nil {
+		t.Fatalf("generate key: %v", err)
+	}
+
+	certPEM, err := authority.SignServerCert([]string{"192.0.2.10"}, &key.PublicKey, time.Hour)
+	if err != nil {
+		t.Fatalf("SignServerCert: %v", err)
+	}
+
+	cert := parseCert(t, certPEM)
+	if cert.Subject.CommonName != "192.0.2.10" {
+		t.Errorf("common name = %q", cert.Subject.CommonName)
+	}
+	if len(cert.DNSNames) != 0 {
+		t.Errorf("DNS names = %v", cert.DNSNames)
+	}
+	if len(cert.IPAddresses) != 1 || !cert.IPAddresses[0].Equal(net.ParseIP("192.0.2.10")) {
+		t.Errorf("IP addresses = %v", cert.IPAddresses)
+	}
+}
+
 func TestValidateCSR(t *testing.T) {
 	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	if err != nil {

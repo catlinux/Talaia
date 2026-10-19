@@ -42,6 +42,10 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 - Phase 0 decisions closed: PostgreSQL + TimescaleDB, React + TypeScript, Go 1.26, Node.js 24 LTS with pnpm.
 
+### Fixed
+
+- The core no longer crashes on start when `TALAIA_PUBLIC_HOSTNAMES` holds only IP addresses.
+
 ## [0.0.1] - 2026-10-18
 
 ### Added
