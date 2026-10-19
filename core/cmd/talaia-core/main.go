@@ -91,13 +91,16 @@ type panelOptions struct {
 }
 
 // newCoreRouter returns the handler of the health endpoint, the authentication
-// API and the panel.
-func newCoreRouter(st *store.Store, options panelOptions) http.Handler {
+// API, the protected API and the panel. agents is the hub the agents connect to,
+// so the API sees their live data.
+func newCoreRouter(st *store.Store, agents api.LiveAgents, options panelOptions) http.Handler {
 	return api.NewRouter(api.RouterDeps{
 		DB:       st,
 		WebDir:   options.WebDir,
 		Security: api.SecurityConfig{TLS: options.TLS, Origins: options.Origins},
 		Session:  api.SessionDeps{Store: st, Now: options.Now},
+		Servers:  st,
+		Agents:   agents,
 		Auth: api.AuthDeps{
 			Store:        st,
 			Box:          options.Box,
@@ -111,12 +114,12 @@ func newCoreRouter(st *store.Store, options panelOptions) http.Handler {
 // newPlainRouter serves the health endpoint, the authentication API and the
 // panel over plaintext HTTP/2, plus the agent stream. It is only used in
 // insecure development mode, and it does not mount the enrollment endpoints.
-func newPlainRouter(st *store.Store, options panelOptions) http.Handler {
+func newPlainRouter(st *store.Store, h *hub.Hub, options panelOptions) http.Handler {
 	mux := http.NewServeMux()
 
-	path, hubHandler := hub.NewInsecure().Handler()
+	path, hubHandler := h.Handler()
 	mux.Handle(path, hubHandler)
-	mux.Handle("/", newCoreRouter(st, options))
+	mux.Handle("/", newCoreRouter(st, h, options))
 
 	return mux
 }
@@ -124,8 +127,8 @@ func newPlainRouter(st *store.Store, options panelOptions) http.Handler {
 // newTLSRouter serves the health endpoint, the authentication API, the panel,
 // the enrollment endpoints and the agent hub, which requires a client
 // certificate.
-func newTLSRouter(st *store.Store, authority *ca.CA, options panelOptions) http.Handler {
-	return newTLSRouterWithHub(st, authority, hub.New(st), options)
+func newTLSRouter(st *store.Store, authority *ca.CA, h *hub.Hub, options panelOptions) http.Handler {
+	return newTLSRouterWithHub(st, authority, h, options)
 }
 
 // newTLSRouterWithHub is newTLSRouter with the hub injected, for the tests.
@@ -144,7 +147,7 @@ func newTLSRouterWithHub(st *store.Store, authority *ca.CA, h *hub.Hub, options 
 	mux.Handle("/ca.pem", enrollment)
 	mux.Handle("/enroll", enrollment)
 	mux.Handle("/renew", enrollment)
-	mux.Handle("/", newCoreRouter(st, options))
+	mux.Handle("/", newCoreRouter(st, h, options))
 
 	return mux
 }
@@ -255,7 +258,7 @@ func serve() error {
 			return err
 		}
 
-		srv.Handler = newTLSRouter(st, authority, panel)
+		srv.Handler = newTLSRouter(st, authority, hub.New(st), panel)
 		srv.Protocols = newTLSProtocols()
 		srv.TLSConfig = &tls.Config{
 			MinVersion:   tls.VersionTLS13,
@@ -266,7 +269,7 @@ func serve() error {
 		}
 	} else {
 		logger.Warn("insecure development mode: no TLS and no agent authentication")
-		srv.Handler = newPlainRouter(st, panel)
+		srv.Handler = newPlainRouter(st, hub.NewInsecure(), panel)
 		srv.Protocols = newProtocols()
 	}
 

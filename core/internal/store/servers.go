@@ -207,6 +207,28 @@ func (s *Store) RotateServerCertificate(ctx context.Context, id, newSerial strin
 
 // GetServer returns one server or ErrNotFound.
 func (s *Store) GetServer(ctx context.Context, id string) (Server, error) {
+	server, err := scanServer(s.pool.QueryRow(ctx,
+		`SELECT `+serverColumns+` FROM server WHERE id = $1`, id))
+	if errors.Is(err, ErrNotFound) {
+		return Server{}, ErrNotFound
+	}
+	if err != nil {
+		return Server{}, fmt.Errorf("get server %q: %w", id, err)
+	}
+	return server, nil
+}
+
+// serverColumns is the SELECT list of the server queries. Keeping it in one
+// place keeps scanServer in step with them.
+const serverColumns = `id, name, cert_serial, prev_cert_serial, cert_not_after, created_at, last_seen, revoked_at`
+
+// rowScanner is what pgx.Row and pgx.Rows have in common.
+type rowScanner interface {
+	Scan(dest ...any) error
+}
+
+// scanServer reads a server row. The nullable columns become zero values.
+func scanServer(row rowScanner) (Server, error) {
 	var (
 		server         Server
 		certSerial     *string
@@ -216,15 +238,13 @@ func (s *Store) GetServer(ctx context.Context, id string) (Server, error) {
 		revokedAt      *time.Time
 	)
 
-	err := s.pool.QueryRow(ctx,
-		`SELECT id, name, cert_serial, prev_cert_serial, cert_not_after, created_at, last_seen, revoked_at
-		 FROM server WHERE id = $1`, id).
-		Scan(&server.ID, &server.Name, &certSerial, &prevCertSerial, &certNotAfter, &server.CreatedAt, &lastSeen, &revokedAt)
+	err := row.Scan(&server.ID, &server.Name, &certSerial, &prevCertSerial, &certNotAfter,
+		&server.CreatedAt, &lastSeen, &revokedAt)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return Server{}, ErrNotFound
 	}
 	if err != nil {
-		return Server{}, fmt.Errorf("get server %q: %w", id, err)
+		return Server{}, err
 	}
 
 	server.CertNotAfter = timeValue(certNotAfter)
@@ -238,6 +258,28 @@ func (s *Store) GetServer(ctx context.Context, id string) (Server, error) {
 	}
 
 	return server, nil
+}
+
+// ListServers returns every server, revoked ones included, ordered by name.
+func (s *Store) ListServers(ctx context.Context) ([]Server, error) {
+	rows, err := s.pool.Query(ctx, `SELECT `+serverColumns+` FROM server ORDER BY name, id`)
+	if err != nil {
+		return nil, fmt.Errorf("list servers: %w", err)
+	}
+	defer rows.Close()
+
+	servers := make([]Server, 0, 8)
+	for rows.Next() {
+		server, err := scanServer(rows)
+		if err != nil {
+			return nil, fmt.Errorf("scan server: %w", err)
+		}
+		servers = append(servers, server)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("read servers: %w", err)
+	}
+	return servers, nil
 }
 
 // RevokeServer marks a server as revoked. Revoking twice is not an error.

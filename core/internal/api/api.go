@@ -25,6 +25,9 @@ type RouterDeps struct {
 	Session  SessionDeps
 	Security SecurityConfig
 	WebDir   string
+	// Servers and Agents feed GET /api/v1/servers.
+	Servers ServerLister
+	Agents  LiveAgents
 }
 
 // NewRouter returns the HTTP handler of the core: the health endpoint, the
@@ -43,6 +46,8 @@ func NewRouter(deps RouterDeps) http.Handler {
 		// factors. Later tasks add their endpoints to this group.
 		r.Group(func(r chi.Router) {
 			r.Use(RequireFull)
+			r.Get("/servers",
+				NewServersHandler(ServerDeps{Servers: deps.Servers, Agents: deps.Agents}).ServeHTTP)
 		})
 	})
 

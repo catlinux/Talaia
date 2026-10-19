@@ -31,7 +31,13 @@ type AgentInfo struct {
 	// ServerID is the id of the enrolled server; empty in insecure dev mode.
 	ServerID          string
 	Hostname          string
+	OSName            string
+	OSVersion         string
+	Kernel            string
+	Arch              string
 	AgentVersion      string
+	CPUCount          uint32
+	MemTotalBytes     uint64
 	LastSeen          time.Time
 	LastCPUPercent    float64
 	MemUsedBytes      uint64
@@ -53,10 +59,16 @@ type AgentInfo struct {
 	token uint64
 }
 
-// applyInventory copies the facts of an inventory message, including the docker
-// and systemd counts, into the snapshot.
+// applyInventory copies the facts of an inventory message, including the
+// machine facts and the docker and systemd counts, into the snapshot.
 func (info *AgentInfo) applyInventory(inventory *agentv1.Inventory) {
+	info.OSName = inventory.GetOsName()
+	info.OSVersion = inventory.GetOsVersion()
+	info.Kernel = inventory.GetKernel()
+	info.Arch = inventory.GetArch()
 	info.AgentVersion = inventory.GetAgentVersion()
+	info.CPUCount = inventory.GetCpuCount()
+	info.MemTotalBytes = inventory.GetMemTotalBytes()
 	info.DockerAvailable = inventory.GetDockerAvailable()
 
 	running := 0

@@ -470,3 +470,71 @@ func TestRotateServerCertificate(t *testing.T) {
 		t.Errorf("rotate missing = %v, want ErrNotFound", err)
 	}
 }
+
+func TestListServers(t *testing.T) {
+	s := newTestStore(t)
+	ctx := context.Background()
+
+	// The shared test database holds servers of other suites: this test checks
+	// its own three rows and the order of the whole list.
+	base := fmt.Sprintf("test-list-%d", time.Now().UnixNano())
+	names := []string{base + "-b", base + "-a", base + "-c"}
+	t.Cleanup(func() {
+		cleanupCtx := context.Background()
+		for _, name := range names {
+			_, _ = s.pool.Exec(cleanupCtx, `DELETE FROM server WHERE name = $1`, name)
+		}
+	})
+
+	ids := make(map[string]string, len(names))
+	for _, name := range names {
+		id, err := s.CreateServer(ctx, name)
+		if err != nil {
+			t.Fatalf("create server %q: %v", name, err)
+		}
+		ids[name] = id
+	}
+	if err := s.RevokeServer(ctx, ids[names[2]]); err != nil {
+		t.Fatalf("revoke server: %v", err)
+	}
+
+	servers, err := s.ListServers(ctx)
+	if err != nil {
+		t.Fatalf("list servers: %v", err)
+	}
+
+	mine := make([]Server, 0, len(names))
+	for _, server := range servers {
+		for _, name := range names {
+			if server.Name == name {
+				mine = append(mine, server)
+			}
+		}
+	}
+	if len(mine) != len(names) {
+		t.Fatalf("listed %d of the test servers, want %d", len(mine), len(names))
+	}
+
+	// Ordered by name, whichever order they were created in.
+	for i, want := range []string{base + "-a", base + "-b", base + "-c"} {
+		if mine[i].Name != want {
+			t.Errorf("server %d = %q, want %q", i, mine[i].Name, want)
+		}
+	}
+	if mine[0].ID != ids[names[1]] || mine[0].CreatedAt.IsZero() {
+		t.Errorf("the first server = %+v, want the created row", mine[0])
+	}
+	if !mine[1].RevokedAt.IsZero() {
+		t.Errorf("the middle server is revoked")
+	}
+	if mine[2].RevokedAt.IsZero() {
+		t.Errorf("the revoked server is not flagged")
+	}
+
+	// The full list is ordered by name too.
+	for i := 1; i < len(servers); i++ {
+		if servers[i-1].Name > servers[i].Name {
+			t.Fatalf("the list is not ordered by name: %q before %q", servers[i-1].Name, servers[i].Name)
+		}
+	}
+}

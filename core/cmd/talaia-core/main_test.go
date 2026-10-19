@@ -550,6 +550,23 @@ func TestPanelAndAuthAPIOverTLS(t *testing.T) {
 	if got := response.Header.Get("Cache-Control"); got != "no-store" {
 		t.Errorf("Cache-Control = %q, want no-store", got)
 	}
+
+	// The protected server list is mounted here too and refuses anonymous calls.
+	response, err = client.Get(core.server.URL + "/api/v1/servers")
+	if err != nil {
+		t.Fatalf("get the servers: %v", err)
+	}
+	body, err = io.ReadAll(response.Body)
+	_ = response.Body.Close()
+	if err != nil {
+		t.Fatalf("read the servers: %v", err)
+	}
+	if response.StatusCode != http.StatusUnauthorized {
+		t.Fatalf("servers status = %d, want 401", response.StatusCode)
+	}
+	if !strings.Contains(string(body), "session_required") {
+		t.Errorf("servers body = %q, want the session_required code", body)
+	}
 }
 
 func TestPlainRouterServesThePanelAndTheAuthAPI(t *testing.T) {
@@ -567,7 +584,7 @@ func TestPlainRouterServesThePanelAndTheAuthAPI(t *testing.T) {
 		Origins: []string{"http://localhost:5173"},
 		TLS:     false,
 	}
-	server := httptest.NewServer(newPlainRouter(core.store, panel))
+	server := httptest.NewServer(newPlainRouter(core.store, hub.NewInsecure(), panel))
 	t.Cleanup(server.Close)
 
 	client := server.Client()
@@ -602,6 +619,16 @@ func TestPlainRouterServesThePanelAndTheAuthAPI(t *testing.T) {
 	_ = response.Body.Close()
 	if response.StatusCode != http.StatusNotFound {
 		t.Errorf("ca.pem status = %d, want 404 in insecure mode", response.StatusCode)
+	}
+
+	// The protected server list is mounted here too.
+	response, err = client.Get(server.URL + "/api/v1/servers")
+	if err != nil {
+		t.Fatalf("get the servers: %v", err)
+	}
+	_ = response.Body.Close()
+	if response.StatusCode != http.StatusUnauthorized {
+		t.Errorf("servers status = %d, want 401", response.StatusCode)
 	}
 }
 

@@ -486,3 +486,52 @@ func waitServe(t *testing.T, done <-chan error) {
 		t.Fatal("serve did not return")
 	}
 }
+
+func TestServeTracksTheInventoryFacts(t *testing.T) {
+	h := NewInsecure()
+	stream := newFakeStream()
+	done := make(chan error, 1)
+	go func() {
+		done <- h.serve(context.Background(), stream)
+	}()
+
+	first := inventoryMsg("vps-facts")
+	first.GetInventory().OsName = "Debian GNU/Linux"
+	first.GetInventory().OsVersion = "13"
+	first.GetInventory().Kernel = "6.12.0-amd64"
+	first.GetInventory().Arch = "amd64"
+	first.GetInventory().CpuCount = 4
+	first.GetInventory().MemTotalBytes = 8 << 30
+	stream.in <- first
+	waitFor(t, func() bool { return len(h.Connected()) == 1 })
+
+	info := h.Connected()[0]
+	if info.OSName != "Debian GNU/Linux" || info.OSVersion != "13" ||
+		info.Kernel != "6.12.0-amd64" || info.Arch != "amd64" ||
+		info.CPUCount != 4 || info.MemTotalBytes != 8<<30 {
+		t.Fatalf("inventory facts = %+v, want the first inventory", info)
+	}
+
+	// A later inventory updates the facts too.
+	later := inventoryMsg("vps-facts")
+	later.GetInventory().OsName = "Debian GNU/Linux"
+	later.GetInventory().OsVersion = "14"
+	later.GetInventory().Kernel = "6.13.0-amd64"
+	later.GetInventory().Arch = "arm64"
+	later.GetInventory().CpuCount = 8
+	later.GetInventory().MemTotalBytes = 16 << 30
+	stream.in <- later
+	waitFor(t, func() bool {
+		connected := h.Connected()
+		return len(connected) == 1 && connected[0].OSVersion == "14"
+	})
+
+	info = h.Connected()[0]
+	if info.OSVersion != "14" || info.Kernel != "6.13.0-amd64" || info.Arch != "arm64" ||
+		info.CPUCount != 8 || info.MemTotalBytes != 16<<30 {
+		t.Fatalf("inventory facts = %+v, want the later inventory", info)
+	}
+
+	stream.close()
+	waitServe(t, done)
+}
