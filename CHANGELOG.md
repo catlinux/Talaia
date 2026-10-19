@@ -26,6 +26,7 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 - Live agent metrics (CPU, RAM, root disk, network counters), kept by the core hub.
 - Agent `.deb` package (nfpm), systemd unit and `install.sh` (`scripts/build-deb.sh`). Enrollment is not implemented yet.
 - Fleet screen (mockup 1) with sample data behind an API-client interface, and Fleet/About navigation.
+- Agent inventory of Docker containers, Compose projects and systemd services, re-sent only when it changes.
 
 ### Changed
 

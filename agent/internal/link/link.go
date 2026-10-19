@@ -15,6 +15,7 @@ import (
 
 	"connectrpc.com/connect/v2"
 	"connectrpc.com/connect/v2/connecthttp"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/catlinux/Talaia/agent/internal/collect"
@@ -36,6 +37,7 @@ type Link struct {
 	// Intervals and backoff bounds are fields so tests can use milliseconds.
 	HeartbeatInterval time.Duration
 	MetricsInterval   time.Duration
+	InventoryInterval time.Duration
 	BackoffBase       time.Duration
 	BackoffMax        time.Duration
 
@@ -55,6 +57,7 @@ func New(cfg config.Config, collector collect.Collector) *Link {
 		client:            agentv1connect.NewAgentHubClient(connect.NewClient(transport)),
 		HeartbeatInterval: 10 * time.Second,
 		MetricsInterval:   15 * time.Second,
+		InventoryInterval: 60 * time.Second,
 		BackoffBase:       time.Second,
 		BackoffMax:        60 * time.Second,
 		now:               time.Now,
@@ -109,6 +112,7 @@ func (l *Link) session(ctx context.Context) error {
 	if err := stream.Send(inventoryMsg(inventory)); err != nil {
 		return fmt.Errorf("send inventory: %w", err)
 	}
+	sentInventory := inventory
 	slog.Info("connected to core", "core_url", l.cfg.CoreURL, "hostname", inventory.GetHostname())
 
 	received := make(chan error, 1)
@@ -120,6 +124,8 @@ func (l *Link) session(ctx context.Context) error {
 	defer heartbeat.Stop()
 	metrics := time.NewTicker(l.MetricsInterval)
 	defer metrics.Stop()
+	inventoryTicker := time.NewTicker(l.InventoryInterval)
+	defer inventoryTicker.Stop()
 
 	var seq uint64
 	for {
@@ -132,6 +138,21 @@ func (l *Link) session(ctx context.Context) error {
 				return errors.New("core closed the stream")
 			}
 			return fmt.Errorf("receive from core: %w", err)
+
+		case <-inventoryTicker.C:
+			current, err := l.collector.Inventory()
+			if err != nil {
+				slog.Warn("collect inventory", "error", err)
+				continue
+			}
+			if inventoryUnchanged(current, sentInventory) {
+				continue
+			}
+			if err := stream.Send(inventoryMsg(current)); err != nil {
+				return fmt.Errorf("send inventory: %w", err)
+			}
+			sentInventory = current
+			slog.Debug("inventory changed, sent")
 
 		case <-heartbeat.C:
 			seq++
@@ -173,6 +194,27 @@ func (l *Link) receive(stream agentv1connect.AgentHubConnectClientStream) error 
 			slog.Debug("heartbeat acknowledged", "seq", ack.GetSeq())
 		}
 	}
+}
+
+// inventoryUnchanged compares two inventories ignoring the human-readable
+// container status ("Up 5 minutes"), which changes every minute and would
+// otherwise make the agent resend an identical inventory on every tick.
+func inventoryUnchanged(a, b *agentv1.Inventory) bool {
+	return proto.Equal(withoutContainerStatus(a), withoutContainerStatus(b))
+}
+
+func withoutContainerStatus(inventory *agentv1.Inventory) *agentv1.Inventory {
+	if inventory == nil {
+		return nil
+	}
+	clone, ok := proto.Clone(inventory).(*agentv1.Inventory)
+	if !ok {
+		return inventory
+	}
+	for _, container := range clone.GetContainers() {
+		container.Status = ""
+	}
+	return clone
 }
 
 func inventoryMsg(inventory *agentv1.Inventory) *agentv1.AgentMsg {

@@ -44,7 +44,19 @@ func (f *fakeStream) close() {
 func inventoryMsg(hostname string) *agentv1.AgentMsg {
 	return &agentv1.AgentMsg{
 		Msg: &agentv1.AgentMsg_Inventory{
-			Inventory: &agentv1.Inventory{Hostname: hostname, AgentVersion: "1.2.3"},
+			Inventory: &agentv1.Inventory{
+				Hostname:        hostname,
+				AgentVersion:    "1.2.3",
+				DockerAvailable: true,
+				DockerVersion:   "27.1.1",
+				Containers: []*agentv1.Container{
+					{Id: "cccccccccccc", Name: "job", State: "exited"},
+					{Id: "aaaaaaaaaaaa", Name: "shop-db-1", State: "running"},
+					{Id: "bbbbbbbbbbbb", Name: "shop-web-1", State: "running"},
+				},
+				ComposeProjects: []*agentv1.ComposeProject{{Name: "shop", ContainerCount: 2, RunningCount: 2}},
+				Services:        []*agentv1.SystemdUnit{{Name: "docker.service"}, {Name: "ssh.service"}},
+			},
 		},
 	}
 }
@@ -102,6 +114,32 @@ func TestServeRegistersAgentAndTracksState(t *testing.T) {
 	}
 	if info.LastSeen.IsZero() {
 		t.Fatal("last seen is zero")
+	}
+	if !info.DockerAvailable || info.Containers != 3 || info.RunningContainers != 2 ||
+		info.ComposeProjects != 1 || info.Services != 2 {
+		t.Fatalf("inventory counts = %+v, want 3 containers (2 running), 1 project and 2 services", info)
+	}
+
+	// A later inventory updates the counts too.
+	stream.in <- &agentv1.AgentMsg{
+		Msg: &agentv1.AgentMsg_Inventory{
+			Inventory: &agentv1.Inventory{
+				Hostname:        "vps-test",
+				AgentVersion:    "1.2.4",
+				DockerAvailable: false,
+				Containers:      []*agentv1.Container{{Id: "aaaaaaaaaaaa", Name: "web", State: "running"}},
+			},
+		},
+	}
+	waitFor(t, func() bool {
+		connected := h.Connected()
+		return len(connected) == 1 && connected[0].AgentVersion == "1.2.4"
+	})
+
+	info = h.Connected()[0]
+	if info.DockerAvailable || info.Containers != 1 || info.RunningContainers != 1 ||
+		info.ComposeProjects != 0 || info.Services != 0 {
+		t.Fatalf("updated inventory counts = %+v, want 1 container (1 running) and nothing else", info)
 	}
 
 	stream.in <- &agentv1.AgentMsg{

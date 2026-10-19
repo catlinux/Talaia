@@ -23,15 +23,39 @@ import (
 
 // AgentInfo is a snapshot of a connected agent.
 type AgentInfo struct {
-	Hostname       string
-	AgentVersion   string
-	LastSeen       time.Time
-	LastCPUPercent float64
-	MemUsedBytes   uint64
-	DiskUsedBytes  uint64
-	DiskTotalBytes uint64
-	NetRxBytes     uint64
-	NetTxBytes     uint64
+	Hostname          string
+	AgentVersion      string
+	LastSeen          time.Time
+	LastCPUPercent    float64
+	MemUsedBytes      uint64
+	DiskUsedBytes     uint64
+	DiskTotalBytes    uint64
+	NetRxBytes        uint64
+	NetTxBytes        uint64
+	DockerAvailable   bool
+	Containers        int
+	RunningContainers int
+	ComposeProjects   int
+	Services          int
+}
+
+// applyInventory copies the facts of an inventory message, including the docker
+// and systemd counts, into the snapshot.
+func (info *AgentInfo) applyInventory(inventory *agentv1.Inventory) {
+	info.AgentVersion = inventory.GetAgentVersion()
+	info.DockerAvailable = inventory.GetDockerAvailable()
+
+	running := 0
+	for _, container := range inventory.GetContainers() {
+		if container.GetState() == "running" {
+			running++
+		}
+	}
+
+	info.Containers = len(inventory.GetContainers())
+	info.RunningContainers = running
+	info.ComposeProjects = len(inventory.GetComposeProjects())
+	info.Services = len(inventory.GetServices())
 }
 
 // agentStream is the part of the server stream the hub uses. Keeping it small
@@ -107,10 +131,10 @@ func (h *Hub) serve(_ context.Context, stream agentStream) error {
 	}
 
 	info := AgentInfo{
-		Hostname:     hostname,
-		AgentVersion: inventory.GetAgentVersion(),
-		LastSeen:     h.now(),
+		Hostname: hostname,
+		LastSeen: h.now(),
 	}
+	info.applyInventory(inventory)
 	h.store(info)
 	slog.Info("agent connected", "hostname", hostname, "agent_version", info.AgentVersion)
 	defer func() {
@@ -157,7 +181,7 @@ func (h *Hub) serve(_ context.Context, stream agentStream) error {
 
 		case msg.GetInventory() != nil:
 			// The inventory is also sent on change.
-			info.AgentVersion = msg.GetInventory().GetAgentVersion()
+			info.applyInventory(msg.GetInventory())
 			info.LastSeen = h.now()
 			h.store(info)
 			slog.Debug("inventory updated", "hostname", hostname)

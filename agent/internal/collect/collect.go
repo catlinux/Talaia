@@ -3,6 +3,7 @@
 package collect
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -18,6 +19,7 @@ import (
 	"github.com/shirou/gopsutil/v4/net"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	"github.com/catlinux/Talaia/agent/internal/inventory"
 	agentv1 "github.com/catlinux/Talaia/proto/gen/go"
 )
 
@@ -45,15 +47,19 @@ type Collector interface {
 }
 
 // System is the Collector for the host the agent runs on.
-type System struct{}
+type System struct {
+	// Provider reads Docker and systemd. The zero value reads neither, which
+	// is what a host without them reports.
+	Provider inventory.Provider
+}
 
 // New returns the Collector for the local host.
 func New() Collector {
-	return System{}
+	return System{Provider: inventory.New()}
 }
 
-// Inventory reports the static facts of the host.
-func (System) Inventory() (*agentv1.Inventory, error) {
+// Inventory reports the static facts of the host plus what runs on it.
+func (s System) Inventory() (*agentv1.Inventory, error) {
 	info, err := host.Info()
 	if err != nil {
 		return nil, fmt.Errorf("read host info: %w", err)
@@ -68,15 +74,22 @@ func (System) Inventory() (*agentv1.Inventory, error) {
 		hostname, _ = os.Hostname()
 	}
 
+	running := s.Provider.Collect(context.Background())
+
 	return &agentv1.Inventory{
-		Hostname:      hostname,
-		OsName:        info.Platform,
-		OsVersion:     info.PlatformVersion,
-		Kernel:        info.KernelVersion,
-		Arch:          runtime.GOARCH,
-		AgentVersion:  version,
-		CpuCount:      uint32(runtime.NumCPU()),
-		MemTotalBytes: memory.Total,
+		Hostname:        hostname,
+		OsName:          info.Platform,
+		OsVersion:       info.PlatformVersion,
+		Kernel:          info.KernelVersion,
+		Arch:            runtime.GOARCH,
+		AgentVersion:    version,
+		CpuCount:        uint32(runtime.NumCPU()),
+		MemTotalBytes:   memory.Total,
+		DockerAvailable: running.DockerAvailable,
+		DockerVersion:   running.DockerVersion,
+		Containers:      running.Containers,
+		ComposeProjects: running.Projects,
+		Services:        running.Services,
 	}, nil
 }
 

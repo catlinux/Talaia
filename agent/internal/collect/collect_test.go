@@ -1,12 +1,32 @@
 package collect
 
 import (
+	"context"
 	"runtime"
 	"testing"
 
 	"github.com/shirou/gopsutil/v4/disk"
 	"github.com/shirou/gopsutil/v4/mem"
+
+	"github.com/catlinux/Talaia/agent/internal/inventory"
+	agentv1 "github.com/catlinux/Talaia/proto/gen/go"
 )
+
+type fakeDockerSource struct {
+	result inventory.DockerInventory
+}
+
+func (f fakeDockerSource) Collect(context.Context) inventory.DockerInventory {
+	return f.result
+}
+
+type fakeServiceSource struct {
+	units []*agentv1.SystemdUnit
+}
+
+func (f fakeServiceSource) Units(context.Context) []*agentv1.SystemdUnit {
+	return f.units
+}
 
 func TestSystemInventory(t *testing.T) {
 	inventory, err := System{}.Inventory()
@@ -89,5 +109,53 @@ func TestIsPhysicalInterface(t *testing.T) {
 				t.Fatalf("isPhysicalInterface(%q) = %v, want %v", tt.name, got, tt.want)
 			}
 		})
+	}
+}
+
+func TestSystemInventoryIncludesDockerAndServices(t *testing.T) {
+	provider := inventory.Provider{
+		Docker: fakeDockerSource{result: inventory.DockerInventory{
+			Available:  true,
+			Version:    "27.1.1",
+			Containers: []*agentv1.Container{{Id: "abcdefghijkl", Name: "web", State: "running"}},
+			Projects:   []*agentv1.ComposeProject{{Name: "shop"}},
+		}},
+		Systemd: fakeServiceSource{units: []*agentv1.SystemdUnit{{Name: "docker.service"}}},
+	}
+
+	sample, err := System{Provider: provider}.Inventory()
+	if err != nil {
+		t.Fatalf("inventory: %v", err)
+	}
+
+	if sample.GetHostname() == "" {
+		t.Error("hostname is empty")
+	}
+	if !sample.GetDockerAvailable() || sample.GetDockerVersion() != "27.1.1" {
+		t.Errorf("docker = %v %q", sample.GetDockerAvailable(), sample.GetDockerVersion())
+	}
+	if len(sample.GetContainers()) != 1 || len(sample.GetComposeProjects()) != 1 {
+		t.Errorf("containers = %d, projects = %d", len(sample.GetContainers()), len(sample.GetComposeProjects()))
+	}
+	if len(sample.GetServices()) != 1 {
+		t.Errorf("services = %+v", sample.GetServices())
+	}
+}
+
+// The real provider must work on a host without Docker or systemd: it reports
+// nothing instead of failing.
+func TestSystemInventoryDegradesGracefully(t *testing.T) {
+	sample, err := System{Provider: inventory.New()}.Inventory()
+	if err != nil {
+		t.Fatalf("inventory: %v", err)
+	}
+
+	t.Logf("docker available=%v services=%d", sample.GetDockerAvailable(), len(sample.GetServices()))
+
+	if !sample.GetDockerAvailable() {
+		if len(sample.GetContainers()) != 0 || len(sample.GetComposeProjects()) != 0 {
+			t.Errorf("docker is unavailable but containers = %d and projects = %d",
+				len(sample.GetContainers()), len(sample.GetComposeProjects()))
+		}
 	}
 }
