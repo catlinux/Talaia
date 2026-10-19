@@ -1,0 +1,67 @@
+# syntax=docker/dockerfile:1
+#
+# talaia-core in one small image: the compiled web panel and the Go binary.
+# Build it from the repository root (compose does it for you):
+#   docker build -f packaging/core/Dockerfile -t talaia-core:local .
+#
+# The core writes its CA and its secrets key under TALAIA_DATA_DIR, so that
+# directory is a volume in compose and is never baked into the image.
+
+# Stage 1: the web panel.
+FROM node:24-bookworm-slim AS web
+
+# corepack runs the pnpm version pinned in web/package.json. The prompt is off
+# so the build never waits for an answer.
+ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
+RUN corepack enable
+
+WORKDIR /build
+
+# The Vite config reads the version from ../VERSION.
+COPY VERSION ./VERSION
+COPY web/package.json web/pnpm-lock.yaml ./web/
+# Run pnpm inside web/ so corepack picks the version pinned in its package.json.
+RUN cd web && pnpm install --frozen-lockfile
+
+COPY web ./web
+RUN cd web && pnpm build
+
+# Stage 2: the static Go binary.
+FROM golang:1.26-bookworm AS build
+
+WORKDIR /src
+
+# The build uses the go.work of the repository, which lists agent, cli, core and
+# proto. The module files of all four are enough for the workspace to resolve;
+# only core and proto are copied with their sources. go.work.sum is git-ignored,
+# so it is not copied.
+COPY go.work ./
+COPY core/go.mod core/go.sum ./core/
+COPY proto/go.mod proto/go.sum ./proto/
+COPY agent/go.mod agent/go.sum ./agent/
+COPY cli/go.mod cli/go.sum ./cli/
+RUN go mod download
+
+COPY core ./core
+COPY proto ./proto
+COPY VERSION ./VERSION
+
+# A build argument overrides the version stamped into the binary; without it the
+# VERSION file of the repository is used.
+ARG VERSION=""
+RUN version="${VERSION:-$(cat VERSION)}" && \
+    CGO_ENABLED=0 go build -trimpath -ldflags "-s -w -X main.version=${version}" \
+    -o /out/talaia-core ./core/cmd/talaia-core
+
+# Stage 3: the runtime. distroless has no shell, so a HEALTHCHECK is not
+# possible here: compose checks the database and the core answers on its port.
+FROM gcr.io/distroless/static-debian12:nonroot
+
+COPY --from=build /out/talaia-core /usr/local/bin/talaia-core
+COPY --from=web /build/web/dist /usr/share/talaia/web
+
+# The nonroot user (uid 65532) owns the data volume; compose prepares it.
+USER nonroot
+EXPOSE 8443
+ENTRYPOINT ["/usr/local/bin/talaia-core"]
+CMD ["serve"]

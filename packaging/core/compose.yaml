@@ -1,0 +1,80 @@
+# Production deployment of talaia-core with PostgreSQL 16 and TimescaleDB.
+#
+# Copy .env.example to .env, fill it in and run:
+#   docker compose up -d --build
+#
+# The core serves HTTPS itself with a certificate signed by the CA it creates in
+# the core-data volume; the browser trusts it only once that CA is installed.
+# Keep the volume: it also holds the secrets key that encrypts the TOTP secret.
+name: talaia
+
+services:
+  db:
+    image: timescale/timescaledb:latest-pg16
+    environment:
+      POSTGRES_USER: talaia
+      POSTGRES_DB: talaia
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env (see .env.example)}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U talaia -d talaia"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 30s
+    restart: unless-stopped
+
+  # distroless runs the core as uid 65532: hand it the data volume before the
+  # core starts. It needs CHOWN (and DAC_OVERRIDE to walk the tree) and nothing
+  # else, and it runs once.
+  volume-init:
+    image: busybox:1.37
+    command: ["sh", "-c", "chown -R 65532:65532 /var/lib/talaia"]
+    user: "0:0"
+    volumes:
+      - core-data:/var/lib/talaia
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - FOWNER
+    security_opt:
+      - no-new-privileges:true
+    restart: "no"
+
+  core:
+    image: talaia-core:local
+    build:
+      context: ../..
+      dockerfile: packaging/core/Dockerfile
+    depends_on:
+      db:
+        condition: service_healthy
+      volume-init:
+        condition: service_completed_successfully
+    environment:
+      TALAIA_DATABASE_URL: "postgres://talaia:${POSTGRES_PASSWORD}@db:5432/talaia?sslmode=disable"
+      TALAIA_LISTEN: ":8443"
+      TALAIA_DATA_DIR: /var/lib/talaia
+      TALAIA_WEB_DIR: /usr/share/talaia/web
+      TALAIA_PUBLIC_HOSTNAMES: ${TALAIA_PUBLIC_HOSTNAMES:?set TALAIA_PUBLIC_HOSTNAMES in .env (see .env.example)}
+      # Empty means "derive them from TALAIA_PUBLIC_HOSTNAMES", the default.
+      TALAIA_ALLOWED_ORIGINS: ${TALAIA_ALLOWED_ORIGINS:-}
+      TALAIA_LOG_LEVEL: ${TALAIA_LOG_LEVEL:-info}
+    volumes:
+      - core-data:/var/lib/talaia
+    ports:
+      - "${TALAIA_PORT:-443}:8443"
+    # The image is immutable: only the data volume is writable.
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    restart: unless-stopped
+
+volumes:
+  db-data:
+  core-data:

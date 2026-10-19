@@ -35,6 +35,7 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 - Security review of the enrollment: revocation now closes live agent streams, the agent identity is bound to the current or previous certificate serial, enrollment is a single transaction, the agent key and certificate are stored in one atomic file, `insecure_dev` only listens on loopback, permanent agent errors stop systemd restarts (exit 78), and the CA and certificate directories are forced to mode 0700.
 - Panel authentication (ahead of phase 3): single administrator created from the console, argon2id password, mandatory TOTP with single-use recovery codes, secure session cookie, CSRF protection, brute-force limits, audit log, and the sign-in screens in ca/es/en.
+- Core deployment with Docker Compose (`packaging/core/`): one image with the core and the web panel, PostgreSQL 16 + TimescaleDB, read-only root filesystem and no capabilities.
 
 ### Changed
 
