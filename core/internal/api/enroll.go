@@ -21,16 +21,15 @@ const clientCertValidity = 90 * 24 * time.Hour
 // maxBodyBytes limits the body of the enrollment requests.
 const maxBodyBytes = 16 << 10
 
-// TokenConsumer consumes one-time enrollment tokens.
-type TokenConsumer interface {
-	ConsumeEnrollmentToken(ctx context.Context, token string) (string, error)
-}
-
-// ServerStore creates the servers, finds them and records their certificate.
-type ServerStore interface {
-	CreateServer(ctx context.Context, name string) (string, error)
+// EnrollmentStore enrolls servers and finds them.
+type EnrollmentStore interface {
+	// EnrollServer consumes the token, creates the server and stores the
+	// certificate in a single transaction.
+	EnrollServer(ctx context.Context, token string, sign store.SignFunc) (serverID string, certPEM []byte, err error)
 	GetServer(ctx context.Context, id string) (store.Server, error)
-	SetServerCertificate(ctx context.Context, id, serial string, notAfter time.Time) error
+	// RotateServerCertificate replaces the certificate, keeping the previous
+	// serial acceptable.
+	RotateServerCertificate(ctx context.Context, id, newSerial string, notAfter time.Time) error
 }
 
 // CertificateSigner signs the client certificates of the agents.
@@ -45,8 +44,7 @@ type CertificateProvider interface {
 
 // EnrollmentDeps are the collaborators of the enrollment endpoints.
 type EnrollmentDeps struct {
-	Tokens  TokenConsumer
-	Servers ServerStore
+	Store   EnrollmentStore
 	Signer  CertificateSigner
 	CA      CertificateProvider
 	Limiter *RateLimiter
@@ -106,38 +104,26 @@ func (h *enrollHandler) enroll(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	serverName, err := h.deps.Tokens.ConsumeEnrollmentToken(r.Context(), request.Token)
+	// Consuming the token, creating the server and storing the certificate
+	// happen in a single transaction: if anything fails the rollback leaves the
+	// one-time token usable and no orphan server behind.
+	serverID, certPEM, err := h.deps.Store.EnrollServer(r.Context(), request.Token,
+		func(serverID string) ([]byte, string, time.Time, error) {
+			certPEM, notAfter, serial, err := h.deps.Signer.SignClientCert([]byte(request.CSRPEM), serverID, clientCertValidity)
+			return certPEM, serial, notAfter, err
+		})
 	if err != nil {
 		// Unknown, used and expired tokens are all reported the same way.
 		if errors.Is(err, store.ErrInvalidToken) {
 			writeError(w, http.StatusUnauthorized, "invalid_token")
 			return
 		}
-		slog.Error("consume enrollment token", "error", err)
+		slog.Error("enroll server", "error", err)
 		writeError(w, http.StatusInternalServerError, "internal")
 		return
 	}
 
-	serverID, err := h.deps.Servers.CreateServer(r.Context(), serverName)
-	if err != nil {
-		slog.Error("create server", "server_name", serverName, "error", err)
-		writeError(w, http.StatusInternalServerError, "internal")
-		return
-	}
-
-	certPEM, notAfter, serial, err := h.deps.Signer.SignClientCert([]byte(request.CSRPEM), serverID, clientCertValidity)
-	if err != nil {
-		slog.Error("sign client certificate", "server_id", serverID, "error", err)
-		writeError(w, http.StatusInternalServerError, "internal")
-		return
-	}
-	if err := h.deps.Servers.SetServerCertificate(r.Context(), serverID, serial, notAfter); err != nil {
-		slog.Error("store server certificate", "server_id", serverID, "error", err)
-		writeError(w, http.StatusInternalServerError, "internal")
-		return
-	}
-
-	slog.Info("server enrolled", "server_id", serverID, "server_name", serverName, "hostname", request.Hostname)
+	slog.Info("server enrolled", "server_id", serverID, "hostname", request.Hostname)
 	writeJSON(w, http.StatusOK, enrollResponse{
 		ServerID: serverID,
 		CertPEM:  string(certPEM),
@@ -155,19 +141,22 @@ type renewResponse struct {
 
 func (h *enrollHandler) renew(w http.ResponseWriter, r *http.Request) {
 	// The identity comes from the client certificate, never from the body. A
-	// missing certificate, an unknown server and a revoked server are all
-	// forbidden.
-	serverID := ""
-	if r.TLS != nil && len(r.TLS.PeerCertificates) > 0 {
-		serverID = r.TLS.PeerCertificates[0].Subject.CommonName
-	}
-	if strings.TrimSpace(serverID) == "" {
+	// missing certificate, an unknown server, a revoked server and a serial
+	// that is neither the current one nor the previous one are all forbidden.
+	serverID, presentedSerial, ok := clientIdentity(r)
+	if !ok {
 		writeError(w, http.StatusForbidden, "forbidden")
 		return
 	}
 
-	server, err := h.deps.Servers.GetServer(r.Context(), serverID)
-	if err != nil || !server.RevokedAt.IsZero() {
+	server, err := h.deps.Store.GetServer(r.Context(), serverID)
+	if err != nil {
+		slog.Warn("renewal rejected", "server_id", serverID, "error", err)
+		writeError(w, http.StatusForbidden, "forbidden")
+		return
+	}
+	if !server.RevokedAt.IsZero() || !server.AcceptsSerial(presentedSerial) {
+		slog.Warn("renewal rejected", "server_id", serverID, "serial", presentedSerial, "revoked", !server.RevokedAt.IsZero())
 		writeError(w, http.StatusForbidden, "forbidden")
 		return
 	}
@@ -189,7 +178,9 @@ func (h *enrollHandler) renew(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "internal")
 		return
 	}
-	if err := h.deps.Servers.SetServerCertificate(r.Context(), serverID, serial, notAfter); err != nil {
+	// The serial that was current becomes the previous one, so the agent keeps
+	// working until it stores the new certificate.
+	if err := h.deps.Store.RotateServerCertificate(r.Context(), serverID, serial, notAfter); err != nil {
 		slog.Error("store renewed certificate", "server_id", serverID, "error", err)
 		writeError(w, http.StatusInternalServerError, "internal")
 		return
@@ -197,6 +188,25 @@ func (h *enrollHandler) renew(w http.ResponseWriter, r *http.Request) {
 
 	slog.Info("server certificate renewed", "server_id", serverID)
 	writeJSON(w, http.StatusOK, renewResponse{CertPEM: string(certPEM)})
+}
+
+// clientIdentity returns the server id and the certificate serial of a
+// connection, taken from the verified client certificate. The serial is
+// formatted like ca.SignClientCert does, so both can be compared as strings.
+func clientIdentity(r *http.Request) (serverID, serial string, ok bool) {
+	if r.TLS == nil || len(r.TLS.PeerCertificates) == 0 {
+		return "", "", false
+	}
+
+	cert := r.TLS.PeerCertificates[0]
+	serverID = strings.TrimSpace(cert.Subject.CommonName)
+	if serverID == "" {
+		return "", "", false
+	}
+	if cert.SerialNumber != nil {
+		serial = cert.SerialNumber.Text(16)
+	}
+	return serverID, serial, true
 }
 
 // errorBody is the JSON shape of every API error. The panel translates the

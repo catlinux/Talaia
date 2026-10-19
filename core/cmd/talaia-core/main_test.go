@@ -13,6 +13,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"encoding/pem"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -315,6 +316,13 @@ func inventoryMessage(hostname string) *agentv1.AgentMsg {
 	}
 }
 
+// heartbeatMessage keeps an open stream alive.
+func heartbeatMessage(seq uint64) *agentv1.AgentMsg {
+	return &agentv1.AgentMsg{
+		Msg: &agentv1.AgentMsg_Heartbeat{Heartbeat: &agentv1.Heartbeat{Seq: seq}},
+	}
+}
+
 // sendInventory opens the hub stream and sends one inventory message.
 func (core *testCore) sendInventory(t *testing.T, client agentv1connect.AgentHubClient, hostname string) error {
 	t.Helper()
@@ -463,6 +471,52 @@ func TestHubRequiresACertificateAndRejectsRevokedServers(t *testing.T) {
 	}
 }
 
+func TestRevocationClosesALiveStream(t *testing.T) {
+	core := newTestCore(t)
+	ctx := context.Background()
+	name := uniqueName(t)
+	cleanupRows(t, name)
+
+	// Revocation is checked on every heartbeat tick, not only on connecting.
+	core.hub.CheckInterval = 20 * time.Millisecond
+
+	enrolled := core.enrollServer(t, name)
+	client := core.hubClient(t, &enrolled.certificate)
+
+	streamCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	stream, err := client.Connect(streamCtx)
+	if err != nil {
+		t.Fatalf("connect: %v", err)
+	}
+	defer func() { _ = stream.Close() }()
+
+	if err := stream.Send(inventoryMessage("vps-web-01")); err != nil {
+		t.Fatalf("send inventory: %v", err)
+	}
+	waitFor(t, func() bool { return len(core.hub.Connected()) == 1 })
+
+	if err := core.store.RevokeServer(ctx, enrolled.serverID); err != nil {
+		t.Fatalf("revoke server: %v", err)
+	}
+
+	// The next heartbeat is past the check interval, so it triggers the check.
+	time.Sleep(50 * time.Millisecond)
+	if err := stream.Send(heartbeatMessage(1)); err != nil {
+		t.Fatalf("send heartbeat: %v", err)
+	}
+
+	_, err = stream.Receive()
+	if err == nil {
+		t.Fatal("the revoked stream stayed open")
+	}
+	var connectErr *connect.Error
+	if !errors.As(err, &connectErr) || connectErr.Code() != connect.CodePermissionDenied {
+		t.Fatalf("stream error = %v, want PermissionDenied", err)
+	}
+	waitFor(t, func() bool { return len(core.hub.Connected()) == 0 })
+}
+
 func TestRenewCertificate(t *testing.T) {
 	core := newTestCore(t)
 	name := uniqueName(t)
@@ -496,6 +550,26 @@ func TestRenewCertificate(t *testing.T) {
 		CurrentTime: time.Now(),
 	}); err != nil {
 		t.Errorf("the renewed certificate does not verify: %v", err)
+	}
+
+	// The serial of the certificate that was current became the previous one.
+	server, err := core.store.GetServer(context.Background(), enrolled.serverID)
+	if err != nil {
+		t.Fatalf("get server: %v", err)
+	}
+	if server.CertSerial == "" || server.PrevCertSerial == "" || server.CertSerial == server.PrevCertSerial {
+		t.Errorf("serials = %q/%q, want a new current serial and the old one as previous", server.CertSerial, server.PrevCertSerial)
+	}
+
+	// A renewal that presents the previous certificate is accepted, because the
+	// agent may not have stored the new one yet...
+	if status, _ := core.renew(t, core.client(t, &enrolled.certificate), csrFor(t, newKey(t))); status != http.StatusOK {
+		t.Fatalf("renew with the previous certificate: %d, want 200", status)
+	}
+
+	// ...but only while it is the previous one: one more rotation retires it.
+	if status, _ := core.renew(t, core.client(t, &enrolled.certificate), csrFor(t, newKey(t))); status != http.StatusForbidden {
+		t.Fatalf("renew with a retired serial: %d, want 403", status)
 	}
 }
 

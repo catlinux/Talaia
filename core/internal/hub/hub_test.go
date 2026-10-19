@@ -90,6 +90,23 @@ func newFakeServerStore(servers ...store.Server) *fakeServerStore {
 	return f
 }
 
+// enrolledServer returns a not revoked server with a certificate serial.
+func enrolledServer(id, serial string) store.Server {
+	return store.Server{ID: id, Name: id, CertSerial: serial}
+}
+
+func (f *fakeServerStore) setServer(server store.Server) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.servers[server.ID] = server
+}
+
+func (f *fakeServerStore) removeServer(id string) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	delete(f.servers, id)
+}
+
 func (f *fakeServerStore) GetServer(_ context.Context, id string) (store.Server, error) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
@@ -122,11 +139,11 @@ func storedToken(h *Hub, key string) uint64 {
 }
 
 func TestServeKeysTheRegistryByServerID(t *testing.T) {
-	h := New(newFakeServerStore(store.Server{ID: "server-1"}))
+	h := New(newFakeServerStore(enrolledServer("server-1", "aa")))
 	stream := newFakeStream()
 	done := make(chan error, 1)
 	go func() {
-		done <- h.serve(withServerID(context.Background(), "server-1"), stream)
+		done <- h.serve(withConnection(context.Background(), "server-1", "aa"), stream)
 	}()
 
 	stream.in <- inventoryMsg("vps-web-01")
@@ -148,12 +165,12 @@ func TestServeKeysTheRegistryByServerID(t *testing.T) {
 }
 
 func TestServeKeepsTheNewConnectionWhenTheOldOneEnds(t *testing.T) {
-	h := New(newFakeServerStore(store.Server{ID: "server-1"}))
+	h := New(newFakeServerStore(enrolledServer("server-1", "aa")))
 
 	first := newFakeStream()
 	firstDone := make(chan error, 1)
 	go func() {
-		firstDone <- h.serve(withServerID(context.Background(), "server-1"), first)
+		firstDone <- h.serve(withConnection(context.Background(), "server-1", "aa"), first)
 	}()
 	first.in <- inventoryMsg("vps-web-01")
 	waitFor(t, func() bool { return len(h.Connected()) == 1 })
@@ -163,7 +180,7 @@ func TestServeKeepsTheNewConnectionWhenTheOldOneEnds(t *testing.T) {
 	second := newFakeStream()
 	secondDone := make(chan error, 1)
 	go func() {
-		secondDone <- h.serve(withServerID(context.Background(), "server-1"), second)
+		secondDone <- h.serve(withConnection(context.Background(), "server-1", "aa"), second)
 	}()
 	second.in <- inventoryMsg("vps-web-01")
 	waitFor(t, func() bool { return storedToken(h, "server-1") != firstToken })
@@ -186,12 +203,12 @@ func TestServeKeepsTheNewConnectionWhenTheOldOneEnds(t *testing.T) {
 }
 
 func TestServeTouchesTheServerAtMostOncePerInterval(t *testing.T) {
-	servers := newFakeServerStore(store.Server{ID: "server-1"})
+	servers := newFakeServerStore(enrolledServer("server-1", "aa"))
 	h := New(servers)
 	stream := newFakeStream()
 	done := make(chan error, 1)
 	go func() {
-		done <- h.serve(withServerID(context.Background(), "server-1"), stream)
+		done <- h.serve(withConnection(context.Background(), "server-1", "aa"), stream)
 	}()
 
 	stream.in <- inventoryMsg("vps-web-01")
@@ -210,6 +227,119 @@ func TestServeTouchesTheServerAtMostOncePerInterval(t *testing.T) {
 
 	if got := servers.touchCount(); got != 1 {
 		t.Errorf("touch calls = %d, want only the one made on connect", got)
+	}
+
+	stream.close()
+	waitServe(t, done)
+}
+
+// heartbeatMsg builds a heartbeat message.
+func heartbeatMsg(seq uint64) *agentv1.AgentMsg {
+	return &agentv1.AgentMsg{Msg: &agentv1.AgentMsg_Heartbeat{Heartbeat: &agentv1.Heartbeat{Seq: seq}}}
+}
+
+// startStreamedAgent connects a stream with a certificate serial and waits until
+// the hub has registered the agent.
+func startStreamedAgent(t *testing.T, h *Hub, serverID, serial string) (*fakeStream, chan error) {
+	t.Helper()
+
+	stream := newFakeStream()
+	done := make(chan error, 1)
+	go func() {
+		done <- h.serve(withConnection(context.Background(), serverID, serial), stream)
+	}()
+
+	stream.in <- inventoryMsg("vps-web-01")
+	waitFor(t, func() bool { return len(h.Connected()) == 1 })
+	return stream, done
+}
+
+// expectStreamClosed waits for a serve call to fail with PermissionDenied.
+func expectStreamClosed(t *testing.T, done chan error) {
+	t.Helper()
+
+	select {
+	case err := <-done:
+		var connectErr *connect.Error
+		if !errors.As(err, &connectErr) || connectErr.Code() != connect.CodePermissionDenied {
+			t.Fatalf("serve = %v, want a PermissionDenied connect error", err)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("the stream was not closed")
+	}
+}
+
+func TestServeClosesARevokedStream(t *testing.T) {
+	servers := newFakeServerStore(enrolledServer("server-1", "aa"))
+	h := New(servers)
+	h.CheckInterval = time.Millisecond
+
+	stream, done := startStreamedAgent(t, h, "server-1", "aa")
+
+	// The server is revoked while its stream is open.
+	servers.setServer(store.Server{ID: "server-1", Name: "server-1", CertSerial: "aa", RevokedAt: time.Now()})
+	time.Sleep(5 * time.Millisecond)
+	stream.in <- heartbeatMsg(1)
+
+	expectStreamClosed(t, done)
+	if connected := h.Connected(); len(connected) != 0 {
+		t.Fatalf("the revoked agent is still registered: %+v", connected)
+	}
+}
+
+func TestServeClosesAStreamWhoseSerialIsNotAccepted(t *testing.T) {
+	servers := newFakeServerStore(enrolledServer("server-1", "aa"))
+	h := New(servers)
+	h.CheckInterval = time.Millisecond
+
+	stream, done := startStreamedAgent(t, h, "server-1", "aa")
+
+	// A certificate the agent never got: the serial it holds is neither the
+	// current one nor the previous one any more.
+	servers.setServer(store.Server{ID: "server-1", Name: "server-1", CertSerial: "bb", PrevCertSerial: "cc"})
+	time.Sleep(5 * time.Millisecond)
+	stream.in <- heartbeatMsg(1)
+
+	expectStreamClosed(t, done)
+}
+
+func TestServeClosesAStreamWhenTheServerDisappears(t *testing.T) {
+	servers := newFakeServerStore(enrolledServer("server-1", "aa"))
+	h := New(servers)
+	h.CheckInterval = time.Millisecond
+
+	stream, done := startStreamedAgent(t, h, "server-1", "aa")
+
+	servers.removeServer("server-1")
+	time.Sleep(5 * time.Millisecond)
+	stream.in <- heartbeatMsg(1)
+
+	expectStreamClosed(t, done)
+}
+
+func TestServeKeepsAStreamThatPresentsThePreviousSerial(t *testing.T) {
+	servers := newFakeServerStore(enrolledServer("server-1", "aa"))
+	h := New(servers)
+	h.CheckInterval = time.Millisecond
+
+	stream, done := startStreamedAgent(t, h, "server-1", "aa")
+
+	// The agent renewed but has not stored the new certificate yet: the serial it
+	// presents is now the previous one and must still be accepted.
+	servers.setServer(store.Server{ID: "server-1", Name: "server-1", CertSerial: "bb", PrevCertSerial: "aa"})
+	time.Sleep(5 * time.Millisecond)
+	stream.in <- heartbeatMsg(1)
+
+	select {
+	case ack := <-stream.out:
+		if ack.GetHeartbeatAck() == nil {
+			t.Fatalf("ack = %v", ack)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("no heartbeat acknowledgement")
+	}
+	if connected := h.Connected(); len(connected) != 1 {
+		t.Fatalf("the agent was dropped: %+v", connected)
 	}
 
 	stream.close()

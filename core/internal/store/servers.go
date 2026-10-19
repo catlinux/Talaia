@@ -26,14 +26,29 @@ const tokenPrefix = "tl_enr_"
 // Server is a row of the server table. The time fields use the zero value to
 // mean "not set": a server without certificate, never seen or not revoked.
 type Server struct {
-	ID           string
-	Name         string
-	CertSerial   string
-	CertNotAfter time.Time
-	LastSeen     time.Time
-	RevokedAt    time.Time
-	CreatedAt    time.Time
+	ID             string
+	Name           string
+	CertSerial     string
+	PrevCertSerial string
+	CertNotAfter   time.Time
+	LastSeen       time.Time
+	RevokedAt      time.Time
+	CreatedAt      time.Time
 }
+
+// AcceptsSerial reports whether a certificate with this serial may be used by
+// the server: either the current certificate or the previous one, which stays
+// valid until the agent gets the renewed one.
+func (s Server) AcceptsSerial(serial string) bool {
+	if serial == "" {
+		return false
+	}
+	return serial == s.CertSerial || (s.PrevCertSerial != "" && serial == s.PrevCertSerial)
+}
+
+// SignFunc signs the client certificate of a new server inside the enrollment
+// transaction.
+type SignFunc func(serverID string) (certPEM []byte, serial string, notAfter time.Time, err error)
 
 // CreateEnrollmentToken creates a one-time token for serverName and returns the
 // plaintext token, which is shown once and never stored: only its SHA-256 goes
@@ -103,6 +118,54 @@ func (s *Store) ConsumeEnrollmentToken(ctx context.Context, token string) (strin
 	return serverName, nil
 }
 
+// EnrollServer enrolls a server in a single transaction: it consumes the token,
+// inserts the server, signs its certificate with sign and stores the serial and
+// the expiry. Any error rolls the transaction back, so the token stays usable
+// and no orphan server row is left.
+func (s *Store) EnrollServer(ctx context.Context, token string, sign SignFunc) (string, []byte, error) {
+	tx, err := s.pool.Begin(ctx)
+	if err != nil {
+		return "", nil, fmt.Errorf("begin enrollment: %w", err)
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+
+	hash := sha256.Sum256([]byte(token))
+	var serverName string
+	err = tx.QueryRow(ctx,
+		`UPDATE enrollment_token SET used_at = now()
+		 WHERE token_hash = $1 AND used_at IS NULL AND expires_at > now()
+		 RETURNING server_name`,
+		hash[:]).Scan(&serverName)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return "", nil, ErrInvalidToken
+	}
+	if err != nil {
+		return "", nil, fmt.Errorf("consume enrollment token: %w", err)
+	}
+
+	var serverID string
+	if err := tx.QueryRow(ctx, `INSERT INTO server (name) VALUES ($1) RETURNING id`, serverName).Scan(&serverID); err != nil {
+		return "", nil, fmt.Errorf("create server %q: %w", serverName, err)
+	}
+
+	certPEM, serial, notAfter, err := sign(serverID)
+	if err != nil {
+		return "", nil, err
+	}
+
+	if _, err := tx.Exec(ctx,
+		`UPDATE server SET cert_serial = $2, cert_not_after = $3 WHERE id = $1`,
+		serverID, serial, notAfter); err != nil {
+		return "", nil, fmt.Errorf("store server certificate: %w", err)
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return "", nil, fmt.Errorf("commit enrollment: %w", err)
+	}
+
+	return serverID, certPEM, nil
+}
+
 // CreateServer inserts a server and returns its id.
 func (s *Store) CreateServer(ctx context.Context, name string) (string, error) {
 	var id string
@@ -125,20 +188,38 @@ func (s *Store) SetServerCertificate(ctx context.Context, id, serial string, not
 	return nil
 }
 
+// RotateServerCertificate records a renewed certificate: the serial that was
+// current becomes the previous one, so the agent keeps working until it picks
+// the new certificate up.
+func (s *Store) RotateServerCertificate(ctx context.Context, id, newSerial string, notAfter time.Time) error {
+	tag, err := s.pool.Exec(ctx,
+		`UPDATE server
+		 SET prev_cert_serial = cert_serial, cert_serial = $2, cert_not_after = $3
+		 WHERE id = $1`, id, newSerial, notAfter)
+	if err != nil {
+		return fmt.Errorf("rotate server certificate: %w", err)
+	}
+	if tag.RowsAffected() == 0 {
+		return ErrNotFound
+	}
+	return nil
+}
+
 // GetServer returns one server or ErrNotFound.
 func (s *Store) GetServer(ctx context.Context, id string) (Server, error) {
 	var (
-		server       Server
-		certSerial   *string
-		certNotAfter *time.Time
-		lastSeen     *time.Time
-		revokedAt    *time.Time
+		server         Server
+		certSerial     *string
+		prevCertSerial *string
+		certNotAfter   *time.Time
+		lastSeen       *time.Time
+		revokedAt      *time.Time
 	)
 
 	err := s.pool.QueryRow(ctx,
-		`SELECT id, name, cert_serial, cert_not_after, created_at, last_seen, revoked_at
+		`SELECT id, name, cert_serial, prev_cert_serial, cert_not_after, created_at, last_seen, revoked_at
 		 FROM server WHERE id = $1`, id).
-		Scan(&server.ID, &server.Name, &certSerial, &certNotAfter, &server.CreatedAt, &lastSeen, &revokedAt)
+		Scan(&server.ID, &server.Name, &certSerial, &prevCertSerial, &certNotAfter, &server.CreatedAt, &lastSeen, &revokedAt)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return Server{}, ErrNotFound
 	}
@@ -151,6 +232,9 @@ func (s *Store) GetServer(ctx context.Context, id string) (Server, error) {
 	server.RevokedAt = timeValue(revokedAt)
 	if certSerial != nil {
 		server.CertSerial = *certSerial
+	}
+	if prevCertSerial != nil {
+		server.PrevCertSerial = *prevCertSerial
 	}
 
 	return server, nil

@@ -11,6 +11,7 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
+	"math/big"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
@@ -23,50 +24,54 @@ import (
 
 const testServerID = "11111111-1111-1111-1111-111111111111"
 
-type fakeTokens struct {
-	tokens map[string]string
-	err    error
-	used   []string
-}
-
-func (f *fakeTokens) ConsumeEnrollmentToken(_ context.Context, token string) (string, error) {
-	f.used = append(f.used, token)
-	if f.err != nil {
-		return "", f.err
-	}
-	name, ok := f.tokens[token]
-	if !ok {
-		return "", store.ErrInvalidToken
-	}
-	return name, nil
-}
-
-type fakeServers struct {
-	nextID  string
-	created []string
+// fakeStore is an in-memory EnrollmentStore that mimics the transaction: the
+// token is only spent when the signature succeeds.
+type fakeStore struct {
+	tokens  map[string]string
 	servers map[string]store.Server
-	serial  string
-	err     error
+	nextID  string
+
+	err error
+
+	attempted []string
+	rotated   []string
 }
 
-func newFakeServers(servers ...store.Server) *fakeServers {
-	f := &fakeServers{nextID: testServerID, servers: make(map[string]store.Server)}
+func newFakeStore(servers ...store.Server) *fakeStore {
+	f := &fakeStore{
+		nextID:  testServerID,
+		tokens:  make(map[string]string),
+		servers: make(map[string]store.Server),
+	}
 	for _, server := range servers {
 		f.servers[server.ID] = server
 	}
 	return f
 }
 
-func (f *fakeServers) CreateServer(_ context.Context, name string) (string, error) {
+func (f *fakeStore) EnrollServer(_ context.Context, token string, sign store.SignFunc) (string, []byte, error) {
+	f.attempted = append(f.attempted, token)
 	if f.err != nil {
-		return "", f.err
+		return "", nil, f.err
 	}
-	f.created = append(f.created, name)
-	f.servers[f.nextID] = store.Server{ID: f.nextID, Name: name}
-	return f.nextID, nil
+
+	name, ok := f.tokens[token]
+	if !ok {
+		return "", nil, store.ErrInvalidToken
+	}
+
+	certPEM, serial, notAfter, err := sign(f.nextID)
+	if err != nil {
+		// The real store rolls the transaction back, so the token stays usable.
+		return "", nil, err
+	}
+
+	delete(f.tokens, token)
+	f.servers[f.nextID] = store.Server{ID: f.nextID, Name: name, CertSerial: serial, CertNotAfter: notAfter}
+	return f.nextID, certPEM, nil
 }
 
-func (f *fakeServers) GetServer(_ context.Context, id string) (store.Server, error) {
+func (f *fakeStore) GetServer(_ context.Context, id string) (store.Server, error) {
 	server, ok := f.servers[id]
 	if !ok {
 		return store.Server{}, store.ErrNotFound
@@ -74,8 +79,16 @@ func (f *fakeServers) GetServer(_ context.Context, id string) (store.Server, err
 	return server, nil
 }
 
-func (f *fakeServers) SetServerCertificate(_ context.Context, _, serial string, _ time.Time) error {
-	f.serial = serial
+func (f *fakeStore) RotateServerCertificate(_ context.Context, id, newSerial string, notAfter time.Time) error {
+	server, ok := f.servers[id]
+	if !ok {
+		return store.ErrNotFound
+	}
+	server.PrevCertSerial = server.CertSerial
+	server.CertSerial = newSerial
+	server.CertNotAfter = notAfter
+	f.servers[id] = server
+	f.rotated = append(f.rotated, id)
 	return nil
 }
 
@@ -125,15 +138,25 @@ func post(t *testing.T, handler http.Handler, path, body string) *httptest.Respo
 	return recorder
 }
 
-func postRenew(t *testing.T, handler http.Handler, commonName, csr string) *httptest.ResponseRecorder {
+// postRenew sends a renewal request. An empty commonName sends no client
+// certificate at all; a non-empty serialNumber becomes the serial of the
+// presented certificate.
+func postRenew(t *testing.T, handler http.Handler, commonName, serialNumber, csr string) *httptest.ResponseRecorder {
 	t.Helper()
 
 	request := httptest.NewRequest(http.MethodPost, "/renew", strings.NewReader(fmt.Sprintf(`{"csr_pem":%s}`, strconv.Quote(csr))))
 	if commonName != "" {
-		request.TLS = &tls.ConnectionState{
-			PeerCertificates: []*x509.Certificate{{Subject: pkix.Name{CommonName: commonName}}},
+		certificate := &x509.Certificate{Subject: pkix.Name{CommonName: commonName}}
+		if serialNumber != "" {
+			number, ok := new(big.Int).SetString(serialNumber, 16)
+			if !ok {
+				t.Fatalf("invalid serial %q", serialNumber)
+			}
+			certificate.SerialNumber = number
 		}
+		request.TLS = &tls.ConnectionState{PeerCertificates: []*x509.Certificate{certificate}}
 	}
+
 	recorder := httptest.NewRecorder()
 	handler.ServeHTTP(recorder, request)
 	return recorder
@@ -154,14 +177,8 @@ func TestCAPEM(t *testing.T) {
 }
 
 func TestEnrollValidatesTheCSRBeforeTheToken(t *testing.T) {
-	tokens := &fakeTokens{tokens: map[string]string{"good": "vps-web-01"}}
-	handler := NewEnrollmentHandler(EnrollmentDeps{
-		Tokens:  tokens,
-		Servers: newFakeServers(),
-		Signer:  fakeSigner{},
-		CA:      fakeCA{},
-		Limiter: NewRateLimiter(),
-	})
+	fake := newFakeStore()
+	handler := NewEnrollmentHandler(EnrollmentDeps{Store: fake, Signer: fakeSigner{}, CA: fakeCA{}, Limiter: NewRateLimiter()})
 
 	recorder := post(t, handler, "/enroll", enrollBody("good", "not a csr"))
 
@@ -171,15 +188,14 @@ func TestEnrollValidatesTheCSRBeforeTheToken(t *testing.T) {
 	if !strings.Contains(recorder.Body.String(), `"code":"invalid_request"`) {
 		t.Errorf("body = %q", recorder.Body.String())
 	}
-	if len(tokens.used) != 0 {
-		t.Errorf("the token was consumed: %v", tokens.used)
+	if len(fake.attempted) != 0 {
+		t.Errorf("the token was consumed: %v", fake.attempted)
 	}
 }
 
 func TestEnrollInvalidToken(t *testing.T) {
-	tokens := &fakeTokens{tokens: map[string]string{}}
-	servers := newFakeServers()
-	handler := NewEnrollmentHandler(EnrollmentDeps{Tokens: tokens, Servers: servers, Signer: fakeSigner{}, CA: fakeCA{}})
+	fake := newFakeStore()
+	handler := NewEnrollmentHandler(EnrollmentDeps{Store: fake, Signer: fakeSigner{}, CA: fakeCA{}})
 
 	recorder := post(t, handler, "/enroll", enrollBody("unknown", testCSR(t)))
 
@@ -189,15 +205,12 @@ func TestEnrollInvalidToken(t *testing.T) {
 	if !strings.Contains(recorder.Body.String(), `"code":"invalid_token"`) {
 		t.Errorf("body = %q", recorder.Body.String())
 	}
-	if len(servers.created) != 0 {
-		t.Errorf("a server was created: %v", servers.created)
-	}
 }
 
 func TestEnrollHappyPath(t *testing.T) {
-	tokens := &fakeTokens{tokens: map[string]string{"good": "vps-web-01"}}
-	servers := newFakeServers()
-	handler := NewEnrollmentHandler(EnrollmentDeps{Tokens: tokens, Servers: servers, Signer: fakeSigner{}, CA: fakeCA{}})
+	fake := newFakeStore()
+	fake.tokens["good"] = "vps-web-01"
+	handler := NewEnrollmentHandler(EnrollmentDeps{Store: fake, Signer: fakeSigner{}, CA: fakeCA{}})
 
 	recorder := post(t, handler, "/enroll", enrollBody("good", testCSR(t)))
 
@@ -214,30 +227,52 @@ func TestEnrollHappyPath(t *testing.T) {
 			t.Errorf("body %q does not contain %q", body, want)
 		}
 	}
-	if len(servers.created) != 1 || servers.created[0] != "vps-web-01" {
-		t.Errorf("servers created = %v, want the token's server name", servers.created)
+
+	server, err := fake.GetServer(context.Background(), testServerID)
+	if err != nil {
+		t.Fatalf("get server: %v", err)
 	}
-	if servers.serial != "serial-1" {
-		t.Errorf("stored serial = %q", servers.serial)
+	if server.Name != "vps-web-01" || server.CertSerial != "serial-1" {
+		t.Errorf("server = %+v, want the token's name and the issued serial", server)
+	}
+	if _, ok := fake.tokens["good"]; ok {
+		t.Error("the token was not consumed")
+	}
+}
+
+func TestEnrollSigningFailureKeepsTheToken(t *testing.T) {
+	fake := newFakeStore()
+	fake.tokens["good"] = "vps-web-01"
+	handler := NewEnrollmentHandler(EnrollmentDeps{
+		Store:  fake,
+		Signer: fakeSigner{err: errors.New("ca is down")},
+		CA:     fakeCA{},
+	})
+
+	if recorder := post(t, handler, "/enroll", enrollBody("good", testCSR(t))); recorder.Code != http.StatusInternalServerError {
+		t.Fatalf("status = %d, want 500", recorder.Code)
+	}
+	if _, ok := fake.tokens["good"]; !ok {
+		t.Error("a failed enrollment must not spend the token")
 	}
 }
 
 func TestEnrollRejectsHugeBodies(t *testing.T) {
-	tokens := &fakeTokens{tokens: map[string]string{"good": "vps-web-01"}}
-	handler := NewEnrollmentHandler(EnrollmentDeps{Tokens: tokens, Servers: newFakeServers(), Signer: fakeSigner{}, CA: fakeCA{}})
+	fake := newFakeStore()
+	handler := NewEnrollmentHandler(EnrollmentDeps{Store: fake, Signer: fakeSigner{}, CA: fakeCA{}})
 
 	recorder := post(t, handler, "/enroll", enrollBody("good", strings.Repeat("a", 32<<10)))
 
 	if recorder.Code != http.StatusBadRequest {
 		t.Fatalf("status = %d, want 400", recorder.Code)
 	}
-	if len(tokens.used) != 0 {
-		t.Errorf("the token was consumed: %v", tokens.used)
+	if len(fake.attempted) != 0 {
+		t.Errorf("the token was consumed: %v", fake.attempted)
 	}
 }
 
 func TestEnrollMalformedJSON(t *testing.T) {
-	handler := NewEnrollmentHandler(EnrollmentDeps{Tokens: &fakeTokens{}, Servers: newFakeServers(), Signer: fakeSigner{}, CA: fakeCA{}})
+	handler := NewEnrollmentHandler(EnrollmentDeps{Store: newFakeStore(), Signer: fakeSigner{}, CA: fakeCA{}})
 
 	if recorder := post(t, handler, "/enroll", "{"); recorder.Code != http.StatusBadRequest {
 		t.Fatalf("status = %d, want 400", recorder.Code)
@@ -246,8 +281,7 @@ func TestEnrollMalformedJSON(t *testing.T) {
 
 func TestEnrollRateLimited(t *testing.T) {
 	handler := NewEnrollmentHandler(EnrollmentDeps{
-		Tokens:  &fakeTokens{tokens: map[string]string{}},
-		Servers: newFakeServers(),
+		Store:   newFakeStore(),
 		Signer:  fakeSigner{},
 		CA:      fakeCA{},
 		Limiter: NewRateLimiterWithClock(3, time.Minute, time.Now),
@@ -268,15 +302,10 @@ func TestEnrollRateLimited(t *testing.T) {
 	}
 }
 
-func TestEnrollServerError(t *testing.T) {
-	servers := newFakeServers()
-	servers.err = errors.New("database down")
-	handler := NewEnrollmentHandler(EnrollmentDeps{
-		Tokens:  &fakeTokens{tokens: map[string]string{"good": "vps-web-01"}},
-		Servers: servers,
-		Signer:  fakeSigner{},
-		CA:      fakeCA{},
-	})
+func TestEnrollStoreError(t *testing.T) {
+	fake := newFakeStore()
+	fake.err = errors.New("database down")
+	handler := NewEnrollmentHandler(EnrollmentDeps{Store: fake, Signer: fakeSigner{}, CA: fakeCA{}})
 
 	if recorder := post(t, handler, "/enroll", enrollBody("good", testCSR(t))); recorder.Code != http.StatusInternalServerError {
 		t.Fatalf("status = %d, want 500", recorder.Code)
@@ -284,9 +313,9 @@ func TestEnrollServerError(t *testing.T) {
 }
 
 func TestRenewRequiresACertificate(t *testing.T) {
-	handler := NewEnrollmentHandler(EnrollmentDeps{Servers: newFakeServers(), Signer: fakeSigner{}, CA: fakeCA{}})
+	handler := NewEnrollmentHandler(EnrollmentDeps{Store: newFakeStore(), Signer: fakeSigner{}, CA: fakeCA{}})
 
-	recorder := postRenew(t, handler, "", testCSR(t))
+	recorder := postRenew(t, handler, "", "", testCSR(t))
 
 	if recorder.Code != http.StatusForbidden {
 		t.Fatalf("status = %d, want 403", recorder.Code)
@@ -296,36 +325,42 @@ func TestRenewRequiresACertificate(t *testing.T) {
 	}
 }
 
-func TestRenewUnknownOrRevokedServer(t *testing.T) {
-	revokedAt := time.Now()
-	servers := newFakeServers(
-		store.Server{ID: "revoked-server", Name: "vps-1", RevokedAt: revokedAt},
+func TestRenewUnknownRevokedOrForeignSerial(t *testing.T) {
+	servers := newFakeStore(
+		store.Server{ID: "revoked-server", Name: "vps-1", CertSerial: "aa", RevokedAt: time.Now()},
+		store.Server{ID: "server-1", Name: "vps-1", CertSerial: "aa"},
 	)
-	handler := NewEnrollmentHandler(EnrollmentDeps{Servers: servers, Signer: fakeSigner{}, CA: fakeCA{}})
+	handler := NewEnrollmentHandler(EnrollmentDeps{Store: servers, Signer: fakeSigner{}, CA: fakeCA{}})
 
 	tests := []struct {
-		name string
-		cn   string
+		name   string
+		cn     string
+		serial string
 	}{
-		{name: "unknown", cn: "unknown-server"},
-		{name: "revoked", cn: "revoked-server"},
+		{name: "unknown server", cn: "unknown-server", serial: "aa"},
+		{name: "revoked server", cn: "revoked-server", serial: "aa"},
+		{name: "serial that is not the current one", cn: "server-1", serial: "bb"},
+		{name: "certificate without serial", cn: "server-1", serial: ""},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			recorder := postRenew(t, handler, tt.cn, testCSR(t))
+			recorder := postRenew(t, handler, tt.cn, tt.serial, testCSR(t))
 			if recorder.Code != http.StatusForbidden {
 				t.Fatalf("status = %d, want 403", recorder.Code)
 			}
 		})
 	}
+	if len(servers.rotated) != 0 {
+		t.Errorf("a rejected renewal rotated the certificate: %v", servers.rotated)
+	}
 }
 
 func TestRenewHappyPath(t *testing.T) {
-	servers := newFakeServers(store.Server{ID: "server-1", Name: "vps-1"})
-	handler := NewEnrollmentHandler(EnrollmentDeps{Servers: servers, Signer: fakeSigner{}, CA: fakeCA{}})
+	servers := newFakeStore(store.Server{ID: "server-1", Name: "vps-1", CertSerial: "aa"})
+	handler := NewEnrollmentHandler(EnrollmentDeps{Store: servers, Signer: fakeSigner{}, CA: fakeCA{}})
 
-	recorder := postRenew(t, handler, "server-1", testCSR(t))
+	recorder := postRenew(t, handler, "server-1", "aa", testCSR(t))
 
 	if recorder.Code != http.StatusOK {
 		t.Fatalf("status = %d, want 200: %s", recorder.Code, recorder.Body.String())
@@ -333,19 +368,38 @@ func TestRenewHappyPath(t *testing.T) {
 	if !strings.Contains(recorder.Body.String(), `"cert_pem":"cert-for-server-1"`) {
 		t.Errorf("body = %q", recorder.Body.String())
 	}
-	if servers.serial != "serial-1" {
-		t.Errorf("stored serial = %q", servers.serial)
+
+	server, err := servers.GetServer(context.Background(), "server-1")
+	if err != nil {
+		t.Fatalf("get server: %v", err)
+	}
+	// The serial that was current becomes the previous one, so the agent keeps
+	// working until it stores the new certificate.
+	if server.CertSerial != "serial-1" || server.PrevCertSerial != "aa" {
+		t.Errorf("serials = %q/%q, want serial-1/aa", server.CertSerial, server.PrevCertSerial)
+	}
+}
+
+func TestRenewAcceptsThePreviousSerial(t *testing.T) {
+	servers := newFakeStore(store.Server{ID: "server-1", Name: "vps-1", CertSerial: "bb", PrevCertSerial: "aa"})
+	handler := NewEnrollmentHandler(EnrollmentDeps{Store: servers, Signer: fakeSigner{}, CA: fakeCA{}})
+
+	// The agent missed the new certificate and still presents the old one.
+	recorder := postRenew(t, handler, "server-1", "aa", testCSR(t))
+
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200: %s", recorder.Code, recorder.Body.String())
 	}
 }
 
 func TestRenewInvalidCSR(t *testing.T) {
 	handler := NewEnrollmentHandler(EnrollmentDeps{
-		Servers: newFakeServers(store.Server{ID: "server-1", Name: "vps-1"}),
-		Signer:  fakeSigner{},
-		CA:      fakeCA{},
+		Store:  newFakeStore(store.Server{ID: "server-1", Name: "vps-1", CertSerial: "aa"}),
+		Signer: fakeSigner{},
+		CA:     fakeCA{},
 	})
 
-	if recorder := postRenew(t, handler, "server-1", "garbage"); recorder.Code != http.StatusBadRequest {
+	if recorder := postRenew(t, handler, "server-1", "aa", "garbage"); recorder.Code != http.StatusBadRequest {
 		t.Fatalf("status = %d, want 400", recorder.Code)
 	}
 }

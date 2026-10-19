@@ -280,3 +280,193 @@ func TestServerNotFound(t *testing.T) {
 		t.Errorf("set certificate = %v, want ErrNotFound", err)
 	}
 }
+
+func TestAcceptsSerial(t *testing.T) {
+	server := Server{CertSerial: "aa", PrevCertSerial: "bb"}
+
+	tests := []struct {
+		name   string
+		serial string
+		want   bool
+	}{
+		{name: "current serial", serial: "aa", want: true},
+		{name: "previous serial", serial: "bb", want: true},
+		{name: "foreign serial", serial: "cc", want: false},
+		{name: "empty serial", serial: "", want: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := server.AcceptsSerial(tt.serial); got != tt.want {
+				t.Errorf("AcceptsSerial(%q) = %v, want %v", tt.serial, got, tt.want)
+			}
+		})
+	}
+
+	// A server that never renewed only accepts its current serial.
+	fresh := Server{CertSerial: "aa"}
+	if fresh.AcceptsSerial("") || !fresh.AcceptsSerial("aa") || fresh.AcceptsSerial("bb") {
+		t.Error("a server without a previous serial must only accept its current one")
+	}
+}
+
+// testSigner returns a SignFunc that issues a certificate with a fixed serial.
+func testSigner(serial string) SignFunc {
+	return func(serverID string) ([]byte, string, time.Time, error) {
+		return []byte("cert-for-" + serverID), serial, time.Now().Add(90 * 24 * time.Hour).Truncate(time.Millisecond), nil
+	}
+}
+
+func TestEnrollServerCommitsEverything(t *testing.T) {
+	s := newTestStore(t)
+	ctx := context.Background()
+	name := testName(t, s)
+
+	token, err := s.CreateEnrollmentToken(ctx, name, 15*time.Minute)
+	if err != nil {
+		t.Fatalf("create token: %v", err)
+	}
+
+	serverID, certPEM, err := s.EnrollServer(ctx, token, testSigner("abcdef0123"))
+	if err != nil {
+		t.Fatalf("enroll server: %v", err)
+	}
+	if string(certPEM) != "cert-for-"+serverID {
+		t.Errorf("certificate = %q, want the one the signer returned", certPEM)
+	}
+
+	server, err := s.GetServer(ctx, serverID)
+	if err != nil {
+		t.Fatalf("get server: %v", err)
+	}
+	if server.Name != name || server.CertSerial != "abcdef0123" {
+		t.Errorf("server = %+v, want name %q and the issued serial", server, name)
+	}
+	if server.CertNotAfter.IsZero() {
+		t.Error("cert_not_after is zero after enrolling")
+	}
+	if server.PrevCertSerial != "" {
+		t.Errorf("prev_cert_serial = %q, want empty after the first enrollment", server.PrevCertSerial)
+	}
+
+	// The token is spent.
+	if _, err := s.ConsumeEnrollmentToken(ctx, token); !errors.Is(err, ErrInvalidToken) {
+		t.Errorf("consume after enrolling = %v, want ErrInvalidToken", err)
+	}
+}
+
+func TestEnrollServerRollsBackWhenSigningFails(t *testing.T) {
+	s := newTestStore(t)
+	ctx := context.Background()
+	name := testName(t, s)
+
+	token, err := s.CreateEnrollmentToken(ctx, name, 15*time.Minute)
+	if err != nil {
+		t.Fatalf("create token: %v", err)
+	}
+
+	boom := errors.New("the ca is down")
+	_, _, err = s.EnrollServer(ctx, token, func(string) ([]byte, string, time.Time, error) {
+		return nil, "", time.Time{}, boom
+	})
+	if !errors.Is(err, boom) {
+		t.Fatalf("enroll = %v, want the signing error", err)
+	}
+
+	// The rollback keeps the token usable and leaves no server row behind.
+	if _, err := s.ConsumeEnrollmentToken(ctx, token); err != nil {
+		t.Fatalf("a failed enrollment spent the token: %v", err)
+	}
+	var servers int
+	if err := s.pool.QueryRow(ctx, `SELECT count(*) FROM server WHERE name = $1`, name).Scan(&servers); err != nil {
+		t.Fatalf("count servers: %v", err)
+	}
+	if servers != 0 {
+		t.Errorf("orphan server rows = %d, want 0", servers)
+	}
+}
+
+func TestEnrollServerInvalidToken(t *testing.T) {
+	s := newTestStore(t)
+	ctx := context.Background()
+
+	if _, _, err := s.EnrollServer(ctx, randomToken(t), testSigner("aa")); !errors.Is(err, ErrInvalidToken) {
+		t.Fatalf("unknown token = %v, want ErrInvalidToken", err)
+	}
+}
+
+func TestEnrollServerConcurrentUse(t *testing.T) {
+	s := newTestStore(t)
+	ctx := context.Background()
+	name := testName(t, s)
+
+	token, err := s.CreateEnrollmentToken(ctx, name, 15*time.Minute)
+	if err != nil {
+		t.Fatalf("create token: %v", err)
+	}
+
+	var wg sync.WaitGroup
+	results := make(chan error, 2)
+	for i := 0; i < 2; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			_, _, err := s.EnrollServer(ctx, token, testSigner("aa"))
+			results <- err
+		}()
+	}
+	wg.Wait()
+	close(results)
+
+	successes := 0
+	for err := range results {
+		switch {
+		case err == nil:
+			successes++
+		case errors.Is(err, ErrInvalidToken):
+		default:
+			t.Fatalf("unexpected error: %v", err)
+		}
+	}
+	if successes != 1 {
+		t.Fatalf("successful enrollments = %d, want exactly 1", successes)
+	}
+}
+
+func TestRotateServerCertificate(t *testing.T) {
+	s := newTestStore(t)
+	ctx := context.Background()
+	name := testName(t, s)
+
+	id, err := s.CreateServer(ctx, name)
+	if err != nil {
+		t.Fatalf("create server: %v", err)
+	}
+	if err := s.SetServerCertificate(ctx, id, "aa", time.Now()); err != nil {
+		t.Fatalf("set certificate: %v", err)
+	}
+
+	notAfter := time.Now().Add(90 * 24 * time.Hour).Truncate(time.Millisecond)
+	if err := s.RotateServerCertificate(ctx, id, "bb", notAfter); err != nil {
+		t.Fatalf("rotate: %v", err)
+	}
+
+	server, err := s.GetServer(ctx, id)
+	if err != nil {
+		t.Fatalf("get server: %v", err)
+	}
+	if server.CertSerial != "bb" || server.PrevCertSerial != "aa" {
+		t.Errorf("serials = %q/%q, want bb/aa", server.CertSerial, server.PrevCertSerial)
+	}
+	if !server.CertNotAfter.Equal(notAfter) {
+		t.Errorf("cert not after = %s, want %s", server.CertNotAfter, notAfter)
+	}
+	if !server.AcceptsSerial("aa") || !server.AcceptsSerial("bb") || server.AcceptsSerial("cc") {
+		t.Error("a rotated server must accept the current and the previous serial only")
+	}
+
+	missing := "00000000-0000-0000-0000-000000000000"
+	if err := s.RotateServerCertificate(ctx, missing, "cc", notAfter); !errors.Is(err, ErrNotFound) {
+		t.Errorf("rotate missing = %v, want ErrNotFound", err)
+	}
+}

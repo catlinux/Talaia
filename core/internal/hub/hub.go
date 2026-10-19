@@ -17,12 +17,14 @@ import (
 	"connectrpc.com/connect/v2"
 	"connectrpc.com/connect/v2/connecthttp"
 
+	"github.com/catlinux/Talaia/core/internal/store"
 	agentv1 "github.com/catlinux/Talaia/proto/gen/go"
 	"github.com/catlinux/Talaia/proto/gen/go/agentv1connect"
 )
 
-// touchInterval is how often at most the hub writes last_seen for a connection.
-const touchInterval = 30 * time.Second
+// defaultCheckInterval is how often at most the hub re-validates a connection
+// and writes last_seen.
+const defaultCheckInterval = 30 * time.Second
 
 // AgentInfo is a snapshot of a connected agent.
 type AgentInfo struct {
@@ -84,6 +86,10 @@ type Hub struct {
 	// servers is nil in insecure dev mode: no certificate is checked then.
 	servers ServerStore
 
+	// CheckInterval is how often a live connection is re-validated against the
+	// store. Tests lower it.
+	CheckInterval time.Duration
+
 	mu     sync.RWMutex
 	agents map[string]AgentInfo
 	tokens uint64
@@ -105,10 +111,11 @@ func NewInsecure() *Hub {
 
 func newHub(servers ServerStore) *Hub {
 	h := &Hub{
-		server:  connect.NewServer(),
-		servers: servers,
-		agents:  make(map[string]AgentInfo),
-		now:     time.Now,
+		server:        connect.NewServer(),
+		servers:       servers,
+		CheckInterval: defaultCheckInterval,
+		agents:        make(map[string]AgentInfo),
+		now:           time.Now,
 	}
 	agentv1connect.RegisterAgentHubHandler(h.server, h)
 	return h
@@ -146,9 +153,10 @@ func (h *Hub) Connect(ctx context.Context, stream agentv1connect.AgentHubConnect
 }
 
 func (h *Hub) serve(ctx context.Context, stream agentStream) error {
-	// The server id comes from the client certificate; it is empty in insecure
-	// dev mode, where the registry is keyed by hostname instead.
-	serverID, _ := serverIDFromContext(ctx)
+	// The identity comes from the client certificate; in insecure dev mode there
+	// is none, so the registry is keyed by hostname instead.
+	conn, _ := connectionFromContext(ctx)
+	serverID := conn.serverID
 
 	first, err := stream.Receive()
 	if err != nil {
@@ -189,7 +197,7 @@ func (h *Hub) serve(ctx context.Context, stream agentStream) error {
 		slog.Info("agent disconnected", "server_id", serverID, "hostname", hostname)
 	}()
 
-	lastTouch := h.now()
+	lastCheck := h.now()
 
 	for {
 		msg, err := stream.Receive()
@@ -205,9 +213,14 @@ func (h *Hub) serve(ctx context.Context, stream agentStream) error {
 			heartbeat := msg.GetHeartbeat()
 			info.LastSeen = h.now()
 			h.store(info)
-			if info.LastSeen.Sub(lastTouch) >= touchInterval {
-				lastTouch = info.LastSeen
-				h.touchServer(ctx, serverID)
+			// The stream is re-validated periodically, not only when it opens:
+			// a server revoked meanwhile does not stay connected.
+			if info.LastSeen.Sub(lastCheck) >= h.CheckInterval {
+				lastCheck = info.LastSeen
+				if err := h.checkConnection(ctx, serverID, conn.serial); err != nil {
+					slog.Info("closing agent stream", "server_id", serverID, "hostname", hostname, "reason", err)
+					return connect.NewError(connect.CodePermissionDenied, err.Error())
+				}
 			}
 			slog.Debug("heartbeat received", "hostname", hostname, "seq", heartbeat.GetSeq())
 
@@ -254,6 +267,37 @@ func (h *Hub) touchServer(ctx context.Context, serverID string) {
 	if err := h.servers.TouchServer(ctx, serverID); err != nil {
 		slog.Warn("touch server", "server_id", serverID, "error", err)
 	}
+}
+
+// checkConnection re-reads the server of a live stream and returns an error when
+// it may no longer stay connected: it disappeared, it was revoked or its
+// certificate serial is no longer accepted. When the server is fine it also
+// records last_seen.
+func (h *Hub) checkConnection(ctx context.Context, serverID, serial string) error {
+	if h.servers == nil || serverID == "" {
+		return nil
+	}
+
+	server, err := h.servers.GetServer(ctx, serverID)
+	if errors.Is(err, store.ErrNotFound) {
+		return errors.New("the server is no longer enrolled")
+	}
+	if err != nil {
+		// A store failure is not a reason to drop a healthy stream.
+		slog.Warn("check server", "server_id", serverID, "error", err)
+		return nil
+	}
+	if !server.RevokedAt.IsZero() {
+		return errors.New("the server is revoked")
+	}
+	if !server.AcceptsSerial(serial) {
+		return errors.New("the certificate serial is no longer accepted")
+	}
+
+	if err := h.servers.TouchServer(ctx, serverID); err != nil {
+		slog.Warn("touch server", "server_id", serverID, "error", err)
+	}
+	return nil
 }
 
 func (h *Hub) store(info AgentInfo) {

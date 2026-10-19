@@ -94,8 +94,7 @@ func newTLSRouter(st *store.Store, authority *ca.CA) http.Handler {
 // newTLSRouterWithHub is newTLSRouter with the hub injected, for the tests.
 func newTLSRouterWithHub(st *store.Store, authority *ca.CA, h *hub.Hub) http.Handler {
 	enrollment := api.NewEnrollmentHandler(api.EnrollmentDeps{
-		Tokens:  st,
-		Servers: st,
+		Store:   st,
 		Signer:  authority,
 		CA:      authority,
 		Limiter: api.NewRateLimiter(),
