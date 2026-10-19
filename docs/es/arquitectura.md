@@ -195,6 +195,22 @@ Los permisos se comprueban siempre en el núcleo. El panel web solo oculta lo qu
 - Paquetes e imágenes firmados (cosign); el agente verifica las firmas antes de autoactualizarse.
 - Despliegue recomendado: panel accesible solo a través de WireGuard o Tailscale.
 
+### 6.1 Autenticación del panel (implementada)
+
+Un único administrador creado desde la consola del servidor (`talaia-core user create --username
+<nombre>`); nunca hay una página pública de alta. Diseño: `.agents/plans/auth/auth.DESIGN.md`.
+
+- Contraseña (12–256 caracteres) con argon2id; TOTP obligatorio desde el primer acceso, un código no se
+  puede usar dos veces y el secreto TOTP se cifra con AES-256-GCM (`data_dir/secrets.key`).
+- 10 códigos de recuperación de un solo uso, que se muestran una vez. Recuperación por consola:
+  `talaia-core user reset-2fa` y `talaia-core session revoke-all`.
+- Cookie de sesión `__Host-talaia_session` (`Secure`, `HttpOnly`, `SameSite=Strict`), guardada con hash;
+  12 h sin actividad y 7 días como máximo; token nuevo tras el segundo factor.
+- CSRF: cuerpo JSON y un `Origin` permitido en toda petición que modifica. Cabeceras de seguridad (CSP,
+  HSTS, `nosniff`, `no-referrer`).
+- Fuerza bruta: 10 intentos por IP cada 15 minutos, 5 fallos bloquean la cuenta 15 minutos; los errores
+  nunca dicen qué falló. Cada acceso, fallo y cambio queda en el registro de auditoría, sin secretos.
+
 ## 7. Ubicación de archivos en los servidores gestionados
 
 | Ruta | Contenido |
