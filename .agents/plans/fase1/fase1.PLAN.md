@@ -25,3 +25,9 @@ Pendiente:
 - **D**: el diseño es un borrador de Sonnet; pide revisión de seguridad (Opus) y la aprobación del mantenedor. Puntos a mirar: la clave de la CA sin cifrar en disco, el token perdido si falla algo tras consumirlo, la renovación solo por mTLS, `insecure_dev`.
 - **F/H**: la API REST de lectura y conectar la pantalla de flota necesitan autenticación de usuarios (fase 3); sin ella no se debe exponer la lista de servidores. Decidir si se adelanta un usuario único con 2FA o un token de administración provisional.
 - Verificar el `.deb` instalado en un Debian real, `make dev` con Docker, `license-check`, y el criterio de la fase: VPS reales en la flota.
+
+## Estado a 2026-10-19 (madrugada)
+
+- **Primer despliegue real hecho** en el Debian de casa: core en Docker, administrador con 2FA, `.deb` del agente instalado con `install.sh`, enrolamiento con token + huella de la CA, y el servidor aparece en la flota con CPU, RAM, disco y contenedores. Quedan por comprobar de la regla «Terminada cuando» de la fase: que sobreviva a un reinicio del core en ese despliegue real (`docker compose restart core`) y probar con un VPS de verdad.
+- D, F y H están resueltas: la autenticación del panel se adelantó de la fase 3 (`.agents/plans/auth/auth.DESIGN.md`) y la flota lee la API real.
+- Mejoras del instalador (commits locales sin subir): el core sirve `install.sh` y los `.deb` (la imagen los construye), `token create` imprime la orden completa, `packaging/core/install.sh` prepara el core en una orden y hay un trabajo de CI que lo prueba entero. Todo eso está probado por piezas; la imagen y el instalador del core aún no se han ejecutado en una máquina real.
