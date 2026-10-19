@@ -23,6 +23,7 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 - El core sirve `install.sh` y los paquetes del agente (amd64 y arm64, construidos dentro de su imagen) y `token create` imprime la orden de instalación completa, de modo que un servidor nuevo necesita una sola línea pegada y ningún paquete copiado a mano. `install.sh` comprueba la huella de la CA antes de fiarse del paquete, y `--deb` pasa a ser opcional.
 - Nuevos ajustes `TALAIA_DIST_DIR` y `TALAIA_PUBLIC_PORT` (`dist_dir`, `public_port`); el puerto público también alimenta los orígenes permitidos por defecto, que ahora funcionan con cualquier puerto publicado.
 - `packaging/core/install.sh`: prepara el núcleo con una sola orden (contraseña aleatoria de base de datos en `.env`, construcción, arranque, administrador), y la guía de instalación `docs/es/instalacion.md`.
+- Trabajo de CI `core stack (docker)`: ejecuta el instalador del núcleo y comprueba que sirve el panel, la CA, `install.sh` y los dos paquetes del agente, y que `token create` imprime la orden de instalación.
 - Enlace mínimo del agente: el hub del core acepta el stream del agente (HTTP/2 sin cifrar por ahora) y el agente envía inventario, latidos y métricas de CPU, leyendo `/etc/talaia/agent.toml`.
 - i18n para los componentes Go (go-i18n en core y CLI, ca/es/en) y `scripts/i18n-check.mjs`, que falla si falta una clave en algún idioma.
 - `make dev`: entorno de desarrollo local (PostgreSQL + TimescaleDB en Docker Compose, core, agente y servidor de desarrollo del panel).

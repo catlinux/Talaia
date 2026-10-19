@@ -125,3 +125,35 @@ jobs:
         run: node scripts/i18n-check.mjs
       - name: Test the i18n check
         run: node --test scripts
+
+  core-stack:
+    name: core stack (docker)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v7.0.1
+      - name: Install the core with the installer
+        run: bash packaging/core/install.sh --hostname 127.0.0.1 --port 8443 --no-user
+      - name: The core serves the panel, the CA, the installer and the agent packages
+        run: |
+          set -eu
+          url=https://127.0.0.1:8443
+          test "$(curl -sk -o /dev/null -w '%{http_code}' "$url/")" = 200
+          curl -fsk -o "$RUNNER_TEMP/ca.pem" "$url/ca.pem"
+          curl -fsk "$url/install.sh" | head -n 1 | grep -q '^#!/usr/bin/env bash'
+          # The packages are downloaded the way install.sh does it: trusting the CA only.
+          for arch in amd64 arm64; do
+            curl -fs --cacert "$RUNNER_TEMP/ca.pem" -o "$RUNNER_TEMP/agent_$arch.deb" "$url/agent/talaia-agent_$arch.deb"
+            dpkg-deb --info "$RUNNER_TEMP/agent_$arch.deb" | grep -q "Architecture: $arch"
+          done
+      - name: token create prints the install command
+        working-directory: packaging/core
+        run: |
+          set -eu
+          docker compose run --rm -T core token create --name ci | tee "$RUNNER_TEMP/token.txt"
+          grep -q 'curl -fsSk https://127.0.0.1:8443/install.sh | sudo bash -s -- --url https://127.0.0.1:8443 --token ' "$RUNNER_TEMP/token.txt"
+      - name: Logs on failure
+        if: failure()
+        working-directory: packaging/core
+        run: docker compose logs --no-color
