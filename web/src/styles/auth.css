@@ -1,0 +1,182 @@
+/* Sign-in, second-factor and recovery-code screens. */
+
+.auth {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 24px 16px;
+}
+
+.auth__card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  max-width: 420px;
+  padding: 24px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+}
+
+.auth__title {
+  margin: 0;
+  font-family: var(--f-display);
+  font-size: 1.5rem;
+  line-height: 1.2;
+}
+
+.auth__intro {
+  margin: 0;
+  color: var(--muted);
+}
+
+.auth__hint {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.8125rem;
+}
+
+.auth__warning {
+  margin: 0;
+  padding: 8px 12px;
+  border-left: 3px solid var(--warn);
+  background: var(--warn-soft);
+}
+
+.auth__error {
+  margin: 0;
+  padding: 8px 12px;
+  border-left: 3px solid var(--crit);
+  background: var(--crit-soft);
+}
+
+.auth__status {
+  margin: 0;
+  color: var(--muted);
+}
+
+.auth__field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.auth__label {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+
+.auth__input {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--ink);
+  font: inherit;
+}
+
+.auth__input--code {
+  font-family: var(--f-mono);
+  font-size: 1.125rem;
+  letter-spacing: 0.12em;
+}
+
+.auth__secret {
+  display: block;
+  padding: 10px 12px;
+  border-radius: 6px;
+  background: var(--surface-2);
+  color: var(--ink);
+  font-family: var(--f-mono);
+  font-size: 1rem;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  user-select: all;
+}
+
+.auth__link {
+  color: var(--accent);
+  font: inherit;
+  text-align: left;
+  text-decoration: underline;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+
+.auth__toggle {
+  align-self: flex-start;
+  font-size: 0.875rem;
+}
+
+.auth__submit,
+.auth__button {
+  padding: 10px 14px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.auth__button {
+  background: var(--surface-2);
+  color: var(--ink);
+  border-color: var(--line);
+  font-weight: 500;
+}
+
+.auth__submit:disabled,
+.auth__button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.auth__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.auth__codes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 6px 12px;
+  margin: 0;
+  padding: 12px;
+  border-radius: 6px;
+  background: var(--surface-2);
+  list-style: none;
+}
+
+.auth__codes code {
+  font-family: var(--f-mono);
+  font-size: 0.9375rem;
+  user-select: all;
+}
+
+.auth__check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9375rem;
+}
+
+/* The sign-out button of the app header. */
+.app__signout {
+  padding: 4px 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--surface-2);
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.875rem;
+  cursor: pointer;
+}

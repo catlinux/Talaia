@@ -1,0 +1,11 @@
+{
+  "invalidCredentials": "El usuario o la contraseña no son correctos.",
+  "mfaRequired": "Hay que verificar el segundo factor.",
+  "sessionRequired": "La sesión ha caducado. Vuelve a entrar.",
+  "forbiddenOrigin": "El origen de la petición no está permitido.",
+  "invalidRequest": "La petición no es válida.",
+  "weakPassword": "La contraseña es demasiado débil.",
+  "rateLimited": "Demasiados intentos seguidos. Espera unos minutos y vuelve a probar.",
+  "network": "No se ha podido contactar con el servidor.",
+  "generic": "Algo ha fallado. Vuelve a probar."
+}

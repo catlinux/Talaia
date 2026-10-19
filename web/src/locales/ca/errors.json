@@ -1,0 +1,11 @@
+{
+  "invalidCredentials": "L'usuari o la contrasenya no són correctes.",
+  "mfaRequired": "Cal verificar el segon factor.",
+  "sessionRequired": "La sessió ha caducat. Torna a entrar.",
+  "forbiddenOrigin": "L'origen de la petició no és permès.",
+  "invalidRequest": "La petició no és vàlida.",
+  "weakPassword": "La contrasenya és massa feble.",
+  "rateLimited": "Massa intents seguits. Espera uns minuts i torna-ho a provar.",
+  "network": "No s'ha pogut contactar amb el servidor.",
+  "generic": "Alguna cosa ha fallat. Torna-ho a provar."
+}

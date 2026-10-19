@@ -2,11 +2,13 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 
 import { App } from './App'
+import { AuthGate } from './auth/AuthGate'
 import { applyTheme, getInitialTheme } from './theme/theme'
 import './i18n'
 import './styles/tokens.css'
 import './styles/global.css'
 import './styles/fleet.css'
+import './styles/auth.css'
 
 // Apply the theme before the first render to avoid a flash of the wrong theme.
 applyTheme(getInitialTheme())
@@ -19,6 +21,8 @@ if (!container) {
 
 createRoot(container).render(
   <StrictMode>
-    <App />
+    <AuthGate>
+      <App />
+    </AuthGate>
   </StrictMode>,
 )

@@ -1,0 +1,11 @@
+{
+  "invalidCredentials": "The username or the password is not right.",
+  "mfaRequired": "The second factor must be verified.",
+  "sessionRequired": "The session has expired. Sign in again.",
+  "forbiddenOrigin": "The origin of the request is not allowed.",
+  "invalidRequest": "The request is not valid.",
+  "weakPassword": "The password is too weak.",
+  "rateLimited": "Too many attempts in a row. Wait a few minutes and try again.",
+  "network": "The panel could not reach the server.",
+  "generic": "Something went wrong. Try again."
+}

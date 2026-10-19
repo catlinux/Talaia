@@ -3,13 +3,15 @@ import { useTranslation } from 'react-i18next'
 
 import { About } from './screens/About'
 import { Fleet } from './screens/Fleet'
+import { useAuth } from './auth/AuthGate'
 import { LanguageSelector } from './components/LanguageSelector'
 import { ThemeToggle } from './theme/ThemeToggle'
 
 type Screen = 'fleet' | 'about'
 
 export function App() {
-  const { t } = useTranslation('common')
+  const { t } = useTranslation(['common', 'auth'])
+  const auth = useAuth()
   const [screen, setScreen] = useState<Screen>('fleet')
 
   return (
@@ -37,6 +39,17 @@ export function App() {
         <div className="app__controls">
           <LanguageSelector />
           <ThemeToggle />
+          {auth !== null && (
+            <button
+              type="button"
+              className="app__signout"
+              onClick={() => {
+                void auth.signOut()
+              }}
+            >
+              {t('auth:signOut')}
+            </button>
+          )}
         </div>
       </header>
       <main className="app__main">{screen === 'fleet' ? <Fleet /> : <About />}</main>
