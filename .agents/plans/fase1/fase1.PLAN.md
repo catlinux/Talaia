@@ -16,3 +16,12 @@ Criterio: los VPS reales aparecen en la flota con métricas y sobreviven a un re
 | H | Conectar la pantalla de flota a la API real | Ejecutor medio, tras F | `web/src/api/**` | flota real en el panel |
 
 Las tareas D–H necesitan el mantenedor para aprobar el diseño (D) o un VPS real. Reglas de siempre: tareas con archivos disjuntos, validaciones compatibles con `cmd.exe`, revisión propia del diff y de las pruebas antes de aceptar.
+
+## Estado a 2026-10-19 (noche)
+
+Hechas y verificadas: A, B, C, E (E1–E3) y G. Prueba extremo a extremo con el core y el agente reales (TLS 1.3, huella de la CA incorrecta rechazada sin gastar el token, enrolamiento, reconexión con la identidad guardada, servidor revocado rechazado con 403).
+
+Pendiente:
+- **D**: el diseño es un borrador de Sonnet; pide revisión de seguridad (Opus) y la aprobación del mantenedor. Puntos a mirar: la clave de la CA sin cifrar en disco, el token perdido si falla algo tras consumirlo, la renovación solo por mTLS, `insecure_dev`.
+- **F/H**: la API REST de lectura y conectar la pantalla de flota necesitan autenticación de usuarios (fase 3); sin ella no se debe exponer la lista de servidores. Decidir si se adelanta un usuario único con 2FA o un token de administración provisional.
+- Verificar el `.deb` instalado en un Debian real, `make dev` con Docker, `license-check`, y el criterio de la fase: VPS reales en la flota.

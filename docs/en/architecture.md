@@ -88,6 +88,20 @@ Go CLI that uses the same REST API with an API key. Intended for scripts, CI pip
 5. The agent opens a persistent gRPC stream over mTLS to port 443 of the core.
 6. The agent sends its initial inventory and the server appears in the fleet.
 
+Implemented so far (phase 1, design in `.agents/plans/fase1/D-enrolamiento.DESIGN.md`, pending review):
+
+- Until the panel has users (phase 3) the token is created with `talaia-core token create --name <server>`,
+  which also prints the **CA fingerprint** (SHA-256). `install.sh` takes `--token` and `--ca-fingerprint`.
+- Trust anchor: the agent downloads `GET /ca.pem` once without verification and continues **only if** its
+  SHA-256 matches the fingerprint; everything after that is verified TLS 1.3.
+- The token is stored hashed, expires in 15 minutes, is consumed atomically and a rejected token never says
+  why (unknown, used or expired). `POST /enroll` is limited to 10 requests per minute per IP.
+- The CA ignores the subject of the CSR, requires an ECDSA P-256 key and sets the common name to the server
+  ID. The core takes the agent identity from that certificate; `talaia-core server revoke <id>` blocks it on
+  the next connection or renewal.
+- `insecure_dev` (core) and `TALAIA_AGENT_INSECURE_DEV` (agent) switch to a plaintext link for local
+  development only; `make dev` uses them.
+
 ### 3.2 Protocol
 
 Contract in `proto/agent.proto` (managed with `buf`). Summary:

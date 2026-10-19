@@ -92,6 +92,23 @@ sincronización GitOps.
 5. El agente abre un stream gRPC persistente sobre mTLS hacia el puerto 443 del núcleo.
 6. El agente envía su inventario inicial y el servidor aparece en la flota.
 
+Implementado hasta ahora (fase 1, diseño en `.agents/plans/fase1/D-enrolamiento.DESIGN.md`, pendiente de
+revisión):
+
+- Hasta que el panel tenga usuarios (fase 3), el token se crea con `talaia-core token create --name
+  <servidor>`, que también imprime la **huella de la CA** (SHA-256). `install.sh` recibe `--token` y
+  `--ca-fingerprint`.
+- Ancla de confianza: el agente descarga `GET /ca.pem` una vez sin verificar y continúa **solo si** su
+  SHA-256 coincide con la huella; todo lo demás va con TLS 1.3 verificado.
+- El token se guarda con hash, caduca a los 15 minutos, se consume de forma atómica y un token rechazado
+  nunca dice por qué (desconocido, usado o caducado). `POST /enroll` se limita a 10 peticiones por minuto
+  y por IP.
+- La CA ignora el subject de la CSR, exige una clave ECDSA P-256 y fija el common name al ID del servidor.
+  El núcleo toma la identidad del agente de ese certificado; `talaia-core server revoke <id>` lo bloquea en
+  la siguiente conexión o renovación.
+- `insecure_dev` (núcleo) y `TALAIA_AGENT_INSECURE_DEV` (agente) pasan a un enlace sin cifrar solo para
+  desarrollo local; `make dev` los usa.
+
 ### 3.2 Protocolo
 
 Contrato en `proto/agent.proto` (gestionado con `buf`). Resumen:
