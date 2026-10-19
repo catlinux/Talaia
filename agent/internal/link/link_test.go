@@ -2,9 +2,21 @@ package link
 
 import (
 	"context"
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	"crypto/rand"
+	"crypto/tls"
+	"crypto/x509"
+	"crypto/x509/pkix"
+	"encoding/pem"
+	"math/big"
+	"net"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -12,6 +24,7 @@ import (
 	"connectrpc.com/connect/v2/connecthttp"
 
 	"github.com/catlinux/Talaia/agent/internal/config"
+	"github.com/catlinux/Talaia/agent/internal/enroll"
 	agentv1 "github.com/catlinux/Talaia/proto/gen/go"
 	"github.com/catlinux/Talaia/proto/gen/go/agentv1connect"
 )
@@ -138,7 +151,7 @@ func firstMetrics(h *testHub) *agentv1.Metrics {
 	return h.metrics[0]
 }
 
-// newTestServer serves the hub over h2c, like the core does.
+// newTestServer serves the hub over h2c, like the insecure dev core does.
 func newTestServer(t *testing.T, hub *testHub) string {
 	t.Helper()
 
@@ -187,7 +200,7 @@ func TestLinkReportsAndReconnects(t *testing.T) {
 		},
 	}
 
-	agentLink := New(config.Config{CoreURL: url, LogLevel: "info"}, collector)
+	agentLink := NewInsecure(config.Config{CoreURL: url, LogLevel: "info"}, collector)
 	agentLink.HeartbeatInterval = 20 * time.Millisecond
 	agentLink.MetricsInterval = 30 * time.Millisecond
 	agentLink.BackoffBase = 10 * time.Millisecond
@@ -237,7 +250,7 @@ func TestLinkResendsInventoryOnlyWhenItChanges(t *testing.T) {
 		metrics:   &agentv1.Metrics{Hostname: "vps-test"},
 	}
 
-	agentLink := New(config.Config{CoreURL: url, LogLevel: "info"}, collector)
+	agentLink := NewInsecure(config.Config{CoreURL: url, LogLevel: "info"}, collector)
 	agentLink.HeartbeatInterval = time.Hour
 	agentLink.MetricsInterval = time.Hour
 	agentLink.InventoryInterval = 20 * time.Millisecond
@@ -293,5 +306,227 @@ func TestInventoryUnchangedIgnoresContainerStatus(t *testing.T) {
 	}
 	if inventoryUnchanged(base("Up 5 minutes", "running"), base("Exited (0) 1 second ago", "exited")) {
 		t.Error("a changed container state must count as an inventory change")
+	}
+}
+
+// testCA is a throwaway CA for the TLS tests.
+type testCA struct {
+	cert    *x509.Certificate
+	key     *ecdsa.PrivateKey
+	certPEM []byte
+	serial  atomic.Int64
+}
+
+func newTestCA(t *testing.T) *testCA {
+	t.Helper()
+
+	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	if err != nil {
+		t.Fatalf("generate ca key: %v", err)
+	}
+
+	now := time.Now()
+	template := &x509.Certificate{
+		SerialNumber:          big.NewInt(1),
+		Subject:               pkix.Name{CommonName: "test ca"},
+		NotBefore:             now.Add(-time.Hour),
+		NotAfter:              now.Add(24 * time.Hour),
+		IsCA:                  true,
+		BasicConstraintsValid: true,
+		MaxPathLen:            0,
+		MaxPathLenZero:        true,
+		KeyUsage:              x509.KeyUsageCertSign | x509.KeyUsageCRLSign,
+	}
+	der, err := x509.CreateCertificate(rand.Reader, template, template, &key.PublicKey, key)
+	if err != nil {
+		t.Fatalf("create ca certificate: %v", err)
+	}
+	cert, err := x509.ParseCertificate(der)
+	if err != nil {
+		t.Fatalf("parse ca certificate: %v", err)
+	}
+
+	return &testCA{
+		cert:    cert,
+		key:     key,
+		certPEM: pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: der}),
+	}
+}
+
+func (c *testCA) issue(t *testing.T, commonName string, publicKey any, usage x509.ExtKeyUsage, ips ...net.IP) []byte {
+	t.Helper()
+
+	now := time.Now()
+	template := &x509.Certificate{
+		SerialNumber: big.NewInt(c.serial.Add(1)),
+		Subject:      pkix.Name{CommonName: commonName},
+		NotBefore:    now.Add(-time.Hour),
+		NotAfter:     now.Add(24 * time.Hour),
+		KeyUsage:     x509.KeyUsageDigitalSignature,
+		ExtKeyUsage:  []x509.ExtKeyUsage{usage},
+		IPAddresses:  ips,
+	}
+	der, err := x509.CreateCertificate(rand.Reader, template, c.cert, publicKey, c.key)
+	if err != nil {
+		t.Fatalf("issue certificate: %v", err)
+	}
+	return pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: der})
+}
+
+func (c *testCA) pool() *x509.CertPool {
+	pool := x509.NewCertPool()
+	pool.AddCert(c.cert)
+	return pool
+}
+
+// issueServer issues the certificate of the test core.
+func (c *testCA) issueServer(t *testing.T) tls.Certificate {
+	t.Helper()
+
+	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	if err != nil {
+		t.Fatalf("generate server key: %v", err)
+	}
+	certPEM := c.issue(t, "test core", &key.PublicKey, x509.ExtKeyUsageServerAuth, net.ParseIP("127.0.0.1"))
+
+	block, _ := pem.Decode(certPEM)
+	leaf, err := x509.ParseCertificate(block.Bytes)
+	if err != nil {
+		t.Fatalf("parse server certificate: %v", err)
+	}
+
+	return tls.Certificate{Certificate: [][]byte{leaf.Raw}, PrivateKey: key, Leaf: leaf}
+}
+
+// issueClient issues the client certificate and the key of an agent.
+func (c *testCA) issueClient(t *testing.T, serverID string) (certPEM, keyPEM []byte) {
+	t.Helper()
+
+	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	if err != nil {
+		t.Fatalf("generate client key: %v", err)
+	}
+	certPEM = c.issue(t, serverID, &key.PublicKey, x509.ExtKeyUsageClientAuth)
+	keyDER, err := x509.MarshalPKCS8PrivateKey(key)
+	if err != nil {
+		t.Fatalf("marshal client key: %v", err)
+	}
+
+	return certPEM, pem.EncodeToMemory(&pem.Block{Type: "PRIVATE KEY", Bytes: keyDER})
+}
+
+// newTestIdentity writes the identity files and loads them.
+func newTestIdentity(t *testing.T, ca *testCA, serverID string) *enroll.Identity {
+	t.Helper()
+
+	dir := filepath.Join(t.TempDir(), "certs")
+	certPEM, keyPEM := ca.issueClient(t, serverID)
+	if err := os.MkdirAll(dir, 0o700); err != nil {
+		t.Fatalf("create cert dir: %v", err)
+	}
+
+	files := map[string]struct {
+		data []byte
+		mode os.FileMode
+	}{
+		"agent.key": {keyPEM, 0o600},
+		"agent.crt": {certPEM, 0o644},
+		"ca.crt":    {ca.certPEM, 0o644},
+	}
+	for name, file := range files {
+		if err := os.WriteFile(filepath.Join(dir, name), file.data, file.mode); err != nil {
+			t.Fatalf("write %s: %v", name, err)
+		}
+	}
+
+	identity, err := enroll.LoadIdentity(dir)
+	if err != nil {
+		t.Fatalf("load identity: %v", err)
+	}
+	return identity
+}
+
+// newTLSTestServer serves the hub over TLS and requires a client certificate.
+func newTLSTestServer(t *testing.T, ca *testCA, hub *testHub) *httptest.Server {
+	t.Helper()
+
+	server := connect.NewServer()
+	agentv1connect.RegisterAgentHubHandler(server, hub)
+	mux := http.NewServeMux()
+	connecthttp.Mount(mux, server)
+
+	httpServer := httptest.NewUnstartedServer(mux)
+	httpServer.TLS = &tls.Config{
+		MinVersion:   tls.VersionTLS13,
+		ClientAuth:   tls.RequireAndVerifyClientCert,
+		ClientCAs:    ca.pool(),
+		Certificates: []tls.Certificate{ca.issueServer(t)},
+		NextProtos:   []string{"h2", "http/1.1"},
+	}
+	httpServer.StartTLS()
+	t.Cleanup(httpServer.Close)
+
+	return httpServer
+}
+
+func TestLinkConnectsWithMTLS(t *testing.T) {
+	ca := newTestCA(t)
+	hub := &testHub{}
+	server := newTLSTestServer(t, ca, hub)
+	identity := newTestIdentity(t, ca, "server-1")
+
+	collector := &fakeCollector{
+		inventory: inventoryWith("vps-web-01"),
+		metrics:   &agentv1.Metrics{Hostname: "vps-web-01"},
+	}
+
+	agentLink := New(config.Config{CoreURL: server.URL, LogLevel: "info"}, collector, identity)
+	agentLink.HeartbeatInterval = 20 * time.Millisecond
+	agentLink.MetricsInterval = 30 * time.Millisecond
+	agentLink.RenewalInterval = time.Hour
+	agentLink.BackoffBase = 10 * time.Millisecond
+	agentLink.BackoffMax = 50 * time.Millisecond
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	done := make(chan error, 1)
+	go func() {
+		done <- agentLink.Run(ctx)
+	}()
+
+	waitFor(t, func() bool {
+		_, inventories, acks, _ := hub.counts()
+		return inventories >= 1 && acks >= 1
+	})
+
+	cancel()
+	select {
+	case err := <-done:
+		if err != nil {
+			t.Fatalf("Run = %v, want nil", err)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("Run did not stop after cancellation")
+	}
+}
+
+func TestLinkRejectsAServerFromAnotherCA(t *testing.T) {
+	clientCA := newTestCA(t)
+	identity := newTestIdentity(t, clientCA, "server-1")
+
+	otherCA := newTestCA(t)
+	server := newTLSTestServer(t, otherCA, &testHub{})
+
+	collector := &fakeCollector{inventory: inventoryWith("vps-web-01"), metrics: &agentv1.Metrics{}}
+	agentLink := New(config.Config{CoreURL: server.URL, LogLevel: "info"}, collector, identity)
+	agentLink.HeartbeatInterval = time.Hour
+	agentLink.MetricsInterval = time.Hour
+	agentLink.RenewalInterval = time.Hour
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	if err := agentLink.session(ctx); err == nil {
+		t.Fatal("the link must reject a core whose certificate comes from another CA")
 	}
 }

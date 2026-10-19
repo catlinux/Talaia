@@ -90,6 +90,9 @@ run_up() {
 
   export TALAIA_DATABASE_URL="$DATABASE_URL"
   export TALAIA_CORE_URL="$CORE_URL"
+# Development only: plaintext, unauthenticated link (the real thing uses mTLS).
+export TALAIA_INSECURE_DEV=1
+export TALAIA_AGENT_INSECURE_DEV=1
 
   if [ ! -d "$ROOT_DIR/web/node_modules" ]; then
     echo "installing web dependencies"

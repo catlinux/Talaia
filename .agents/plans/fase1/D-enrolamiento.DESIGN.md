@@ -49,4 +49,4 @@ Cifrado en reposo de `ca.key`, rotación de la CA, panel web para crear tokens (
 |---|---|---|
 | E1 ✅ | `core/internal/ca` (generar/cargar CA, firmar server/cliente, huella), migración `server` + `enrollment_token`, comando `token create` y `server revoke` | `core/internal/ca/**`, `core/internal/store/**`, `core/cmd/talaia-core/**` |
 | E2 ✅ | TLS en el core, `/ca.pem`, `/enroll`, `/renew`, identidad por certificado en el hub, modo `insecure_dev` | `core/internal/api/**`, `core/internal/hub/**`, `core/internal/config/**`, `core/cmd/talaia-core/**` |
-| E3 | Agente: descubrimiento con huella, CSR, enrolamiento, mTLS, renovación, `insecure_dev` | `agent/internal/enroll/**`, `agent/internal/link/**`, `agent/internal/config/**`, `agent/cmd/**` |
+| E3 ✅ | Agente: descubrimiento con huella, CSR, enrolamiento, mTLS, renovación, `insecure_dev` | `agent/internal/enroll/**`, `agent/internal/link/**`, `agent/internal/config/**`, `agent/cmd/**` |

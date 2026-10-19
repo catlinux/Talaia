@@ -15,9 +15,12 @@ func lookupFrom(env map[string]string) func(string) (string, bool) {
 }
 
 func TestLoad(t *testing.T) {
+	const fingerprint = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+
 	fromFile := `
-core_url = "http://core.example.com:9000"
+core_url = "https://core.example.com:9000"
 log_level = "debug"
+ca_fingerprint = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
 `
 
 	invalidTOML := `core_url = `
@@ -31,27 +34,58 @@ log_level = "debug"
 		wantErr  string
 	}{
 		{
-			name: "defaults",
-			want: Config{CoreURL: DefaultCoreURL, LogLevel: DefaultLogLevel},
+			name: "insecure dev uses the loopback default",
+			env:  map[string]string{"TALAIA_AGENT_INSECURE_DEV": "1"},
+			want: Config{
+				CoreURL:         DefaultCoreURL,
+				LogLevel:        DefaultLogLevel,
+				CertDir:         DefaultCertDir,
+				EnrollTokenFile: DefaultEnrollTokenFile,
+				InsecureDev:     true,
+			},
 		},
 		{
 			name: "values from file",
 			file: &fromFile,
-			want: Config{CoreURL: "http://core.example.com:9000", LogLevel: "debug"},
+			want: Config{
+				CoreURL:         "https://core.example.com:9000",
+				LogLevel:        "debug",
+				CAFingerprint:   fingerprint,
+				CertDir:         DefaultCertDir,
+				EnrollTokenFile: DefaultEnrollTokenFile,
+			},
 		},
 		{
 			name: "environment overrides file",
 			file: &fromFile,
 			env: map[string]string{
-				"TALAIA_CORE_URL":  "https://panel.example.com",
-				"TALAIA_LOG_LEVEL": "warn",
+				"TALAIA_CORE_URL":                "https://panel.example.com",
+				"TALAIA_LOG_LEVEL":               "warn",
+				"TALAIA_CA_FINGERPRINT":          strings.ToUpper(fingerprint),
+				"TALAIA_AGENT_CERT_DIR":          "/tmp/certs",
+				"TALAIA_AGENT_ENROLL_TOKEN_FILE": "/tmp/enroll.token",
 			},
-			want: Config{CoreURL: "https://panel.example.com", LogLevel: "warn"},
+			want: Config{
+				CoreURL:         "https://panel.example.com",
+				LogLevel:        "warn",
+				CAFingerprint:   fingerprint,
+				CertDir:         "/tmp/certs",
+				EnrollTokenFile: "/tmp/enroll.token",
+			},
 		},
 		{
 			name:     "missing explicit file is an error",
 			explicit: true,
 			wantErr:  "does not exist",
+		},
+		{
+			name:    "core_url is required when not insecure",
+			wantErr: "core_url is required",
+		},
+		{
+			name:    "plain http core_url needs insecure dev",
+			env:     map[string]string{"TALAIA_CORE_URL": "http://core.example.com"},
+			wantErr: "must be https://",
 		},
 		{
 			name:    "core_url without a scheme is an error",
@@ -64,13 +98,24 @@ log_level = "debug"
 			wantErr: "absolute http or https URL",
 		},
 		{
+			name:    "invalid ca fingerprint is an error",
+			env:     map[string]string{"TALAIA_CORE_URL": "https://core.example.com", "TALAIA_CA_FINGERPRINT": "abc"},
+			wantErr: "ca_fingerprint must be 64 hexadecimal characters",
+		},
+		{
+			name:    "invalid insecure dev is an error",
+			env:     map[string]string{"TALAIA_AGENT_INSECURE_DEV": "maybe"},
+			wantErr: "invalid insecure_dev value",
+		},
+		{
 			name:    "invalid log level is an error",
-			env:     map[string]string{"TALAIA_LOG_LEVEL": "trace"},
+			env:     map[string]string{"TALAIA_CORE_URL": "https://core.example.com", "TALAIA_LOG_LEVEL": "trace"},
 			wantErr: "invalid log_level",
 		},
 		{
 			name:    "invalid toml is an error",
 			file:    &invalidTOML,
+			env:     map[string]string{"TALAIA_CORE_URL": "https://core.example.com"},
 			wantErr: "parse config file",
 		},
 	}

@@ -1,8 +1,12 @@
 # Talaia agent configuration.
 
-# URL of the talaia-core the agent connects to. Enrollment and mTLS arrive in a
-# later phase; until then core_url is written here by packaging/install.sh.
+# URL of the talaia-core the agent connects to (https only). packaging/install.sh
+# writes core_url and ca_fingerprint here.
 # core_url = "https://talaia.example.com"
+
+# SHA-256 fingerprint (64 hex characters) of the core CA. It is the trust anchor
+# of the first connection and comes with the enrollment token.
+# ca_fingerprint = ""
 
 # Log level: debug, info, warn or error.
 log_level = "info"

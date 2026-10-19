@@ -29,6 +29,7 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 - Inventario del agente con contenedores Docker, proyectos Compose y servicios systemd, reenviado solo cuando cambia.
 - Base del enrolamiento en el core: CA interna (ECDSA P-256), tablas `server` y `enrollment_token`, y los comandos `talaia-core token create` y `talaia-core server revoke`.
 - Core sobre TLS 1.3 con autenticación mutua: `GET /ca.pem`, `POST /enroll`, `POST /renew`, identidad del agente tomada del certificado de cliente y modo `insecure_dev` sin cifrar para desarrollo.
+- Enrolamiento del agente con token de un solo uso anclado a la huella de la CA, enlace mTLS y renovación del certificado; `install.sh` ahora recibe `--token` y `--ca-fingerprint`.
 
 ### Cambiado
 

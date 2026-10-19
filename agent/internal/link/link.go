@@ -11,6 +11,7 @@ import (
 	"log/slog"
 	"math/rand/v2"
 	"net/http"
+	"net/url"
 	"time"
 
 	"connectrpc.com/connect/v2"
@@ -20,6 +21,7 @@ import (
 
 	"github.com/catlinux/Talaia/agent/internal/collect"
 	"github.com/catlinux/Talaia/agent/internal/config"
+	"github.com/catlinux/Talaia/agent/internal/enroll"
 	agentv1 "github.com/catlinux/Talaia/proto/gen/go"
 	"github.com/catlinux/Talaia/proto/gen/go/agentv1connect"
 )
@@ -32,32 +34,48 @@ const streamResetAfter = 30 * time.Second
 type Link struct {
 	cfg       config.Config
 	collector collect.Collector
+	identity  *enroll.Identity
 	client    agentv1connect.AgentHubClient
 
 	// Intervals and backoff bounds are fields so tests can use milliseconds.
 	HeartbeatInterval time.Duration
 	MetricsInterval   time.Duration
 	InventoryInterval time.Duration
+	RenewalInterval   time.Duration
 	BackoffBase       time.Duration
 	BackoffMax        time.Duration
 
 	now func() time.Time
 }
 
-// New returns a Link that sends heartbeats every 10 s and metrics every 15 s.
-func New(cfg config.Config, collector collect.Collector) *Link {
-	// Phase 0 has no TLS: the stream runs over plaintext HTTP/2 (h2c). Phase 1
-	// replaces this with an mTLS client.
-	httpClient := &http.Client{Transport: newH2CTransport()}
-	transport := connecthttp.NewTransport(httpClient, cfg.CoreURL)
+// New returns a Link that reaches the core over TLS with mutual authentication,
+// using the identity of the agent.
+func New(cfg config.Config, collector collect.Collector, identity *enroll.Identity) *Link {
+	if identity == nil {
+		return NewInsecure(cfg, collector)
+	}
+	return newLink(cfg, collector, identity, newTLSTransport(identity, coreHost(cfg.CoreURL)))
+}
+
+// NewInsecure returns a Link for insecure development mode: plaintext HTTP/2
+// and no certificate.
+func NewInsecure(cfg config.Config, collector collect.Collector) *Link {
+	return newLink(cfg, collector, nil, newH2CTransport())
+}
+
+func newLink(cfg config.Config, collector collect.Collector, identity *enroll.Identity, transport *http.Transport) *Link {
+	httpClient := &http.Client{Transport: transport}
+	rpcTransport := connecthttp.NewTransport(httpClient, cfg.CoreURL)
 
 	return &Link{
 		cfg:               cfg,
 		collector:         collector,
-		client:            agentv1connect.NewAgentHubClient(connect.NewClient(transport)),
+		identity:          identity,
+		client:            agentv1connect.NewAgentHubClient(connect.NewClient(rpcTransport)),
 		HeartbeatInterval: 10 * time.Second,
 		MetricsInterval:   15 * time.Second,
 		InventoryInterval: 60 * time.Second,
+		RenewalInterval:   time.Hour,
 		BackoffBase:       time.Second,
 		BackoffMax:        60 * time.Second,
 		now:               time.Now,
@@ -65,13 +83,15 @@ func New(cfg config.Config, collector collect.Collector) *Link {
 }
 
 // Run connects with the default settings and blocks until ctx is cancelled.
-func Run(ctx context.Context, cfg config.Config, collector collect.Collector) error {
-	return New(cfg, collector).Run(ctx)
+func Run(ctx context.Context, cfg config.Config, collector collect.Collector, identity *enroll.Identity) error {
+	return New(cfg, collector, identity).Run(ctx)
 }
 
 // Run keeps the stream alive, reconnecting with backoff, until ctx is
-// cancelled.
+// cancelled. It also renews the certificate in the background.
 func (l *Link) Run(ctx context.Context) error {
+	go l.renewLoop(ctx)
+
 	backoff := l.BackoffBase
 
 	for {
@@ -221,12 +241,57 @@ func inventoryMsg(inventory *agentv1.Inventory) *agentv1.AgentMsg {
 	return &agentv1.AgentMsg{Msg: &agentv1.AgentMsg_Inventory{Inventory: inventory}}
 }
 
-// newH2CTransport speaks HTTP/2 without TLS (h2c). It is temporary: phase 1
-// replaces it with mTLS.
+// newH2CTransport speaks HTTP/2 without TLS (h2c). It is only for insecure
+// development mode.
 func newH2CTransport() *http.Transport {
 	var protocols http.Protocols
 	protocols.SetUnencryptedHTTP2(true)
 	return &http.Transport{Protocols: &protocols}
+}
+
+// newTLSTransport speaks HTTP/2 over TLS with the identity of the agent.
+func newTLSTransport(identity *enroll.Identity, serverName string) *http.Transport {
+	return &http.Transport{
+		TLSClientConfig:   identity.TLSConfig(serverName),
+		ForceAttemptHTTP2: true,
+	}
+}
+
+// coreHost returns the hostname of the core URL, which is the TLS server name.
+func coreHost(rawURL string) string {
+	parsed, err := url.Parse(rawURL)
+	if err != nil {
+		return ""
+	}
+	return parsed.Hostname()
+}
+
+// renewLoop renews the certificate when less than a third of its lifetime
+// remains. A failure is logged and retried on the next tick; the stream is not
+// dropped.
+func (l *Link) renewLoop(ctx context.Context) {
+	if l.identity == nil {
+		return
+	}
+
+	ticker := time.NewTicker(l.RenewalInterval)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			if !l.identity.NeedsRenewal(l.now()) {
+				continue
+			}
+			if err := enroll.Renew(ctx, l.identity, l.cfg.CoreURL); err != nil {
+				slog.Warn("certificate renewal failed", "error", err)
+				continue
+			}
+			slog.Info("certificate renewed", "server_id", l.identity.ServerID(), "not_after", l.identity.NotAfter())
+		}
+	}
 }
 
 // jitter returns a delay between half of backoff and backoff, to avoid

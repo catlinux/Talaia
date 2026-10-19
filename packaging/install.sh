@@ -3,10 +3,11 @@
 # Installs talaia-agent on a Debian or Ubuntu server. Run it as root.
 #
 # Usage:
-#   install.sh --url <core_url> --deb <path-or-https-url> [--token <token>]
+#   install.sh --url <https-core-url> --deb <path-or-https-url> --token <token> --ca-fingerprint <sha256-hex>
 #
-# Enrollment is not implemented yet: --token is only stored in
-# /etc/talaia/enroll.token for a later phase.
+# The agent enrolls on its first start: it fetches the core CA, checks it against
+# --ca-fingerprint (the trust anchor), and exchanges the one-time token for its
+# own client certificate. The token file is deleted after a successful enrollment.
 set -eu
 
 CONFIG=/etc/talaia/agent.toml
@@ -14,11 +15,12 @@ TOKEN_FILE=/etc/talaia/enroll.token
 
 usage() {
     cat >&2 <<'EOF'
-Usage: install.sh --url <core_url> --deb <path-or-https-url> [--token <token>]
+Usage: install.sh --url <https-core-url> --deb <path-or-https-url> --token <token> --ca-fingerprint <sha256-hex>
 
   --url <core_url>  core URL the agent connects to (required)
   --deb <source>    path to a .deb file or an https:// URL to download (required)
-  --token <token>   one-time enrollment token, stored for a later phase (optional)
+  --token <token>   one-time enrollment token (from "talaia-core token create")
+  --ca-fingerprint <hex>  SHA-256 fingerprint of the core CA (printed with the token)
   -h, --help        show this help
 EOF
 }
@@ -26,6 +28,7 @@ EOF
 core_url=""
 deb_source=""
 token=""
+ca_fingerprint=""
 
 while [ "$#" -gt 0 ]; do
     case "$1" in
@@ -42,6 +45,11 @@ while [ "$#" -gt 0 ]; do
         --token)
             [ "$#" -ge 2 ] || { echo "error: --token needs a value" >&2; exit 1; }
             token="$2"
+            shift 2
+            ;;
+        --ca-fingerprint)
+            [ "$#" -ge 2 ] || { echo "error: --ca-fingerprint needs a value" >&2; exit 1; }
+            ca_fingerprint="$2"
             shift 2
             ;;
         -h|--help)
@@ -67,12 +75,28 @@ if [ -z "$core_url" ]; then
     exit 1
 fi
 case "$core_url" in
-    http://* | https://*) ;;
+    https://*) ;;
     *)
-        echo "error: --url must start with http:// or https://" >&2
+        echo "error: --url must start with https://" >&2
         exit 1
         ;;
 esac
+
+if [ -z "$token" ] || [ -z "$ca_fingerprint" ]; then
+    echo "error: --token and --ca-fingerprint are required" >&2
+    usage
+    exit 1
+fi
+case "$ca_fingerprint" in
+    *[!0-9a-fA-F]* | "")
+        echo "error: --ca-fingerprint must be hexadecimal" >&2
+        exit 1
+        ;;
+esac
+if [ "${#ca_fingerprint}" -ne 64 ]; then
+    echo "error: --ca-fingerprint must have 64 hexadecimal characters" >&2
+    exit 1
+fi
 
 if [ -z "$deb_source" ]; then
     echo "error: --deb is required" >&2
@@ -141,23 +165,25 @@ esac
 echo "installing the talaia-agent package"
 apt-get install -y "$deb_file"
 
-# Write core_url into the configuration, replacing any previous value.
+# Write core_url and ca_fingerprint into the configuration, replacing previous values.
 mkdir -p /etc/talaia /var/lib/talaia
 if [ -f "$CONFIG" ]; then
-    grep -v -E '^[[:space:]]*#?[[:space:]]*core_url[[:space:]]*=' "$CONFIG" > "$CONFIG.new" || true
-    printf 'core_url = "%s"\n' "$core_url" >> "$CONFIG.new"
-    mv "$CONFIG.new" "$CONFIG"
+    grep -v -E '^[[:space:]]*#?[[:space:]]*(core_url|ca_fingerprint)[[:space:]]*=' "$CONFIG" > "$CONFIG.new" || true
 else
-    printf 'core_url = "%s"\n' "$core_url" > "$CONFIG"
+    : > "$CONFIG.new"
 fi
+printf 'core_url = "%s"
+' "$core_url" >> "$CONFIG.new"
+printf 'ca_fingerprint = "%s"
+' "$ca_fingerprint" >> "$CONFIG.new"
+mv "$CONFIG.new" "$CONFIG"
 chmod 0600 "$CONFIG"
 
-# Enrollment arrives in a later phase. The one-time token is only stored here:
-# it is never printed, logged or sent anywhere.
-if [ -n "$token" ]; then
-    (umask 077 && printf '%s\n' "$token" > "$TOKEN_FILE")
-    chmod 0600 "$TOKEN_FILE"
-fi
+# The one-time token is read by the agent on its first start and deleted after
+# a successful enrollment. It is never printed, logged or sent anywhere else.
+(umask 077 && printf '%s
+' "$token" > "$TOKEN_FILE")
+chmod 0600 "$TOKEN_FILE"
 
 systemctl daemon-reload
 systemctl enable talaia-agent
