@@ -46,6 +46,7 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 ### Fixed
 
 - The core no longer crashes on start when `TALAIA_PUBLIC_HOSTNAMES` holds only IP addresses.
+- The shell scripts (`packaging/install.sh`, `scripts/*.sh`) are now stored as executable, so `./install.sh` works after a clone.
 
 ## [0.0.1] - 2026-10-18
 

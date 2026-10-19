@@ -46,6 +46,7 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 ### Corregido
 
 - El core ya no se cae al arrancar cuando `TALAIA_PUBLIC_HOSTNAMES` solo contiene direcciones IP.
+- Los scripts de shell (`packaging/install.sh`, `scripts/*.sh`) se guardan ahora como ejecutables, así que `./install.sh` funciona tras clonar.
 
 ## [0.0.1] - 2026-10-18
 
