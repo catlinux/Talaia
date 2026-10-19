@@ -51,7 +51,7 @@ export function useAuth(): AuthContextValue | null {
 
 type GateState =
   | { kind: 'loading' }
-  | { kind: 'login' }
+  | { kind: 'login'; expired?: boolean }
   | { kind: 'setup'; username: string }
   | { kind: 'verify'; username: string }
   | { kind: 'codes'; username: string; codes: string[] }
@@ -74,7 +74,8 @@ export function AuthGate({ api, children }: AuthGateProps) {
   const [state, setState] = useState<GateState>({ kind: 'loading' })
 
   const toLogin = useCallback(() => {
-    setState({ kind: 'login' })
+    // A call found no session: tell the user why the form is back.
+    setState({ kind: 'login', expired: true })
   }, [])
 
   useEffect(() => {
@@ -155,7 +156,7 @@ export function AuthGate({ api, children }: AuthGateProps) {
   }
 
   if (state.kind === 'login') {
-    return <Login onSubmit={login} />
+    return <Login onSubmit={login} expired={state.expired === true} />
   }
 
   if (state.kind === 'setup') {

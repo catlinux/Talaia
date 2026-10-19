@@ -45,6 +45,7 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 ### Cambiado
 
 - Decisiones de la fase 0 cerradas: PostgreSQL + TimescaleDB, React + TypeScript, Go 1.26, Node.js 24 LTS con pnpm.
+- La sesión que espera el segundo factor dura 15 minutos en el primer acceso (antes 5), suficiente para instalar una aplicación de autenticación y escanear el QR; quien ya tiene el segundo factor mantiene 5 minutos. La pantalla de acceso indica ahora cuándo ha caducado la sesión.
 
 ### Corregido
 

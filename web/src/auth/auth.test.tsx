@@ -161,5 +161,8 @@ describe('panel authentication', () => {
 
     expect(await screen.findByRole('heading', { name: 'Sign in' })).toBeTruthy()
     expect(screen.queryByText('vps-web-01')).toBeNull()
+    expect((await screen.findByRole('status')).textContent).toBe(
+      'The session has expired. Sign in again.',
+    )
   })
 })

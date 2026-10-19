@@ -29,7 +29,7 @@ Estado: diseño de Opus (2026-10-19), aprobado por el mantenedor («jo em deixo 
 ## Flujo
 
 1. **Alta** (consola del servidor): `talaia-core user create --username <u>` pide la contraseña dos veces sin eco (o `--password-stdin`). Falla si ya existe un usuario (fase 3: uno solo).
-2. **Login**: `POST /api/v1/auth/login {username, password}` → si es correcta, sesión `mfa_pending` de 5 minutos y respuesta `{next: "totp_setup" | "totp"}`. Si no: `401 {"error":{"code":"invalid_credentials"}}`.
+2. **Login**: `POST /api/v1/auth/login {username, password}` → si es correcta, sesión `mfa_pending` (5 minutos; 15 en el primer acceso, para dar tiempo a instalar la aplicación y escanear el QR) y respuesta `{next: "totp_setup" | "totp"}`. Si no: `401 {"error":{"code":"invalid_credentials"}}`.
 3. **Primer acceso**: `POST /api/v1/auth/totp/setup` (solo `mfa_pending` y TOTP sin activar) devuelve el secreto base32 y el URI `otpauth://`; `POST /api/v1/auth/totp/confirm {code}` lo activa, devuelve los 10 códigos de recuperación **una sola vez** y sube la sesión a `full`.
 4. **Accesos siguientes**: `POST /api/v1/auth/totp {code}` o `{recovery_code}` → `full`.
 5. **Al pasar a `full` se cambia el token** (nuevo token, el anterior se revoca): evita la fijación de sesión.
@@ -40,7 +40,7 @@ Estado: diseño de Opus (2026-10-19), aprobado por el mantenedor («jo em deixo 
 ## Sesión y navegador
 
 - Cookie `__Host-talaia_session`: `Secure`, `HttpOnly`, `SameSite=Strict`, `Path=/`, sin `Domain`.
-- Caducidad: 12 h sin actividad y 7 días como máximo (`mfa_pending`: 5 min). `last_seen_at` se actualiza como mucho una vez por minuto.
+- Caducidad: 12 h sin actividad y 7 días como máximo (`mfa_pending`: 5 min, 15 en el alta del segundo factor). `last_seen_at` se actualiza como mucho una vez por minuto.
 - CSRF: además de `SameSite=Strict`, toda petición que modifica exige `Content-Type: application/json` y un `Origin` (o `Sec-Fetch-Site: same-origin`) que esté en `allowed_origins` (por defecto `https://<public_hostnames>`; en `insecure_dev` también `http://localhost:5173` y `http://127.0.0.1:5173`). Si no, 403.
 - Cabeceras en todas las respuestas: `Content-Security-Policy: default-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer`, `Cache-Control: no-store` en la API, y `Strict-Transport-Security: max-age=31536000` con TLS.
 - El core sirve el panel compilado desde `web_dir` (por defecto `/usr/share/talaia/web`): mismo origen, sin cookies de terceros. En desarrollo, Vite hace de proxy de `/api` al core.

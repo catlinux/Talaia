@@ -19,6 +19,9 @@ const (
 	// pendingSessionTTL is how long the password-only session lives: it is only
 	// good to finish the second factor.
 	pendingSessionTTL = 5 * time.Minute
+	// setupSessionTTL is longer for the first access: the user has to install an
+	// authenticator app and scan the QR code before the first code.
+	setupSessionTTL = 15 * time.Minute
 	// fullSessionTTL is the absolute lifetime of a session that passed both
 	// factors.
 	fullSessionTTL = 7 * 24 * time.Hour
@@ -156,7 +159,8 @@ func sessionCookie(token, stage string) *http.Cookie {
 	case stage == store.StageFull:
 		cookie.MaxAge = int(fullSessionTTL / time.Second)
 	default:
-		cookie.MaxAge = int(pendingSessionTTL / time.Second)
+		// The cookie may outlive the session; the server decides when it ends.
+		cookie.MaxAge = int(setupSessionTTL / time.Second)
 	}
 	if token != "" {
 		cookie.Value = token

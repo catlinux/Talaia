@@ -45,6 +45,7 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 ### Changed
 
 - Phase 0 decisions closed: PostgreSQL + TimescaleDB, React + TypeScript, Go 1.26, Node.js 24 LTS with pnpm.
+- The session that waits for the second factor lasts 15 minutes at the first access (it was 5), enough to install an authenticator app and scan the QR code; users that already have the second factor keep 5 minutes. The sign-in screen now says when the session expired.
 
 ### Fixed
 

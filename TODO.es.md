@@ -76,7 +76,6 @@ tareas concretas de la fase actual y de la siguiente.
 
 Apunta aquí las ideas nuevas en lugar de añadirlas a la fase actual.
 
-- Segundo factor: un código erróneo durante el alta no debería cerrar la sesión pendiente (en el primer despliegue real se volvió al formulario de acceso tras un fallo, aún sin explicar)
 - App móvil (PWA) con notificaciones push
 - Integración con Tailscale/Headscale para crear la red privada automáticamente
 - Panel de costes por proveedor

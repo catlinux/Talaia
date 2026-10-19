@@ -5,10 +5,12 @@ import { errorMessage } from './AuthGate'
 
 export interface LoginProps {
   onSubmit: (username: string, password: string) => Promise<void>
+  /** expired tells the user the previous session ended on its own. */
+  expired?: boolean
 }
 
 /** Login is the first screen: username and password only. */
-export function Login({ onSubmit }: LoginProps) {
+export function Login({ onSubmit, expired = false }: LoginProps) {
   const { t } = useTranslation(['auth', 'errors'])
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
@@ -42,6 +44,11 @@ export function Login({ onSubmit }: LoginProps) {
           {t('auth:login.title')}
         </h1>
         <p className="auth__intro">{t('auth:login.intro')}</p>
+        {error === null && expired && (
+          <p className="auth__status" role="status">
+            {t('errors:sessionRequired')}
+          </p>
+        )}
         {error !== null && (
           <p className="auth__error" role="alert">
             {error}

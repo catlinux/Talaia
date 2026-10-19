@@ -76,7 +76,6 @@ of the current phase and the next one.
 
 Write new ideas here instead of adding them to the current phase.
 
-- Second factor: a wrong code during setup should not end the pending session (the first real deployment dropped to the sign-in form after one failure, not yet explained)
 - Mobile app (PWA) with push notifications
 - Integration with Tailscale/Headscale to create the private network automatically
 - Cost dashboard per provider

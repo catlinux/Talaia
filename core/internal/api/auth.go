@@ -242,16 +242,16 @@ func (h *authHandler) login(w http.ResponseWriter, r *http.Request) {
 		slog.Warn("reset failures", "user_id", user.ID, "error", err)
 	}
 
-	token := auth.NewSessionToken()
-	if _, err := h.deps.Store.CreateSession(r.Context(), user.ID, auth.HashToken(token),
-		store.StageMFAPending, now.Add(pendingSessionTTL), clientIP(r), r.UserAgent()); err != nil {
-		internal(w, "create session", err)
-		return
+	next, ttl := "totp_setup", setupSessionTTL
+	if !user.TOTPEnabledAt.IsZero() {
+		next, ttl = "totp", pendingSessionTTL
 	}
 
-	next := "totp_setup"
-	if !user.TOTPEnabledAt.IsZero() {
-		next = "totp"
+	token := auth.NewSessionToken()
+	if _, err := h.deps.Store.CreateSession(r.Context(), user.ID, auth.HashToken(token),
+		store.StageMFAPending, now.Add(ttl), clientIP(r), r.UserAgent()); err != nil {
+		internal(w, "create session", err)
+		return
 	}
 
 	http.SetCookie(w, sessionCookie(token, store.StageMFAPending))

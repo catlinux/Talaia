@@ -709,3 +709,34 @@ func TestAuditTrailOfTheFlow(t *testing.T) {
 		t.Error("the failed code was not audited")
 	}
 }
+
+// pendingLifetime returns how long the pending session of the panel client lasts.
+func (p *testPanel) pendingLifetime(t *testing.T) time.Duration {
+	t.Helper()
+
+	token := p.sessionCookieValue(t, p.client)
+	session, err := p.store.GetSessionByTokenHash(context.Background(), auth.HashToken(token))
+	if err != nil {
+		t.Fatalf("get the session: %v", err)
+	}
+	return session.ExpiresAt.Sub(session.CreatedAt).Round(time.Minute)
+}
+
+func TestSetupSessionOutlivesTheVerificationSession(t *testing.T) {
+	panel := newTestPanel(t)
+	panel.createUser(t, "admin", testPassword)
+
+	// First access: there is time to install the authenticator app.
+	panel.login(t, "admin", testPassword)
+	if got := panel.pendingLifetime(t); got != setupSessionTTL {
+		t.Errorf("setup session lasts %s, want %s", got, setupSessionTTL)
+	}
+
+	// A user that already has the second factor only gets the short window.
+	panel.enableTOTP(t, "admin", testPassword)
+	panel.logout(t, panel.client)
+	panel.login(t, "admin", testPassword)
+	if got := panel.pendingLifetime(t); got != pendingSessionTTL {
+		t.Errorf("verification session lasts %s, want %s", got, pendingSessionTTL)
+	}
+}
