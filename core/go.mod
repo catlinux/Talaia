@@ -9,9 +9,13 @@ require (
 	github.com/nicksnyder/go-i18n/v2 v2.6.1
 	github.com/pelletier/go-toml/v2 v2.4.3
 	github.com/pressly/goose/v3 v3.29.0
+	golang.org/x/crypto v0.58.0
 )
 
-require google.golang.org/protobuf v1.36.12 // indirect
+require (
+	golang.org/x/sys v0.49.0 // indirect
+	google.golang.org/protobuf v1.36.12 // indirect
+)
 
 require (
 	github.com/catlinux/Talaia/proto v0.0.0-00010101000000-000000000000
