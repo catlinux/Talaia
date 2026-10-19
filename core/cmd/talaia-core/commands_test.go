@@ -1,0 +1,262 @@
+package main
+
+import (
+	"bytes"
+	"context"
+	"encoding/hex"
+	"errors"
+	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+	"time"
+
+	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/catlinux/Talaia/core/internal/store"
+)
+
+type fakeTokenCreator struct {
+	token string
+	err   error
+	name  string
+	ttl   time.Duration
+}
+
+func (f *fakeTokenCreator) CreateEnrollmentToken(_ context.Context, serverName string, ttl time.Duration) (string, error) {
+	f.name = serverName
+	f.ttl = ttl
+	return f.token, f.err
+}
+
+type fakeRevoker struct {
+	err  error
+	last string
+}
+
+func (f *fakeRevoker) RevokeServer(_ context.Context, id string) error {
+	f.last = id
+	return f.err
+}
+
+func TestRunUnknownCommand(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+
+	code := run([]string{"nope"}, &stdout, &stderr)
+
+	if code != 2 {
+		t.Fatalf("exit code = %d, want 2", code)
+	}
+	if stdout.Len() != 0 {
+		t.Errorf("stdout = %q, want nothing", stdout.String())
+	}
+	if !strings.Contains(stderr.String(), `unknown command "nope"`) {
+		t.Errorf("stderr = %q", stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "Usage: talaia-core") {
+		t.Errorf("stderr = %q, want the usage", stderr.String())
+	}
+}
+
+func TestRunMissingSubcommands(t *testing.T) {
+	for _, command := range []string{"token", "server"} {
+		t.Run(command, func(t *testing.T) {
+			var stdout, stderr bytes.Buffer
+
+			if code := run([]string{command}, &stdout, &stderr); code != 2 {
+				t.Fatalf("exit code = %d, want 2", code)
+			}
+			if !strings.Contains(stderr.String(), "missing subcommand") {
+				t.Errorf("stderr = %q", stderr.String())
+			}
+		})
+	}
+}
+
+func TestRunUnknownSubcommands(t *testing.T) {
+	for _, args := range [][]string{{"token", "nope"}, {"server", "nope"}} {
+		t.Run(strings.Join(args, " "), func(t *testing.T) {
+			var stdout, stderr bytes.Buffer
+
+			if code := run(args, &stdout, &stderr); code != 2 {
+				t.Fatalf("exit code = %d, want 2", code)
+			}
+			if !strings.Contains(stderr.String(), "unknown subcommand") {
+				t.Errorf("stderr = %q", stderr.String())
+			}
+		})
+	}
+}
+
+func TestTokenCreatePrintsTheToken(t *testing.T) {
+	creator := &fakeTokenCreator{token: "tl_enr_dGVzdA"}
+	fingerprint := strings.Repeat("ab", 32)
+	var stdout bytes.Buffer
+
+	if err := tokenCreate(context.Background(), &stdout, creator, "vps-web-01", 15*time.Minute, fingerprint); err != nil {
+		t.Fatalf("tokenCreate: %v", err)
+	}
+
+	printed := stdout.String()
+	for _, want := range []string{
+		"token: tl_enr_dGVzdA",
+		"ca-fingerprint: " + fingerprint,
+		"shown only once",
+	} {
+		if !strings.Contains(printed, want) {
+			t.Errorf("output %q does not contain %q", printed, want)
+		}
+	}
+	if creator.name != "vps-web-01" || creator.ttl != 15*time.Minute {
+		t.Errorf("creator called with %q and %s", creator.name, creator.ttl)
+	}
+}
+
+func TestTokenCreateReportsErrors(t *testing.T) {
+	creator := &fakeTokenCreator{err: errors.New("server is already enrolled")}
+	var stdout bytes.Buffer
+
+	err := tokenCreate(context.Background(), &stdout, creator, "vps-web-01", time.Minute, "abcd")
+
+	if err == nil {
+		t.Fatal("expected an error")
+	}
+	if stdout.Len() != 0 {
+		t.Errorf("nothing must be printed on error, got %q", stdout.String())
+	}
+}
+
+func TestServerRevokePrintsTheId(t *testing.T) {
+	revoker := &fakeRevoker{}
+	var stdout bytes.Buffer
+
+	if err := serverRevoke(context.Background(), &stdout, revoker, "11111111-1111-1111-1111-111111111111"); err != nil {
+		t.Fatalf("serverRevoke: %v", err)
+	}
+
+	if stdout.String() != "revoked 11111111-1111-1111-1111-111111111111\n" {
+		t.Errorf("output = %q", stdout.String())
+	}
+	if revoker.last != "11111111-1111-1111-1111-111111111111" {
+		t.Errorf("revoker called with %q", revoker.last)
+	}
+}
+
+func TestServerRevokeUnknownServer(t *testing.T) {
+	revoker := &fakeRevoker{err: store.ErrNotFound}
+	var stdout bytes.Buffer
+
+	err := serverRevoke(context.Background(), &stdout, revoker, "abc")
+
+	if err == nil || !strings.Contains(err.Error(), "no server with id abc") {
+		t.Fatalf("error = %v, want a clear not found message", err)
+	}
+	if stdout.Len() != 0 {
+		t.Errorf("nothing must be printed on error, got %q", stdout.String())
+	}
+}
+
+// TestCommandsAgainstDatabase runs the real commands against the local
+// PostgreSQL. It is skipped when TALAIA_TEST_DATABASE_URL is not set.
+func TestCommandsAgainstDatabase(t *testing.T) {
+	url := os.Getenv("TALAIA_TEST_DATABASE_URL")
+	if url == "" {
+		t.Skip("TALAIA_TEST_DATABASE_URL is not set")
+	}
+
+	ctx := context.Background()
+	dataDir := t.TempDir()
+	configPath := filepath.Join(t.TempDir(), "core.toml")
+	if err := os.WriteFile(configPath, []byte{}, 0o600); err != nil {
+		t.Fatalf("write config: %v", err)
+	}
+
+	t.Setenv("TALAIA_CONFIG", configPath)
+	t.Setenv("TALAIA_DATABASE_URL", url)
+	t.Setenv("TALAIA_DATA_DIR", dataDir)
+
+	name := fmt.Sprintf("test-%d", time.Now().UnixNano())
+	revokeName := name + "-revoke"
+
+	pool, err := pgxpool.New(ctx, url)
+	if err != nil {
+		t.Fatalf("open database: %v", err)
+	}
+	t.Cleanup(func() {
+		_, _ = pool.Exec(ctx, `DELETE FROM enrollment_token WHERE server_name = $1`, name)
+		_, _ = pool.Exec(ctx, `DELETE FROM server WHERE name = $1 OR name = $2`, name, revokeName)
+		pool.Close()
+	})
+
+	var stdout, stderr bytes.Buffer
+	if code := run([]string{"token", "create", "--name", name}, &stdout, &stderr); code != 0 {
+		t.Fatalf("token create exit code = %d, stderr = %s", code, stderr.String())
+	}
+
+	printed := stdout.String()
+	if !strings.Contains(printed, "token: tl_enr_") {
+		t.Errorf("output = %q, want an enrollment token", printed)
+	}
+	fingerprintFromOutput(t, printed)
+
+	// The CA is created inside data_dir.
+	if _, err := os.Stat(filepath.Join(dataDir, "ca", "ca.crt")); err != nil {
+		t.Errorf("ca.crt: %v", err)
+	}
+
+	// The same name cannot be enrolled twice.
+	stdout.Reset()
+	stderr.Reset()
+	if code := run([]string{"token", "create", "--name", name}, &stdout, &stderr); code != 1 {
+		t.Fatalf("second token create exit code = %d, want 1", code)
+	}
+	if !strings.Contains(stderr.String(), "already") {
+		t.Errorf("stderr = %q, want a clear message", stderr.String())
+	}
+
+	// server revoke.
+	var serverID string
+	if err := pool.QueryRow(ctx, `INSERT INTO server (name) VALUES ($1) RETURNING id`, revokeName).Scan(&serverID); err != nil {
+		t.Fatalf("insert server: %v", err)
+	}
+
+	stdout.Reset()
+	stderr.Reset()
+	if code := run([]string{"server", "revoke", serverID}, &stdout, &stderr); code != 0 {
+		t.Fatalf("server revoke exit code = %d, stderr = %s", code, stderr.String())
+	}
+	if stdout.String() != "revoked "+serverID+"\n" {
+		t.Errorf("output = %q", stdout.String())
+	}
+
+	var revoked *time.Time
+	if err := pool.QueryRow(ctx, `SELECT revoked_at FROM server WHERE id = $1`, serverID).Scan(&revoked); err != nil {
+		t.Fatalf("read revoked_at: %v", err)
+	}
+	if revoked == nil {
+		t.Error("revoked_at is not set")
+	}
+}
+
+func fingerprintFromOutput(t *testing.T, output string) string {
+	t.Helper()
+
+	for _, line := range strings.Split(output, "\n") {
+		value, ok := strings.CutPrefix(line, "ca-fingerprint: ")
+		if !ok {
+			continue
+		}
+		value = strings.TrimSpace(value)
+		if len(value) != 64 {
+			t.Fatalf("fingerprint = %q, want 64 hex characters", value)
+		}
+		if _, err := hex.DecodeString(value); err != nil {
+			t.Fatalf("fingerprint %q is not hexadecimal: %v", value, err)
+		}
+		return value
+	}
+
+	t.Fatalf("no ca-fingerprint line in %q", output)
+	return ""
+}

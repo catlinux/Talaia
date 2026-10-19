@@ -27,6 +27,7 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 - Agent `.deb` package (nfpm), systemd unit and `install.sh` (`scripts/build-deb.sh`). Enrollment is not implemented yet.
 - Fleet screen (mockup 1) with sample data behind an API-client interface, and Fleet/About navigation.
 - Agent inventory of Docker containers, Compose projects and systemd services, re-sent only when it changes.
+- Core enrollment foundation: internal CA (ECDSA P-256), `server` and `enrollment_token` tables, and the commands `talaia-core token create` and `talaia-core server revoke`.
 
 ### Changed
 

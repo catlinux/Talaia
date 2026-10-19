@@ -7,6 +7,13 @@ linters:
     - gocritic
     - misspell
     - unconvert
+  settings:
+    errcheck:
+      exclude-functions:
+        # Writing to an io.Writer (stdout, stderr) in commands: nothing useful to do on failure.
+        - fmt.Fprint
+        - fmt.Fprintf
+        - fmt.Fprintln
   exclusions:
     # The go code in proto/gen is generated, not written by hand.
     paths:

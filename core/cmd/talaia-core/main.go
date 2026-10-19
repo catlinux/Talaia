@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"log/slog"
 	"net/http"
 	"os"
@@ -24,9 +25,33 @@ var version = "dev"
 const shutdownTimeout = 10 * time.Second
 
 func main() {
-	if err := run(); err != nil {
-		slog.Error("talaia-core stopped", "error", err)
-		os.Exit(1)
+	os.Exit(run(os.Args[1:], os.Stdout, os.Stderr))
+}
+
+// run dispatches the subcommands and returns the exit code: 0 on success, 1 on
+// a runtime error and 2 on a usage error.
+func run(args []string, stdout, stderr io.Writer) int {
+	command := ""
+	if len(args) > 0 {
+		command = args[0]
+	}
+	rest := args[1:]
+
+	switch command {
+	case "", "serve":
+		if err := serve(); err != nil {
+			slog.Error("talaia-core stopped", "error", err)
+			return 1
+		}
+		return 0
+	case "token":
+		return runToken(rest, stdout, stderr)
+	case "server":
+		return runServer(rest, stdout, stderr)
+	default:
+		fmt.Fprintf(stderr, "unknown command %q\n\n", command)
+		printUsage(stderr)
+		return 2
 	}
 }
 
@@ -51,7 +76,7 @@ func newProtocols() *http.Protocols {
 	return &protocols
 }
 
-func run() error {
+func serve() error {
 	cfg, err := config.Load()
 	if err != nil {
 		return fmt.Errorf("load configuration: %w", err)

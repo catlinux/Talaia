@@ -3,6 +3,7 @@ package config
 import (
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -16,11 +17,27 @@ func lookupFrom(env map[string]string) func(string) (string, bool) {
 	}
 }
 
+func configsEqual(a, b Config) bool {
+	return a.Listen == b.Listen &&
+		a.DatabaseURL == b.DatabaseURL &&
+		a.LogLevel == b.LogLevel &&
+		a.DataDir == b.DataDir &&
+		a.InsecureDev == b.InsecureDev &&
+		slices.Equal(a.PublicHostnames, b.PublicHostnames)
+}
+
 func TestLoad(t *testing.T) {
 	defaultFile := `
 listen = ":9000"
 database_url = "postgres://file@example.com/talaia"
 log_level = "debug"
+`
+
+	enrollmentFile := `
+database_url = "postgres://file@example.com/talaia"
+data_dir = "/tmp/talaia-file"
+public_hostnames = ["core.example.com", "192.0.2.10"]
+insecure_dev = true
 `
 
 	invalidTOML := `listen = `
@@ -40,6 +57,7 @@ log_level = "debug"
 				Listen:      DefaultListen,
 				DatabaseURL: testDatabaseURL,
 				LogLevel:    DefaultLogLevel,
+				DataDir:     DefaultDataDir,
 			},
 		},
 		{
@@ -49,6 +67,19 @@ log_level = "debug"
 				Listen:      ":9000",
 				DatabaseURL: "postgres://file@example.com/talaia",
 				LogLevel:    "debug",
+				DataDir:     DefaultDataDir,
+			},
+		},
+		{
+			name: "enrollment values from file",
+			file: &enrollmentFile,
+			want: Config{
+				Listen:          DefaultListen,
+				DatabaseURL:     "postgres://file@example.com/talaia",
+				LogLevel:        DefaultLogLevel,
+				DataDir:         "/tmp/talaia-file",
+				PublicHostnames: []string{"core.example.com", "192.0.2.10"},
+				InsecureDev:     true,
 			},
 		},
 		{
@@ -62,6 +93,24 @@ log_level = "debug"
 				Listen:      ":7000",
 				DatabaseURL: "postgres://file@example.com/talaia",
 				LogLevel:    "warn",
+				DataDir:     DefaultDataDir,
+			},
+		},
+		{
+			name: "environment overrides the enrollment values",
+			file: &enrollmentFile,
+			env: map[string]string{
+				"TALAIA_DATA_DIR":         "/tmp/talaia-env",
+				"TALAIA_PUBLIC_HOSTNAMES": "env.example.com, 192.0.2.20",
+				"TALAIA_INSECURE_DEV":     "1",
+			},
+			want: Config{
+				Listen:          DefaultListen,
+				DatabaseURL:     "postgres://file@example.com/talaia",
+				LogLevel:        DefaultLogLevel,
+				DataDir:         "/tmp/talaia-env",
+				PublicHostnames: []string{"env.example.com", "192.0.2.20"},
+				InsecureDev:     true,
 			},
 		},
 		{
@@ -78,6 +127,11 @@ log_level = "debug"
 			name:    "invalid log level is an error",
 			env:     map[string]string{"TALAIA_DATABASE_URL": testDatabaseURL, "TALAIA_LOG_LEVEL": "trace"},
 			wantErr: "invalid log_level",
+		},
+		{
+			name:    "invalid insecure dev is an error",
+			env:     map[string]string{"TALAIA_DATABASE_URL": testDatabaseURL, "TALAIA_INSECURE_DEV": "maybe"},
+			wantErr: "invalid insecure_dev value",
 		},
 		{
 			name:    "invalid toml is an error",
@@ -118,8 +172,33 @@ log_level = "debug"
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
-			if got != tt.want {
+			if !configsEqual(got, tt.want) {
 				t.Fatalf("config = %+v, want %+v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestValidateCertificateHosts(t *testing.T) {
+	tests := []struct {
+		name    string
+		cfg     Config
+		wantErr bool
+	}{
+		{name: "hostnames present", cfg: Config{PublicHostnames: []string{"core.example.com"}}},
+		{name: "insecure dev without hostnames", cfg: Config{InsecureDev: true}},
+		{name: "hostnames with insecure dev", cfg: Config{PublicHostnames: []string{"core.example.com"}, InsecureDev: true}},
+		{name: "missing hostnames", cfg: Config{}, wantErr: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.cfg.ValidateCertificateHosts()
+			if tt.wantErr && err == nil {
+				t.Fatal("expected an error")
+			}
+			if !tt.wantErr && err != nil {
+				t.Fatalf("unexpected error: %v", err)
 			}
 		})
 	}
