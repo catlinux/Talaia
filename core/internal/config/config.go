@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"net"
 	"os"
 	"strings"
 
@@ -203,6 +204,11 @@ func (c *Config) validate() error {
 	if strings.TrimSpace(c.DataDir) == "" {
 		return errors.New("data_dir is required")
 	}
+	// Without TLS anyone who reaches the port can impersonate an agent, so the
+	// development mode only listens on the loopback interface.
+	if c.InsecureDev && !isLoopbackListen(c.Listen) {
+		return fmt.Errorf("insecure_dev requires a loopback listen address such as 127.0.0.1:8080, got %q", c.Listen)
+	}
 
 	level := strings.ToLower(strings.TrimSpace(c.LogLevel))
 	if _, ok := logLevels[level]; !ok {
@@ -210,4 +216,18 @@ func (c *Config) validate() error {
 	}
 	c.LogLevel = level
 	return nil
+}
+
+// isLoopbackListen reports whether a listen address only binds the loopback
+// interface. An empty host (":8080") binds every interface.
+func isLoopbackListen(listen string) bool {
+	host, _, err := net.SplitHostPort(strings.TrimSpace(listen))
+	if err != nil {
+		return false
+	}
+	if host == "localhost" {
+		return true
+	}
+	ip := net.ParseIP(host)
+	return ip != nil && ip.IsLoopback()
 }

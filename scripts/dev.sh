@@ -92,6 +92,8 @@ run_up() {
   export TALAIA_CORE_URL="$CORE_URL"
 # Development only: plaintext, unauthenticated link (the real thing uses mTLS).
 export TALAIA_INSECURE_DEV=1
+# insecure_dev only accepts a loopback listen address.
+export TALAIA_LISTEN=127.0.0.1:8080
 export TALAIA_AGENT_INSECURE_DEV=1
 
   if [ ! -d "$ROOT_DIR/web/node_modules" ]; then

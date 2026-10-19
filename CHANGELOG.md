@@ -31,6 +31,10 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 - Core over TLS 1.3 with mutual authentication: `GET /ca.pem`, `POST /enroll`, `POST /renew`, agent identity taken from the client certificate, and a plaintext `insecure_dev` mode for development.
 - Agent enrollment with a one-time token pinned to the CA fingerprint, mTLS link and certificate renewal; `install.sh` now takes `--token` and `--ca-fingerprint`.
 
+### Security
+
+- Security review of the enrollment: revocation now closes live agent streams, the agent identity is bound to the current or previous certificate serial, enrollment is a single transaction, the agent key and certificate are stored in one atomic file, `insecure_dev` only listens on loopback, permanent agent errors stop systemd restarts (exit 78), and the CA and certificate directories are forced to mode 0700.
+
 ### Changed
 
 - Phase 0 decisions closed: PostgreSQL + TimescaleDB, React + TypeScript, Go 1.26, Node.js 24 LTS with pnpm.

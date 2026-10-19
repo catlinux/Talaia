@@ -57,6 +57,8 @@ Revisado el código real (`core/internal/{ca,api,hub,store}`, `agent/internal/en
 
 **Correcto:** token de 256 bits guardado con SHA-256 y consumido con un único `UPDATE … RETURNING`; errores de token indistinguibles; CSR validado antes de gastar el token; la CA ignora subject y SAN del CSR y exige P-256; `MaxPathLen 0`; EKU separados (el certificado del core no sirve como cliente ni el del agente como servidor); TLS 1.3; huella comparada en tiempo constante y `InsecureSkipVerify` limitado a la única petición de `/ca.pem`; el agente verifica que el certificado recibido es de su clave, de la CA y con CN = `server_id`; límites de tamaño en peticiones y respuestas; ficheros escritos de forma atómica con 0600/0700.
 
+**Corregido el 2026-10-19** (R1–R6, con pruebas; R2 incluye la columna `prev_cert_serial`, migración 0003). Nota sobre R2: `/renew` acepta también el certificado anterior para poder recuperarse de una caída a mitad de renovación; si una clave se filtra, la respuesta es revocar el servidor.
+
 **A corregir** (en orden de prioridad):
 
 | # | Gravedad | Problema | Corrección |

@@ -34,6 +34,7 @@ log_level = "debug"
 `
 
 	enrollmentFile := `
+listen = "127.0.0.1:8080"
 database_url = "postgres://file@example.com/talaia"
 data_dir = "/tmp/talaia-file"
 public_hostnames = ["core.example.com", "192.0.2.10"]
@@ -74,7 +75,7 @@ insecure_dev = true
 			name: "enrollment values from file",
 			file: &enrollmentFile,
 			want: Config{
-				Listen:          DefaultListen,
+				Listen:          "127.0.0.1:8080",
 				DatabaseURL:     "postgres://file@example.com/talaia",
 				LogLevel:        DefaultLogLevel,
 				DataDir:         "/tmp/talaia-file",
@@ -105,7 +106,7 @@ insecure_dev = true
 				"TALAIA_INSECURE_DEV":     "1",
 			},
 			want: Config{
-				Listen:          DefaultListen,
+				Listen:          "127.0.0.1:8080",
 				DatabaseURL:     "postgres://file@example.com/talaia",
 				LogLevel:        DefaultLogLevel,
 				DataDir:         "/tmp/talaia-env",
@@ -118,6 +119,24 @@ insecure_dev = true
 			explicit: true,
 			env:      map[string]string{"TALAIA_DATABASE_URL": testDatabaseURL},
 			wantErr:  "does not exist",
+		},
+		{
+			name: "insecure_dev on every interface is an error",
+			env: map[string]string{
+				"TALAIA_DATABASE_URL": testDatabaseURL,
+				"TALAIA_INSECURE_DEV": "1",
+				"TALAIA_LISTEN":       ":8080",
+			},
+			wantErr: "insecure_dev requires a loopback listen address",
+		},
+		{
+			name: "insecure_dev on a public address is an error",
+			env: map[string]string{
+				"TALAIA_DATABASE_URL": testDatabaseURL,
+				"TALAIA_INSECURE_DEV": "1",
+				"TALAIA_LISTEN":       "192.0.2.10:8080",
+			},
+			wantErr: "insecure_dev requires a loopback listen address",
 		},
 		{
 			name:    "missing database url is an error",

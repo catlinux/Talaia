@@ -31,6 +31,10 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 - Core sobre TLS 1.3 con autenticación mutua: `GET /ca.pem`, `POST /enroll`, `POST /renew`, identidad del agente tomada del certificado de cliente y modo `insecure_dev` sin cifrar para desarrollo.
 - Enrolamiento del agente con token de un solo uso anclado a la huella de la CA, enlace mTLS y renovación del certificado; `install.sh` ahora recibe `--token` y `--ca-fingerprint`.
 
+### Seguridad
+
+- Revisión de seguridad del enrolamiento: la revocación cierra los streams abiertos, la identidad del agente queda ligada al número de serie del certificado actual o anterior, el enrolamiento es una sola transacción, la clave y el certificado del agente se guardan en un único archivo atómico, `insecure_dev` solo escucha en loopback, los errores permanentes del agente detienen los reinicios de systemd (salida 78) y los directorios de la CA y de los certificados se fuerzan a modo 0700.
+
 ### Cambiado
 
 - Decisiones de la fase 0 cerradas: PostgreSQL + TimescaleDB, React + TypeScript, Go 1.26, Node.js 24 LTS con pnpm.
