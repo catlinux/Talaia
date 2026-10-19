@@ -171,6 +171,11 @@ insecure_dev = true
 			wantErr: "invalid log_level",
 		},
 		{
+			name:    "invalid public port is an error",
+			env:     map[string]string{"TALAIA_DATABASE_URL": testDatabaseURL, "TALAIA_PUBLIC_PORT": "https"},
+			wantErr: "invalid public_port",
+		},
+		{
 			name:    "invalid insecure dev is an error",
 			env:     map[string]string{"TALAIA_DATABASE_URL": testDatabaseURL, "TALAIA_INSECURE_DEV": "maybe"},
 			wantErr: "invalid insecure_dev value",

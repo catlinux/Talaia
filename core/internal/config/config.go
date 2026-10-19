@@ -9,6 +9,7 @@ import (
 	"net"
 	"net/url"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/pelletier/go-toml/v2"
@@ -280,6 +281,12 @@ func (c *Config) validate() error {
 	// development mode only listens on the loopback interface.
 	if c.InsecureDev && !isLoopbackListen(c.Listen) {
 		return fmt.Errorf("insecure_dev requires a loopback listen address such as 127.0.0.1:8080, got %q", c.Listen)
+	}
+
+	if c.PublicPort != "" {
+		if port, err := strconv.Atoi(c.PublicPort); err != nil || port < 1 || port > 65535 {
+			return fmt.Errorf("invalid public_port %q (expected a number from 1 to 65535)", c.PublicPort)
+		}
 	}
 
 	level := strings.ToLower(strings.TrimSpace(c.LogLevel))
