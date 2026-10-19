@@ -69,12 +69,14 @@ of the current phase and the next one.
 
 ### Test environment
 - [ ] Two disposable VPS: Debian 12 and Debian 13
-- [ ] Clone-and-run guide for the Linux machine
+- [x] Clone-and-run guide for the Linux machine (`docs/en/installation.md`)
+- [ ] Verify `packaging/core/install.sh` and the agent download from the core end to end on a clean machine
 
 ## Ideas (not planned yet)
 
 Write new ideas here instead of adding them to the current phase.
 
+- Second factor: a wrong code during setup should not end the pending session (the first real deployment dropped to the sign-in form after one failure, not yet explained)
 - Mobile app (PWA) with push notifications
 - Integration with Tailscale/Headscale to create the private network automatically
 - Cost dashboard per provider

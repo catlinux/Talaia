@@ -35,6 +35,7 @@
 - [Funcionalidades previstas](#funcionalidades-previstas)
 - [Arquitectura](#arquitectura)
 - [Sistemas soportados](#sistemas-soportados)
+- [Instalación](#instalación)
 - [Tecnologías](#tecnologías)
 - [Idiomas (i18n)](#idiomas-i18n)
 - [Estructura del repositorio](#estructura-del-repositorio)
@@ -168,6 +169,16 @@ Detalle completo: [docs/es/arquitectura.md](docs/es/arquitectura.md).
 | Arquitecturas | amd64, arm64 | amd64, arm64 | |
 | Contenedores | Docker Engine 24+ con Compose v2 | | Podman más adelante. |
 | Navegadores | Chrome, Firefox, Safari, Edge recientes | | Panel adaptado al móvil para acciones rápidas. |
+
+## Instalación
+
+El núcleo corre en Docker en una máquina; cada servidor recibe un agente con una sola orden pegada.
+Paso a paso y con solución de problemas: [docs/es/instalacion.md](docs/es/instalacion.md).
+
+```bash
+git clone https://github.com/catlinux/Talaia.git && cd Talaia
+packaging/core/install.sh --hostname <dirección> --port 8443
+```
 
 ## Tecnologías
 

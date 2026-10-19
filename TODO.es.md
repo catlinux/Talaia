@@ -69,12 +69,14 @@ tareas concretas de la fase actual y de la siguiente.
 
 ### Entorno de pruebas
 - [ ] Dos VPS desechables: Debian 12 y Debian 13
-- [ ] Guía de clonar y ejecutar en el equipo Linux
+- [x] Guía de clonar y ejecutar en el equipo Linux (`docs/es/instalacion.md`)
+- [ ] Verificar `packaging/core/install.sh` y la descarga del agente desde el núcleo de principio a fin en una máquina limpia
 
 ## Ideas (sin planificar)
 
 Apunta aquí las ideas nuevas en lugar de añadirlas a la fase actual.
 
+- Segundo factor: un código erróneo durante el alta no debería cerrar la sesión pendiente (en el primer despliegue real se volvió al formulario de acceso tras un fallo, aún sin explicar)
 - App móvil (PWA) con notificaciones push
 - Integración con Tailscale/Headscale para crear la red privada automáticamente
 - Panel de costes por proveedor
