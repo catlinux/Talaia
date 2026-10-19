@@ -405,8 +405,11 @@ type Metrics struct {
 	MemUsedBytes   uint64                 `protobuf:"varint,4,opt,name=mem_used_bytes,json=memUsedBytes,proto3" json:"mem_used_bytes,omitempty"`
 	DiskUsedBytes  uint64                 `protobuf:"varint,5,opt,name=disk_used_bytes,json=diskUsedBytes,proto3" json:"disk_used_bytes,omitempty"` // root filesystem
 	DiskTotalBytes uint64                 `protobuf:"varint,6,opt,name=disk_total_bytes,json=diskTotalBytes,proto3" json:"disk_total_bytes,omitempty"`
-	unknownFields  protoimpl.UnknownFields
-	sizeCache      protoimpl.SizeCache
+	// Cumulative counters since boot, summed over physical interfaces; the core derives rates.
+	NetRxBytes    uint64 `protobuf:"varint,7,opt,name=net_rx_bytes,json=netRxBytes,proto3" json:"net_rx_bytes,omitempty"`
+	NetTxBytes    uint64 `protobuf:"varint,8,opt,name=net_tx_bytes,json=netTxBytes,proto3" json:"net_tx_bytes,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *Metrics) Reset() {
@@ -481,6 +484,20 @@ func (x *Metrics) GetDiskTotalBytes() uint64 {
 	return 0
 }
 
+func (x *Metrics) GetNetRxBytes() uint64 {
+	if x != nil {
+		return x.NetRxBytes
+	}
+	return 0
+}
+
+func (x *Metrics) GetNetTxBytes() uint64 {
+	if x != nil {
+		return x.NetTxBytes
+	}
+	return 0
+}
+
 var File_agent_proto protoreflect.FileDescriptor
 
 const file_agent_proto_rawDesc = "" +
@@ -509,7 +526,7 @@ const file_agent_proto_rawDesc = "" +
 	"\x04arch\x18\x05 \x01(\tR\x04arch\x12#\n" +
 	"\ragent_version\x18\x06 \x01(\tR\fagentVersion\x12\x1b\n" +
 	"\tcpu_count\x18\a \x01(\rR\bcpuCount\x12&\n" +
-	"\x0fmem_total_bytes\x18\b \x01(\x04R\rmemTotalBytes\"\xf9\x01\n" +
+	"\x0fmem_total_bytes\x18\b \x01(\x04R\rmemTotalBytes\"\xbd\x02\n" +
 	"\aMetrics\x129\n" +
 	"\n" +
 	"sampled_at\x18\x01 \x01(\v2\x1a.google.protobuf.TimestampR\tsampledAt\x12\x1a\n" +
@@ -518,7 +535,11 @@ const file_agent_proto_rawDesc = "" +
 	"cpuPercent\x12$\n" +
 	"\x0emem_used_bytes\x18\x04 \x01(\x04R\fmemUsedBytes\x12&\n" +
 	"\x0fdisk_used_bytes\x18\x05 \x01(\x04R\rdiskUsedBytes\x12(\n" +
-	"\x10disk_total_bytes\x18\x06 \x01(\x04R\x0ediskTotalBytes2N\n" +
+	"\x10disk_total_bytes\x18\x06 \x01(\x04R\x0ediskTotalBytes\x12 \n" +
+	"\fnet_rx_bytes\x18\a \x01(\x04R\n" +
+	"netRxBytes\x12 \n" +
+	"\fnet_tx_bytes\x18\b \x01(\x04R\n" +
+	"netTxBytes2N\n" +
 	"\bAgentHub\x12B\n" +
 	"\aConnect\x12\x19.talaia.agent.v1.AgentMsg\x1a\x18.talaia.agent.v1.CoreMsg(\x010\x01B\xb0\x01\n" +
 	"\x13com.talaia.agent.v1B\n" +

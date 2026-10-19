@@ -62,4 +62,7 @@ message Metrics {
   uint64 mem_used_bytes = 4;
   uint64 disk_used_bytes = 5;   // root filesystem
   uint64 disk_total_bytes = 6;
+  // Cumulative counters since boot, summed over physical interfaces; the core derives rates.
+  uint64 net_rx_bytes = 7;
+  uint64 net_tx_bytes = 8;
 }
