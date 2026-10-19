@@ -11,7 +11,7 @@
     "securityUpdates": "Actualizaciones de seguridad",
     "alerts": "Alertas activas",
     "lastBackup": "Última copia correcta",
-    "unknown": "—"
+    "notAvailable": "Todavía no disponible"
   },
   "status": {
     "online": "En línea",
@@ -19,7 +19,8 @@
     "warning": "Aviso",
     "critical": "Alerta",
     "diskFull": "Disco al {{percent}}",
-    "rebootRequired": "Reinicio necesario"
+    "rebootRequired": "Reinicio necesario",
+    "revoked": "Revocado"
   },
   "metric": {
     "cpu": "CPU",
@@ -30,6 +31,7 @@
   },
   "server": {
     "spec": "{{os}} · {{location}} · {{vcpu}} vCPU / {{memory}} GB",
+    "specNoLocation": "{{os}} · {{vcpu}} vCPU / {{memory}} GB",
     "containers_one": "{{count}} contenedor",
     "containers_other": "{{count}} contenedores",
     "stacks_one": "{{count}} stack",
@@ -49,6 +51,11 @@
     "audit": "auditoría",
     "restic": "restic",
     "registry": "registro"
+  },
+  "refreshFailed": "No se ha podido actualizar la flota: se muestran los últimos datos.",
+  "empty": {
+    "title": "Todavía no hay ningún servidor",
+    "body": "Crea un token de alta en el core con <code>{{command}}</code> y ejecuta install.sh en el servidor."
   },
   "event": {
     "diskHigh": "Disco por encima del 90% en {{server}}",

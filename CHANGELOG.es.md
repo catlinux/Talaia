@@ -36,6 +36,7 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 - Revisión de seguridad del enrolamiento: la revocación cierra los streams abiertos, la identidad del agente queda ligada al número de serie del certificado actual o anterior, el enrolamiento es una sola transacción, la clave y el certificado del agente se guardan en un único archivo atómico, `insecure_dev` solo escucha en loopback, los errores permanentes del agente detienen los reinicios de systemd (salida 78) y los directorios de la CA y de los certificados se fuerzan a modo 0700.
 - Autenticación del panel (adelantada de la fase 3): administrador único creado desde la consola, contraseña con argon2id, TOTP obligatorio con códigos de recuperación de un solo uso, cookie de sesión segura, protección CSRF, límites contra fuerza bruta, registro de auditoría y pantallas de acceso en ca/es/en.
 - Despliegue del core con Docker Compose (`packaging/core/`): una imagen con el core y el panel web, PostgreSQL 16 + TimescaleDB, sistema de archivos de solo lectura y sin capacidades.
+- `GET /api/v1/servers` (requiere sesión completa) y la pantalla de flota alimentada por él, refrescada cada 15 segundos; los datos que aún no existen se muestran como no disponibles en lugar de números de ejemplo.
 
 ### Cambiado
 

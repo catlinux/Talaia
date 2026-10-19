@@ -11,6 +11,10 @@ export function KpiRow({ summary }: KpiRowProps) {
   const { t, i18n } = useTranslation('fleet')
   const language = i18n.resolvedLanguage ?? i18n.language
 
+  const unavailable = t('kpi.notAvailable')
+
+  // A value the API cannot report yet stays null: the row says so instead of
+  // showing a number nobody measured.
   const kpis = [
     {
       id: 'servers-online',
@@ -30,21 +34,25 @@ export function KpiRow({ summary }: KpiRowProps) {
     {
       id: 'security-updates',
       label: t('kpi.securityUpdates'),
-      value: formatNumber(summary.securityUpdates, language),
-      tone: 'warn',
+      value:
+        summary.securityUpdates === null
+          ? unavailable
+          : formatNumber(summary.securityUpdates, language),
+      tone: summary.securityUpdates === null ? '' : 'warn',
     },
     {
       id: 'alerts',
       label: t('kpi.alerts'),
-      value: formatNumber(summary.activeAlerts, language),
-      tone: 'crit',
+      value:
+        summary.activeAlerts === null ? unavailable : formatNumber(summary.activeAlerts, language),
+      tone: summary.activeAlerts === null ? '' : 'crit',
     },
     {
       id: 'last-backup',
       label: t('kpi.lastBackup'),
       value: summary.lastBackup
         ? formatTime(new Date(summary.lastBackup), language)
-        : t('kpi.unknown'),
+        : t('kpi.notAvailable'),
       tone: '',
     },
   ]

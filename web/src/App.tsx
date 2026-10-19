@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
+import type { FleetClient } from './api/client'
 import { About } from './screens/About'
 import { Fleet } from './screens/Fleet'
 import { useAuth } from './auth/AuthGate'
@@ -9,7 +10,12 @@ import { ThemeToggle } from './theme/ThemeToggle'
 
 type Screen = 'fleet' | 'about'
 
-export function App() {
+interface AppProps {
+  /** Data source of the fleet screen. Tests inject their own client. */
+  client?: FleetClient
+}
+
+export function App({ client }: AppProps) {
   const { t } = useTranslation(['common', 'auth'])
   const auth = useAuth()
   const [screen, setScreen] = useState<Screen>('fleet')
@@ -52,7 +58,9 @@ export function App() {
           )}
         </div>
       </header>
-      <main className="app__main">{screen === 'fleet' ? <Fleet /> : <About />}</main>
+      <main className="app__main">
+        {screen === 'fleet' ? <Fleet client={client} /> : <About />}
+      </main>
     </div>
   )
 }

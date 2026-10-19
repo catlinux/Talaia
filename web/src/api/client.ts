@@ -1,9 +1,10 @@
+import { createHttpClient } from './http'
 import { sampleActivity, sampleServers } from './fixtures'
-import type { ActivityEvent, Server } from './types'
+import type { ActivityEvent, Server, ServerStatus } from './types'
 
 /**
- * Data source of the fleet screen. A later task implements it against the real
- * REST API; the components do not change when that happens.
+ * Data source of the fleet screen. The panel uses the API client; the tests
+ * inject their own.
  */
 export interface FleetClient {
   listServers(): Promise<Server[]>
@@ -15,5 +16,125 @@ export function createMockFleetClient(): FleetClient {
   return {
     listServers: () => Promise.resolve(sampleServers),
     listActivity: () => Promise.resolve(sampleActivity),
+  }
+}
+
+/** liveAgent is what a connected agent reports, as the API sends it. */
+interface apiLiveAgent {
+  hostname: string
+  agent_version: string
+  os_name: string
+  os_version: string
+  kernel: string
+  arch: string
+  cpu_count: number
+  cpu_percent: number
+  mem_used_bytes: number
+  mem_total_bytes: number
+  disk_used_bytes: number
+  disk_total_bytes: number
+  net_rx_bytes: number
+  net_tx_bytes: number
+  docker_available: boolean
+  containers: number
+  running_containers: number
+  compose_projects: number
+  services: number
+  seen_at: string
+}
+
+/** apiServer is one entry of GET /api/v1/servers. */
+interface apiServer {
+  id: string
+  name: string
+  created_at: string | null
+  last_seen: string | null
+  revoked: boolean
+  cert_not_after: string | null
+  connected: boolean
+  live?: apiLiveAgent
+}
+
+interface serversResponse {
+  servers: apiServer[]
+}
+
+/** Status thresholds, in percent of memory or disk in use. */
+const criticalPercent = 90
+const warningPercent = 75
+
+const bytesPerGb = 1024 ** 3
+
+/** percent returns the used share of a total, or null when the total is zero. */
+function percent(used: number, total: number): number | null {
+  if (total <= 0) {
+    return null
+  }
+  return Math.min(100, Math.round((used / total) * 100))
+}
+
+/** gigabytes converts bytes to GiB, rounded to one decimal. */
+function gigabytes(bytes: number): number {
+  return Math.round((bytes / bytesPerGb) * 10) / 10
+}
+
+/** statusOf derives the card status from the live data and the revocation. */
+function statusOf(server: apiServer): { status: ServerStatus; statusDetailKey?: string } {
+  if (server.revoked) {
+    return { status: 'offline', statusDetailKey: 'status.revoked' }
+  }
+  if (!server.connected || !server.live) {
+    return { status: 'offline' }
+  }
+
+  const load = Math.max(
+    percent(server.live.mem_used_bytes, server.live.mem_total_bytes) ?? 0,
+    percent(server.live.disk_used_bytes, server.live.disk_total_bytes) ?? 0,
+  )
+  if (load >= criticalPercent) {
+    return { status: 'critical' }
+  }
+  if (load >= warningPercent) {
+    return { status: 'warning' }
+  }
+  return { status: 'online' }
+}
+
+/** toServer maps one API entry to the model of the fleet screen. */
+function toServer(server: apiServer): Server {
+  const live = server.connected ? server.live : undefined
+
+  return {
+    id: server.id,
+    name: server.name,
+    // The name of the system is only known while the agent is connected.
+    os: live ? `${live.os_name} ${live.os_version}`.trim() : '',
+    // Locations arrive with a later task: the card hides the field while empty.
+    location: '',
+    vcpu: live ? live.cpu_count : 0,
+    memoryGb: live ? gigabytes(live.mem_total_bytes) : 0,
+    ...statusOf(server),
+    cpuPercent: live ? live.cpu_percent : null,
+    memPercent: live ? percent(live.mem_used_bytes, live.mem_total_bytes) : null,
+    diskPercent: live ? percent(live.disk_used_bytes, live.disk_total_bytes) : null,
+    containers: live ? live.containers : 0,
+    stacks: live ? live.compose_projects : 0,
+    tags: [],
+    lastSeen: live?.seen_at ?? server.last_seen,
+  }
+}
+
+/** createApiFleetClient reads the fleet from the core API. */
+export function createApiFleetClient(fetchImpl?: typeof fetch): FleetClient {
+  const http = createHttpClient(fetchImpl)
+
+  return {
+    listServers: async () => {
+      const body = await http.get<serversResponse>('/api/v1/servers')
+      return body.servers.map(toServer)
+    },
+    // There is no activity API yet: the screen shows placeholders instead of
+    // inventing numbers.
+    listActivity: () => Promise.resolve([]),
   }
 }

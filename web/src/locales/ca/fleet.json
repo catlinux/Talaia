@@ -11,7 +11,7 @@
     "securityUpdates": "Actualitzacions de seguretat",
     "alerts": "Alertes actives",
     "lastBackup": "Darrera còpia correcta",
-    "unknown": "—"
+    "notAvailable": "Encara no disponible"
   },
   "status": {
     "online": "En línia",
@@ -19,7 +19,8 @@
     "warning": "Avís",
     "critical": "Alerta",
     "diskFull": "Disc al {{percent}}",
-    "rebootRequired": "Cal reiniciar"
+    "rebootRequired": "Cal reiniciar",
+    "revoked": "Revocat"
   },
   "metric": {
     "cpu": "CPU",
@@ -30,6 +31,7 @@
   },
   "server": {
     "spec": "{{os}} · {{location}} · {{vcpu}} vCPU / {{memory}} GB",
+    "specNoLocation": "{{os}} · {{vcpu}} vCPU / {{memory}} GB",
     "containers_one": "{{count}} contenidor",
     "containers_other": "{{count}} contenidors",
     "stacks_one": "{{count}} stack",
@@ -49,6 +51,11 @@
     "audit": "auditoria",
     "restic": "restic",
     "registry": "registre"
+  },
+  "refreshFailed": "No s'ha pogut actualitzar la flota: es mostren les últimes dades.",
+  "empty": {
+    "title": "Encara no hi ha cap servidor",
+    "body": "Crea un testimoni d'alta al core amb <code>{{command}}</code> i executa install.sh al servidor."
   },
   "event": {
     "diskHigh": "Disc per sobre del 90% a {{server}}",

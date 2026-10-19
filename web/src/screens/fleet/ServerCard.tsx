@@ -22,14 +22,22 @@ export function ServerCard({ server }: ServerCardProps) {
         <h3 className="server__name">{server.name}</h3>
         <span className={`status status--${server.status}`}>{status}</span>
       </div>
-      <p className="server__spec">
-        {t('server.spec', {
-          os: server.os,
-          location: server.location,
-          vcpu: formatNumber(server.vcpu, language),
-          memory: formatNumber(server.memoryGb, language),
-        })}
-      </p>
+      {server.os !== '' ? (
+        <p className="server__spec">
+          {server.location === ''
+            ? t('server.specNoLocation', {
+                os: server.os,
+                vcpu: formatNumber(server.vcpu, language),
+                memory: formatNumber(server.memoryGb, language),
+              })
+            : t('server.spec', {
+                os: server.os,
+                location: server.location,
+                vcpu: formatNumber(server.vcpu, language),
+                memory: formatNumber(server.memoryGb, language),
+              })}
+        </p>
+      ) : null}
       <div className="server__meters">
         <Meter label={t('metric.cpu')} percent={server.cpuPercent} />
         <Meter label={t('metric.ram')} percent={server.memPercent} />

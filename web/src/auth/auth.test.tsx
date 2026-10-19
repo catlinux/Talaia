@@ -2,6 +2,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { App } from '../App'
+import { createMockFleetClient } from '../api/client'
 import { createAuthApi, type AuthApi } from '../api/auth'
 import { ApiError } from '../api/http'
 import i18n from '../i18n'
@@ -26,7 +27,7 @@ function fakeApi(overrides: Partial<AuthApi> = {}): AuthApi {
 function renderPanel(api: AuthApi) {
   render(
     <AuthGate api={api}>
-      <App />
+      <App client={createMockFleetClient()} />
     </AuthGate>,
   )
 }

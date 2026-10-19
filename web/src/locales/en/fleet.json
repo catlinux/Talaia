@@ -11,7 +11,7 @@
     "securityUpdates": "Security updates",
     "alerts": "Active alerts",
     "lastBackup": "Last backup",
-    "unknown": "—"
+    "notAvailable": "Not available yet"
   },
   "status": {
     "online": "Online",
@@ -19,7 +19,8 @@
     "warning": "Warning",
     "critical": "Critical",
     "diskFull": "Disk at {{percent}}",
-    "rebootRequired": "Reboot required"
+    "rebootRequired": "Reboot required",
+    "revoked": "Revoked"
   },
   "metric": {
     "cpu": "CPU",
@@ -30,6 +31,7 @@
   },
   "server": {
     "spec": "{{os}} · {{location}} · {{vcpu}} vCPU / {{memory}} GB",
+    "specNoLocation": "{{os}} · {{vcpu}} vCPU / {{memory}} GB",
     "containers_one": "{{count}} container",
     "containers_other": "{{count}} containers",
     "stacks_one": "{{count}} stack",
@@ -49,6 +51,11 @@
     "audit": "audit",
     "restic": "restic",
     "registry": "registry"
+  },
+  "refreshFailed": "The fleet could not be refreshed: showing the last data.",
+  "empty": {
+    "title": "No servers yet",
+    "body": "Create an enrollment token on the core with <code>{{command}}</code>, then run install.sh on the server."
   },
   "event": {
     "diskHigh": "Disk above 90% on {{server}}",

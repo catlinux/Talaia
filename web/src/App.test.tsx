@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { App } from './App'
 import { AuthGate } from './auth/AuthGate'
 import type { AuthApi } from './api/auth'
+import { createMockFleetClient } from './api/client'
 import i18n from './i18n'
 import { ATTRIBUTION } from './screens/About'
 
@@ -26,7 +27,7 @@ const signedInApi: AuthApi = {
 function renderApp() {
   render(
     <AuthGate api={signedInApi}>
-      <App />
+      <App client={createMockFleetClient()} />
     </AuthGate>,
   )
 }

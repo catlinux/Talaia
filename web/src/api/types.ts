@@ -29,8 +29,9 @@ export interface FleetSummary {
   serversOnline: number
   serversTotal: number
   runningContainers: number
-  securityUpdates: number
-  activeAlerts: number
+  /** Not reported by the API yet: null means "not available". */
+  securityUpdates: number | null
+  activeAlerts: number | null
   lastBackup: string | null
 }
 
