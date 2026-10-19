@@ -1,0 +1,62 @@
+{
+  "title": "Flota",
+  "subtitle_one": "{{count}} servidor · actualizado a las {{time}}",
+  "subtitle_other": "{{count}} servidores · actualizado a las {{time}}",
+  "loading": "Cargando la flota…",
+  "error": "No se ha podido cargar la flota",
+  "kpi": {
+    "serversOnline": "Servidores en línea",
+    "serversOnlineValue": "{{online}} / {{total}}",
+    "containers": "Contenedores activos",
+    "securityUpdates": "Actualizaciones de seguridad",
+    "alerts": "Alertas activas",
+    "lastBackup": "Última copia correcta",
+    "unknown": "—"
+  },
+  "status": {
+    "online": "En línea",
+    "offline": "Sin conexión",
+    "warning": "Aviso",
+    "critical": "Alerta",
+    "diskFull": "Disco al {{percent}}",
+    "rebootRequired": "Reinicio necesario"
+  },
+  "metric": {
+    "cpu": "CPU",
+    "ram": "RAM",
+    "disk": "Disco",
+    "unknown": "—",
+    "aria": "{{label}}: {{value}}"
+  },
+  "server": {
+    "spec": "{{os}} · {{location}} · {{vcpu}} vCPU / {{memory}} GB",
+    "containers_one": "{{count}} contenedor",
+    "containers_other": "{{count}} contenedores",
+    "stacks_one": "{{count}} stack",
+    "stacks_other": "{{count}} stacks",
+    "facts": "{{containers}} · {{stacks}}",
+    "lastSeen": "Visto por última vez {{time}}"
+  },
+  "activity": {
+    "title": "Actividad",
+    "live": "en directo",
+    "meta": "{{time}} · {{source}}"
+  },
+  "source": {
+    "alert": "alerta",
+    "push": "push a main",
+    "apt": "apt",
+    "audit": "auditoría",
+    "restic": "restic",
+    "registry": "registro"
+  },
+  "event": {
+    "diskHigh": "Disco por encima del 90% en {{server}}",
+    "deployDone": "Despliegue {{stack}} #{{deploy}} completado ({{seconds}} s)",
+    "securityUpdates_one": "{{count}} paquete de seguridad en {{server}}: {{packages}}",
+    "securityUpdates_other": "{{count}} paquetes de seguridad en {{server}}: {{packages}}",
+    "terminalOpened": "Has abierto una terminal en {{server}} (sesión grabada)",
+    "backupDone": "Copia nocturna: {{done}} de {{total}} tareas correctas, {{sizeBytes}} a {{target}}",
+    "imageAvailable": "Imagen nueva disponible: {{image}}"
+  }
+}

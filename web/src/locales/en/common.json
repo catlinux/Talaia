@@ -11,5 +11,10 @@
     "light": "Light",
     "dark": "Dark",
     "system": "System"
+  },
+  "nav": {
+    "label": "Main navigation",
+    "fleet": "Fleet",
+    "about": "About"
   }
 }

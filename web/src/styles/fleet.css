@@ -1,0 +1,354 @@
+/*
+ * Fleet screen (mockup 1).
+ *
+ * This file also carries the app header navigation styles: the app shell has no
+ * stylesheet of its own yet, so they live here until one is added.
+ */
+
+/* App header navigation */
+.app__nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.app__tab {
+  font: inherit;
+  color: var(--muted);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  padding: 4px 10px;
+  cursor: pointer;
+}
+
+.app__tab:hover {
+  color: var(--ink);
+  background: var(--surface-2);
+}
+
+.app__tab--active {
+  color: var(--ink);
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  font-weight: 600;
+}
+
+/* Fleet screen */
+.fleet {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.fleet__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+}
+
+.fleet__title {
+  font-family: var(--f-display);
+  font-size: 1.5rem;
+  margin: 0;
+}
+
+.fleet__subtitle {
+  margin: 0;
+  color: var(--muted);
+  font-family: var(--f-mono);
+  font-size: 0.8125rem;
+}
+
+.fleet__message {
+  margin: 0;
+  color: var(--muted);
+}
+
+.fleet__message--error {
+  color: var(--crit);
+}
+
+.fleet__cols {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 16px;
+  align-items: start;
+}
+
+/* KPI row: wraps to as many rows as needed, one column on a phone. */
+.kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(150px, 100%), 1fr));
+  gap: 12px;
+  margin: 0;
+}
+
+.kpi {
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--line);
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: var(--surface);
+}
+
+.kpi--warn {
+  border-left-color: var(--warn);
+}
+
+.kpi--crit {
+  border-left-color: var(--crit);
+}
+
+.kpi__label {
+  color: var(--muted);
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.kpi__value {
+  margin: 2px 0 0;
+  font-family: var(--f-display);
+  font-size: 1.375rem;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Server grid: collapses to one column on a phone, no horizontal scroll. */
+.servers {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(260px, 100%), 1fr));
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.server {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--ok);
+  border-radius: 9px;
+  padding: 12px;
+  background: var(--surface);
+}
+
+.server--offline {
+  border-left-color: var(--muted);
+}
+
+.server--warning {
+  border-left-color: var(--warn);
+}
+
+.server--critical {
+  border-left-color: var(--crit);
+}
+
+.server__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 8px;
+}
+
+.server__name {
+  margin: 0;
+  font-family: var(--f-mono);
+  font-size: 0.9375rem;
+}
+
+.status {
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.status--online {
+  color: var(--ok);
+}
+
+.status--offline {
+  color: var(--muted);
+}
+
+.status--warning {
+  color: var(--warn);
+}
+
+.status--critical {
+  color: var(--crit);
+}
+
+.server__spec {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.8125rem;
+}
+
+.server__meters {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.meter {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) 56px;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.75rem;
+}
+
+.meter__label {
+  color: var(--muted);
+  font-family: var(--f-mono);
+}
+
+.meter__value {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.meter__track {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--surface-2);
+  overflow: hidden;
+}
+
+.meter__fill {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: var(--accent);
+}
+
+.meter--warn .meter__fill {
+  background: var(--warn);
+}
+
+.meter--crit .meter__fill {
+  background: var(--crit);
+}
+
+.server__foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.server__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tag {
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--muted);
+  font-family: var(--f-mono);
+  font-size: 0.6875rem;
+}
+
+.server__last-seen {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+/* Activity panel */
+.activity {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--surface);
+}
+
+.activity__title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 0;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line);
+  font-family: var(--f-display);
+  font-size: 0.9375rem;
+}
+
+.activity__live {
+  color: var(--muted);
+  font-family: var(--f-mono);
+  font-size: 0.6875rem;
+  font-weight: 400;
+}
+
+.activity__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.activity__item {
+  display: flex;
+  gap: 8px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.activity__item:last-child {
+  border-bottom: 0;
+}
+
+.activity__dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  margin-top: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.activity__item--ok .activity__dot {
+  background: var(--ok);
+}
+
+.activity__item--warning .activity__dot {
+  background: var(--warn);
+}
+
+.activity__item--critical .activity__dot {
+  background: var(--crit);
+}
+
+.activity__message {
+  margin: 0;
+  font-size: 0.8125rem;
+}
+
+.activity__meta {
+  margin: 0;
+  color: var(--muted);
+  font-family: var(--f-mono);
+  font-size: 0.6875rem;
+}
+
+@media (max-width: 900px) {
+  .fleet__cols {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

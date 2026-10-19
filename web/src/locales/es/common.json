@@ -11,5 +11,10 @@
     "light": "Claro",
     "dark": "Oscuro",
     "system": "Sistema"
+  },
+  "nav": {
+    "label": "Navegación principal",
+    "fleet": "Flota",
+    "about": "Acerca de"
   }
 }

@@ -4,10 +4,13 @@ import { initReactI18next } from 'react-i18next'
 
 import caAbout from '../locales/ca/about.json'
 import caCommon from '../locales/ca/common.json'
+import caFleet from '../locales/ca/fleet.json'
 import enAbout from '../locales/en/about.json'
 import enCommon from '../locales/en/common.json'
+import enFleet from '../locales/en/fleet.json'
 import esAbout from '../locales/es/about.json'
 import esCommon from '../locales/es/common.json'
+import esFleet from '../locales/es/fleet.json'
 
 export const supportedLanguages = ['ca', 'es', 'en'] as const
 
@@ -21,13 +24,13 @@ void i18n
   .use(initReactI18next)
   .init({
     resources: {
-      ca: { common: caCommon, about: caAbout },
-      es: { common: esCommon, about: esAbout },
-      en: { common: enCommon, about: enAbout },
+      ca: { common: caCommon, about: caAbout, fleet: caFleet },
+      es: { common: esCommon, about: esAbout, fleet: esFleet },
+      en: { common: enCommon, about: enAbout, fleet: enFleet },
     },
     supportedLngs: [...supportedLanguages],
     fallbackLng: 'en',
-    ns: ['common', 'about'],
+    ns: ['common', 'about', 'fleet'],
     defaultNS: 'common',
     load: 'languageOnly',
     initAsync: false,

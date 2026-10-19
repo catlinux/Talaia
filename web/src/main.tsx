@@ -6,6 +6,7 @@ import { applyTheme, getInitialTheme } from './theme/theme'
 import './i18n'
 import './styles/tokens.css'
 import './styles/global.css'
+import './styles/fleet.css'
 
 // Apply the theme before the first render to avoid a flash of the wrong theme.
 applyTheme(getInitialTheme())

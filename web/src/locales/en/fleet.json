@@ -1,0 +1,62 @@
+{
+  "title": "Fleet",
+  "subtitle_one": "{{count}} server · updated at {{time}}",
+  "subtitle_other": "{{count}} servers · updated at {{time}}",
+  "loading": "Loading the fleet…",
+  "error": "The fleet could not be loaded",
+  "kpi": {
+    "serversOnline": "Servers online",
+    "serversOnlineValue": "{{online}} / {{total}}",
+    "containers": "Running containers",
+    "securityUpdates": "Security updates",
+    "alerts": "Active alerts",
+    "lastBackup": "Last backup",
+    "unknown": "—"
+  },
+  "status": {
+    "online": "Online",
+    "offline": "Offline",
+    "warning": "Warning",
+    "critical": "Critical",
+    "diskFull": "Disk at {{percent}}",
+    "rebootRequired": "Reboot required"
+  },
+  "metric": {
+    "cpu": "CPU",
+    "ram": "RAM",
+    "disk": "Disk",
+    "unknown": "—",
+    "aria": "{{label}}: {{value}}"
+  },
+  "server": {
+    "spec": "{{os}} · {{location}} · {{vcpu}} vCPU / {{memory}} GB",
+    "containers_one": "{{count}} container",
+    "containers_other": "{{count}} containers",
+    "stacks_one": "{{count}} stack",
+    "stacks_other": "{{count}} stacks",
+    "facts": "{{containers}} · {{stacks}}",
+    "lastSeen": "Last seen {{time}}"
+  },
+  "activity": {
+    "title": "Activity",
+    "live": "live",
+    "meta": "{{time}} · {{source}}"
+  },
+  "source": {
+    "alert": "alert",
+    "push": "push to main",
+    "apt": "apt",
+    "audit": "audit",
+    "restic": "restic",
+    "registry": "registry"
+  },
+  "event": {
+    "diskHigh": "Disk above 90% on {{server}}",
+    "deployDone": "Deploy {{stack}} #{{deploy}} finished ({{seconds}} s)",
+    "securityUpdates_one": "{{count}} security package on {{server}}: {{packages}}",
+    "securityUpdates_other": "{{count}} security packages on {{server}}: {{packages}}",
+    "terminalOpened": "You opened a terminal on {{server}} (session recorded)",
+    "backupDone": "Nightly backup: {{done}} of {{total}} tasks ok, {{sizeBytes}} to {{target}}",
+    "imageAvailable": "New image available: {{image}}"
+  }
+}

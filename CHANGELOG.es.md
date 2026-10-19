@@ -25,6 +25,7 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 - CI en GitHub Actions: compilación, vet y pruebas de Go, golangci-lint, buf lint y comprobación del código generado, compilación, lint, formato y pruebas del panel, y la comprobación de i18n.
 - Métricas en vivo del agente (CPU, RAM, disco raíz, contadores de red), que guarda el hub del core.
 - Paquete `.deb` del agente (nfpm), unidad systemd e `install.sh` (`scripts/build-deb.sh`). El enrolamiento aún no está implementado.
+- Pantalla de flota (maqueta 1) con datos de ejemplo tras una interfaz de cliente de API, y navegación Flota/Acerca de.
 
 ### Cambiado
 

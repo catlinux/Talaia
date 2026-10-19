@@ -1,0 +1,62 @@
+{
+  "title": "Flota",
+  "subtitle_one": "{{count}} servidor · actualitzat a les {{time}}",
+  "subtitle_other": "{{count}} servidors · actualitzat a les {{time}}",
+  "loading": "Carregant la flota…",
+  "error": "No s'ha pogut carregar la flota",
+  "kpi": {
+    "serversOnline": "Servidors en línia",
+    "serversOnlineValue": "{{online}} / {{total}}",
+    "containers": "Contenidors actius",
+    "securityUpdates": "Actualitzacions de seguretat",
+    "alerts": "Alertes actives",
+    "lastBackup": "Darrera còpia correcta",
+    "unknown": "—"
+  },
+  "status": {
+    "online": "En línia",
+    "offline": "Sense connexió",
+    "warning": "Avís",
+    "critical": "Alerta",
+    "diskFull": "Disc al {{percent}}",
+    "rebootRequired": "Cal reiniciar"
+  },
+  "metric": {
+    "cpu": "CPU",
+    "ram": "RAM",
+    "disk": "Disc",
+    "unknown": "—",
+    "aria": "{{label}}: {{value}}"
+  },
+  "server": {
+    "spec": "{{os}} · {{location}} · {{vcpu}} vCPU / {{memory}} GB",
+    "containers_one": "{{count}} contenidor",
+    "containers_other": "{{count}} contenidors",
+    "stacks_one": "{{count}} stack",
+    "stacks_other": "{{count}} stacks",
+    "facts": "{{containers}} · {{stacks}}",
+    "lastSeen": "Vist per últim cop {{time}}"
+  },
+  "activity": {
+    "title": "Activitat",
+    "live": "en directe",
+    "meta": "{{time}} · {{source}}"
+  },
+  "source": {
+    "alert": "alerta",
+    "push": "push a main",
+    "apt": "apt",
+    "audit": "auditoria",
+    "restic": "restic",
+    "registry": "registre"
+  },
+  "event": {
+    "diskHigh": "Disc per sobre del 90% a {{server}}",
+    "deployDone": "Desplegament {{stack}} #{{deploy}} completat ({{seconds}} s)",
+    "securityUpdates_one": "{{count}} paquet de seguretat a {{server}}: {{packages}}",
+    "securityUpdates_other": "{{count}} paquets de seguretat a {{server}}: {{packages}}",
+    "terminalOpened": "Has obert una terminal a {{server}} (sessió gravada)",
+    "backupDone": "Còpia nocturna: {{done}} de {{total}} tasques correctes, {{sizeBytes}} a {{target}}",
+    "imageAvailable": "Imatge nova disponible: {{image}}"
+  }
+}

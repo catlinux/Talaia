@@ -11,5 +11,10 @@
     "light": "Clar",
     "dark": "Fosc",
     "system": "Sistema"
+  },
+  "nav": {
+    "label": "Navegació principal",
+    "fleet": "Flota",
+    "about": "Sobre"
   }
 }

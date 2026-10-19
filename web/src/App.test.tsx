@@ -1,15 +1,14 @@
-import { cleanup, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import { App } from './App'
 import i18n from './i18n'
 import { ATTRIBUTION } from './screens/About'
 
-const titles = {
-  ca: 'Sobre Talaia',
-  es: 'Acerca de Talaia',
-  en: 'About Talaia',
-} as const
+const fleetTitles = { ca: 'Flota', es: 'Flota', en: 'Fleet' } as const
+const aboutTitles = { ca: 'Sobre Talaia', es: 'Acerca de Talaia', en: 'About Talaia' } as const
+const navFleet = { ca: 'Flota', es: 'Flota', en: 'Fleet' } as const
+const navAbout = { ca: 'Sobre', es: 'Acerca de', en: 'About' } as const
 
 function currentTitle(): string {
   return screen.getByRole('heading', { level: 1 }).textContent ?? ''
@@ -25,37 +24,50 @@ describe('App', () => {
     cleanup()
   })
 
-  it('renders the About screen in English by default', () => {
+  it('shows the Fleet screen by default', async () => {
     render(<App />)
 
     expect(i18n.resolvedLanguage).toBe('en')
-    expect(currentTitle()).toBe(titles.en)
-    expect(screen.getByText(__APP_VERSION__)).toBeTruthy()
+    expect(currentTitle()).toBe(fleetTitles.en)
+    expect(await screen.findByText('vps-web-01')).toBeTruthy()
   })
 
-  it('links the license to the repository', () => {
+  it('navigates to About and back to the Fleet screen', async () => {
     render(<App />)
+    await screen.findByText('vps-web-01')
 
-    const licenseLink = screen.getByRole('link', { name: 'WNCL-1.0' })
+    fireEvent.click(screen.getByRole('button', { name: navAbout.en }))
 
-    expect(licenseLink.getAttribute('href')).toBe('https://github.com/catlinux/Talaia')
+    expect(currentTitle()).toBe(aboutTitles.en)
+    expect(screen.getByText(ATTRIBUTION)).toBeTruthy()
+    expect(screen.getByRole('link', { name: 'WNCL-1.0' }).getAttribute('href')).toBe(
+      'https://github.com/catlinux/Talaia',
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: navFleet.en }))
+    expect(currentTitle()).toBe(fleetTitles.en)
   })
 
-  it('changes the title when the language switches to Catalan', async () => {
+  it('keeps the attribution text in every language', async () => {
     render(<App />)
-
-    await i18n.changeLanguage('ca')
-
-    expect(currentTitle()).toBe(titles.ca)
-  })
-
-  it('shows the attribution text in all three languages', async () => {
-    render(<App />)
+    await screen.findByText('vps-web-01')
 
     for (const language of ['ca', 'es', 'en'] as const) {
       await i18n.changeLanguage(language)
-      expect(currentTitle()).toBe(titles[language])
+      fireEvent.click(screen.getByRole('button', { name: navAbout[language] }))
+      expect(currentTitle()).toBe(aboutTitles[language])
       expect(screen.getByText(ATTRIBUTION)).toBeTruthy()
     }
+  })
+
+  it('translates the navigation and the Fleet title with the language', async () => {
+    render(<App />)
+    await screen.findByText('vps-web-01')
+
+    await i18n.changeLanguage('ca')
+
+    expect(currentTitle()).toBe(fleetTitles.ca)
+    expect(screen.getByRole('button', { name: navFleet.ca })).toBeTruthy()
+    expect(screen.getByRole('button', { name: navAbout.ca })).toBeTruthy()
   })
 })
