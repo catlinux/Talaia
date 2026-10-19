@@ -16,13 +16,13 @@ Ejecutores: AgentRelay (`agentrelay.cmd` en PowerShell, JSON de la tarea en `$en
 | 5 ✅ | Panel: Vite + React + TypeScript, tokens de diseño y tema claro/oscuro tomados de las maquetas, pantalla «Acerca de» con «Talaia — created by CatLinux» | Ejecutor · esfuerzo medio | `web/**` (sin `web/src/i18n/`) | `pnpm build` y `pnpm lint` verdes | 2 |
 | 6 ✅ | i18n restante (i18next y selector ya están en la 5): go-i18n en core y CLI (`core/i18n/locales`, `cli/i18n/locales`) y `scripts/i18n-check.mjs` (Node) que compara las claves de ca/es/en en web y Go | Ejecutor · esfuerzo medio | `core/i18n/**`, `cli/i18n/**`, `scripts/i18n-check.mjs` | el script falla al quitar una clave de un idioma y pasa con todas | 5 |
 | 7 ✅ | Entorno de desarrollo: `make dev` (compose con Postgres + core + panel + agente) | Ejecutor · esfuerzo medio | `packaging/dev/**`, objetivo `dev` del `Makefile` | `make dev` levanta todo en local | 3, 4, 5 |
-| 8 🟡 | CI en GitHub Actions: build, tests, lint, i18n-check y license-check | Ejecutor · esfuerzo bajo | `.github/workflows/**` | workflow en verde (se consulta con la API pública, sin login) | 2, 6 |
+| 8 ✅ | CI en GitHub Actions: build, tests, lint, i18n-check y license-check | Ejecutor · esfuerzo bajo | `.github/workflows/**` | workflow en verde (se consulta con la API pública, sin login) | 2, 6 |
 | 9 | Integración, revisión de cada tarea, cierre de la fase (0.1.0, CHANGELOG, TODO) | **Orquestador** | docs | criterio de la fase cumplido | todas |
 | M | Manual del mantenedor: dos VPS desechables (Debian 12 y 13), descripción/temas del repo, *private vulnerability reporting*, integrar el script de licencias en `license-check` | Mantenedor | — | marcado en `TODO.md` | — |
 
 ## Notas
 
-- CI escrito (`.github/workflows/ci.yml`, `.golangci.yml`); el lint se verificó en local con golangci-lint v2.15.0 (`C:/Users/msanc/tools/bin`). Falta: ver el primer resultado en GitHub tras el push y el trabajo `license-check` (depende del script de licencias del mantenedor). Riesgo conocido: el job `proto` regenera el código con plugins remotos de buf; si cambian de versión puede dar diferencias.
+- CI escrito (`.github/workflows/ci.yml`, `.golangci.yml`); el lint se verificó en local con golangci-lint v2.15.0 (`C:/Users/msanc/tools/bin`). El CI pasó en verde en GitHub con el commit da12eb5 (10 jobs). Falta el trabajo `license-check` (depende del script de licencias del mantenedor). Riesgo conocido: el job `proto` regenera el código con plugins remotos de buf; si cambian de versión puede dar diferencias.
 
 - **Sin verificar:** `make dev` / `scripts/dev.sh` y `packaging/dev/compose.yaml` solo pasan `bash -n`; falta ejecutarlos en el Debian de pruebas (Docker, Go 1.26, Node 24, pnpm). Es el criterio de cierre de la fase.
 
