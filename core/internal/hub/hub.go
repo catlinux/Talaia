@@ -27,6 +27,11 @@ type AgentInfo struct {
 	AgentVersion   string
 	LastSeen       time.Time
 	LastCPUPercent float64
+	MemUsedBytes   uint64
+	DiskUsedBytes  uint64
+	DiskTotalBytes uint64
+	NetRxBytes     uint64
+	NetTxBytes     uint64
 }
 
 // agentStream is the part of the server stream the hub uses. Keeping it small
@@ -142,6 +147,11 @@ func (h *Hub) serve(_ context.Context, stream agentStream) error {
 			metrics := msg.GetMetrics()
 			info.LastSeen = h.now()
 			info.LastCPUPercent = metrics.GetCpuPercent()
+			info.MemUsedBytes = metrics.GetMemUsedBytes()
+			info.DiskUsedBytes = metrics.GetDiskUsedBytes()
+			info.DiskTotalBytes = metrics.GetDiskTotalBytes()
+			info.NetRxBytes = metrics.GetNetRxBytes()
+			info.NetTxBytes = metrics.GetNetTxBytes()
 			h.store(info)
 			slog.Debug("metrics received", "hostname", hostname, "cpu_percent", metrics.GetCpuPercent())
 

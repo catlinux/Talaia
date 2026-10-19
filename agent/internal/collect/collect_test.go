@@ -3,6 +3,9 @@ package collect
 import (
 	"runtime"
 	"testing"
+
+	"github.com/shirou/gopsutil/v4/disk"
+	"github.com/shirou/gopsutil/v4/mem"
 )
 
 func TestSystemInventory(t *testing.T) {
@@ -28,12 +31,63 @@ func TestSystemInventory(t *testing.T) {
 	}
 }
 
-func TestSystemCPUPercent(t *testing.T) {
-	percent, err := System{}.CPUPercent()
+func TestSystemMetrics(t *testing.T) {
+	sample, err := System{}.Metrics()
 	if err != nil {
-		t.Fatalf("cpu percent: %v", err)
+		t.Skipf("metrics are not available on this host: %v", err)
 	}
-	if percent < 0 || percent > 100 {
-		t.Errorf("cpu percent = %v, want a value in the 0-100 range", percent)
+
+	if sample.GetSampledAt() == nil {
+		t.Error("sampled_at is not set")
+	}
+	if sample.GetHostname() == "" {
+		t.Error("hostname is empty")
+	}
+	if percent := sample.GetCpuPercent(); percent < 0 || percent > 100 {
+		t.Errorf("cpu_percent = %v, want a value in the 0-100 range", percent)
+	}
+
+	// Memory and disk are only asserted when the system calls work here.
+	if _, err := mem.VirtualMemory(); err != nil {
+		t.Skipf("memory info is not available on this host: %v", err)
+	}
+	if _, err := disk.Usage(rootPath()); err != nil {
+		t.Skipf("disk usage is not available on this host: %v", err)
+	}
+	if sample.GetMemUsedBytes() == 0 {
+		t.Error("mem_used_bytes = 0, want > 0")
+	}
+	if sample.GetDiskTotalBytes() == 0 {
+		t.Error("disk_total_bytes = 0, want > 0")
+	}
+}
+
+func TestIsPhysicalInterface(t *testing.T) {
+	tests := []struct {
+		name string
+		want bool
+	}{
+		{"eth0", true},
+		{"ens18", true},
+		{"enp0s3", true},
+		{"wlan0", true},
+		{"Ethernet", true},
+		{"Wi-Fi", true},
+		{"lo", false},
+		{"lo0", false},
+		{"Loopback Pseudo-Interface 1", false},
+		{"docker0", false},
+		{"veth1a2b3c", false},
+		{"br-1234", false},
+		{"virbr0", false},
+		{"BR-9", false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := isPhysicalInterface(tt.name); got != tt.want {
+				t.Fatalf("isPhysicalInterface(%q) = %v, want %v", tt.name, got, tt.want)
+			}
+		})
 	}
 }

@@ -117,12 +117,37 @@ func TestServeRegistersAgentAndTracksState(t *testing.T) {
 	}
 
 	stream.in <- &agentv1.AgentMsg{
-		Msg: &agentv1.AgentMsg_Metrics{Metrics: &agentv1.Metrics{Hostname: "vps-test", CpuPercent: 12.5}},
+		Msg: &agentv1.AgentMsg_Metrics{Metrics: &agentv1.Metrics{
+			Hostname:       "vps-test",
+			CpuPercent:     12.5,
+			MemUsedBytes:   1024,
+			DiskUsedBytes:  2048,
+			DiskTotalBytes: 4096,
+			NetRxBytes:     11,
+			NetTxBytes:     22,
+		}},
 	}
 	waitFor(t, func() bool {
 		connected := h.Connected()
 		return len(connected) == 1 && connected[0].LastCPUPercent == 12.5
 	})
+
+	info = h.Connected()[0]
+	if info.MemUsedBytes != 1024 {
+		t.Errorf("mem used = %d, want 1024", info.MemUsedBytes)
+	}
+	if info.DiskUsedBytes != 2048 {
+		t.Errorf("disk used = %d, want 2048", info.DiskUsedBytes)
+	}
+	if info.DiskTotalBytes != 4096 {
+		t.Errorf("disk total = %d, want 4096", info.DiskTotalBytes)
+	}
+	if info.NetRxBytes != 11 {
+		t.Errorf("net rx = %d, want 11", info.NetRxBytes)
+	}
+	if info.NetTxBytes != 22 {
+		t.Errorf("net tx = %d, want 22", info.NetTxBytes)
+	}
 
 	stream.close()
 	select {

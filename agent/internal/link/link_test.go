@@ -18,7 +18,7 @@ import (
 
 type fakeCollector struct {
 	hostname string
-	cpu      float64
+	metrics  *agentv1.Metrics
 }
 
 func (f fakeCollector) Inventory() (*agentv1.Inventory, error) {
@@ -32,8 +32,8 @@ func (f fakeCollector) Inventory() (*agentv1.Inventory, error) {
 	}, nil
 }
 
-func (f fakeCollector) CPUPercent() (float64, error) {
-	return f.cpu, nil
+func (f fakeCollector) Metrics() (*agentv1.Metrics, error) {
+	return f.metrics, nil
 }
 
 // testHub is a real agent stream served over h2c. It ends the first connection
@@ -139,7 +139,16 @@ func TestLinkReportsAndReconnects(t *testing.T) {
 	defer httpServer.Close()
 
 	cfg := config.Config{CoreURL: httpServer.URL, LogLevel: "info"}
-	agentLink := New(cfg, fakeCollector{hostname: "vps-test", cpu: 42})
+	sample := &agentv1.Metrics{
+		Hostname:       "vps-test",
+		CpuPercent:     42,
+		MemUsedBytes:   111,
+		DiskUsedBytes:  222,
+		DiskTotalBytes: 333,
+		NetRxBytes:     444,
+		NetTxBytes:     555,
+	}
+	agentLink := New(cfg, fakeCollector{hostname: "vps-test", metrics: sample})
 	agentLink.HeartbeatInterval = 20 * time.Millisecond
 	agentLink.MetricsInterval = 30 * time.Millisecond
 	agentLink.BackoffBase = 10 * time.Millisecond
@@ -162,8 +171,11 @@ func TestLinkReportsAndReconnects(t *testing.T) {
 	if inventory := firstInventory(hub); inventory.GetHostname() != "vps-test" {
 		t.Fatalf("inventory hostname = %q, want vps-test", inventory.GetHostname())
 	}
-	if metrics := firstMetrics(hub); metrics.GetCpuPercent() != 42 {
-		t.Fatalf("metrics cpu = %v, want 42", metrics.GetCpuPercent())
+	if metrics := firstMetrics(hub); metrics.GetCpuPercent() != 42 ||
+		metrics.GetMemUsedBytes() != 111 ||
+		metrics.GetDiskTotalBytes() != 333 ||
+		metrics.GetNetRxBytes() != 444 {
+		t.Fatalf("metrics = %v, want the collected sample", metrics)
 	}
 
 	cancel()

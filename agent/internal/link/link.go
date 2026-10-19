@@ -146,24 +146,18 @@ func (l *Link) session(ctx context.Context) error {
 			slog.Debug("heartbeat sent", "seq", seq)
 
 		case <-metrics.C:
-			percent, err := l.collector.CPUPercent()
+			sample, err := l.collector.Metrics()
 			if err != nil {
-				slog.Warn("collect cpu percent", "error", err)
+				slog.Warn("collect metrics", "error", err)
 				continue
 			}
 			metricsMsg := &agentv1.AgentMsg{
-				Msg: &agentv1.AgentMsg_Metrics{
-					Metrics: &agentv1.Metrics{
-						SampledAt:  timestamppb.Now(),
-						Hostname:   inventory.GetHostname(),
-						CpuPercent: percent,
-					},
-				},
+				Msg: &agentv1.AgentMsg_Metrics{Metrics: sample},
 			}
 			if err := stream.Send(metricsMsg); err != nil {
 				return fmt.Errorf("send metrics: %w", err)
 			}
-			slog.Debug("metrics sent", "cpu_percent", percent)
+			slog.Debug("metrics sent", "cpu_percent", sample.GetCpuPercent())
 		}
 	}
 }
