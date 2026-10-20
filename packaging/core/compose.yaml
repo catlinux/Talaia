@@ -69,7 +69,13 @@ services:
       TALAIA_PUBLIC_HOSTNAMES: ${TALAIA_PUBLIC_HOSTNAMES:?set TALAIA_PUBLIC_HOSTNAMES in .env (see .env.example)}
       # Empty means "derive them from TALAIA_PUBLIC_HOSTNAMES", the default.
       TALAIA_ALLOWED_ORIGINS: ${TALAIA_ALLOWED_ORIGINS:-}
+      TALAIA_ACME_PROVIDER: ${TALAIA_ACME_PROVIDER:-}
+      TALAIA_ACME_EMAIL: ${TALAIA_ACME_EMAIL:-}
       TALAIA_LOG_LEVEL: ${TALAIA_LOG_LEVEL:-info}
+    # DNS provider credentials for ACME, written by install.sh when asked for.
+    env_file:
+      - path: .env.acme
+        required: false
     volumes:
       - core-data:/var/lib/talaia
     ports:

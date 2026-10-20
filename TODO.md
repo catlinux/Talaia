@@ -88,8 +88,8 @@ of the current phase and the next one.
 
 **Principle:** Talaia is installed from GitHub on machines we do not know, so it must not depend on what is already there: no reverse proxy, no free ports 80/443, no third-party VPN service.
 
-- [ ] Two ports of its own, chosen free by the installer (8443 and 8444 by default, never 80/443 unless free and asked for): one for the panel, one for the agents
-- [ ] Installer that checks the ports, asks for the public name and writes `.env`
+- [x] Two ports of its own, chosen free by the installer (8443 and 8444 by default, never 80/443 unless free and asked for): one for the panel, one for the agents
+- [x] Installer that checks the ports, asks for the public name and writes `.env`
 - [ ] Trusted certificate for the panel by ACME DNS-01 inside the core (lego; OVH first), on any port; the agents keep pinning Talaia's own CA
 - [ ] Update detection (latest commit of `main` with green CI) and API
 - [ ] Host helper `talaia-hostd` (systemd) that pulls, rebuilds, checks `/healthz` and rolls back with a database copy; the core never gets the Docker socket

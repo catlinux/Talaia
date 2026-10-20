@@ -133,13 +133,36 @@ jobs:
     steps:
       - name: Check out the repository
         uses: actions/checkout@v7.0.1
+      - name: Occupy 8443 so the installer has to choose other ports
+        run: |
+          nohup python3 -m http.server 8443 --bind 0.0.0.0 >/dev/null 2>&1 &
+          sleep 1
       - name: Install the core with the installer
-        run: bash packaging/core/install.sh --hostname 127.0.0.1 --port 8443 --agent-port 8444 --no-user
+        run: bash packaging/core/install.sh --hostname 127.0.0.1 --no-user
+      - name: The installer chose free ports
+        run: |
+          set -eu
+          . packaging/core/.env
+          test "$TALAIA_PANEL_PORT" != 8443
+          test "$TALAIA_AGENT_PORT" != 8443
+          test "$TALAIA_PANEL_PORT" != "$TALAIA_AGENT_PORT"
+          echo "PANEL_PORT=$TALAIA_PANEL_PORT" >> "$GITHUB_ENV"
+          echo "AGENT_PORT=$TALAIA_AGENT_PORT" >> "$GITHUB_ENV"
+      - name: A busy port given on the command line is refused
+        run: |
+          set -eu
+          rm -rf "$RUNNER_TEMP/clone" && mkdir "$RUNNER_TEMP/clone"
+          cp -r packaging "$RUNNER_TEMP/clone/"
+          rm -f "$RUNNER_TEMP/clone/packaging/core/.env"
+          if bash "$RUNNER_TEMP/clone/packaging/core/install.sh" --hostname 127.0.0.1 --port 8443 --no-user 2>"$RUNNER_TEMP/err.txt"; then
+            echo "the installer accepted a busy port"; exit 1
+          fi
+          grep -q 'port 8443 is already in use' "$RUNNER_TEMP/err.txt"
       - name: The core serves the panel, the CA, the installer and the agent packages
         run: |
           set -eu
-          panel=https://127.0.0.1:8443
-          url=https://127.0.0.1:8444
+          panel="https://127.0.0.1:$PANEL_PORT"
+          url="https://127.0.0.1:$AGENT_PORT"
           test "$(curl -sk -o /dev/null -w '%{http_code}' "$panel/")" = 200
           # Each port serves only its own routes.
           test "$(curl -sk -o /dev/null -w '%{http_code}' "$url/")" = 404

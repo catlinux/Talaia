@@ -23,16 +23,26 @@ Talaia has two parts: the **core** (panel, API and database), which runs in Dock
 ```bash
 git clone https://github.com/catlinux/Talaia.git
 cd Talaia
-packaging/core/install.sh --hostname 192.0.2.10 --port 8443 --agent-port 8444 --username admin
+packaging/core/install.sh --hostname 192.0.2.10 --username admin
 ```
 
-Replace `192.0.2.10` with the address the panel will be reached at. The script:
+Replace `192.0.2.10` with the address the panel will be reached at (in a terminal it asks for it when you omit
+`--hostname`). The script:
 
-1. writes `packaging/core/.env` with a random database password (an existing `.env` is never replaced);
-2. builds the image and starts the stack with `docker compose up -d --build`. The first build takes a few
+1. chooses the ports: the first free one from 8443 for the panel and from 8444 for the agents (checked with
+   `ss`), never 80 or 443 on its own. `--port` and `--agent-port` force a port; if it is busy the script stops;
+2. writes `packaging/core/.env` with a random database password and those ports (an existing `.env` is never
+   replaced, ports included);
+3. builds the image and starts the stack with `docker compose up -d --build`. The first build takes a few
    minutes;
-3. waits for the core to answer;
-4. creates the administrator, asking for the password twice (at least 12 characters).
+4. waits for the core to answer;
+5. creates the administrator, asking for the password twice (at least 12 characters).
+
+With `--acme ovh` (or answering yes when it asks, in a terminal) it also prepares a trusted certificate for the
+panel by ACME DNS-01: the OVH credentials are read from `OVH_ENDPOINT`, `OVH_APPLICATION_KEY`,
+`OVH_APPLICATION_SECRET` and `OVH_CONSUMER_KEY` or asked for without echo, and are stored in
+`packaging/core/.env.acme` (mode 0600, ignored by git). `--acme-email` sets the contact address. The core
+starts using them in a later release.
 
 It is safe to run again. If your user cannot talk to Docker, it uses `sudo docker` on its own.
 

@@ -24,17 +24,27 @@ Talaia tiene dos partes: el **núcleo** (panel, API y base de datos), que corre 
 ```bash
 git clone https://github.com/catlinux/Talaia.git
 cd Talaia
-packaging/core/install.sh --hostname 192.0.2.10 --port 8443 --agent-port 8444 --username admin
+packaging/core/install.sh --hostname 192.0.2.10 --username admin
 ```
 
-Cambia `192.0.2.10` por la dirección desde la que se llegará al panel. El script:
+Cambia `192.0.2.10` por la dirección desde la que se llegará al panel (en un terminal la pregunta si omites
+`--hostname`). El script:
 
-1. escribe `packaging/core/.env` con una contraseña aleatoria de base de datos (un `.env` existente nunca se
-   sustituye);
-2. construye la imagen y arranca la pila con `docker compose up -d --build`. La primera construcción tarda
+1. elige los puertos: el primero libre desde 8443 para el panel y desde 8444 para los agentes (lo comprueba con
+   `ss`), y nunca el 80 ni el 443 por su cuenta. `--port` y `--agent-port` fuerzan un puerto; si está ocupado,
+   el script se detiene;
+2. escribe `packaging/core/.env` con una contraseña aleatoria de base de datos y esos puertos (un `.env`
+   existente nunca se sustituye, puertos incluidos);
+3. construye la imagen y arranca la pila con `docker compose up -d --build`. La primera construcción tarda
    unos minutos;
-3. espera a que el núcleo responda;
-4. crea el administrador y te pide la contraseña dos veces (mínimo 12 caracteres).
+4. espera a que el núcleo responda;
+5. crea el administrador y te pide la contraseña dos veces (mínimo 12 caracteres).
+
+Con `--acme ovh` (o contestando que sí cuando lo pregunta, en un terminal) prepara además un certificado de
+confianza para el panel por ACME DNS-01: las credenciales de OVH se leen de `OVH_ENDPOINT`,
+`OVH_APPLICATION_KEY`, `OVH_APPLICATION_SECRET` y `OVH_CONSUMER_KEY` o se piden sin eco, y se guardan en
+`packaging/core/.env.acme` (modo 0600, ignorado por git). `--acme-email` fija el correo de contacto. El núcleo
+empezará a usarlas en una versión posterior.
 
 Se puede volver a ejecutar sin riesgo. Si tu usuario no puede hablar con Docker, usa `sudo docker` por su cuenta.
 

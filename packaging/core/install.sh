@@ -5,21 +5,27 @@
 # administrator. Run it from a clone of the repository; it is safe to run again.
 #
 # Usage:
-#   packaging/core/install.sh [--hostname <ip-or-name>] [--port <port>] [--agent-port <port>] [--username <name>] [--no-user]
+#   packaging/core/install.sh [--hostname <ip-or-name>] [--port <port>] [--agent-port <port>]
+#                             [--acme <provider>] [--acme-email <address>] [--username <name>] [--no-user]
 #
-#   --hostname  address the panel is reached at (default: the first address of this machine)
-#   --port      port of the panel published on this machine (default: 8443)
-#   --agent-port port of the agents published on this machine (default: 8444)
-#   --username  name of the administrator (default: admin)
-#   --no-user   do not create the administrator
+#   --hostname    name or address the core is reached at (asked for in a terminal; default: the first address of this machine)
+#   --port        port of the panel (default: the first free one from 8443; 80 and 443 are never chosen on their own)
+#   --agent-port  port of the agents (default: the first free one from 8444)
+#   --acme        trusted certificate for the panel by ACME DNS-01 with this DNS provider (ovh); the
+#                 credentials come from the environment (OVH_*) or are asked for, and go to .env.acme
+#   --acme-email  contact address for the certificate authority
+#   --username    name of the administrator (default: admin)
+#   --no-user     do not create the administrator
 set -eu
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
 hostname_arg=""
-port="8443"
-agent_port="8444"
+port=""
+agent_port=""
+acme_provider=""
+acme_email=""
 username="admin"
 create_user=1
 
@@ -40,6 +46,16 @@ while [ "$#" -gt 0 ]; do
             agent_port="$2"
             shift 2
             ;;
+        --acme)
+            [ "$#" -ge 2 ] || { echo "error: --acme needs a value" >&2; exit 1; }
+            acme_provider="$2"
+            shift 2
+            ;;
+        --acme-email)
+            [ "$#" -ge 2 ] || { echo "error: --acme-email needs a value" >&2; exit 1; }
+            acme_email="$2"
+            shift 2
+            ;;
         --username)
             [ "$#" -ge 2 ] || { echo "error: --username needs a value" >&2; exit 1; }
             username="$2"
@@ -50,7 +66,7 @@ while [ "$#" -gt 0 ]; do
             shift
             ;;
         -h | --help)
-            sed -n '2,14p' "$SCRIPT_DIR/$(basename "${BASH_SOURCE[0]}")" | sed 's/^# \{0,1\}//'
+            sed -n '2,16p' "$SCRIPT_DIR/$(basename "${BASH_SOURCE[0]}")" | sed 's/^# \{0,1\}//'
             exit 0
             ;;
         *)
@@ -62,16 +78,23 @@ done
 
 for value in "$port" "$agent_port"; do
     case "$value" in
-        '' | *[!0-9]*)
+        *[!0-9]*)
             echo "error: --port and --agent-port must be numbers" >&2
             exit 1
             ;;
     esac
 done
-if [ "$port" = "$agent_port" ]; then
+if [ -n "$port" ] && [ "$port" = "$agent_port" ]; then
     echo "error: --port and --agent-port must differ" >&2
     exit 1
 fi
+case "$acme_provider" in
+    '' | ovh) ;;
+    *)
+        echo "error: unsupported ACME provider $acme_provider (supported: ovh)" >&2
+        exit 1
+        ;;
+esac
 
 if ! command -v docker >/dev/null 2>&1; then
     echo "error: docker is required but was not found" >&2
@@ -89,6 +112,70 @@ else
     compose=(sudo docker compose)
 fi
 
+# port_in_use reports whether something already listens on a TCP port.
+port_in_use() {
+    if command -v ss >/dev/null 2>&1; then
+        [ -n "$(ss -ltnH "sport = :$1" 2>/dev/null)" ]
+    else
+        (exec 3<>"/dev/tcp/127.0.0.1/$1") 2>/dev/null
+    fi
+}
+
+# pick_port prints the first free port from $1 up, skipping 80, 443 and $2.
+pick_port() {
+    local candidate="$1" last=$(($1 + 200))
+    while [ "$candidate" -le "$last" ]; do
+        if [ "$candidate" != 80 ] && [ "$candidate" != 443 ] && [ "$candidate" != "${2:-}" ] && ! port_in_use "$candidate"; then
+            echo "$candidate"
+            return 0
+        fi
+        candidate=$((candidate + 1))
+    done
+    echo "error: no free port found from $1; pass --port and --agent-port" >&2
+    return 1
+}
+
+# ask prints the answer to a question, or the default when it is empty.
+ask() {
+    local answer
+    read -r -p "$1 [$2]: " answer
+    echo "${answer:-$2}"
+}
+
+# write_acme_credentials stores the DNS provider credentials in .env.acme (mode
+# 0600), which compose hands to the core. Values come from the environment or,
+# in a terminal, from a prompt that does not echo secrets.
+write_acme_credentials() {
+    if [ -f .env.acme ]; then
+        echo "keeping the existing .env.acme"
+        return 0
+    fi
+    local endpoint="${OVH_ENDPOINT:-}" key="${OVH_APPLICATION_KEY:-}" secret="${OVH_APPLICATION_SECRET:-}" consumer="${OVH_CONSUMER_KEY:-}"
+    if [ -t 0 ]; then
+        [ -n "$endpoint" ] || endpoint="$(ask "OVH endpoint" "ovh-eu")"
+        [ -n "$key" ] || read -r -p "OVH application key: " key
+        if [ -z "$secret" ]; then
+            read -r -s -p "OVH application secret: " secret
+            echo
+        fi
+        if [ -z "$consumer" ]; then
+            read -r -s -p "OVH consumer key: " consumer
+            echo
+        fi
+    fi
+    : "${endpoint:=ovh-eu}"
+    if [ -z "$key" ] || [ -z "$secret" ] || [ -z "$consumer" ]; then
+        echo "error: set OVH_APPLICATION_KEY, OVH_APPLICATION_SECRET and OVH_CONSUMER_KEY (or run in a terminal)" >&2
+        exit 1
+    fi
+    (
+        umask 077
+        printf 'OVH_ENDPOINT=%s\nOVH_APPLICATION_KEY=%s\nOVH_APPLICATION_SECRET=%s\nOVH_CONSUMER_KEY=%s\n' \
+            "$endpoint" "$key" "$secret" "$consumer" > .env.acme
+    )
+    echo "wrote .env.acme"
+}
+
 # .env holds the database password: an existing one is never replaced, because
 # the database volume was initialised with it.
 if [ -f .env ]; then
@@ -96,10 +183,38 @@ if [ -f .env ]; then
 else
     if [ -z "$hostname_arg" ]; then
         hostname_arg="$(hostname -I 2>/dev/null | cut -d' ' -f1 || true)"
+        if [ -t 0 ]; then
+            hostname_arg="$(ask "Name or address the core is reached at" "$hostname_arg")"
+        fi
     fi
     if [ -z "$hostname_arg" ]; then
         echo "error: could not find an address for this machine; pass --hostname" >&2
         exit 1
+    fi
+
+    # A port given on the command line must be free; otherwise the first free one is used.
+    if [ -n "$port" ] && port_in_use "$port"; then
+        echo "error: port $port is already in use; pick another with --port" >&2
+        exit 1
+    fi
+    if [ -n "$agent_port" ] && port_in_use "$agent_port"; then
+        echo "error: port $agent_port is already in use; pick another with --agent-port" >&2
+        exit 1
+    fi
+    [ -n "$port" ] || port="$(pick_port 8443 "$agent_port")"
+    [ -n "$agent_port" ] || agent_port="$(pick_port 8444 "$port")"
+
+    if [ -z "$acme_provider" ] && [ -t 0 ]; then
+        echo "A trusted certificate for the panel needs a domain name whose DNS you can edit through an API."
+        if [ "$(ask "Get it automatically with ACME DNS-01 (ovh)? (yes/no)" "no")" = "yes" ]; then
+            acme_provider="ovh"
+        fi
+    fi
+    if [ -n "$acme_provider" ]; then
+        if [ -z "$acme_email" ] && [ -t 0 ]; then
+            acme_email="$(ask "Contact address for the certificate authority (optional)" "")"
+        fi
+        write_acme_credentials
     fi
 
     password="$(od -An -tx1 -N32 /dev/urandom | tr -d ' \n')"
@@ -109,9 +224,11 @@ else
             -e "s|^TALAIA_PUBLIC_HOSTNAMES=.*|TALAIA_PUBLIC_HOSTNAMES=${hostname_arg}|" \
             -e "s|^TALAIA_PANEL_PORT=.*|TALAIA_PANEL_PORT=${port}|" \
             -e "s|^TALAIA_AGENT_PORT=.*|TALAIA_AGENT_PORT=${agent_port}|" \
+            -e "s|^TALAIA_ACME_PROVIDER=.*|TALAIA_ACME_PROVIDER=${acme_provider}|" \
+            -e "s|^TALAIA_ACME_EMAIL=.*|TALAIA_ACME_EMAIL=${acme_email}|" \
             .env.example > .env
     )
-    echo "wrote .env for $hostname_arg:$port"
+    echo "wrote .env for $hostname_arg (panel $port, agents $agent_port)"
 fi
 
 # shellcheck disable=SC1091
