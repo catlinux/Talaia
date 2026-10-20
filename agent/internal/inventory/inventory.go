@@ -5,6 +5,7 @@ package inventory
 import (
 	"context"
 
+	"github.com/catlinux/Talaia/agent/internal/stacks"
 	agentv1 "github.com/catlinux/Talaia/proto/gen/go"
 )
 
@@ -18,12 +19,18 @@ type ServiceSource interface {
 	Units(ctx context.Context) []*agentv1.SystemdUnit
 }
 
-// Provider combines the two sources. The zero value reads nothing, which lets
+// StackSource lists the stacks Talaia manages on this host.
+type StackSource interface {
+	List() []string
+}
+
+// Provider combines the sources. The zero value reads nothing, which lets
 // the tests inject their own sources and makes the collector degrade to empty
 // values on hosts without Docker or systemd.
 type Provider struct {
 	Docker  ContainerSource
 	Systemd ServiceSource
+	Stacks  StackSource
 }
 
 // New returns a Provider that reads the real host.
@@ -31,6 +38,7 @@ func New() Provider {
 	return Provider{
 		Docker:  NewDocker(),
 		Systemd: NewSystemd(),
+		Stacks:  stacks.NewDefault(),
 	}
 }
 
@@ -41,6 +49,7 @@ type Result struct {
 	Containers      []*agentv1.Container
 	Projects        []*agentv1.ComposeProject
 	Services        []*agentv1.SystemdUnit
+	ManagedStacks   []string
 }
 
 // Collect reads both sources. It never fails: a source that is not available
@@ -57,6 +66,9 @@ func (p Provider) Collect(ctx context.Context) Result {
 	}
 	if p.Systemd != nil {
 		result.Services = p.Systemd.Units(ctx)
+	}
+	if p.Stacks != nil {
+		result.ManagedStacks = p.Stacks.List()
 	}
 
 	return result

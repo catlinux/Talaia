@@ -90,6 +90,7 @@ func (s System) Inventory() (*agentv1.Inventory, error) {
 		Containers:      running.Containers,
 		ComposeProjects: running.Projects,
 		Services:        running.Services,
+		ManagedStacks:   running.ManagedStacks,
 	}, nil
 }
 

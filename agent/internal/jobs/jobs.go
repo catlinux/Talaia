@@ -15,12 +15,20 @@ import (
 	agentv1 "github.com/catlinux/Talaia/proto/gen/go"
 )
 
-// jobTimeout bounds one command.
-const jobTimeout = 90 * time.Second
+// jobTimeout bounds a container command; the stack commands pull images and
+// start services, so they get longer.
+const (
+	jobTimeout         = 90 * time.Second
+	stackActionTimeout = 10 * time.Minute
+	stackWriteTimeout  = 2 * time.Minute
+)
 
 // rememberedJobs is how many finished jobs the executor remembers to answer a
 // repeated job id without running it again.
 const rememberedJobs = 256
+
+// errNoStacks is the failure of a stack command on an executor without stacks.
+var errNoStacks = errors.New("stacks are not available on this agent")
 
 // Actions are the container operations the executor can run.
 type Actions interface {
@@ -29,10 +37,18 @@ type Actions interface {
 	Logs(ctx context.Context, container string, tail int) (string, error)
 }
 
+// StackManager runs the managed Compose stacks of the server.
+type StackManager interface {
+	Write(ctx context.Context, name, compose, env string) (string, error)
+	Do(ctx context.Context, name string, action agentv1.StackActionType) (string, error)
+	Read(ctx context.Context, name string) (string, error)
+}
+
 // Executor runs commands. Every command carries a job id; running the same id
 // twice does not repeat the effect, the executor sends the first outcome again.
 type Executor struct {
 	actions Actions
+	stacks  StackManager
 
 	mu       sync.Mutex
 	finished map[string]*agentv1.JobEvent
@@ -49,12 +65,19 @@ func New(actions Actions) *Executor {
 	}
 }
 
+// WithStacks lets the executor run stack commands.
+func (e *Executor) WithStacks(manager StackManager) *Executor {
+	e.stacks = manager
+	return e
+}
+
 // Handle starts the command carried by msg, if it carries one, and reports
 // whether it did. The job runs in its own goroutine; emit is called from it, so
 // it must be safe for concurrent use.
 func (e *Executor) Handle(ctx context.Context, msg *agentv1.CoreMsg, emit func(*agentv1.AgentMsg)) bool {
 	action, logs := msg.GetContainerAction(), msg.GetReadLogs()
-	if action == nil && logs == nil {
+	write, stackAction, read := msg.GetStackWrite(), msg.GetStackAction(), msg.GetStackRead()
+	if action == nil && logs == nil && write == nil && stackAction == nil && read == nil {
 		return false
 	}
 
@@ -79,18 +102,39 @@ func (e *Executor) Handle(ctx context.Context, msg *agentv1.CoreMsg, emit func(*
 
 	switch {
 	case action != nil:
-		go e.execute(ctx, jobID, "container action "+action.GetAction().String(), emit, func(ctx context.Context) (string, error) {
+		go e.execute(ctx, jobID, "container action "+action.GetAction().String(), jobTimeout, emit, func(ctx context.Context) (string, error) {
 			if !ValidContainerRef(action.GetContainer()) {
 				return "", errors.New("invalid container reference")
 			}
 			return "", e.actions.Do(ctx, action.GetContainer(), action.GetAction())
 		})
-	default:
-		go e.execute(ctx, jobID, "read logs", emit, func(ctx context.Context) (string, error) {
+	case logs != nil:
+		go e.execute(ctx, jobID, "read logs", jobTimeout, emit, func(ctx context.Context) (string, error) {
 			if !ValidContainerRef(logs.GetContainer()) {
 				return "", errors.New("invalid container reference")
 			}
 			return e.actions.Logs(ctx, logs.GetContainer(), int(logs.GetTail()))
+		})
+	case write != nil:
+		go e.execute(ctx, jobID, "stack write", stackWriteTimeout, emit, func(ctx context.Context) (string, error) {
+			if e.stacks == nil {
+				return "", errNoStacks
+			}
+			return e.stacks.Write(ctx, write.GetName(), write.GetComposeYaml(), write.GetEnv())
+		})
+	case stackAction != nil:
+		go e.execute(ctx, jobID, "stack action "+stackAction.GetAction().String(), stackActionTimeout, emit, func(ctx context.Context) (string, error) {
+			if e.stacks == nil {
+				return "", errNoStacks
+			}
+			return e.stacks.Do(ctx, stackAction.GetName(), stackAction.GetAction())
+		})
+	default:
+		go e.execute(ctx, jobID, "stack read", jobTimeout, emit, func(ctx context.Context) (string, error) {
+			if e.stacks == nil {
+				return "", errNoStacks
+			}
+			return e.stacks.Read(ctx, read.GetName())
 		})
 	}
 	return true
@@ -98,10 +142,10 @@ func (e *Executor) Handle(ctx context.Context, msg *agentv1.CoreMsg, emit func(*
 
 // execute runs one piece of work as a job: it reports the start, runs it with a
 // timeout and reports and remembers the outcome.
-func (e *Executor) execute(ctx context.Context, jobID, what string, emit func(*agentv1.AgentMsg), work func(context.Context) (string, error)) {
+func (e *Executor) execute(ctx context.Context, jobID, what string, timeout time.Duration, emit func(*agentv1.AgentMsg), work func(context.Context) (string, error)) {
 	emit(jobMsg(event(jobID, agentv1.JobState_JOB_STATE_RUNNING, "")))
 
-	ctx, cancel := context.WithTimeout(ctx, jobTimeout)
+	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
 	output, err := work(ctx)
