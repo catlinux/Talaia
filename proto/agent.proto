@@ -20,6 +20,7 @@ message CoreMsg {
     // Numbers 10 and above are for typed commands (compose_up, exec_pty,
     // apt_upgrade, read_logs…), added phase by phase.
     ContainerAction container_action = 10;
+    ReadLogs read_logs = 11;
   }
 }
 
@@ -50,6 +51,14 @@ enum ContainerActionType {
   CONTAINER_ACTION_TYPE_REMOVE = 4;
 }
 
+// ReadLogs asks for the last lines of a container's output (stdout and stderr).
+message ReadLogs {
+  // Container id (hex, 12 to 64 characters) or name.
+  string container = 1;
+  // How many lines from the end; the agent clamps it to 1..1000.
+  uint32 tail = 2;
+}
+
 // JobEvent reports how a command (identified by CoreMsg.job_id) is going.
 message JobEvent {
   string job_id = 1;
@@ -57,6 +66,8 @@ message JobEvent {
   // Short human-readable detail, for example the error of the Docker Engine.
   string message = 3;
   google.protobuf.Timestamp at = 4;
+  // Text the command produced, for example the lines of a log; bounded by the agent.
+  string output = 5;
 }
 
 enum JobState {
