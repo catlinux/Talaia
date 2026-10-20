@@ -50,7 +50,7 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ### Changed
 
-- New look for the panel: self-hosted fonts (Familjen Grotesk, IBM Plex Sans, JetBrains Mono, which were declared but never loaded), a sidebar layout that folds into a top bar on phones, status beacons, segmented gauges, a new watchtower logo, a redesigned sign-in with a light beam, and motion that respects `prefers-reduced-motion`. The fleet no longer shows an empty activity panel. No image is a `data:` URL, so the panel works under its strict CSP.
+- New look for the panel: self-hosted fonts (Familjen Grotesk, IBM Plex Sans, JetBrains Mono, which were declared but never loaded), a sidebar layout that folds into a top bar on phones, status beacons, segmented gauges, a new watchtower logo, a redesigned sign-in with a light beam, a favicon, and motion that respects `prefers-reduced-motion`. The fleet no longer shows an empty activity panel. No image is a `data:` URL, so the panel works under its strict CSP.
 - Phase 0 decisions closed: PostgreSQL + TimescaleDB, React + TypeScript, Go 1.26, Node.js 24 LTS with pnpm.
 - The session that waits for the second factor lasts 15 minutes at the first access (it was 5), enough to install an authenticator app and scan the QR code; users that already have the second factor keep 5 minutes. The sign-in screen now says when the session expired.
 

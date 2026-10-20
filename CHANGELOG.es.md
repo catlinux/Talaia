@@ -50,7 +50,7 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ### Cambiado
 
-- Nuevo aspecto del panel: tipografías autoalojadas (Familjen Grotesk, IBM Plex Sans y JetBrains Mono, que estaban declaradas pero nunca se cargaban), marco con barra lateral que pasa a barra superior en móvil, balizas de estado, medidores segmentados, un logotipo nuevo de atalaya, un acceso rediseñado con un haz de luz y animaciones que respetan `prefers-reduced-motion`. La flota ya no muestra un panel de actividad vacío. Ninguna imagen es una URL `data:`, así que el panel funciona con su CSP estricta.
+- Nuevo aspecto del panel: tipografías autoalojadas (Familjen Grotesk, IBM Plex Sans y JetBrains Mono, que estaban declaradas pero nunca se cargaban), marco con barra lateral que pasa a barra superior en móvil, balizas de estado, medidores segmentados, un logotipo nuevo de atalaya, un acceso rediseñado con un haz de luz, un favicon y animaciones que respetan `prefers-reduced-motion`. La flota ya no muestra un panel de actividad vacío. Ninguna imagen es una URL `data:`, así que el panel funciona con su CSP estricta.
 - Decisiones de la fase 0 cerradas: PostgreSQL + TimescaleDB, React + TypeScript, Go 1.26, Node.js 24 LTS con pnpm.
 - La sesión que espera el segundo factor dura 15 minutos en el primer acceso (antes 5), suficiente para instalar una aplicación de autenticación y escanear el QR; quien ya tiene el segundo factor mantiene 5 minutos. La pantalla de acceso indica ahora cuándo ha caducado la sesión.
 
