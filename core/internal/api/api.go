@@ -31,6 +31,8 @@ type RouterDeps struct {
 	// Enrollment enables POST /api/v1/servers/enrollment-tokens; nil leaves it
 	// out (the insecure development mode has no CA to enroll against).
 	Enrollment *EnrollmentTokenDeps
+	// Containers enables the container and job endpoints; nil leaves them out.
+	Containers *ContainerDeps
 }
 
 // NewRouter returns the HTTP handler of the core: the health endpoint, the
@@ -51,6 +53,11 @@ func NewRouter(deps RouterDeps) http.Handler {
 			r.Use(RequireFull)
 			r.Get("/servers",
 				NewServersHandler(ServerDeps{Servers: deps.Servers, Agents: deps.Agents}).ServeHTTP)
+			if deps.Containers != nil {
+				r.Get("/servers/{serverID}/containers", NewContainersHandler(*deps.Containers).ServeHTTP)
+				r.Post("/servers/{serverID}/containers/{container}/actions", NewContainerActionHandler(*deps.Containers).ServeHTTP)
+				r.Get("/jobs/{jobID}", NewJobHandler(*deps.Containers).ServeHTTP)
+			}
 			if deps.Enrollment != nil {
 				r.Post("/servers/enrollment-tokens", NewEnrollmentTokenHandler(*deps.Enrollment).ServeHTTP)
 			}

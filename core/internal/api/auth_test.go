@@ -106,6 +106,9 @@ type testPanel struct {
 	store  *store.Store
 	clock  *testClock
 	client *http.Client
+	// agents and dispatcher stand for the connected agents of the hub.
+	agents     *controlledAgents
+	dispatcher *fakeDispatcher
 }
 
 // testPanelOptions tweak the test panel.
@@ -158,11 +161,19 @@ func newTestPanel(t *testing.T, options ...panelOption) *testPanel {
 		t.Fatalf("secret box: %v", err)
 	}
 
+	agents := &controlledAgents{}
+	dispatcher := &fakeDispatcher{}
 	router := NewRouter(RouterDeps{
 		DB:       st,
 		WebDir:   settings.webDir,
 		Security: SecurityConfig{TLS: true, Origins: []string{testOrigin}},
 		Session:  SessionDeps{Store: st, Now: clock.Now, IdleTimeout: settings.idleTimeout},
+		Containers: &ContainerDeps{
+			Agents:     agents,
+			Dispatcher: dispatcher,
+			Jobs:       st,
+			Audit:      st,
+		},
 		Enrollment: &EnrollmentTokenDeps{
 			Tokens:        st,
 			Audit:         st,
@@ -186,10 +197,12 @@ func newTestPanel(t *testing.T, options ...panelOption) *testPanel {
 		t.Fatalf("cookie jar: %v", err)
 	}
 	return &testPanel{
-		server: server,
-		store:  st,
-		clock:  clock,
-		client: &http.Client{Transport: server.Client().Transport, Jar: jar},
+		server:     server,
+		store:      st,
+		clock:      clock,
+		client:     &http.Client{Transport: server.Client().Transport, Jar: jar},
+		agents:     agents,
+		dispatcher: dispatcher,
 	}
 }
 

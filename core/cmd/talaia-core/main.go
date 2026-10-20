@@ -86,7 +86,9 @@ type panelOptions struct {
 	WebDir  string
 	DistDir string
 	// Enrollment enables creating enrollment tokens from the panel.
-	Enrollment   *api.EnrollmentTokenDeps
+	Enrollment *api.EnrollmentTokenDeps
+	// Containers enables the container and job API.
+	Containers   *api.ContainerDeps
 	Origins      []string
 	TLS          bool
 	Limiter      *api.RateLimiter
@@ -106,6 +108,7 @@ func newCoreRouter(st *store.Store, agents api.LiveAgents, options panelOptions)
 		Servers:    st,
 		Agents:     agents,
 		Enrollment: options.Enrollment,
+		Containers: options.Containers,
 		Auth: api.AuthDeps{
 			Store:        st,
 			Box:          options.Box,
@@ -275,7 +278,10 @@ func serve() error {
 			PublicURL:     cfg.PublicURL(),
 			ScriptSHA256:  install.ScriptSHA256(cfg.DistDir),
 		}
-		srv.Handler = newTLSRouter(st, authority, hub.New(st), panel)
+		agentHub := hub.New(st)
+		agentHub.SetJobEvents(api.JobRecorder{Jobs: st})
+		panel.Containers = &api.ContainerDeps{Agents: agentHub, Dispatcher: agentHub, Jobs: st, Audit: st}
+		srv.Handler = newTLSRouter(st, authority, agentHub, panel)
 		srv.Protocols = newTLSProtocols()
 		srv.TLSConfig = &tls.Config{
 			MinVersion:   tls.VersionTLS13,

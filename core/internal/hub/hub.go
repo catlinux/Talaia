@@ -22,6 +22,27 @@ import (
 	"github.com/catlinux/Talaia/proto/gen/go/agentv1connect"
 )
 
+// outboxSize is how many core messages may wait to be written to one agent.
+const outboxSize = 32
+
+// ErrNotConnected is returned when the agent of a server has no open stream.
+var ErrNotConnected = errors.New("the agent is not connected")
+
+// ErrAgentBusy is returned when too many messages wait for the agent.
+var ErrAgentBusy = errors.New("the agent has too many pending commands")
+
+// JobEvents receives the progress of the commands the agents run.
+type JobEvents interface {
+	RecordJobEvent(ctx context.Context, serverID string, event *agentv1.JobEvent)
+}
+
+// agentConn is the live stream of one agent. Every message to the agent goes
+// through outbox, so a single goroutine writes to the stream.
+type agentConn struct {
+	token  uint64
+	outbox chan *agentv1.CoreMsg
+}
+
 // defaultCheckInterval is how often at most the hub re-validates a connection
 // and writes last_seen.
 const defaultCheckInterval = 30 * time.Second
@@ -50,6 +71,8 @@ type AgentInfo struct {
 	RunningContainers int
 	ComposeProjects   int
 	Services          int
+	// ContainerList is the last list of containers the agent reported.
+	ContainerList []*agentv1.Container
 
 	// key is the registry key: the server id with certificates, the hostname
 	// in insecure dev mode.
@@ -82,6 +105,7 @@ func (info *AgentInfo) applyInventory(inventory *agentv1.Inventory) {
 	info.RunningContainers = running
 	info.ComposeProjects = len(inventory.GetComposeProjects())
 	info.Services = len(inventory.GetServices())
+	info.ContainerList = inventory.GetContainers()
 }
 
 // agentStream is the part of the server stream the hub uses. Keeping it small
@@ -104,7 +128,11 @@ type Hub struct {
 
 	mu     sync.RWMutex
 	agents map[string]AgentInfo
+	conns  map[string]*agentConn
 	tokens uint64
+
+	// jobEvents is told about the events of the commands; nil ignores them.
+	jobEvents JobEvents
 
 	now func() time.Time
 }
@@ -127,6 +155,7 @@ func newHub(servers ServerStore) *Hub {
 		servers:       servers,
 		CheckInterval: defaultCheckInterval,
 		agents:        make(map[string]AgentInfo),
+		conns:         make(map[string]*agentConn),
 		now:           time.Now,
 	}
 	agentv1connect.RegisterAgentHubHandler(h.server, h)
@@ -144,6 +173,31 @@ func (h *Hub) Handler() (path string, handler http.Handler) {
 		return agentv1connect.AgentHubConnectProcedure, mux
 	}
 	return agentv1connect.AgentHubConnectProcedure, authenticate(h.servers, mux)
+}
+
+// SetJobEvents sets who is told about the events of the commands.
+func (h *Hub) SetJobEvents(events JobEvents) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	h.jobEvents = events
+}
+
+// Dispatch queues a command for the agent of a server. It never blocks: when the
+// agent is not connected or has too many pending messages it returns an error.
+func (h *Hub) Dispatch(serverID string, msg *agentv1.CoreMsg) error {
+	h.mu.RLock()
+	link, ok := h.conns[serverID]
+	h.mu.RUnlock()
+	if !ok {
+		return ErrNotConnected
+	}
+
+	select {
+	case link.outbox <- msg:
+		return nil
+	default:
+		return ErrAgentBusy
+	}
 }
 
 // Connected returns a copy of the connected agents, ordered by hostname.
@@ -201,10 +255,19 @@ func (h *Hub) serve(ctx context.Context, stream agentStream) error {
 	}
 	info.applyInventory(inventory)
 	h.store(info)
+
+	// One goroutine writes to the stream: the acknowledgements and the commands
+	// from the rest of the core queue here.
+	ctx, cancelStream := context.WithCancel(ctx)
+	defer cancelStream()
+	link := &agentConn{token: info.token, outbox: make(chan *agentv1.CoreMsg, outboxSize)}
+	h.register(key, link)
+	go writeLoop(ctx, stream, link.outbox, cancelStream)
 	h.touchServer(ctx, serverID)
 	slog.Info("agent connected", "server_id", serverID, "hostname", hostname, "agent_version", info.AgentVersion)
 
 	defer func() {
+		h.unregister(key, link)
 		h.remove(info)
 		slog.Info("agent disconnected", "server_id", serverID, "hostname", hostname)
 	}()
@@ -241,9 +304,14 @@ func (h *Hub) serve(ctx context.Context, stream agentStream) error {
 					HeartbeatAck: &agentv1.HeartbeatAck{Seq: heartbeat.GetSeq()},
 				},
 			}
-			if err := stream.Send(ack); err != nil {
-				return err
+			select {
+			case link.outbox <- ack:
+			case <-ctx.Done():
+				return ctx.Err()
 			}
+
+		case msg.GetJobEvent() != nil:
+			h.recordJobEvent(ctx, serverID, msg.GetJobEvent())
 
 		case msg.GetMetrics() != nil:
 			metrics := msg.GetMetrics()
@@ -336,4 +404,45 @@ func (h *Hub) newConnectionToken() uint64 {
 	defer h.mu.Unlock()
 	h.tokens++
 	return h.tokens
+}
+
+// writeLoop writes the queued messages to the stream until ctx ends or a write
+// fails, in which case it ends the connection.
+func writeLoop(ctx context.Context, stream agentStream, outbox <-chan *agentv1.CoreMsg, cancel context.CancelFunc) {
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case msg := <-outbox:
+			if err := stream.Send(msg); err != nil {
+				slog.Debug("write to agent failed", "error", err)
+				cancel()
+				return
+			}
+		}
+	}
+}
+
+func (h *Hub) register(key string, link *agentConn) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	h.conns[key] = link
+}
+
+// unregister drops the connection only when it is still the current one.
+func (h *Hub) unregister(key string, link *agentConn) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	if h.conns[key] == link {
+		delete(h.conns, key)
+	}
+}
+
+func (h *Hub) recordJobEvent(ctx context.Context, serverID string, event *agentv1.JobEvent) {
+	h.mu.RLock()
+	sink := h.jobEvents
+	h.mu.RUnlock()
+	if sink != nil {
+		sink.RecordJobEvent(ctx, serverID, event)
+	}
 }
