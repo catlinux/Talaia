@@ -26,6 +26,7 @@ import (
 	"github.com/catlinux/Talaia/agent/internal/inventory"
 	"github.com/catlinux/Talaia/agent/internal/jobs"
 	"github.com/catlinux/Talaia/agent/internal/stacks"
+	"github.com/catlinux/Talaia/agent/internal/terminal"
 	agentv1 "github.com/catlinux/Talaia/proto/gen/go"
 	"github.com/catlinux/Talaia/proto/gen/go/agentv1connect"
 )
@@ -48,6 +49,8 @@ type Link struct {
 	client    agentv1connect.AgentHubClient
 	// jobs runs the typed commands the core sends.
 	jobs *jobs.Executor
+	// terminals runs the interactive shells; its sessions end with each stream.
+	terminals *terminal.Manager
 	// stats samples the running containers; nil leaves it out.
 	stats ContainerStatsSource
 
@@ -89,6 +92,7 @@ func newLink(cfg config.Config, collector collect.Collector, identity *enroll.Id
 		identity:          identity,
 		client:            agentv1connect.NewAgentHubClient(connect.NewClient(rpcTransport)),
 		jobs:              newExecutor(),
+		terminals:         terminal.New(terminal.NewDockerBackend(), terminal.DefaultLimits()),
 		HeartbeatInterval: 10 * time.Second,
 		MetricsInterval:   15 * time.Second,
 		InventoryInterval: 60 * time.Second,
@@ -278,6 +282,11 @@ func jobFinished(msg *agentv1.AgentMsg) bool {
 
 // receive reads the core messages until the stream ends.
 func (l *Link) receive(ctx context.Context, stream agentv1connect.AgentHubConnectClientStream, emit func(*agentv1.AgentMsg)) error {
+	// A session cannot outlive the stream that opened it: the core would no
+	// longer know it.
+	if l.terminals != nil {
+		defer l.terminals.CloseAll()
+	}
 	for {
 		msg, err := stream.Receive()
 		if err != nil {
@@ -285,6 +294,9 @@ func (l *Link) receive(ctx context.Context, stream agentv1connect.AgentHubConnec
 		}
 		if ack := msg.GetHeartbeatAck(); ack != nil {
 			slog.Debug("heartbeat acknowledged", "seq", ack.GetSeq())
+			continue
+		}
+		if l.terminals != nil && l.terminals.Handle(ctx, msg, emit) {
 			continue
 		}
 		l.jobs.Handle(ctx, msg, emit)

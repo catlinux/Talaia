@@ -1,4 +1,5 @@
 # Changelog
+- Terminal sessions in the agent (not reachable from the panel yet): a shell from a closed list (`/bin/sh` or `/bin/bash`) runs through the Docker exec API with a terminal, as the user of the container and without privileges, and ends with the stream to the core. Limits: 4 sessions, 15 minutes without activity, 4 hours in total, 16 KiB per output message and 1 MiB/s of output; a shell that does not read its input is closed instead of stalling the agent. It reports whether the container is as good as root on the host (privileged, host PID namespace or Docker socket mounted).
 
 [Leer en castellano](CHANGELOG.es.md)
 
