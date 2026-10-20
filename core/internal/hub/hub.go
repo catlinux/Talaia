@@ -77,6 +77,10 @@ type AgentInfo struct {
 	ManagedStacks []string
 	// AdoptedStacks are the managed stacks that were adopted, a subset of ManagedStacks.
 	AdoptedStacks []string
+	// ContainerStats is the last sample of the running containers, by short id;
+	// StatsAt says when it was taken.
+	ContainerStats map[string]*agentv1.ContainerStat
+	StatsAt        time.Time
 
 	// key is the registry key: the server id with certificates, the hostname
 	// in insecure dev mode.
@@ -330,6 +334,16 @@ func (h *Hub) serve(ctx context.Context, stream agentStream) error {
 			info.NetTxBytes = metrics.GetNetTxBytes()
 			h.store(info)
 			slog.Debug("metrics received", "hostname", hostname, "cpu_percent", metrics.GetCpuPercent())
+
+		case msg.GetContainerStats() != nil:
+			stats := make(map[string]*agentv1.ContainerStat, len(msg.GetContainerStats().GetItems()))
+			for _, item := range msg.GetContainerStats().GetItems() {
+				stats[item.GetId()] = item
+			}
+			info.ContainerStats = stats
+			info.StatsAt = h.now()
+			info.LastSeen = info.StatsAt
+			h.store(info)
 
 		case msg.GetInventory() != nil:
 			// The inventory is also sent on change.

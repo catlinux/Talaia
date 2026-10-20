@@ -63,7 +63,22 @@ type containerEntry struct {
 	Status         string `json:"status"`
 	ComposeProject string `json:"compose_project"`
 	ComposeService string `json:"compose_service"`
+	// Use is the last sample of the container; absent when it is not running or
+	// the sample is too old to be shown.
+	Use *containerUse `json:"use,omitempty"`
 }
+
+// containerUse is the resource use of one running container.
+type containerUse struct {
+	CPUPercent    float64 `json:"cpu_percent"`
+	MemUsedBytes  uint64  `json:"mem_used_bytes"`
+	MemLimitBytes uint64  `json:"mem_limit_bytes"`
+	NetRxBytes    uint64  `json:"net_rx_bytes"`
+	NetTxBytes    uint64  `json:"net_tx_bytes"`
+}
+
+// statsFreshness is how old a sample may be and still be shown.
+const statsFreshness = 60 * time.Second
 
 type containersResponse struct {
 	// Connected is false when the agent of the server has no open stream; the
@@ -82,8 +97,9 @@ func NewContainersHandler(deps ContainerDeps) http.Handler {
 		if ok {
 			response.Connected = true
 			response.DockerAvailable = agent.DockerAvailable
+			fresh := !agent.StatsAt.IsZero() && time.Since(agent.StatsAt) < statsFreshness
 			for _, container := range agent.ContainerList {
-				response.Containers = append(response.Containers, containerEntry{
+				entry := containerEntry{
 					ID:             container.GetId(),
 					Name:           container.GetName(),
 					Image:          container.GetImage(),
@@ -91,7 +107,17 @@ func NewContainersHandler(deps ContainerDeps) http.Handler {
 					Status:         container.GetStatus(),
 					ComposeProject: container.GetComposeProject(),
 					ComposeService: container.GetComposeService(),
-				})
+				}
+				if stat, ok := agent.ContainerStats[container.GetId()]; ok && fresh && container.GetState() == "running" {
+					entry.Use = &containerUse{
+						CPUPercent:    stat.GetCpuPercent(),
+						MemUsedBytes:  stat.GetMemUsedBytes(),
+						MemLimitBytes: stat.GetMemLimitBytes(),
+						NetRxBytes:    stat.GetNetRxBytes(),
+						NetTxBytes:    stat.GetNetTxBytes(),
+					}
+				}
+				response.Containers = append(response.Containers, entry)
 			}
 		}
 

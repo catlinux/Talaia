@@ -365,3 +365,50 @@ func TestContainerLogsNeedAFullSession(t *testing.T) {
 		t.Errorf("status = %d, want 401", got)
 	}
 }
+
+func TestListContainersShowsTheFreshUseOfRunningOnes(t *testing.T) {
+	panel := newTestPanel(t)
+	panel.createUser(t, "admin", testPassword)
+	panel.enableTOTP(t, "admin", testPassword)
+	serverID := "44444444-4444-4444-4444-444444444444"
+
+	agent := agentWithContainers(serverID)
+	agent.StatsAt = time.Now()
+	agent.ContainerStats = map[string]*agentv1.ContainerStat{
+		"aaaaaaaaaaaa": {Id: "aaaaaaaaaaaa", CpuPercent: 12.5, MemUsedBytes: 1000, MemLimitBytes: 4000, NetRxBytes: 7, NetTxBytes: 9},
+		// The container is stopped: a leftover sample must not be shown.
+		"bbbbbbbbbbbb": {Id: "bbbbbbbbbbbb", CpuPercent: 99},
+	}
+	panel.agents.set(agent)
+
+	var list containersResponse
+	decodeBody(t, panel.get(t, "/api/v1/servers/"+serverID+"/containers"), &list)
+
+	var web, db containerEntry
+	for _, entry := range list.Containers {
+		switch entry.Name {
+		case "web":
+			web = entry
+		case "db":
+			db = entry
+		}
+	}
+	if web.Use == nil || web.Use.CPUPercent != 12.5 || web.Use.MemUsedBytes != 1000 || web.Use.MemLimitBytes != 4000 || web.Use.NetTxBytes != 9 {
+		t.Errorf("web use = %+v", web.Use)
+	}
+	if db.Use != nil {
+		t.Errorf("a stopped container shows use: %+v", db.Use)
+	}
+
+	// An old sample is not shown: the agent may have stopped reporting.
+	agent.StatsAt = time.Now().Add(-5 * time.Minute)
+	panel.agents.set(agent)
+	// A fresh value: decoding into the old one would keep its pointers.
+	var stale containersResponse
+	decodeBody(t, panel.get(t, "/api/v1/servers/"+serverID+"/containers"), &stale)
+	for _, entry := range stale.Containers {
+		if entry.Use != nil {
+			t.Errorf("a stale sample is shown for %s", entry.Name)
+		}
+	}
+}
