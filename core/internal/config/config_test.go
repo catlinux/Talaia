@@ -18,7 +18,7 @@ func lookupFrom(env map[string]string) func(string) (string, bool) {
 }
 
 func configsEqual(a, b Config) bool {
-	return a.Listen == b.Listen &&
+	return a.PanelListen == b.PanelListen && a.AgentListen == b.AgentListen &&
 		a.DatabaseURL == b.DatabaseURL &&
 		a.LogLevel == b.LogLevel &&
 		a.DataDir == b.DataDir &&
@@ -30,20 +30,20 @@ func configsEqual(a, b Config) bool {
 
 func TestLoad(t *testing.T) {
 	defaultFile := `
-listen = ":9000"
+panel_listen = ":9000"
 database_url = "postgres://file@example.com/talaia"
 log_level = "debug"
 `
 
 	enrollmentFile := `
-listen = "127.0.0.1:8080"
+panel_listen = "127.0.0.1:8080"
 database_url = "postgres://file@example.com/talaia"
 data_dir = "/tmp/talaia-file"
 public_hostnames = ["core.example.com", "192.0.2.10"]
 insecure_dev = true
 `
 
-	invalidTOML := `listen = `
+	invalidTOML := `panel_listen = `
 
 	tests := []struct {
 		name     string
@@ -57,7 +57,8 @@ insecure_dev = true
 			name: "defaults with database url from environment",
 			env:  map[string]string{"TALAIA_DATABASE_URL": testDatabaseURL},
 			want: Config{
-				Listen:      DefaultListen,
+				PanelListen: DefaultPanelListen,
+				AgentListen: DefaultAgentListen,
 				DatabaseURL: testDatabaseURL,
 				LogLevel:    DefaultLogLevel,
 				DataDir:     DefaultDataDir,
@@ -68,7 +69,8 @@ insecure_dev = true
 			name: "values from file",
 			file: &defaultFile,
 			want: Config{
-				Listen:      ":9000",
+				PanelListen: ":9000",
+				AgentListen: DefaultAgentListen,
 				DatabaseURL: "postgres://file@example.com/talaia",
 				LogLevel:    "debug",
 				DataDir:     DefaultDataDir,
@@ -79,7 +81,8 @@ insecure_dev = true
 			name: "enrollment values from file",
 			file: &enrollmentFile,
 			want: Config{
-				Listen:          "127.0.0.1:8080",
+				PanelListen:     "127.0.0.1:8080",
+				AgentListen:     DefaultAgentListen,
 				DatabaseURL:     "postgres://file@example.com/talaia",
 				LogLevel:        DefaultLogLevel,
 				DataDir:         "/tmp/talaia-file",
@@ -100,11 +103,12 @@ insecure_dev = true
 			name: "environment overrides file",
 			file: &defaultFile,
 			env: map[string]string{
-				"TALAIA_LISTEN":    ":7000",
-				"TALAIA_LOG_LEVEL": "warn",
+				"TALAIA_PANEL_LISTEN": ":7000",
+				"TALAIA_LOG_LEVEL":    "warn",
 			},
 			want: Config{
-				Listen:      ":7000",
+				PanelListen: ":7000",
+				AgentListen: DefaultAgentListen,
 				DatabaseURL: "postgres://file@example.com/talaia",
 				LogLevel:    "warn",
 				DataDir:     DefaultDataDir,
@@ -120,7 +124,8 @@ insecure_dev = true
 				"TALAIA_INSECURE_DEV":     "1",
 			},
 			want: Config{
-				Listen:          "127.0.0.1:8080",
+				PanelListen:     "127.0.0.1:8080",
+				AgentListen:     DefaultAgentListen,
 				DatabaseURL:     "postgres://file@example.com/talaia",
 				LogLevel:        DefaultLogLevel,
 				DataDir:         "/tmp/talaia-env",
@@ -148,7 +153,7 @@ insecure_dev = true
 			env: map[string]string{
 				"TALAIA_DATABASE_URL": testDatabaseURL,
 				"TALAIA_INSECURE_DEV": "1",
-				"TALAIA_LISTEN":       ":8080",
+				"TALAIA_PANEL_LISTEN": ":8080",
 			},
 			wantErr: "insecure_dev requires a loopback listen address",
 		},
@@ -157,7 +162,7 @@ insecure_dev = true
 			env: map[string]string{
 				"TALAIA_DATABASE_URL": testDatabaseURL,
 				"TALAIA_INSECURE_DEV": "1",
-				"TALAIA_LISTEN":       "192.0.2.10:8080",
+				"TALAIA_PANEL_LISTEN": "192.0.2.10:8080",
 			},
 			wantErr: "insecure_dev requires a loopback listen address",
 		},
@@ -172,8 +177,8 @@ insecure_dev = true
 		},
 		{
 			name:    "invalid public port is an error",
-			env:     map[string]string{"TALAIA_DATABASE_URL": testDatabaseURL, "TALAIA_PUBLIC_PORT": "https"},
-			wantErr: "invalid public_port",
+			env:     map[string]string{"TALAIA_DATABASE_URL": testDatabaseURL, "TALAIA_PANEL_PORT": "https"},
+			wantErr: "invalid panel_port",
 		},
 		{
 			name:    "invalid insecure dev is an error",
@@ -272,7 +277,7 @@ func TestLevel(t *testing.T) {
 
 func TestAllowedOriginsFromTheEnvironment(t *testing.T) {
 	file := `
-listen = "127.0.0.1:8443"
+panel_listen = "127.0.0.1:8443"
 database_url = "postgres://file@example.com/talaia"
 insecure_dev = true
 web_dir = "/srv/talaia/web"
@@ -395,21 +400,21 @@ func TestDefaultOrigins(t *testing.T) {
 	}
 }
 
-func TestPublicURL(t *testing.T) {
+func TestAgentURL(t *testing.T) {
 	tests := []struct {
 		name string
 		cfg  Config
 		want string
 	}{
-		{"no hostname", Config{Listen: ":8443"}, ""},
-		{"listen port", Config{Listen: ":8443", PublicHostnames: []string{"192.0.2.10"}}, "https://192.0.2.10:8443"},
-		{"public port wins", Config{Listen: ":8443", PublicPort: "9000", PublicHostnames: []string{"core.example.com", "b.example.com"}}, "https://core.example.com:9000"},
-		{"default port is left out", Config{Listen: ":8443", PublicPort: "443", PublicHostnames: []string{"core.example.com"}}, "https://core.example.com"},
+		{"no hostname", Config{AgentListen: ":8444"}, ""},
+		{"listen port", Config{AgentListen: ":8444", PublicHostnames: []string{"192.0.2.10"}}, "https://192.0.2.10:8444"},
+		{"public port wins", Config{AgentListen: ":8444", AgentPort: "9000", PublicHostnames: []string{"core.example.com", "b.example.com"}}, "https://core.example.com:9000"},
+		{"default port is left out", Config{AgentListen: ":8444", AgentPort: "443", PublicHostnames: []string{"core.example.com"}}, "https://core.example.com"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.cfg.PublicURL(); got != tt.want {
-				t.Fatalf("PublicURL() = %q, want %q", got, tt.want)
+			if got := tt.cfg.AgentURL(); got != tt.want {
+				t.Fatalf("AgentURL() = %q, want %q", got, tt.want)
 			}
 		})
 	}
@@ -449,5 +454,37 @@ func TestTerminalRecordingDays(t *testing.T) {
 	}
 	if cfg, err := load(lookupFrom(map[string]string{"TALAIA_CONFIG": path}), path); err != nil || cfg.TerminalRecordingDays != 7 {
 		t.Errorf("from the file = %d, %v", cfg.TerminalRecordingDays, err)
+	}
+}
+
+func TestAgentAndPanelPorts(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "core.toml")
+	env := func(extra map[string]string) func(string) (string, bool) {
+		all := map[string]string{"TALAIA_DATABASE_URL": testDatabaseURL, "TALAIA_PUBLIC_HOSTNAMES": "core.example.com"}
+		for k, v := range extra {
+			all[k] = v
+		}
+		return lookupFrom(all)
+	}
+
+	cfg, err := load(env(map[string]string{
+		"TALAIA_PANEL_LISTEN": ":8443", "TALAIA_AGENT_LISTEN": ":8444",
+		"TALAIA_PANEL_PORT": "9443", "TALAIA_AGENT_PORT": "9444",
+	}), path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := cfg.AgentURL(); got != "https://core.example.com:9444" {
+		t.Errorf("AgentURL() = %q, want the agent port", got)
+	}
+	if !slices.Contains(cfg.AllowedOrigins, "https://core.example.com:9443") || slices.Contains(cfg.AllowedOrigins, "https://core.example.com:9444") {
+		t.Errorf("origins = %v, want the panel port only", cfg.AllowedOrigins)
+	}
+
+	if _, err := load(env(map[string]string{"TALAIA_PANEL_LISTEN": ":8443", "TALAIA_AGENT_LISTEN": ":8443"}), path); err == nil || !strings.Contains(err.Error(), "different ports") {
+		t.Errorf("same port for both = %v, want an error", err)
+	}
+	if _, err := load(env(map[string]string{"TALAIA_AGENT_PORT": "0"}), path); err == nil || !strings.Contains(err.Error(), "invalid agent_port") {
+		t.Errorf("agent_port 0 = %v, want an error", err)
 	}
 }

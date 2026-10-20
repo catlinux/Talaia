@@ -3,8 +3,9 @@
 # Copy .env.example to .env, fill it in and run:
 #   docker compose up -d --build
 #
-# The core serves HTTPS itself with a certificate signed by the CA it creates in
-# the core-data volume; the browser trusts it only once that CA is installed.
+# The core serves HTTPS itself on two ports: the panel and the agents. Both use a
+# certificate signed by the CA it creates in the core-data volume; the browser
+# trusts the panel one only once that CA is installed.
 # Keep the volume: it also holds the secrets key that encrypts the TOTP secret.
 name: talaia
 
@@ -56,12 +57,15 @@ services:
         condition: service_completed_successfully
     environment:
       TALAIA_DATABASE_URL: "postgres://talaia:${POSTGRES_PASSWORD}@db:5432/talaia?sslmode=disable"
-      TALAIA_LISTEN: ":8443"
+      TALAIA_PANEL_LISTEN: ":8443"
+      TALAIA_AGENT_LISTEN: ":8444"
       TALAIA_DATA_DIR: /var/lib/talaia
       TALAIA_WEB_DIR: /usr/share/talaia/web
       TALAIA_DIST_DIR: /usr/share/talaia/dist
-      # The port published on the host; the core builds the install command from it.
-      TALAIA_PUBLIC_PORT: ${TALAIA_PORT:-443}
+      # The ports published on the host; the core builds the install command from
+      # the agent one and the allowed origins from the panel one.
+      TALAIA_PANEL_PORT: ${TALAIA_PANEL_PORT:-8443}
+      TALAIA_AGENT_PORT: ${TALAIA_AGENT_PORT:-8444}
       TALAIA_PUBLIC_HOSTNAMES: ${TALAIA_PUBLIC_HOSTNAMES:?set TALAIA_PUBLIC_HOSTNAMES in .env (see .env.example)}
       # Empty means "derive them from TALAIA_PUBLIC_HOSTNAMES", the default.
       TALAIA_ALLOWED_ORIGINS: ${TALAIA_ALLOWED_ORIGINS:-}
@@ -69,7 +73,8 @@ services:
     volumes:
       - core-data:/var/lib/talaia
     ports:
-      - "${TALAIA_PORT:-443}:8443"
+      - "${TALAIA_PANEL_PORT:-8443}:8443"
+      - "${TALAIA_AGENT_PORT:-8444}:8444"
     # The image is immutable: only the data volume is writable.
     read_only: true
     security_opt:

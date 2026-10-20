@@ -176,7 +176,7 @@ Step by step, with troubleshooting: [docs/en/installation.md](docs/en/installati
 
 ```bash
 git clone https://github.com/catlinux/Talaia.git && cd Talaia
-packaging/core/install.sh --hostname <address> --port 8443
+packaging/core/install.sh --hostname <address> --port 8443 --agent-port 8444
 ```
 
 ## Technology stack

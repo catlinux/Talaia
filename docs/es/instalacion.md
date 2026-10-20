@@ -15,8 +15,8 @@ Talaia tiene dos partes: el **núcleo** (panel, API y base de datos), que corre 
 
 - **Máquina del núcleo:** Debian 13 (o Ubuntu) con Docker Engine y el plugin Docker Compose, y `git`.
 - **Servidores a gestionar:** Debian o Ubuntu con systemd, `curl` y acceso root (`sudo`).
-- Un nombre o una IP desde la que los servidores y tu navegador lleguen al núcleo, y un puerto TCP libre para
-  él (443 por defecto, o por ejemplo 8443).
+- Un nombre o una IP desde la que los servidores y tu navegador lleguen al núcleo, y dos puertos TCP libres para
+  él (8443 por defecto); los agentes usan un segundo puerto (8444 por defecto).
 - Una aplicación de autenticación que lea códigos TOTP (Google Authenticator, Aegis, 2FAS, Bitwarden…).
 
 ## 2. Instalar el núcleo
@@ -24,7 +24,7 @@ Talaia tiene dos partes: el **núcleo** (panel, API y base de datos), que corre 
 ```bash
 git clone https://github.com/catlinux/Talaia.git
 cd Talaia
-packaging/core/install.sh --hostname 192.0.2.10 --port 8443 --username admin
+packaging/core/install.sh --hostname 192.0.2.10 --port 8443 --agent-port 8444 --username admin
 ```
 
 Cambia `192.0.2.10` por la dirección desde la que se llegará al panel. El script:
@@ -48,7 +48,7 @@ chmod 600 .env
 ```
 
 Edita `.env`: pon `POSTGRES_PASSWORD` (genérala con `openssl rand -hex 32`; tiene que ser hexadecimal),
-`TALAIA_PUBLIC_HOSTNAMES` (la dirección del núcleo) y `TALAIA_PORT`. Después:
+`TALAIA_PUBLIC_HOSTNAMES` (la dirección del núcleo) y los puertos `TALAIA_PANEL_PORT` y `TALAIA_AGENT_PORT`. Después:
 
 ```bash
 sudo docker compose up -d --build
@@ -89,7 +89,7 @@ sudo docker compose run --rm core token create --name mi-servidor
 Imprime el token, la huella de la CA y una orden lista para pegar:
 
 ```bash
-f=$(mktemp) && curl -fsSk https://192.0.2.10:8443/install.sh -o "$f" && echo "<sha256>  $f" | sha256sum -c - && sudo bash "$f" --url https://192.0.2.10:8443 --token … --ca-fingerprint …; rm -f "$f"
+f=$(mktemp) && curl -fsSk https://192.0.2.10:8444/install.sh -o "$f" && echo "<sha256>  $f" | sha256sum -c - && sudo bash "$f" --url https://192.0.2.10:8444 --token … --ca-fingerprint …; rm -f "$f"
 ```
 
 Ejecuta esa línea **en el servidor que quieres añadir**, en menos de 15 minutos. El token vale una sola vez:

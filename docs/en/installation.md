@@ -14,8 +14,8 @@ Talaia has two parts: the **core** (panel, API and database), which runs in Dock
 
 - **Core machine:** Debian 13 (or Ubuntu) with Docker Engine and the Docker Compose plugin, and `git`.
 - **Servers to manage:** Debian or Ubuntu with systemd, `curl`, and root access (`sudo`).
-- A name or IP address the servers and your browser can reach the core at, and one free TCP port for it
-  (443 by default, or for example 8443).
+- A name or IP address the servers and your browser can reach the core at, and two free TCP ports for it
+  (8443 by default); a second port is used by the agents (8444 by default).
 - An authenticator app that reads TOTP codes (Google Authenticator, Aegis, 2FAS, Bitwarden…).
 
 ## 2. Install the core
@@ -23,7 +23,7 @@ Talaia has two parts: the **core** (panel, API and database), which runs in Dock
 ```bash
 git clone https://github.com/catlinux/Talaia.git
 cd Talaia
-packaging/core/install.sh --hostname 192.0.2.10 --port 8443 --username admin
+packaging/core/install.sh --hostname 192.0.2.10 --port 8443 --agent-port 8444 --username admin
 ```
 
 Replace `192.0.2.10` with the address the panel will be reached at. The script:
@@ -46,7 +46,7 @@ chmod 600 .env
 ```
 
 Edit `.env`: set `POSTGRES_PASSWORD` (generate it with `openssl rand -hex 32`; it must be hexadecimal),
-`TALAIA_PUBLIC_HOSTNAMES` (the address of the core) and `TALAIA_PORT`. Then:
+`TALAIA_PUBLIC_HOSTNAMES` (the address of the core) and the ports `TALAIA_PANEL_PORT` and `TALAIA_AGENT_PORT`. Then:
 
 ```bash
 sudo docker compose up -d --build
@@ -87,7 +87,7 @@ sudo docker compose run --rm core token create --name my-server
 It prints the token, the CA fingerprint and a ready-to-paste command:
 
 ```bash
-f=$(mktemp) && curl -fsSk https://192.0.2.10:8443/install.sh -o "$f" && echo "<sha256>  $f" | sha256sum -c - && sudo bash "$f" --url https://192.0.2.10:8443 --token … --ca-fingerprint …; rm -f "$f"
+f=$(mktemp) && curl -fsSk https://192.0.2.10:8444/install.sh -o "$f" && echo "<sha256>  $f" | sha256sum -c - && sudo bash "$f" --url https://192.0.2.10:8444 --token … --ca-fingerprint …; rm -f "$f"
 ```
 
 Run that line **on the server you want to add**, within 15 minutes. The token works once; create another one

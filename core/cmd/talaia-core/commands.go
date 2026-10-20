@@ -273,7 +273,7 @@ func tokenCreateCommand(args []string, stdout, stderr io.Writer) error {
 		return err
 	}
 
-	return tokenCreate(ctx, stdout, st, *name, *ttl, authority.Fingerprint(), cfg.PublicURL(), install.ScriptSHA256(cfg.DistDir))
+	return tokenCreate(ctx, stdout, st, *name, *ttl, authority.Fingerprint(), cfg.AgentURL(), install.ScriptSHA256(cfg.DistDir))
 }
 
 // tokenCreate stores the token and prints the block the installation needs. The
@@ -433,7 +433,7 @@ func serverUpgradeCommand(args []string, stdout, stderr io.Writer) error {
 		return err
 	}
 
-	return upgradeCommand(stdout, cfg.PublicURL(), authority.Fingerprint(), install.ScriptSHA256(cfg.DistDir))
+	return upgradeCommand(stdout, cfg.AgentURL(), authority.Fingerprint(), install.ScriptSHA256(cfg.DistDir))
 }
 
 // upgradeCommand prints the upgrade command, or says why there is none.

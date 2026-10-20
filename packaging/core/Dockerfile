@@ -87,6 +87,6 @@ COPY packaging/install.sh /usr/share/talaia/dist/install.sh
 
 # The nonroot user (uid 65532) owns the data volume; compose prepares it.
 USER nonroot
-EXPOSE 8443
+EXPOSE 8443 8444
 ENTRYPOINT ["/usr/local/bin/talaia-core"]
 CMD ["serve"]

@@ -134,12 +134,16 @@ jobs:
       - name: Check out the repository
         uses: actions/checkout@v7.0.1
       - name: Install the core with the installer
-        run: bash packaging/core/install.sh --hostname 127.0.0.1 --port 8443 --no-user
+        run: bash packaging/core/install.sh --hostname 127.0.0.1 --port 8443 --agent-port 8444 --no-user
       - name: The core serves the panel, the CA, the installer and the agent packages
         run: |
           set -eu
-          url=https://127.0.0.1:8443
-          test "$(curl -sk -o /dev/null -w '%{http_code}' "$url/")" = 200
+          panel=https://127.0.0.1:8443
+          url=https://127.0.0.1:8444
+          test "$(curl -sk -o /dev/null -w '%{http_code}' "$panel/")" = 200
+          # Each port serves only its own routes.
+          test "$(curl -sk -o /dev/null -w '%{http_code}' "$url/")" = 404
+          test "$(curl -sk -o /dev/null -w '%{http_code}' -X POST "$panel/enroll")" != 200
           curl -fsk -o "$RUNNER_TEMP/ca.pem" "$url/ca.pem"
           curl -fsk "$url/install.sh" | head -n 1 | grep -q '^#!/usr/bin/env bash'
           # The packages are downloaded the way install.sh does it: trusting the CA only.

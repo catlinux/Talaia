@@ -53,7 +53,9 @@ func newTestSecretBox(t *testing.T) *auth.SecretBox {
 
 // testCore is the core running over TLS against the test database.
 type testCore struct {
+	// server is the agent endpoint and panel the panel one.
 	server *httptest.Server
+	panel  *httptest.Server
 	store  *store.Store
 	ca     *ca.CA
 	hub    *hub.Hub
@@ -99,7 +101,7 @@ func newTestCore(t *testing.T) *testCore {
 		TLS:     true,
 	}
 
-	server := httptest.NewUnstartedServer(newTLSRouterWithHub(st, authority, h, panel))
+	server := httptest.NewUnstartedServer(newAgentRouter(st, authority, h, ""))
 	server.TLS = &tls.Config{
 		MinVersion:   tls.VersionTLS13,
 		ClientAuth:   tls.VerifyClientCertIfGiven,
@@ -110,7 +112,16 @@ func newTestCore(t *testing.T) *testCore {
 	server.StartTLS()
 	t.Cleanup(server.Close)
 
-	return &testCore{server: server, store: st, ca: authority, hub: h}
+	panelServer := httptest.NewUnstartedServer(newPanelRouter(st, h, panel))
+	panelServer.TLS = &tls.Config{
+		MinVersion:   tls.VersionTLS13,
+		Certificates: []tls.Certificate{certificate},
+		NextProtos:   []string{"h2", "http/1.1"},
+	}
+	panelServer.StartTLS()
+	t.Cleanup(panelServer.Close)
+
+	return &testCore{server: server, panel: panelServer, store: st, ca: authority, hub: h}
 }
 
 // client returns an HTTPS client that trusts the CA and, when not nil, presents
@@ -504,7 +515,7 @@ func TestPanelAndAuthAPIOverTLS(t *testing.T) {
 
 	// The panel answers at the root and for the client-side routes.
 	for _, path := range []string{"/", "/servers/42"} {
-		response, err := client.Get(core.server.URL + path)
+		response, err := client.Get(core.panel.URL + path)
 		if err != nil {
 			t.Fatalf("get %s: %v", path, err)
 		}
@@ -519,7 +530,7 @@ func TestPanelAndAuthAPIOverTLS(t *testing.T) {
 	}
 
 	// The security headers are there, HSTS included because this is TLS.
-	response, err := client.Get(core.server.URL + "/")
+	response, err := client.Get(core.panel.URL + "/")
 	if err != nil {
 		t.Fatalf("get the panel: %v", err)
 	}
@@ -532,7 +543,7 @@ func TestPanelAndAuthAPIOverTLS(t *testing.T) {
 	}
 
 	// The authentication API answers with a stable code and no caching.
-	response, err = client.Get(core.server.URL + "/api/v1/auth/session")
+	response, err = client.Get(core.panel.URL + "/api/v1/auth/session")
 	if err != nil {
 		t.Fatalf("get the session: %v", err)
 	}
@@ -552,7 +563,7 @@ func TestPanelAndAuthAPIOverTLS(t *testing.T) {
 	}
 
 	// The protected server list is mounted here too and refuses anonymous calls.
-	response, err = client.Get(core.server.URL + "/api/v1/servers")
+	response, err = client.Get(core.panel.URL + "/api/v1/servers")
 	if err != nil {
 		t.Fatalf("get the servers: %v", err)
 	}
@@ -566,6 +577,44 @@ func TestPanelAndAuthAPIOverTLS(t *testing.T) {
 	}
 	if !strings.Contains(string(body), "session_required") {
 		t.Errorf("servers body = %q, want the session_required code", body)
+	}
+}
+
+func TestPanelAndAgentRoutesAreSeparate(t *testing.T) {
+	core := newTestCore(t)
+	client := core.client(t, nil)
+
+	status := func(base, method, path string) int {
+		t.Helper()
+		request, err := http.NewRequest(method, base+path, strings.NewReader("{}"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		response, err := client.Do(request)
+		if err != nil {
+			t.Fatalf("%s %s: %v", method, base+path, err)
+		}
+		_ = response.Body.Close()
+		return response.StatusCode
+	}
+
+	// Nothing an agent uses is reachable on the panel port: the panel only
+	// answers GET, so a POST never reaches an agent handler.
+	for _, path := range []string{"/ca.pem", "/enroll", "/renew", agentv1connect.AgentHubConnectProcedure} {
+		if got := status(core.panel.URL, http.MethodPost, path); got != http.StatusNotFound && got != http.StatusMethodNotAllowed {
+			t.Errorf("panel POST %s = %d, want 404 or 405", path, got)
+		}
+	}
+
+	// Nothing of the panel or the API is reachable on the agent port.
+	for _, path := range []string{"/", "/healthz", "/api/v1/auth/session", "/api/v1/servers", "/servers/42"} {
+		if got := status(core.server.URL, http.MethodGet, path); got != http.StatusNotFound {
+			t.Errorf("agent endpoint %s = %d, want 404", path, got)
+		}
+	}
+	// The agent endpoint does answer its own routes.
+	if got := status(core.server.URL, http.MethodGet, "/ca.pem"); got != http.StatusOK {
+		t.Errorf("agent endpoint /ca.pem = %d, want 200", got)
 	}
 }
 

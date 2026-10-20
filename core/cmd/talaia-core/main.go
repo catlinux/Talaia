@@ -137,15 +137,16 @@ func newPlainRouter(st *store.Store, h *hub.Hub, options panelOptions) http.Hand
 	return mux
 }
 
-// newTLSRouter serves the health endpoint, the authentication API, the panel,
-// the enrollment endpoints and the agent hub, which requires a client
-// certificate.
-func newTLSRouter(st *store.Store, authority *ca.CA, h *hub.Hub, options panelOptions) http.Handler {
-	return newTLSRouterWithHub(st, authority, h, options)
+// newPanelRouter serves the health endpoint, the authentication API, the
+// protected API and the panel. It has no agent route.
+func newPanelRouter(st *store.Store, h *hub.Hub, options panelOptions) http.Handler {
+	return newCoreRouter(st, h, options)
 }
 
-// newTLSRouterWithHub is newTLSRouter with the hub injected, for the tests.
-func newTLSRouterWithHub(st *store.Store, authority *ca.CA, h *hub.Hub, options panelOptions) http.Handler {
+// newAgentRouter serves what agents and the installer use: the agent stream,
+// which requires a client certificate, the enrollment endpoints, the CA and the
+// downloads. It has no panel or API route; anything else is a 404.
+func newAgentRouter(st *store.Store, authority *ca.CA, h *hub.Hub, distDir string) http.Handler {
 	enrollment := api.NewEnrollmentHandler(api.EnrollmentDeps{
 		Store:   st,
 		Signer:  authority,
@@ -161,10 +162,9 @@ func newTLSRouterWithHub(st *store.Store, authority *ca.CA, h *hub.Hub, options 
 	mux.Handle("/enroll", enrollment)
 	mux.Handle("/renew", enrollment)
 
-	dist := api.NewDistHandler(options.DistDir)
+	dist := api.NewDistHandler(distDir)
 	mux.Handle("/install.sh", dist)
 	mux.Handle("/agent/", dist)
-	mux.Handle("/", newCoreRouter(st, h, options))
 
 	return mux
 }
@@ -219,7 +219,7 @@ func serve() error {
 
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: cfg.Level()}))
 	slog.SetDefault(logger)
-	logger.Info("starting talaia-core", "version", version, "listen", cfg.Listen, "insecure_dev", cfg.InsecureDev)
+	logger.Info("starting talaia-core", "version", version, "panel_listen", cfg.PanelListen, "agent_listen", cfg.AgentListen, "insecure_dev", cfg.InsecureDev)
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
@@ -234,13 +234,18 @@ func serve() error {
 		return err
 	}
 
-	srv := &http.Server{
-		Addr:              cfg.Listen,
-		ReadHeaderTimeout: 5 * time.Second,
-		// No ReadTimeout/WriteTimeout: they would cut the long-lived agent stream.
-		// Per-request limits for the REST API come with its handlers.
-		IdleTimeout: 60 * time.Second,
+	newServer := func(addr string) *http.Server {
+		return &http.Server{
+			Addr:              addr,
+			ReadHeaderTimeout: 5 * time.Second,
+			// No ReadTimeout/WriteTimeout: they would cut the long-lived agent stream.
+			// Per-request limits for the REST API come with its handlers.
+			IdleTimeout: 60 * time.Second,
+		}
 	}
+	srv := newServer(cfg.PanelListen)
+	// agentSrv only exists with TLS; the insecure mode serves everything on srv.
+	var agentSrv *http.Server
 
 	// The TOTP secrets are sealed with this key, created on first use.
 	key, err := auth.LoadOrCreateKey(filepath.Join(cfg.DataDir, "secrets.key"))
@@ -281,7 +286,7 @@ func serve() error {
 			Tokens:        st,
 			Audit:         st,
 			CAFingerprint: authority.Fingerprint(),
-			PublicURL:     cfg.PublicURL(),
+			PublicURL:     cfg.AgentURL(),
 			ScriptSHA256:  install.ScriptSHA256(cfg.DistDir),
 		}
 		agentHub := hub.New(st)
@@ -298,9 +303,23 @@ func serve() error {
 		purgeCtx, stopPurge := context.WithCancel(context.Background())
 		defer stopPurge()
 		go terminal.PurgeLoop(purgeCtx, st, cfg.TerminalRecordingDays, 24*time.Hour)
-		srv.Handler = newTLSRouter(st, authority, agentHub, panel)
+		srv.Handler = newPanelRouter(st, agentHub, panel)
 		srv.Protocols = newTLSProtocols()
+		// Browsers are never asked for a client certificate.
 		srv.TLSConfig = &tls.Config{
+			MinVersion:   tls.VersionTLS13,
+			Certificates: []tls.Certificate{certificate},
+			NextProtos:   []string{"h2", "http/1.1"},
+		}
+
+		// Agents always get the certificate of the own CA, so a certificate the
+		// panel may use (a public one) never lets anyone impersonate the core. The
+		// stream and /renew check the client certificate themselves; /enroll,
+		// /ca.pem and the downloads must work before an agent has one.
+		agentSrv = newServer(cfg.AgentListen)
+		agentSrv.Handler = newAgentRouter(st, authority, agentHub, cfg.DistDir)
+		agentSrv.Protocols = newTLSProtocols()
+		agentSrv.TLSConfig = &tls.Config{
 			MinVersion:   tls.VersionTLS13,
 			ClientAuth:   tls.VerifyClientCertIfGiven,
 			ClientCAs:    authority.Pool(),
@@ -313,16 +332,22 @@ func serve() error {
 		srv.Protocols = newProtocols()
 	}
 
-	serveErr := make(chan error, 1)
+	serveErr := make(chan error, 2)
 	go func() {
 		if tlsEnabled {
-			logger.Info("https server listening", "address", cfg.Listen)
+			logger.Info("https panel listening", "address", cfg.PanelListen)
 			serveErr <- srv.ListenAndServeTLS("", "")
 			return
 		}
-		logger.Info("http server listening (plaintext)", "address", cfg.Listen)
+		logger.Info("http server listening (plaintext)", "address", cfg.PanelListen)
 		serveErr <- srv.ListenAndServe()
 	}()
+	if agentSrv != nil {
+		go func() {
+			logger.Info("https agent endpoint listening", "address", cfg.AgentListen)
+			serveErr <- agentSrv.ListenAndServeTLS("", "")
+		}()
+	}
 
 	select {
 	case err := <-serveErr:
@@ -338,6 +363,11 @@ func serve() error {
 	defer cancel()
 	if terminals != nil {
 		terminals.Shutdown(shutdownCtx)
+	}
+	if agentSrv != nil {
+		if err := agentSrv.Shutdown(shutdownCtx); err != nil {
+			return fmt.Errorf("shut down the agent HTTP server: %w", err)
+		}
 	}
 	if err := srv.Shutdown(shutdownCtx); err != nil {
 		return fmt.Errorf("shut down HTTP server: %w", err)

@@ -18,8 +18,10 @@ import (
 const (
 	// DefaultPath is the configuration file used when TALAIA_CONFIG is not set.
 	DefaultPath = "/etc/talaia/core.toml"
-	// DefaultListen is the address the HTTP server listens on by default.
-	DefaultListen = ":8080"
+	// DefaultPanelListen is the address the panel and its API listen on by default.
+	DefaultPanelListen = ":8080"
+	// DefaultAgentListen is the address the agents connect to by default.
+	DefaultAgentListen = ":8081"
 	// DefaultLogLevel is the log level used by default.
 	DefaultLogLevel = "info"
 	// DefaultDataDir holds the CA, the certificates and the state of the core.
@@ -32,7 +34,12 @@ const (
 
 // Config is the runtime configuration of talaia-core.
 type Config struct {
-	Listen      string
+	// PanelListen serves the panel, the API and the terminal WebSocket.
+	PanelListen string
+	// AgentListen serves the agent stream and the enrollment and download
+	// endpoints. It is a separate port so the certificate agents trust never
+	// depends on the one browsers see. Insecure development mode ignores it.
+	AgentListen string
 	DatabaseURL string
 	LogLevel    string
 	DataDir     string
@@ -41,9 +48,11 @@ type Config struct {
 	// DistDir holds install.sh and the agent packages the core serves to new
 	// servers. Without it the core answers 404 to those downloads.
 	DistDir string
-	// PublicPort is the port browsers and agents use to reach the core, when it
-	// differs from the listen port (a container that publishes another one).
-	PublicPort string
+	// PanelPort and AgentPort are the ports browsers and agents use to reach the
+	// core, when they differ from the listen ports (a container that publishes
+	// other ones).
+	PanelPort string
+	AgentPort string
 	// PublicHostnames are the names and addresses the server certificate of the
 	// core must be valid for.
 	PublicHostnames []string
@@ -60,13 +69,15 @@ type Config struct {
 // fileConfig mirrors the TOML document. Pointer fields tell an absent key
 // apart from an empty value, so defaults are only replaced when the key is set.
 type fileConfig struct {
-	Listen                *string   `toml:"listen"`
+	PanelListen           *string   `toml:"panel_listen"`
+	AgentListen           *string   `toml:"agent_listen"`
 	DatabaseURL           *string   `toml:"database_url"`
 	LogLevel              *string   `toml:"log_level"`
 	DataDir               *string   `toml:"data_dir"`
 	WebDir                *string   `toml:"web_dir"`
 	DistDir               *string   `toml:"dist_dir"`
-	PublicPort            *string   `toml:"public_port"`
+	PanelPort             *string   `toml:"panel_port"`
+	AgentPort             *string   `toml:"agent_port"`
 	PublicHostnames       *[]string `toml:"public_hostnames"`
 	AllowedOrigins        *[]string `toml:"allowed_origins"`
 	InsecureDev           *bool     `toml:"insecure_dev"`
@@ -96,7 +107,8 @@ func (c Config) Level() slog.Level {
 // tests do not depend on the host configuration.
 func load(lookup func(string) (string, bool), defaultPath string) (Config, error) {
 	cfg := Config{
-		Listen:                DefaultListen,
+		PanelListen:           DefaultPanelListen,
+		AgentListen:           DefaultAgentListen,
 		LogLevel:              DefaultLogLevel,
 		DataDir:               DefaultDataDir,
 		WebDir:                DefaultWebDir,
@@ -114,8 +126,11 @@ func load(lookup func(string) (string, bool), defaultPath string) (Config, error
 		return Config{}, err
 	}
 
-	if value, ok := lookup("TALAIA_LISTEN"); ok {
-		cfg.Listen = value
+	if value, ok := lookup("TALAIA_PANEL_LISTEN"); ok {
+		cfg.PanelListen = value
+	}
+	if value, ok := lookup("TALAIA_AGENT_LISTEN"); ok {
+		cfg.AgentListen = value
 	}
 	if value, ok := lookup("TALAIA_DATABASE_URL"); ok {
 		cfg.DatabaseURL = value
@@ -132,8 +147,11 @@ func load(lookup func(string) (string, bool), defaultPath string) (Config, error
 	if value, ok := lookup("TALAIA_DIST_DIR"); ok {
 		cfg.DistDir = value
 	}
-	if value, ok := lookup("TALAIA_PUBLIC_PORT"); ok {
-		cfg.PublicPort = strings.TrimSpace(value)
+	if value, ok := lookup("TALAIA_PANEL_PORT"); ok {
+		cfg.PanelPort = strings.TrimSpace(value)
+	}
+	if value, ok := lookup("TALAIA_AGENT_PORT"); ok {
+		cfg.AgentPort = strings.TrimSpace(value)
 	}
 	if value, ok := lookup("TALAIA_PUBLIC_HOSTNAMES"); ok {
 		cfg.PublicHostnames = splitList(value)
@@ -192,8 +210,11 @@ func applyFile(cfg *Config, path string, explicit bool) error {
 	if err := toml.Unmarshal(data, &file); err != nil {
 		return fmt.Errorf("parse config file %s: %w", path, err)
 	}
-	if file.Listen != nil {
-		cfg.Listen = *file.Listen
+	if file.PanelListen != nil {
+		cfg.PanelListen = *file.PanelListen
+	}
+	if file.AgentListen != nil {
+		cfg.AgentListen = *file.AgentListen
 	}
 	if file.DatabaseURL != nil {
 		cfg.DatabaseURL = *file.DatabaseURL
@@ -210,8 +231,11 @@ func applyFile(cfg *Config, path string, explicit bool) error {
 	if file.DistDir != nil {
 		cfg.DistDir = *file.DistDir
 	}
-	if file.PublicPort != nil {
-		cfg.PublicPort = strings.TrimSpace(*file.PublicPort)
+	if file.PanelPort != nil {
+		cfg.PanelPort = strings.TrimSpace(*file.PanelPort)
+	}
+	if file.AgentPort != nil {
+		cfg.AgentPort = strings.TrimSpace(*file.AgentPort)
 	}
 	if file.PublicHostnames != nil {
 		cfg.PublicHostnames = *file.PublicHostnames
@@ -259,8 +283,14 @@ func (c *Config) validate() error {
 	if strings.TrimSpace(c.DatabaseURL) == "" {
 		return errors.New("database_url is required (set it in the config file or TALAIA_DATABASE_URL)")
 	}
-	if strings.TrimSpace(c.Listen) == "" {
-		return errors.New("listen address is required")
+	if strings.TrimSpace(c.PanelListen) == "" {
+		return errors.New("panel_listen address is required")
+	}
+	if strings.TrimSpace(c.AgentListen) == "" {
+		return errors.New("agent_listen address is required")
+	}
+	if !c.InsecureDev && listenPort(c.PanelListen) == listenPort(c.AgentListen) {
+		return fmt.Errorf("panel_listen and agent_listen must use different ports, both are %q", listenPort(c.PanelListen))
 	}
 	if strings.TrimSpace(c.DataDir) == "" {
 		return errors.New("data_dir is required")
@@ -276,7 +306,7 @@ func (c *Config) validate() error {
 	// behind a proxy can override them.
 	origins := c.AllowedOrigins
 	if len(origins) == 0 {
-		origins = defaultOrigins(c.PublicHostnames, c.publicPort(), c.InsecureDev)
+		origins = defaultOrigins(c.PublicHostnames, c.panelPort(), c.InsecureDev)
 	}
 	normalized := make([]string, 0, len(origins))
 	seen := make(map[string]bool, len(origins))
@@ -299,13 +329,16 @@ func (c *Config) validate() error {
 	c.AllowedOrigins = normalized
 	// Without TLS anyone who reaches the port can impersonate an agent, so the
 	// development mode only listens on the loopback interface.
-	if c.InsecureDev && !isLoopbackListen(c.Listen) {
-		return fmt.Errorf("insecure_dev requires a loopback listen address such as 127.0.0.1:8080, got %q", c.Listen)
+	if c.InsecureDev && !isLoopbackListen(c.PanelListen) {
+		return fmt.Errorf("insecure_dev requires a loopback listen address such as 127.0.0.1:8080, got %q", c.PanelListen)
 	}
 
-	if c.PublicPort != "" {
-		if port, err := strconv.Atoi(c.PublicPort); err != nil || port < 1 || port > 65535 {
-			return fmt.Errorf("invalid public_port %q (expected a number from 1 to 65535)", c.PublicPort)
+	for name, value := range map[string]string{"panel_port": c.PanelPort, "agent_port": c.AgentPort} {
+		if value == "" {
+			continue
+		}
+		if port, err := strconv.Atoi(value); err != nil || port < 1 || port > 65535 {
+			return fmt.Errorf("invalid %s %q (expected a number from 1 to 65535)", name, value)
 		}
 	}
 
@@ -349,23 +382,31 @@ func defaultOrigins(hostnames []string, port string, insecure bool) []string {
 	return origins
 }
 
-// publicPort returns the port the core is reached at: the configured public
-// port, or the one it listens on.
-func (c Config) publicPort() string {
-	if c.PublicPort != "" {
-		return c.PublicPort
+// panelPort returns the port the panel is reached at: the configured one, or
+// the one it listens on.
+func (c Config) panelPort() string {
+	if c.PanelPort != "" {
+		return c.PanelPort
 	}
-	return listenPort(c.Listen)
+	return listenPort(c.PanelListen)
 }
 
-// PublicURL returns the https address agents and browsers reach the core at,
-// built from the first public hostname, or "" when there is none.
-func (c Config) PublicURL() string {
+// agentPort returns the port the agents reach the core at.
+func (c Config) agentPort() string {
+	if c.AgentPort != "" {
+		return c.AgentPort
+	}
+	return listenPort(c.AgentListen)
+}
+
+// AgentURL returns the https address agents reach the core at, built from the
+// first public hostname, or "" when there is none.
+func (c Config) AgentURL() string {
 	if len(c.PublicHostnames) == 0 {
 		return ""
 	}
 	host := c.PublicHostnames[0]
-	if port := c.publicPort(); port != "" && port != "443" {
+	if port := c.agentPort(); port != "" && port != "443" {
 		host = net.JoinHostPort(host, port)
 	}
 	return (&url.URL{Scheme: "https", Host: host}).String()
