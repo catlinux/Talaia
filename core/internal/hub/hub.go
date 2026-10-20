@@ -73,6 +73,8 @@ type AgentInfo struct {
 	Services          int
 	// ContainerList is the last list of containers the agent reported.
 	ContainerList []*agentv1.Container
+	// ManagedStacks are the stacks Talaia manages on the server, sorted.
+	ManagedStacks []string
 
 	// key is the registry key: the server id with certificates, the hostname
 	// in insecure dev mode.
@@ -106,6 +108,7 @@ func (info *AgentInfo) applyInventory(inventory *agentv1.Inventory) {
 	info.ComposeProjects = len(inventory.GetComposeProjects())
 	info.Services = len(inventory.GetServices())
 	info.ContainerList = inventory.GetContainers()
+	info.ManagedStacks = inventory.GetManagedStacks()
 }
 
 // agentStream is the part of the server stream the hub uses. Keeping it small

@@ -146,8 +146,9 @@ func NewContainerActionHandler(deps ContainerDeps) http.Handler {
 			return
 		}
 
-		submitContainerJob(w, r, deps, serverID, reference, "container_"+request.Action,
+		submitJob(w, r, deps, serverID, containerActionKind, "container_"+request.Action,
 			map[string]any{"container": reference, "action": request.Action},
+			map[string]any{"container": reference},
 			func(jobID string) *agentv1.CoreMsg {
 				return &agentv1.CoreMsg{
 					JobId: jobID,
@@ -266,10 +267,12 @@ func hasContainer(agent hub.AgentInfo, reference string) bool {
 	return false
 }
 
-// submitContainerJob creates a job, sends its command to the agent and answers
-// 202 with the job id. The caller has already validated the request and checked
-// that the container is one the agent reported.
-func submitContainerJob(w http.ResponseWriter, r *http.Request, deps ContainerDeps, serverID, reference, auditAction string, params map[string]any, command func(jobID string) *agentv1.CoreMsg) {
+// submitJob creates a job of the given kind, sends its command to the agent and
+// answers 202 with the job id. The caller has already validated the request and
+// checked that the target exists on the server. params are stored with the job;
+// details go to the audit log next to the server and job ids, so they must never
+// hold secrets or file contents.
+func submitJob(w http.ResponseWriter, r *http.Request, deps ContainerDeps, serverID, kind, auditAction string, params, details map[string]any, command func(jobID string) *agentv1.CoreMsg) {
 	actor := ""
 	if session, ok := sessionFromContext(r.Context()); ok {
 		actor = session.User.Username
@@ -279,7 +282,7 @@ func submitContainerJob(w http.ResponseWriter, r *http.Request, deps ContainerDe
 		return
 	}
 
-	job, err := deps.Jobs.CreateJob(r.Context(), serverID, containerActionKind, params, actor)
+	job, err := deps.Jobs.CreateJob(r.Context(), serverID, kind, params, actor)
 	if err != nil {
 		slog.Error("create job", "error", err)
 		writeError(w, http.StatusInternalServerError, "internal")
@@ -298,15 +301,11 @@ func submitContainerJob(w http.ResponseWriter, r *http.Request, deps ContainerDe
 	}
 
 	if err := deps.Audit.AppendAudit(r.Context(), store.AuditEvent{
-		Actor:  actor,
-		Action: auditAction,
-		IP:     clientIP(r),
-		Result: "requested",
-		Details: map[string]any{
-			"server_id": serverID,
-			"container": reference,
-			"job_id":    job.ID,
-		},
+		Actor:   actor,
+		Action:  auditAction,
+		IP:      clientIP(r),
+		Result:  "requested",
+		Details: auditDetails(serverID, job.ID, details),
 	}); err != nil {
 		slog.Error("append audit event", "action", auditAction, "error", err)
 	}
@@ -348,8 +347,9 @@ func NewContainerLogsHandler(deps ContainerDeps) http.Handler {
 			return
 		}
 
-		submitContainerJob(w, r, deps, serverID, reference, "container_logs",
+		submitJob(w, r, deps, serverID, containerActionKind, "container_logs",
 			map[string]any{"container": reference, "tail": request.Tail},
+			map[string]any{"container": reference},
 			func(jobID string) *agentv1.CoreMsg {
 				return &agentv1.CoreMsg{
 					JobId: jobID,
@@ -359,4 +359,13 @@ func NewContainerLogsHandler(deps ContainerDeps) http.Handler {
 				}
 			})
 	})
+}
+
+// auditDetails joins the common ids with the details of one request.
+func auditDetails(serverID, jobID string, details map[string]any) map[string]any {
+	merged := map[string]any{"server_id": serverID, "job_id": jobID}
+	for key, value := range details {
+		merged[key] = value
+	}
+	return merged
 }
