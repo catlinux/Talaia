@@ -164,6 +164,25 @@ func (l *Link) session(ctx context.Context) error {
 	inventoryTicker := time.NewTicker(l.InventoryInterval)
 	defer inventoryTicker.Stop()
 
+	// sendInventoryIfChanged collects the inventory and sends it when it differs
+	// from the last one. A failed collection is logged and retried later.
+	sendInventoryIfChanged := func() error {
+		current, err := l.collector.Inventory()
+		if err != nil {
+			slog.Warn("collect inventory", "error", err)
+			return nil
+		}
+		if inventoryUnchanged(current, sentInventory) {
+			return nil
+		}
+		if err := stream.Send(inventoryMsg(current)); err != nil {
+			return fmt.Errorf("send inventory: %w", err)
+		}
+		sentInventory = current
+		slog.Debug("inventory changed, sent")
+		return nil
+	}
+
 	var seq uint64
 	for {
 		select {
@@ -180,21 +199,18 @@ func (l *Link) session(ctx context.Context) error {
 			if err := stream.Send(event); err != nil {
 				return fmt.Errorf("send job event: %w", err)
 			}
+			// A finished job probably changed the containers: tell the core now
+			// instead of at the next tick.
+			if jobFinished(event) {
+				if err := sendInventoryIfChanged(); err != nil {
+					return err
+				}
+			}
 
 		case <-inventoryTicker.C:
-			current, err := l.collector.Inventory()
-			if err != nil {
-				slog.Warn("collect inventory", "error", err)
-				continue
+			if err := sendInventoryIfChanged(); err != nil {
+				return err
 			}
-			if inventoryUnchanged(current, sentInventory) {
-				continue
-			}
-			if err := stream.Send(inventoryMsg(current)); err != nil {
-				return fmt.Errorf("send inventory: %w", err)
-			}
-			sentInventory = current
-			slog.Debug("inventory changed, sent")
 
 		case <-heartbeat.C:
 			seq++
@@ -223,6 +239,12 @@ func (l *Link) session(ctx context.Context) error {
 			slog.Debug("metrics sent", "cpu_percent", sample.GetCpuPercent())
 		}
 	}
+}
+
+// jobFinished reports whether msg is the final event of a job.
+func jobFinished(msg *agentv1.AgentMsg) bool {
+	state := msg.GetJobEvent().GetState()
+	return state == agentv1.JobState_JOB_STATE_SUCCEEDED || state == agentv1.JobState_JOB_STATE_FAILED
 }
 
 // receive reads the core messages until the stream ends.

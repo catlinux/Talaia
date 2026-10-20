@@ -604,3 +604,41 @@ func TestLinkRunsACommandAndReportsTheJob(t *testing.T) {
 		t.Errorf("actions = %v", actions.calls)
 	}
 }
+
+// changingActions changes the inventory the collector reports, as a real action
+// changes the containers.
+type changingActions struct {
+	collector *fakeCollector
+}
+
+func (c changingActions) Do(context.Context, string, agentv1.ContainerActionType) error {
+	changed := inventoryWith("vps-test")
+	changed.Containers = []*agentv1.Container{{Id: "abcdefghijkl", Name: "web", State: "exited"}}
+	c.collector.setInventory(changed)
+	return nil
+}
+
+func TestLinkResendsTheInventoryRightAfterAJob(t *testing.T) {
+	hub := &testHub{command: &agentv1.CoreMsg{
+		JobId: "job-7",
+		Cmd: &agentv1.CoreMsg_ContainerAction{ContainerAction: &agentv1.ContainerAction{
+			Container: "web",
+			Action:    agentv1.ContainerActionType_CONTAINER_ACTION_TYPE_STOP,
+		}},
+	}}
+	url := newTestServer(t, hub)
+
+	collector := &fakeCollector{inventory: inventoryWith("vps-test"), metrics: &agentv1.Metrics{Hostname: "vps-test"}}
+	agentLink := NewInsecure(config.Config{CoreURL: url, LogLevel: "info"}, collector)
+	agentLink.jobs = jobs.New(changingActions{collector: collector})
+	// The periodic tick is far away: only the end of the job can trigger the resend.
+	agentLink.HeartbeatInterval = time.Hour
+	agentLink.MetricsInterval = time.Hour
+	agentLink.InventoryInterval = time.Hour
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go func() { _ = agentLink.Run(ctx) }()
+
+	waitFor(t, func() bool { return hub.inventoryCount() >= 2 })
+}
