@@ -24,13 +24,17 @@ export interface ContainerList {
 export type ContainerAction = 'start' | 'stop' | 'restart' | 'remove'
 
 /** StackAction is a docker compose operation on a managed stack. */
-export type StackAction = 'up' | 'down' | 'pull' | 'restart' | 'remove'
+export type StackAction = 'up' | 'down' | 'pull' | 'restart' | 'remove' | 'forget'
 
 /** StackList is the answer of the stacks endpoint. */
 export interface StackList {
   connected: boolean
   /** stacks are the names of the stacks Talaia manages on the server. */
   stacks: string[]
+  /** adopted are the managed stacks that were adopted from a running project. */
+  adopted: string[]
+  /** adoptable are the running Compose projects Talaia does not manage yet. */
+  adoptable: string[]
 }
 
 /** StackFiles are the files of a managed stack. */
@@ -66,6 +70,8 @@ export interface ContainersApi {
   writeStack(serverId: string, name: string, compose: string, env: string): Promise<string>
   /** readStack asks for the files of a stack; the job output holds them as JSON. */
   readStack(serverId: string, name: string): Promise<string>
+  /** adoptStack makes Talaia manage a running project; it returns the id of the job. */
+  adoptStack(serverId: string, name: string): Promise<string>
   /** runStack sends an operation on a stack and returns the id of the job. */
   runStack(serverId: string, name: string, action: StackAction, confirm?: boolean): Promise<string>
   /** logs asks for the last lines of a container and returns the id of the job. */
@@ -134,7 +140,12 @@ export function createContainersApi(fetchImpl?: typeof fetch): ContainersApi {
       const body = await http.get<StackList>(
         `/api/v1/servers/${encodeURIComponent(serverId)}/stacks`,
       )
-      return { connected: body.connected, stacks: body.stacks }
+      return {
+        connected: body.connected,
+        stacks: body.stacks,
+        adopted: body.adopted ?? [],
+        adoptable: body.adoptable ?? [],
+      }
     },
     writeStack: async (serverId, name, compose, env) => {
       const body = await http.put<{ job_id: string }>(
@@ -146,6 +157,13 @@ export function createContainersApi(fetchImpl?: typeof fetch): ContainersApi {
     readStack: async (serverId, name) => {
       const body = await http.post<{ job_id: string }>(
         `/api/v1/servers/${encodeURIComponent(serverId)}/stacks/${encodeURIComponent(name)}/read`,
+        {},
+      )
+      return body.job_id
+    },
+    adoptStack: async (serverId, name) => {
+      const body = await http.post<{ job_id: string }>(
+        `/api/v1/servers/${encodeURIComponent(serverId)}/stacks/${encodeURIComponent(name)}/adopt`,
         {},
       )
       return body.job_id

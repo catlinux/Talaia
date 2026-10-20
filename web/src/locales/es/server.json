@@ -58,7 +58,8 @@
       "pull": "Actualizar imágenes",
       "restart": "Reiniciar",
       "remove": "Eliminar",
-      "edit": "Editar"
+      "edit": "Editar",
+      "forget": "Dejar de gestionar"
     },
     "confirm": {
       "downTitle": "¿Parar {{name}}?",
@@ -67,7 +68,10 @@
       "removeTitle": "¿Eliminar {{name}}?",
       "removeBody": "Se paran sus contenedores y se borran sus archivos del servidor. Los volúmenes se conservan.",
       "removeYes": "Eliminar el stack",
-      "no": "Cancelar"
+      "no": "Cancelar",
+      "forgetTitle": "¿Dejar de gestionar {{name}}?",
+      "forgetBody": "Talaia se olvida de este stack. Los contenedores y los archivos se quedan como están.",
+      "forgetYes": "Dejar de gestionar"
     },
     "editor": {
       "titleNew": "Nuevo stack",
@@ -84,6 +88,12 @@
       "cancel": "Cancelar",
       "saved": "Guardado",
       "started": "Guardado e iniciado"
+    },
+    "adoptedTag": "adoptado",
+    "adopt": {
+      "title": "Proyectos en marcha",
+      "intro": "Proyectos Compose que ya corren en el servidor. Al gestionarlos se quedan donde están: no se copia ni se reinicia nada.",
+      "button": "Gestionar con Talaia"
     }
   }
 }

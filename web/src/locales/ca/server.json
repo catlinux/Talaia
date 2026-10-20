@@ -58,7 +58,8 @@
       "pull": "Actualitza les imatges",
       "restart": "Reinicia",
       "remove": "Elimina",
-      "edit": "Edita"
+      "edit": "Edita",
+      "forget": "Deixa de gestionar"
     },
     "confirm": {
       "downTitle": "Aturar {{name}}?",
@@ -67,7 +68,10 @@
       "removeTitle": "Eliminar {{name}}?",
       "removeBody": "S’aturen els seus contenidors i se n’esborren els fitxers del servidor. Els volums es conserven.",
       "removeYes": "Elimina el stack",
-      "no": "Cancel·la"
+      "no": "Cancel·la",
+      "forgetTitle": "Deixar de gestionar {{name}}?",
+      "forgetBody": "Talaia s’oblida d’aquest stack. Els contenidors i els fitxers es queden com estan.",
+      "forgetYes": "Deixa de gestionar"
     },
     "editor": {
       "titleNew": "Nou stack",
@@ -84,6 +88,12 @@
       "cancel": "Cancel·la",
       "saved": "Desat",
       "started": "Desat i iniciat"
+    },
+    "adoptedTag": "adoptat",
+    "adopt": {
+      "title": "Projectes en marxa",
+      "intro": "Projectes Compose que ja corren al servidor. En gestionar-los es queden on són: no es copia ni es reinicia res.",
+      "button": "Gestiona amb Talaia"
     }
   }
 }

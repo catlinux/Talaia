@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
-import type { Container, ContainersApi, StackAction } from '../../api/containers'
+import type { Container, ContainersApi, StackAction, StackList } from '../../api/containers'
 import { isSignedOut } from '../../api/http'
 import { errorMessage } from '../../auth/AuthGate'
 import { PlayIcon, PlusIcon, RestartIcon, StopIcon, TrashIcon } from '../../components/icons'
@@ -47,11 +47,12 @@ export function StacksSection({
   onChanged,
 }: StacksSectionProps) {
   const { t } = useTranslation(['server', 'errors'])
-  const [names, setNames] = useState<string[] | null>(null)
+  const [list, setList] = useState<StackList | null>(null)
   const [outcomes, setOutcomes] = useState<Record<string, Outcome>>({})
-  const [confirming, setConfirming] = useState<{ name: string; action: 'down' | 'remove' } | null>(
-    null,
-  )
+  const [confirming, setConfirming] = useState<{
+    name: string
+    action: 'down' | 'remove' | 'forget'
+  } | null>(null)
   const [editor, setEditor] = useState<Editor>({ kind: 'closed' })
   const alive = useRef(true)
 
@@ -60,8 +61,8 @@ export function StacksSection({
     () =>
       api
         .stacks(serverId)
-        .then((list) => {
-          if (alive.current) setNames(list.stacks)
+        .then((fresh) => {
+          if (alive.current) setList(fresh)
         })
         .catch((error: unknown) => {
           if (!alive.current || isSignedOut(error)) return
@@ -121,6 +122,33 @@ export function StacksSection({
     [api, load, onChanged, pollMs, serverId, setOutcome, t],
   )
 
+  const adopt = useCallback(
+    async (name: string) => {
+      setOutcome(name, { kind: 'working' })
+      try {
+        const jobId = await api.adoptStack(serverId, name)
+        const job = await waitForJob(api, jobId, pollMs, () => alive.current)
+        if (job === null) return
+        setOutcome(
+          name,
+          job.state === 'succeeded' ? { kind: 'done' } : { kind: 'failed', message: job.message },
+        )
+      } catch (error) {
+        if (!alive.current || isSignedOut(error)) return
+        setOutcome(name, {
+          kind: 'failed',
+          message:
+            error instanceof TimedOut ? t('server:progress.timeout') : errorMessage(t, error),
+        })
+      }
+      await load()
+    },
+    [api, load, pollMs, serverId, setOutcome, t],
+  )
+
+  const names = list === null ? null : list.stacks
+  const adoptable = list === null ? [] : list.adoptable
+
   const stateOf = (name: string) => {
     const own = containers.filter((container) => container.composeProject === name)
     return {
@@ -176,10 +204,14 @@ export function StacksSection({
             const { total, running } = stateOf(name)
             const outcome = outcomes[name]
             const busy = outcome?.kind === 'working'
+            const adopted = list !== null && list.adopted.includes(name)
             return (
               <li key={name} className={`stack${running > 0 ? ' stack--up' : ''}`}>
                 <div className="stack__main">
-                  <h3 className="stack__name">{name}</h3>
+                  <h3 className="stack__name">
+                    {name}
+                    {adopted ? <span className="tag">{t('server:stacks.adoptedTag')}</span> : null}
+                  </h3>
                   <p className="stack__meta">
                     {total === 0
                       ? t('server:stacks.noContainers')
@@ -260,10 +292,10 @@ export function StacksSection({
                       type="button"
                       className="cbtn cbtn--danger"
                       disabled={busy}
-                      onClick={() => setConfirming({ name, action: 'remove' })}
+                      onClick={() => setConfirming({ name, action: adopted ? 'forget' : 'remove' })}
                     >
                       <TrashIcon />
-                      {t('server:stacks.action.remove')}
+                      {t(adopted ? 'server:stacks.action.forget' : 'server:stacks.action.remove')}
                     </button>
                   </div>
                 )}
@@ -271,6 +303,42 @@ export function StacksSection({
             )
           })}
         </ul>
+      ) : null}
+
+      {adoptable.length > 0 ? (
+        <div className="adoptable">
+          <h3 className="adoptable__title">{t('server:stacks.adopt.title')}</h3>
+          <p className="adoptable__intro">{t('server:stacks.adopt.intro')}</p>
+          <ul className="adoptable__list">
+            {adoptable.map((name) => {
+              const { total, running } = stateOf(name)
+              const outcome = outcomes[name]
+              return (
+                <li key={name} className="adoptable__item">
+                  <div className="stack__main">
+                    <span className="stack__name">{name}</span>
+                    <span className="stack__meta">
+                      {t('server:stacks.summary', { count: total, running })}
+                    </span>
+                    {outcome?.kind === 'failed' ? (
+                      <span className="container__outcome container__outcome--error" role="alert">
+                        {t('server:progress.failed', { message: outcome.message })}
+                      </span>
+                    ) : null}
+                  </div>
+                  <button
+                    type="button"
+                    className="cbtn"
+                    disabled={outcome?.kind === 'working'}
+                    onClick={() => void adopt(name)}
+                  >
+                    {t('server:stacks.adopt.button')}
+                  </button>
+                </li>
+              )
+            })}
+          </ul>
+        </div>
       ) : null}
     </section>
   )

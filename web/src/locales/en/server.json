@@ -58,7 +58,8 @@
       "pull": "Pull images",
       "restart": "Restart",
       "remove": "Remove",
-      "edit": "Edit"
+      "edit": "Edit",
+      "forget": "Stop managing"
     },
     "confirm": {
       "downTitle": "Stop {{name}}?",
@@ -67,7 +68,10 @@
       "removeTitle": "Remove {{name}}?",
       "removeBody": "Its containers are stopped and its files are deleted from the server. Volumes are kept.",
       "removeYes": "Remove the stack",
-      "no": "Cancel"
+      "no": "Cancel",
+      "forgetTitle": "Stop managing {{name}}?",
+      "forgetBody": "Talaia forgets this stack. The containers and the files stay as they are.",
+      "forgetYes": "Stop managing"
     },
     "editor": {
       "titleNew": "New stack",
@@ -84,6 +88,12 @@
       "cancel": "Cancel",
       "saved": "Saved",
       "started": "Saved and started"
+    },
+    "adoptedTag": "adopted",
+    "adopt": {
+      "title": "Running projects",
+      "intro": "Compose projects that already run on the server. When you manage them they stay where they are: nothing is copied or restarted.",
+      "button": "Manage with Talaia"
     }
   }
 }

@@ -21,7 +21,11 @@ const container = (overrides: Partial<Container> = {}): Container => ({
 const succeeded = (output = ''): Job => ({ id: 'job', state: 'succeeded', message: '', output })
 
 /** fakeApi answers jobs from a queue; stacks lists the given names. */
-function fakeApi(stacks: string[], jobs: Job[] = [succeeded()]) {
+function fakeApi(
+  stacks: string[],
+  jobs: Job[] = [succeeded()],
+  extra: { adopted?: string[]; adoptable?: string[] } = {},
+) {
   const queue = [...jobs]
   const api = {
     list: vi.fn(() =>
@@ -29,7 +33,15 @@ function fakeApi(stacks: string[], jobs: Job[] = [succeeded()]) {
     ),
     run: vi.fn(() => Promise.resolve('job')),
     logs: vi.fn(() => Promise.resolve('job')),
-    stacks: vi.fn(() => Promise.resolve({ connected: true, stacks })),
+    stacks: vi.fn(() =>
+      Promise.resolve({
+        connected: true,
+        stacks,
+        adopted: extra.adopted ?? [],
+        adoptable: extra.adoptable ?? [],
+      }),
+    ),
+    adoptStack: vi.fn(() => Promise.resolve('job')),
     writeStack: vi.fn(() => Promise.resolve('job')),
     readStack: vi.fn(() => Promise.resolve('job')),
     runStack: vi.fn(() => Promise.resolve('job')),
