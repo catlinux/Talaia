@@ -15,6 +15,7 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ### Añadido
 
+- Contrato de las terminales en contenedores (`TerminalOpen`, `TerminalInput`, `TerminalResize`, `TerminalClose` desde el core; `TerminalOpened`, `TerminalOutput`, `TerminalClosed` desde el agente). Aún sin uso: solo define los mensajes.
 - Esqueleto del monorepo: workspace de Go, módulos `core`, `agent` y `cli` vacíos, `Makefile` y `scripts/bump-version.sh`.
 - Contrato del agente `proto/agent.proto` v0 (`Heartbeat`, `Inventory`, `Metrics`) con la configuración de `buf`.
 - Esqueleto del core: servidor HTTP con `/healthz`, configuración por TOML y variables de entorno, conexión a PostgreSQL y primera migración.

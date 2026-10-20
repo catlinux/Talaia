@@ -15,6 +15,7 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ### Added
 
+- Contract for terminals in containers (`TerminalOpen`, `TerminalInput`, `TerminalResize`, `TerminalClose` from the core; `TerminalOpened`, `TerminalOutput`, `TerminalClosed` from the agent). Not used yet: it only defines the messages.
 - Monorepo skeleton: Go workspace, empty `core`, `agent` and `cli` modules, `Makefile` and `scripts/bump-version.sh`.
 - Agent contract `proto/agent.proto` v0 (`Heartbeat`, `Inventory`, `Metrics`) with `buf` configuration.
 - Core skeleton: HTTP server with `/healthz`, TOML + environment configuration, PostgreSQL connection and first migration.

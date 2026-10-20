@@ -254,6 +254,55 @@ func (JobState) EnumDescriptor() ([]byte, []int) {
 	return file_agent_proto_rawDescGZIP(), []int{3}
 }
 
+type TerminalShell int32
+
+const (
+	TerminalShell_TERMINAL_SHELL_UNSPECIFIED TerminalShell = 0
+	TerminalShell_TERMINAL_SHELL_SH          TerminalShell = 1 // /bin/sh
+	TerminalShell_TERMINAL_SHELL_BASH        TerminalShell = 2 // /bin/bash
+)
+
+// Enum value maps for TerminalShell.
+var (
+	TerminalShell_name = map[int32]string{
+		0: "TERMINAL_SHELL_UNSPECIFIED",
+		1: "TERMINAL_SHELL_SH",
+		2: "TERMINAL_SHELL_BASH",
+	}
+	TerminalShell_value = map[string]int32{
+		"TERMINAL_SHELL_UNSPECIFIED": 0,
+		"TERMINAL_SHELL_SH":          1,
+		"TERMINAL_SHELL_BASH":        2,
+	}
+)
+
+func (x TerminalShell) Enum() *TerminalShell {
+	p := new(TerminalShell)
+	*p = x
+	return p
+}
+
+func (x TerminalShell) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (TerminalShell) Descriptor() protoreflect.EnumDescriptor {
+	return file_agent_proto_enumTypes[4].Descriptor()
+}
+
+func (TerminalShell) Type() protoreflect.EnumType {
+	return &file_agent_proto_enumTypes[4]
+}
+
+func (x TerminalShell) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use TerminalShell.Descriptor instead.
+func (TerminalShell) EnumDescriptor() ([]byte, []int) {
+	return file_agent_proto_rawDescGZIP(), []int{4}
+}
+
 // core -> agent
 type CoreMsg struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -270,6 +319,10 @@ type CoreMsg struct {
 	//	*CoreMsg_StackAdopt
 	//	*CoreMsg_ListResources
 	//	*CoreMsg_RemoveResources
+	//	*CoreMsg_TerminalOpen
+	//	*CoreMsg_TerminalInput
+	//	*CoreMsg_TerminalResize
+	//	*CoreMsg_TerminalClose
 	Cmd           isCoreMsg_Cmd `protobuf_oneof:"cmd"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -400,6 +453,42 @@ func (x *CoreMsg) GetRemoveResources() *RemoveResources {
 	return nil
 }
 
+func (x *CoreMsg) GetTerminalOpen() *TerminalOpen {
+	if x != nil {
+		if x, ok := x.Cmd.(*CoreMsg_TerminalOpen); ok {
+			return x.TerminalOpen
+		}
+	}
+	return nil
+}
+
+func (x *CoreMsg) GetTerminalInput() *TerminalInput {
+	if x != nil {
+		if x, ok := x.Cmd.(*CoreMsg_TerminalInput); ok {
+			return x.TerminalInput
+		}
+	}
+	return nil
+}
+
+func (x *CoreMsg) GetTerminalResize() *TerminalResize {
+	if x != nil {
+		if x, ok := x.Cmd.(*CoreMsg_TerminalResize); ok {
+			return x.TerminalResize
+		}
+	}
+	return nil
+}
+
+func (x *CoreMsg) GetTerminalClose() *TerminalClose {
+	if x != nil {
+		if x, ok := x.Cmd.(*CoreMsg_TerminalClose); ok {
+			return x.TerminalClose
+		}
+	}
+	return nil
+}
+
 type isCoreMsg_Cmd interface {
 	isCoreMsg_Cmd()
 }
@@ -442,6 +531,24 @@ type CoreMsg_RemoveResources struct {
 	RemoveResources *RemoveResources `protobuf:"bytes,17,opt,name=remove_resources,json=removeResources,proto3,oneof"`
 }
 
+type CoreMsg_TerminalOpen struct {
+	// Terminal sessions are not jobs: they carry no job_id and live as long as
+	// the session does.
+	TerminalOpen *TerminalOpen `protobuf:"bytes,18,opt,name=terminal_open,json=terminalOpen,proto3,oneof"`
+}
+
+type CoreMsg_TerminalInput struct {
+	TerminalInput *TerminalInput `protobuf:"bytes,19,opt,name=terminal_input,json=terminalInput,proto3,oneof"`
+}
+
+type CoreMsg_TerminalResize struct {
+	TerminalResize *TerminalResize `protobuf:"bytes,20,opt,name=terminal_resize,json=terminalResize,proto3,oneof"`
+}
+
+type CoreMsg_TerminalClose struct {
+	TerminalClose *TerminalClose `protobuf:"bytes,21,opt,name=terminal_close,json=terminalClose,proto3,oneof"`
+}
+
 func (*CoreMsg_HeartbeatAck) isCoreMsg_Cmd() {}
 
 func (*CoreMsg_ContainerAction) isCoreMsg_Cmd() {}
@@ -460,6 +567,14 @@ func (*CoreMsg_ListResources) isCoreMsg_Cmd() {}
 
 func (*CoreMsg_RemoveResources) isCoreMsg_Cmd() {}
 
+func (*CoreMsg_TerminalOpen) isCoreMsg_Cmd() {}
+
+func (*CoreMsg_TerminalInput) isCoreMsg_Cmd() {}
+
+func (*CoreMsg_TerminalResize) isCoreMsg_Cmd() {}
+
+func (*CoreMsg_TerminalClose) isCoreMsg_Cmd() {}
+
 // agent -> core
 type AgentMsg struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -470,6 +585,9 @@ type AgentMsg struct {
 	//	*AgentMsg_JobEvent
 	//	*AgentMsg_Inventory
 	//	*AgentMsg_ContainerStats
+	//	*AgentMsg_TerminalOpened
+	//	*AgentMsg_TerminalOutput
+	//	*AgentMsg_TerminalClosed
 	Msg           isAgentMsg_Msg `protobuf_oneof:"msg"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -557,6 +675,33 @@ func (x *AgentMsg) GetContainerStats() *ContainerStats {
 	return nil
 }
 
+func (x *AgentMsg) GetTerminalOpened() *TerminalOpened {
+	if x != nil {
+		if x, ok := x.Msg.(*AgentMsg_TerminalOpened); ok {
+			return x.TerminalOpened
+		}
+	}
+	return nil
+}
+
+func (x *AgentMsg) GetTerminalOutput() *TerminalOutput {
+	if x != nil {
+		if x, ok := x.Msg.(*AgentMsg_TerminalOutput); ok {
+			return x.TerminalOutput
+		}
+	}
+	return nil
+}
+
+func (x *AgentMsg) GetTerminalClosed() *TerminalClosed {
+	if x != nil {
+		if x, ok := x.Msg.(*AgentMsg_TerminalClosed); ok {
+			return x.TerminalClosed
+		}
+	}
+	return nil
+}
+
 type isAgentMsg_Msg interface {
 	isAgentMsg_Msg()
 }
@@ -581,6 +726,18 @@ type AgentMsg_ContainerStats struct {
 	ContainerStats *ContainerStats `protobuf:"bytes,5,opt,name=container_stats,json=containerStats,proto3,oneof"` // every 15 s while Docker is available
 }
 
+type AgentMsg_TerminalOpened struct {
+	TerminalOpened *TerminalOpened `protobuf:"bytes,6,opt,name=terminal_opened,json=terminalOpened,proto3,oneof"`
+}
+
+type AgentMsg_TerminalOutput struct {
+	TerminalOutput *TerminalOutput `protobuf:"bytes,7,opt,name=terminal_output,json=terminalOutput,proto3,oneof"`
+}
+
+type AgentMsg_TerminalClosed struct {
+	TerminalClosed *TerminalClosed `protobuf:"bytes,8,opt,name=terminal_closed,json=terminalClosed,proto3,oneof"`
+}
+
 func (*AgentMsg_Heartbeat) isAgentMsg_Msg() {}
 
 func (*AgentMsg_Metrics) isAgentMsg_Msg() {}
@@ -590,6 +747,12 @@ func (*AgentMsg_JobEvent) isAgentMsg_Msg() {}
 func (*AgentMsg_Inventory) isAgentMsg_Msg() {}
 
 func (*AgentMsg_ContainerStats) isAgentMsg_Msg() {}
+
+func (*AgentMsg_TerminalOpened) isAgentMsg_Msg() {}
+
+func (*AgentMsg_TerminalOutput) isAgentMsg_Msg() {}
+
+func (*AgentMsg_TerminalClosed) isAgentMsg_Msg() {}
 
 // ContainerAction starts, stops, restarts or removes one container. The agent
 // runs exactly this and nothing else; it never builds a shell command.
@@ -1777,6 +1940,424 @@ func (x *ContainerStat) GetNetTxBytes() uint64 {
 	return 0
 }
 
+// TerminalOpen starts an interactive shell in a container. The shell comes from
+// a closed list; the agent never runs free text. session_id is chosen by the
+// core (random, 128 bits) and routes every later message of the session.
+type TerminalOpen struct {
+	state     protoimpl.MessageState `protogen:"open.v1"`
+	SessionId string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
+	// Container id (hex, 12 to 64 characters) or name.
+	Container     string        `protobuf:"bytes,2,opt,name=container,proto3" json:"container,omitempty"`
+	Shell         TerminalShell `protobuf:"varint,3,opt,name=shell,proto3,enum=talaia.agent.v1.TerminalShell" json:"shell,omitempty"`
+	Cols          uint32        `protobuf:"varint,4,opt,name=cols,proto3" json:"cols,omitempty"`
+	Rows          uint32        `protobuf:"varint,5,opt,name=rows,proto3" json:"rows,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *TerminalOpen) Reset() {
+	*x = TerminalOpen{}
+	mi := &file_agent_proto_msgTypes[20]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *TerminalOpen) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TerminalOpen) ProtoMessage() {}
+
+func (x *TerminalOpen) ProtoReflect() protoreflect.Message {
+	mi := &file_agent_proto_msgTypes[20]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TerminalOpen.ProtoReflect.Descriptor instead.
+func (*TerminalOpen) Descriptor() ([]byte, []int) {
+	return file_agent_proto_rawDescGZIP(), []int{20}
+}
+
+func (x *TerminalOpen) GetSessionId() string {
+	if x != nil {
+		return x.SessionId
+	}
+	return ""
+}
+
+func (x *TerminalOpen) GetContainer() string {
+	if x != nil {
+		return x.Container
+	}
+	return ""
+}
+
+func (x *TerminalOpen) GetShell() TerminalShell {
+	if x != nil {
+		return x.Shell
+	}
+	return TerminalShell_TERMINAL_SHELL_UNSPECIFIED
+}
+
+func (x *TerminalOpen) GetCols() uint32 {
+	if x != nil {
+		return x.Cols
+	}
+	return 0
+}
+
+func (x *TerminalOpen) GetRows() uint32 {
+	if x != nil {
+		return x.Rows
+	}
+	return 0
+}
+
+// TerminalInput carries keystrokes, at most 4 KiB per message. It is bytes, not
+// text: a terminal does not speak only UTF-8.
+type TerminalInput struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	SessionId     string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
+	Data          []byte                 `protobuf:"bytes,2,opt,name=data,proto3" json:"data,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *TerminalInput) Reset() {
+	*x = TerminalInput{}
+	mi := &file_agent_proto_msgTypes[21]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *TerminalInput) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TerminalInput) ProtoMessage() {}
+
+func (x *TerminalInput) ProtoReflect() protoreflect.Message {
+	mi := &file_agent_proto_msgTypes[21]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TerminalInput.ProtoReflect.Descriptor instead.
+func (*TerminalInput) Descriptor() ([]byte, []int) {
+	return file_agent_proto_rawDescGZIP(), []int{21}
+}
+
+func (x *TerminalInput) GetSessionId() string {
+	if x != nil {
+		return x.SessionId
+	}
+	return ""
+}
+
+func (x *TerminalInput) GetData() []byte {
+	if x != nil {
+		return x.Data
+	}
+	return nil
+}
+
+// TerminalResize changes the size of the terminal; cols and rows are 1 to 1000.
+type TerminalResize struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	SessionId     string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
+	Cols          uint32                 `protobuf:"varint,2,opt,name=cols,proto3" json:"cols,omitempty"`
+	Rows          uint32                 `protobuf:"varint,3,opt,name=rows,proto3" json:"rows,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *TerminalResize) Reset() {
+	*x = TerminalResize{}
+	mi := &file_agent_proto_msgTypes[22]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *TerminalResize) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TerminalResize) ProtoMessage() {}
+
+func (x *TerminalResize) ProtoReflect() protoreflect.Message {
+	mi := &file_agent_proto_msgTypes[22]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TerminalResize.ProtoReflect.Descriptor instead.
+func (*TerminalResize) Descriptor() ([]byte, []int) {
+	return file_agent_proto_rawDescGZIP(), []int{22}
+}
+
+func (x *TerminalResize) GetSessionId() string {
+	if x != nil {
+		return x.SessionId
+	}
+	return ""
+}
+
+func (x *TerminalResize) GetCols() uint32 {
+	if x != nil {
+		return x.Cols
+	}
+	return 0
+}
+
+func (x *TerminalResize) GetRows() uint32 {
+	if x != nil {
+		return x.Rows
+	}
+	return 0
+}
+
+// TerminalClose asks the agent to end a session.
+type TerminalClose struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	SessionId     string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *TerminalClose) Reset() {
+	*x = TerminalClose{}
+	mi := &file_agent_proto_msgTypes[23]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *TerminalClose) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TerminalClose) ProtoMessage() {}
+
+func (x *TerminalClose) ProtoReflect() protoreflect.Message {
+	mi := &file_agent_proto_msgTypes[23]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TerminalClose.ProtoReflect.Descriptor instead.
+func (*TerminalClose) Descriptor() ([]byte, []int) {
+	return file_agent_proto_rawDescGZIP(), []int{23}
+}
+
+func (x *TerminalClose) GetSessionId() string {
+	if x != nil {
+		return x.SessionId
+	}
+	return ""
+}
+
+// TerminalOpened answers a TerminalOpen once the shell runs, or says why not.
+type TerminalOpened struct {
+	state     protoimpl.MessageState `protogen:"open.v1"`
+	SessionId string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
+	// The container is privileged, shares the PID namespace of the host or has
+	// the Docker socket mounted: the shell is as good as root on the server.
+	Privileged    bool   `protobuf:"varint,2,opt,name=privileged,proto3" json:"privileged,omitempty"`
+	Error         string `protobuf:"bytes,3,opt,name=error,proto3" json:"error,omitempty"` // empty when the session opened
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *TerminalOpened) Reset() {
+	*x = TerminalOpened{}
+	mi := &file_agent_proto_msgTypes[24]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *TerminalOpened) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TerminalOpened) ProtoMessage() {}
+
+func (x *TerminalOpened) ProtoReflect() protoreflect.Message {
+	mi := &file_agent_proto_msgTypes[24]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TerminalOpened.ProtoReflect.Descriptor instead.
+func (*TerminalOpened) Descriptor() ([]byte, []int) {
+	return file_agent_proto_rawDescGZIP(), []int{24}
+}
+
+func (x *TerminalOpened) GetSessionId() string {
+	if x != nil {
+		return x.SessionId
+	}
+	return ""
+}
+
+func (x *TerminalOpened) GetPrivileged() bool {
+	if x != nil {
+		return x.Privileged
+	}
+	return false
+}
+
+func (x *TerminalOpened) GetError() string {
+	if x != nil {
+		return x.Error
+	}
+	return ""
+}
+
+// TerminalOutput is what the shell printed, at most 16 KiB per message.
+type TerminalOutput struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	SessionId     string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
+	Data          []byte                 `protobuf:"bytes,2,opt,name=data,proto3" json:"data,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *TerminalOutput) Reset() {
+	*x = TerminalOutput{}
+	mi := &file_agent_proto_msgTypes[25]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *TerminalOutput) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TerminalOutput) ProtoMessage() {}
+
+func (x *TerminalOutput) ProtoReflect() protoreflect.Message {
+	mi := &file_agent_proto_msgTypes[25]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TerminalOutput.ProtoReflect.Descriptor instead.
+func (*TerminalOutput) Descriptor() ([]byte, []int) {
+	return file_agent_proto_rawDescGZIP(), []int{25}
+}
+
+func (x *TerminalOutput) GetSessionId() string {
+	if x != nil {
+		return x.SessionId
+	}
+	return ""
+}
+
+func (x *TerminalOutput) GetData() []byte {
+	if x != nil {
+		return x.Data
+	}
+	return nil
+}
+
+// TerminalClosed ends a session from the agent side: the shell exited, the
+// container went away or a limit was reached.
+type TerminalClosed struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	SessionId     string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
+	Reason        string                 `protobuf:"bytes,2,opt,name=reason,proto3" json:"reason,omitempty"`
+	ExitCode      int32                  `protobuf:"varint,3,opt,name=exit_code,json=exitCode,proto3" json:"exit_code,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *TerminalClosed) Reset() {
+	*x = TerminalClosed{}
+	mi := &file_agent_proto_msgTypes[26]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *TerminalClosed) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TerminalClosed) ProtoMessage() {}
+
+func (x *TerminalClosed) ProtoReflect() protoreflect.Message {
+	mi := &file_agent_proto_msgTypes[26]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TerminalClosed.ProtoReflect.Descriptor instead.
+func (*TerminalClosed) Descriptor() ([]byte, []int) {
+	return file_agent_proto_rawDescGZIP(), []int{26}
+}
+
+func (x *TerminalClosed) GetSessionId() string {
+	if x != nil {
+		return x.SessionId
+	}
+	return ""
+}
+
+func (x *TerminalClosed) GetReason() string {
+	if x != nil {
+		return x.Reason
+	}
+	return ""
+}
+
+func (x *TerminalClosed) GetExitCode() int32 {
+	if x != nil {
+		return x.ExitCode
+	}
+	return 0
+}
+
 type Metrics struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	SampledAt      *timestamppb.Timestamp `protobuf:"bytes,1,opt,name=sampled_at,json=sampledAt,proto3" json:"sampled_at,omitempty"`
@@ -1794,7 +2375,7 @@ type Metrics struct {
 
 func (x *Metrics) Reset() {
 	*x = Metrics{}
-	mi := &file_agent_proto_msgTypes[20]
+	mi := &file_agent_proto_msgTypes[27]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1806,7 +2387,7 @@ func (x *Metrics) String() string {
 func (*Metrics) ProtoMessage() {}
 
 func (x *Metrics) ProtoReflect() protoreflect.Message {
-	mi := &file_agent_proto_msgTypes[20]
+	mi := &file_agent_proto_msgTypes[27]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1819,7 +2400,7 @@ func (x *Metrics) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Metrics.ProtoReflect.Descriptor instead.
 func (*Metrics) Descriptor() ([]byte, []int) {
-	return file_agent_proto_rawDescGZIP(), []int{20}
+	return file_agent_proto_rawDescGZIP(), []int{27}
 }
 
 func (x *Metrics) GetSampledAt() *timestamppb.Timestamp {
@@ -1882,7 +2463,7 @@ var File_agent_proto protoreflect.FileDescriptor
 
 const file_agent_proto_rawDesc = "" +
 	"\n" +
-	"\vagent.proto\x12\x0ftalaia.agent.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\x8e\x05\n" +
+	"\vagent.proto\x12\x0ftalaia.agent.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\xb2\a\n" +
 	"\aCoreMsg\x12\x15\n" +
 	"\x06job_id\x18\x01 \x01(\tR\x05jobId\x12D\n" +
 	"\rheartbeat_ack\x18\x02 \x01(\v2\x1d.talaia.agent.v1.HeartbeatAckH\x00R\fheartbeatAck\x12M\n" +
@@ -1897,14 +2478,21 @@ const file_agent_proto_rawDesc = "" +
 	"\vstack_adopt\x18\x0f \x01(\v2\x1b.talaia.agent.v1.StackAdoptH\x00R\n" +
 	"stackAdopt\x12G\n" +
 	"\x0elist_resources\x18\x10 \x01(\v2\x1e.talaia.agent.v1.ListResourcesH\x00R\rlistResources\x12M\n" +
-	"\x10remove_resources\x18\x11 \x01(\v2 .talaia.agent.v1.RemoveResourcesH\x00R\x0fremoveResourcesB\x05\n" +
-	"\x03cmd\"\xc5\x02\n" +
+	"\x10remove_resources\x18\x11 \x01(\v2 .talaia.agent.v1.RemoveResourcesH\x00R\x0fremoveResources\x12D\n" +
+	"\rterminal_open\x18\x12 \x01(\v2\x1d.talaia.agent.v1.TerminalOpenH\x00R\fterminalOpen\x12G\n" +
+	"\x0eterminal_input\x18\x13 \x01(\v2\x1e.talaia.agent.v1.TerminalInputH\x00R\rterminalInput\x12J\n" +
+	"\x0fterminal_resize\x18\x14 \x01(\v2\x1f.talaia.agent.v1.TerminalResizeH\x00R\x0eterminalResize\x12G\n" +
+	"\x0eterminal_close\x18\x15 \x01(\v2\x1e.talaia.agent.v1.TerminalCloseH\x00R\rterminalCloseB\x05\n" +
+	"\x03cmd\"\xa9\x04\n" +
 	"\bAgentMsg\x12:\n" +
 	"\theartbeat\x18\x01 \x01(\v2\x1a.talaia.agent.v1.HeartbeatH\x00R\theartbeat\x124\n" +
 	"\ametrics\x18\x02 \x01(\v2\x18.talaia.agent.v1.MetricsH\x00R\ametrics\x128\n" +
 	"\tjob_event\x18\x03 \x01(\v2\x19.talaia.agent.v1.JobEventH\x00R\bjobEvent\x12:\n" +
 	"\tinventory\x18\x04 \x01(\v2\x1a.talaia.agent.v1.InventoryH\x00R\tinventory\x12J\n" +
-	"\x0fcontainer_stats\x18\x05 \x01(\v2\x1f.talaia.agent.v1.ContainerStatsH\x00R\x0econtainerStatsB\x05\n" +
+	"\x0fcontainer_stats\x18\x05 \x01(\v2\x1f.talaia.agent.v1.ContainerStatsH\x00R\x0econtainerStats\x12J\n" +
+	"\x0fterminal_opened\x18\x06 \x01(\v2\x1f.talaia.agent.v1.TerminalOpenedH\x00R\x0eterminalOpened\x12J\n" +
+	"\x0fterminal_output\x18\a \x01(\v2\x1f.talaia.agent.v1.TerminalOutputH\x00R\x0eterminalOutput\x12J\n" +
+	"\x0fterminal_closed\x18\b \x01(\v2\x1f.talaia.agent.v1.TerminalClosedH\x00R\x0eterminalClosedB\x05\n" +
 	"\x03msg\"m\n" +
 	"\x0fContainerAction\x12\x1c\n" +
 	"\tcontainer\x18\x01 \x01(\tR\tcontainer\x12<\n" +
@@ -1998,7 +2586,42 @@ const file_agent_proto_rawDesc = "" +
 	"\fnet_rx_bytes\x18\x05 \x01(\x04R\n" +
 	"netRxBytes\x12 \n" +
 	"\fnet_tx_bytes\x18\x06 \x01(\x04R\n" +
-	"netTxBytes\"\xbd\x02\n" +
+	"netTxBytes\"\xa9\x01\n" +
+	"\fTerminalOpen\x12\x1d\n" +
+	"\n" +
+	"session_id\x18\x01 \x01(\tR\tsessionId\x12\x1c\n" +
+	"\tcontainer\x18\x02 \x01(\tR\tcontainer\x124\n" +
+	"\x05shell\x18\x03 \x01(\x0e2\x1e.talaia.agent.v1.TerminalShellR\x05shell\x12\x12\n" +
+	"\x04cols\x18\x04 \x01(\rR\x04cols\x12\x12\n" +
+	"\x04rows\x18\x05 \x01(\rR\x04rows\"B\n" +
+	"\rTerminalInput\x12\x1d\n" +
+	"\n" +
+	"session_id\x18\x01 \x01(\tR\tsessionId\x12\x12\n" +
+	"\x04data\x18\x02 \x01(\fR\x04data\"W\n" +
+	"\x0eTerminalResize\x12\x1d\n" +
+	"\n" +
+	"session_id\x18\x01 \x01(\tR\tsessionId\x12\x12\n" +
+	"\x04cols\x18\x02 \x01(\rR\x04cols\x12\x12\n" +
+	"\x04rows\x18\x03 \x01(\rR\x04rows\".\n" +
+	"\rTerminalClose\x12\x1d\n" +
+	"\n" +
+	"session_id\x18\x01 \x01(\tR\tsessionId\"e\n" +
+	"\x0eTerminalOpened\x12\x1d\n" +
+	"\n" +
+	"session_id\x18\x01 \x01(\tR\tsessionId\x12\x1e\n" +
+	"\n" +
+	"privileged\x18\x02 \x01(\bR\n" +
+	"privileged\x12\x14\n" +
+	"\x05error\x18\x03 \x01(\tR\x05error\"C\n" +
+	"\x0eTerminalOutput\x12\x1d\n" +
+	"\n" +
+	"session_id\x18\x01 \x01(\tR\tsessionId\x12\x12\n" +
+	"\x04data\x18\x02 \x01(\fR\x04data\"d\n" +
+	"\x0eTerminalClosed\x12\x1d\n" +
+	"\n" +
+	"session_id\x18\x01 \x01(\tR\tsessionId\x12\x16\n" +
+	"\x06reason\x18\x02 \x01(\tR\x06reason\x12\x1b\n" +
+	"\texit_code\x18\x03 \x01(\x05R\bexitCode\"\xbd\x02\n" +
 	"\aMetrics\x129\n" +
 	"\n" +
 	"sampled_at\x18\x01 \x01(\v2\x1a.google.protobuf.TimestampR\tsampledAt\x12\x1a\n" +
@@ -2035,7 +2658,11 @@ const file_agent_proto_rawDesc = "" +
 	"\x15JOB_STATE_UNSPECIFIED\x10\x00\x12\x15\n" +
 	"\x11JOB_STATE_RUNNING\x10\x01\x12\x17\n" +
 	"\x13JOB_STATE_SUCCEEDED\x10\x02\x12\x14\n" +
-	"\x10JOB_STATE_FAILED\x10\x032N\n" +
+	"\x10JOB_STATE_FAILED\x10\x03*_\n" +
+	"\rTerminalShell\x12\x1e\n" +
+	"\x1aTERMINAL_SHELL_UNSPECIFIED\x10\x00\x12\x15\n" +
+	"\x11TERMINAL_SHELL_SH\x10\x01\x12\x17\n" +
+	"\x13TERMINAL_SHELL_BASH\x10\x022N\n" +
 	"\bAgentHub\x12B\n" +
 	"\aConnect\x12\x19.talaia.agent.v1.AgentMsg\x1a\x18.talaia.agent.v1.CoreMsg(\x010\x01B\xb0\x01\n" +
 	"\x13com.talaia.agent.v1B\n" +
@@ -2053,72 +2680,88 @@ func file_agent_proto_rawDescGZIP() []byte {
 	return file_agent_proto_rawDescData
 }
 
-var file_agent_proto_enumTypes = make([]protoimpl.EnumInfo, 4)
-var file_agent_proto_msgTypes = make([]protoimpl.MessageInfo, 21)
+var file_agent_proto_enumTypes = make([]protoimpl.EnumInfo, 5)
+var file_agent_proto_msgTypes = make([]protoimpl.MessageInfo, 28)
 var file_agent_proto_goTypes = []any{
 	(ContainerActionType)(0),      // 0: talaia.agent.v1.ContainerActionType
 	(StackActionType)(0),          // 1: talaia.agent.v1.StackActionType
 	(ResourceKind)(0),             // 2: talaia.agent.v1.ResourceKind
 	(JobState)(0),                 // 3: talaia.agent.v1.JobState
-	(*CoreMsg)(nil),               // 4: talaia.agent.v1.CoreMsg
-	(*AgentMsg)(nil),              // 5: talaia.agent.v1.AgentMsg
-	(*ContainerAction)(nil),       // 6: talaia.agent.v1.ContainerAction
-	(*ReadLogs)(nil),              // 7: talaia.agent.v1.ReadLogs
-	(*StackWrite)(nil),            // 8: talaia.agent.v1.StackWrite
-	(*StackAction)(nil),           // 9: talaia.agent.v1.StackAction
-	(*StackAdopt)(nil),            // 10: talaia.agent.v1.StackAdopt
-	(*StackRead)(nil),             // 11: talaia.agent.v1.StackRead
-	(*ListResources)(nil),         // 12: talaia.agent.v1.ListResources
-	(*ResourceRef)(nil),           // 13: talaia.agent.v1.ResourceRef
-	(*RemoveResources)(nil),       // 14: talaia.agent.v1.RemoveResources
-	(*JobEvent)(nil),              // 15: talaia.agent.v1.JobEvent
-	(*Heartbeat)(nil),             // 16: talaia.agent.v1.Heartbeat
-	(*HeartbeatAck)(nil),          // 17: talaia.agent.v1.HeartbeatAck
-	(*Inventory)(nil),             // 18: talaia.agent.v1.Inventory
-	(*Container)(nil),             // 19: talaia.agent.v1.Container
-	(*ComposeProject)(nil),        // 20: talaia.agent.v1.ComposeProject
-	(*SystemdUnit)(nil),           // 21: talaia.agent.v1.SystemdUnit
-	(*ContainerStats)(nil),        // 22: talaia.agent.v1.ContainerStats
-	(*ContainerStat)(nil),         // 23: talaia.agent.v1.ContainerStat
-	(*Metrics)(nil),               // 24: talaia.agent.v1.Metrics
-	(*timestamppb.Timestamp)(nil), // 25: google.protobuf.Timestamp
+	(TerminalShell)(0),            // 4: talaia.agent.v1.TerminalShell
+	(*CoreMsg)(nil),               // 5: talaia.agent.v1.CoreMsg
+	(*AgentMsg)(nil),              // 6: talaia.agent.v1.AgentMsg
+	(*ContainerAction)(nil),       // 7: talaia.agent.v1.ContainerAction
+	(*ReadLogs)(nil),              // 8: talaia.agent.v1.ReadLogs
+	(*StackWrite)(nil),            // 9: talaia.agent.v1.StackWrite
+	(*StackAction)(nil),           // 10: talaia.agent.v1.StackAction
+	(*StackAdopt)(nil),            // 11: talaia.agent.v1.StackAdopt
+	(*StackRead)(nil),             // 12: talaia.agent.v1.StackRead
+	(*ListResources)(nil),         // 13: talaia.agent.v1.ListResources
+	(*ResourceRef)(nil),           // 14: talaia.agent.v1.ResourceRef
+	(*RemoveResources)(nil),       // 15: talaia.agent.v1.RemoveResources
+	(*JobEvent)(nil),              // 16: talaia.agent.v1.JobEvent
+	(*Heartbeat)(nil),             // 17: talaia.agent.v1.Heartbeat
+	(*HeartbeatAck)(nil),          // 18: talaia.agent.v1.HeartbeatAck
+	(*Inventory)(nil),             // 19: talaia.agent.v1.Inventory
+	(*Container)(nil),             // 20: talaia.agent.v1.Container
+	(*ComposeProject)(nil),        // 21: talaia.agent.v1.ComposeProject
+	(*SystemdUnit)(nil),           // 22: talaia.agent.v1.SystemdUnit
+	(*ContainerStats)(nil),        // 23: talaia.agent.v1.ContainerStats
+	(*ContainerStat)(nil),         // 24: talaia.agent.v1.ContainerStat
+	(*TerminalOpen)(nil),          // 25: talaia.agent.v1.TerminalOpen
+	(*TerminalInput)(nil),         // 26: talaia.agent.v1.TerminalInput
+	(*TerminalResize)(nil),        // 27: talaia.agent.v1.TerminalResize
+	(*TerminalClose)(nil),         // 28: talaia.agent.v1.TerminalClose
+	(*TerminalOpened)(nil),        // 29: talaia.agent.v1.TerminalOpened
+	(*TerminalOutput)(nil),        // 30: talaia.agent.v1.TerminalOutput
+	(*TerminalClosed)(nil),        // 31: talaia.agent.v1.TerminalClosed
+	(*Metrics)(nil),               // 32: talaia.agent.v1.Metrics
+	(*timestamppb.Timestamp)(nil), // 33: google.protobuf.Timestamp
 }
 var file_agent_proto_depIdxs = []int32{
-	17, // 0: talaia.agent.v1.CoreMsg.heartbeat_ack:type_name -> talaia.agent.v1.HeartbeatAck
-	6,  // 1: talaia.agent.v1.CoreMsg.container_action:type_name -> talaia.agent.v1.ContainerAction
-	7,  // 2: talaia.agent.v1.CoreMsg.read_logs:type_name -> talaia.agent.v1.ReadLogs
-	8,  // 3: talaia.agent.v1.CoreMsg.stack_write:type_name -> talaia.agent.v1.StackWrite
-	9,  // 4: talaia.agent.v1.CoreMsg.stack_action:type_name -> talaia.agent.v1.StackAction
-	11, // 5: talaia.agent.v1.CoreMsg.stack_read:type_name -> talaia.agent.v1.StackRead
-	10, // 6: talaia.agent.v1.CoreMsg.stack_adopt:type_name -> talaia.agent.v1.StackAdopt
-	12, // 7: talaia.agent.v1.CoreMsg.list_resources:type_name -> talaia.agent.v1.ListResources
-	14, // 8: talaia.agent.v1.CoreMsg.remove_resources:type_name -> talaia.agent.v1.RemoveResources
-	16, // 9: talaia.agent.v1.AgentMsg.heartbeat:type_name -> talaia.agent.v1.Heartbeat
-	24, // 10: talaia.agent.v1.AgentMsg.metrics:type_name -> talaia.agent.v1.Metrics
-	15, // 11: talaia.agent.v1.AgentMsg.job_event:type_name -> talaia.agent.v1.JobEvent
-	18, // 12: talaia.agent.v1.AgentMsg.inventory:type_name -> talaia.agent.v1.Inventory
-	22, // 13: talaia.agent.v1.AgentMsg.container_stats:type_name -> talaia.agent.v1.ContainerStats
-	0,  // 14: talaia.agent.v1.ContainerAction.action:type_name -> talaia.agent.v1.ContainerActionType
-	1,  // 15: talaia.agent.v1.StackAction.action:type_name -> talaia.agent.v1.StackActionType
-	2,  // 16: talaia.agent.v1.ListResources.kind:type_name -> talaia.agent.v1.ResourceKind
-	2,  // 17: talaia.agent.v1.ResourceRef.kind:type_name -> talaia.agent.v1.ResourceKind
-	13, // 18: talaia.agent.v1.RemoveResources.items:type_name -> talaia.agent.v1.ResourceRef
-	3,  // 19: talaia.agent.v1.JobEvent.state:type_name -> talaia.agent.v1.JobState
-	25, // 20: talaia.agent.v1.JobEvent.at:type_name -> google.protobuf.Timestamp
-	25, // 21: talaia.agent.v1.Heartbeat.sent_at:type_name -> google.protobuf.Timestamp
-	19, // 22: talaia.agent.v1.Inventory.containers:type_name -> talaia.agent.v1.Container
-	20, // 23: talaia.agent.v1.Inventory.compose_projects:type_name -> talaia.agent.v1.ComposeProject
-	21, // 24: talaia.agent.v1.Inventory.services:type_name -> talaia.agent.v1.SystemdUnit
-	25, // 25: talaia.agent.v1.ContainerStats.sampled_at:type_name -> google.protobuf.Timestamp
-	23, // 26: talaia.agent.v1.ContainerStats.items:type_name -> talaia.agent.v1.ContainerStat
-	25, // 27: talaia.agent.v1.Metrics.sampled_at:type_name -> google.protobuf.Timestamp
-	5,  // 28: talaia.agent.v1.AgentHub.Connect:input_type -> talaia.agent.v1.AgentMsg
-	4,  // 29: talaia.agent.v1.AgentHub.Connect:output_type -> talaia.agent.v1.CoreMsg
-	29, // [29:30] is the sub-list for method output_type
-	28, // [28:29] is the sub-list for method input_type
-	28, // [28:28] is the sub-list for extension type_name
-	28, // [28:28] is the sub-list for extension extendee
-	0,  // [0:28] is the sub-list for field type_name
+	18, // 0: talaia.agent.v1.CoreMsg.heartbeat_ack:type_name -> talaia.agent.v1.HeartbeatAck
+	7,  // 1: talaia.agent.v1.CoreMsg.container_action:type_name -> talaia.agent.v1.ContainerAction
+	8,  // 2: talaia.agent.v1.CoreMsg.read_logs:type_name -> talaia.agent.v1.ReadLogs
+	9,  // 3: talaia.agent.v1.CoreMsg.stack_write:type_name -> talaia.agent.v1.StackWrite
+	10, // 4: talaia.agent.v1.CoreMsg.stack_action:type_name -> talaia.agent.v1.StackAction
+	12, // 5: talaia.agent.v1.CoreMsg.stack_read:type_name -> talaia.agent.v1.StackRead
+	11, // 6: talaia.agent.v1.CoreMsg.stack_adopt:type_name -> talaia.agent.v1.StackAdopt
+	13, // 7: talaia.agent.v1.CoreMsg.list_resources:type_name -> talaia.agent.v1.ListResources
+	15, // 8: talaia.agent.v1.CoreMsg.remove_resources:type_name -> talaia.agent.v1.RemoveResources
+	25, // 9: talaia.agent.v1.CoreMsg.terminal_open:type_name -> talaia.agent.v1.TerminalOpen
+	26, // 10: talaia.agent.v1.CoreMsg.terminal_input:type_name -> talaia.agent.v1.TerminalInput
+	27, // 11: talaia.agent.v1.CoreMsg.terminal_resize:type_name -> talaia.agent.v1.TerminalResize
+	28, // 12: talaia.agent.v1.CoreMsg.terminal_close:type_name -> talaia.agent.v1.TerminalClose
+	17, // 13: talaia.agent.v1.AgentMsg.heartbeat:type_name -> talaia.agent.v1.Heartbeat
+	32, // 14: talaia.agent.v1.AgentMsg.metrics:type_name -> talaia.agent.v1.Metrics
+	16, // 15: talaia.agent.v1.AgentMsg.job_event:type_name -> talaia.agent.v1.JobEvent
+	19, // 16: talaia.agent.v1.AgentMsg.inventory:type_name -> talaia.agent.v1.Inventory
+	23, // 17: talaia.agent.v1.AgentMsg.container_stats:type_name -> talaia.agent.v1.ContainerStats
+	29, // 18: talaia.agent.v1.AgentMsg.terminal_opened:type_name -> talaia.agent.v1.TerminalOpened
+	30, // 19: talaia.agent.v1.AgentMsg.terminal_output:type_name -> talaia.agent.v1.TerminalOutput
+	31, // 20: talaia.agent.v1.AgentMsg.terminal_closed:type_name -> talaia.agent.v1.TerminalClosed
+	0,  // 21: talaia.agent.v1.ContainerAction.action:type_name -> talaia.agent.v1.ContainerActionType
+	1,  // 22: talaia.agent.v1.StackAction.action:type_name -> talaia.agent.v1.StackActionType
+	2,  // 23: talaia.agent.v1.ListResources.kind:type_name -> talaia.agent.v1.ResourceKind
+	2,  // 24: talaia.agent.v1.ResourceRef.kind:type_name -> talaia.agent.v1.ResourceKind
+	14, // 25: talaia.agent.v1.RemoveResources.items:type_name -> talaia.agent.v1.ResourceRef
+	3,  // 26: talaia.agent.v1.JobEvent.state:type_name -> talaia.agent.v1.JobState
+	33, // 27: talaia.agent.v1.JobEvent.at:type_name -> google.protobuf.Timestamp
+	33, // 28: talaia.agent.v1.Heartbeat.sent_at:type_name -> google.protobuf.Timestamp
+	20, // 29: talaia.agent.v1.Inventory.containers:type_name -> talaia.agent.v1.Container
+	21, // 30: talaia.agent.v1.Inventory.compose_projects:type_name -> talaia.agent.v1.ComposeProject
+	22, // 31: talaia.agent.v1.Inventory.services:type_name -> talaia.agent.v1.SystemdUnit
+	33, // 32: talaia.agent.v1.ContainerStats.sampled_at:type_name -> google.protobuf.Timestamp
+	24, // 33: talaia.agent.v1.ContainerStats.items:type_name -> talaia.agent.v1.ContainerStat
+	4,  // 34: talaia.agent.v1.TerminalOpen.shell:type_name -> talaia.agent.v1.TerminalShell
+	33, // 35: talaia.agent.v1.Metrics.sampled_at:type_name -> google.protobuf.Timestamp
+	6,  // 36: talaia.agent.v1.AgentHub.Connect:input_type -> talaia.agent.v1.AgentMsg
+	5,  // 37: talaia.agent.v1.AgentHub.Connect:output_type -> talaia.agent.v1.CoreMsg
+	37, // [37:38] is the sub-list for method output_type
+	36, // [36:37] is the sub-list for method input_type
+	36, // [36:36] is the sub-list for extension type_name
+	36, // [36:36] is the sub-list for extension extendee
+	0,  // [0:36] is the sub-list for field type_name
 }
 
 func init() { file_agent_proto_init() }
@@ -2136,6 +2779,10 @@ func file_agent_proto_init() {
 		(*CoreMsg_StackAdopt)(nil),
 		(*CoreMsg_ListResources)(nil),
 		(*CoreMsg_RemoveResources)(nil),
+		(*CoreMsg_TerminalOpen)(nil),
+		(*CoreMsg_TerminalInput)(nil),
+		(*CoreMsg_TerminalResize)(nil),
+		(*CoreMsg_TerminalClose)(nil),
 	}
 	file_agent_proto_msgTypes[1].OneofWrappers = []any{
 		(*AgentMsg_Heartbeat)(nil),
@@ -2143,14 +2790,17 @@ func file_agent_proto_init() {
 		(*AgentMsg_JobEvent)(nil),
 		(*AgentMsg_Inventory)(nil),
 		(*AgentMsg_ContainerStats)(nil),
+		(*AgentMsg_TerminalOpened)(nil),
+		(*AgentMsg_TerminalOutput)(nil),
+		(*AgentMsg_TerminalClosed)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_agent_proto_rawDesc), len(file_agent_proto_rawDesc)),
-			NumEnums:      4,
-			NumMessages:   21,
+			NumEnums:      5,
+			NumMessages:   28,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

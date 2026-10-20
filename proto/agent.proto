@@ -27,6 +27,12 @@ message CoreMsg {
     StackAdopt stack_adopt = 15;
     ListResources list_resources = 16;
     RemoveResources remove_resources = 17;
+    // Terminal sessions are not jobs: they carry no job_id and live as long as
+    // the session does.
+    TerminalOpen terminal_open = 18;
+    TerminalInput terminal_input = 19;
+    TerminalResize terminal_resize = 20;
+    TerminalClose terminal_close = 21;
   }
 }
 
@@ -38,6 +44,9 @@ message AgentMsg {
     JobEvent job_event = 3;  // progress and result of a command
     Inventory inventory = 4; // on connect and on change
     ContainerStats container_stats = 5; // every 15 s while Docker is available
+    TerminalOpened terminal_opened = 6;
+    TerminalOutput terminal_output = 7;
+    TerminalClosed terminal_closed = 8;
   }
 }
 
@@ -231,6 +240,66 @@ message ContainerStat {
   uint64 mem_limit_bytes = 4;  // 0 when the container has no limit
   uint64 net_rx_bytes = 5;     // cumulative, summed over its networks
   uint64 net_tx_bytes = 6;
+}
+
+// TerminalOpen starts an interactive shell in a container. The shell comes from
+// a closed list; the agent never runs free text. session_id is chosen by the
+// core (random, 128 bits) and routes every later message of the session.
+message TerminalOpen {
+  string session_id = 1;
+  // Container id (hex, 12 to 64 characters) or name.
+  string container = 2;
+  TerminalShell shell = 3;
+  uint32 cols = 4;
+  uint32 rows = 5;
+}
+
+enum TerminalShell {
+  TERMINAL_SHELL_UNSPECIFIED = 0;
+  TERMINAL_SHELL_SH = 1;   // /bin/sh
+  TERMINAL_SHELL_BASH = 2; // /bin/bash
+}
+
+// TerminalInput carries keystrokes, at most 4 KiB per message. It is bytes, not
+// text: a terminal does not speak only UTF-8.
+message TerminalInput {
+  string session_id = 1;
+  bytes data = 2;
+}
+
+// TerminalResize changes the size of the terminal; cols and rows are 1 to 1000.
+message TerminalResize {
+  string session_id = 1;
+  uint32 cols = 2;
+  uint32 rows = 3;
+}
+
+// TerminalClose asks the agent to end a session.
+message TerminalClose {
+  string session_id = 1;
+}
+
+// TerminalOpened answers a TerminalOpen once the shell runs, or says why not.
+message TerminalOpened {
+  string session_id = 1;
+  // The container is privileged, shares the PID namespace of the host or has
+  // the Docker socket mounted: the shell is as good as root on the server.
+  bool privileged = 2;
+  string error = 3; // empty when the session opened
+}
+
+// TerminalOutput is what the shell printed, at most 16 KiB per message.
+message TerminalOutput {
+  string session_id = 1;
+  bytes data = 2;
+}
+
+// TerminalClosed ends a session from the agent side: the shell exited, the
+// container went away or a limit was reached.
+message TerminalClosed {
+  string session_id = 1;
+  string reason = 2;
+  int32 exit_code = 3;
 }
 
 message Metrics {
