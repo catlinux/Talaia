@@ -163,6 +163,12 @@ func newTestPanel(t *testing.T, options ...panelOption) *testPanel {
 		WebDir:   settings.webDir,
 		Security: SecurityConfig{TLS: true, Origins: []string{testOrigin}},
 		Session:  SessionDeps{Store: st, Now: clock.Now, IdleTimeout: settings.idleTimeout},
+		Enrollment: &EnrollmentTokenDeps{
+			Tokens:        st,
+			Audit:         st,
+			CAFingerprint: testFingerprint,
+			PublicURL:     "https://192.0.2.10:8443",
+		},
 		Auth: AuthDeps{
 			Store:        st,
 			Box:          box,

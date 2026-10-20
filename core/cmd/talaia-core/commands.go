@@ -14,6 +14,7 @@ import (
 
 	"github.com/catlinux/Talaia/core/internal/ca"
 	"github.com/catlinux/Talaia/core/internal/config"
+	"github.com/catlinux/Talaia/core/internal/install"
 	"github.com/catlinux/Talaia/core/internal/store"
 )
 
@@ -275,12 +276,8 @@ ca-fingerprint: %s
 This token is shown only once: store it now.
 `, name, ttl, token, fingerprint)
 
-	if publicURL != "" {
-		fmt.Fprintf(out, `
-To install the agent, run this on the server (as root, or with sudo):
-
-curl -fsSk %s/install.sh | sudo bash -s -- --url %s --token %s --ca-fingerprint %s
-`, publicURL, publicURL, token, fingerprint)
+	if command := install.Command(publicURL, token, fingerprint); command != "" {
+		fmt.Fprintf(out, "\nTo install the agent, run this on the server (as root, or with sudo):\n\n%s\n", command)
 	}
 
 	return nil

@@ -81,9 +81,11 @@ func splitCommand(args []string) (string, []string) {
 // panelOptions are the settings of the authentication API and the web panel,
 // shared by the TLS and the insecure development modes.
 type panelOptions struct {
-	Box          *auth.SecretBox
-	WebDir       string
-	DistDir      string
+	Box     *auth.SecretBox
+	WebDir  string
+	DistDir string
+	// Enrollment enables creating enrollment tokens from the panel.
+	Enrollment   *api.EnrollmentTokenDeps
 	Origins      []string
 	TLS          bool
 	Limiter      *api.RateLimiter
@@ -96,12 +98,13 @@ type panelOptions struct {
 // so the API sees their live data.
 func newCoreRouter(st *store.Store, agents api.LiveAgents, options panelOptions) http.Handler {
 	return api.NewRouter(api.RouterDeps{
-		DB:       st,
-		WebDir:   options.WebDir,
-		Security: api.SecurityConfig{TLS: options.TLS, Origins: options.Origins},
-		Session:  api.SessionDeps{Store: st, Now: options.Now},
-		Servers:  st,
-		Agents:   agents,
+		DB:         st,
+		WebDir:     options.WebDir,
+		Security:   api.SecurityConfig{TLS: options.TLS, Origins: options.Origins},
+		Session:    api.SessionDeps{Store: st, Now: options.Now},
+		Servers:    st,
+		Agents:     agents,
+		Enrollment: options.Enrollment,
 		Auth: api.AuthDeps{
 			Store:        st,
 			Box:          options.Box,
@@ -264,6 +267,12 @@ func serve() error {
 			return err
 		}
 
+		panel.Enrollment = &api.EnrollmentTokenDeps{
+			Tokens:        st,
+			Audit:         st,
+			CAFingerprint: authority.Fingerprint(),
+			PublicURL:     cfg.PublicURL(),
+		}
 		srv.Handler = newTLSRouter(st, authority, hub.New(st), panel)
 		srv.Protocols = newTLSProtocols()
 		srv.TLSConfig = &tls.Config{

@@ -20,6 +20,10 @@ var ErrInvalidToken = errors.New("invalid enrollment token")
 // ErrNotFound is returned when the requested row does not exist.
 var ErrNotFound = errors.New("not found")
 
+// ErrNameTaken is returned when a server name is already enrolled or already
+// has a pending enrollment token.
+var ErrNameTaken = errors.New("server name is already in use")
+
 // tokenPrefix identifies an enrollment token.
 const tokenPrefix = "tl_enr_"
 
@@ -79,10 +83,10 @@ func (s *Store) CreateEnrollmentToken(ctx context.Context, serverName string, tt
 		return "", fmt.Errorf("check server name: %w", err)
 	}
 	if enrolled {
-		return "", fmt.Errorf("server %q is already enrolled", serverName)
+		return "", fmt.Errorf("server %q is already enrolled: %w", serverName, ErrNameTaken)
 	}
 	if pending {
-		return "", fmt.Errorf("server %q already has a pending enrollment token", serverName)
+		return "", fmt.Errorf("server %q already has a pending enrollment token: %w", serverName, ErrNameTaken)
 	}
 
 	hash := sha256.Sum256([]byte(token))
