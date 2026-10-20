@@ -36,6 +36,8 @@ type RouterDeps struct {
 	// Terminal enables the terminal endpoints; nil leaves them out. Build it with
 	// NewTerminalDeps.
 	Terminal *TerminalDeps
+	// System enables the version and update endpoints; nil leaves them out.
+	System *SystemDeps
 }
 
 // NewRouter returns the HTTP handler of the core: the health endpoint, the
@@ -75,6 +77,10 @@ func NewRouter(deps RouterDeps) http.Handler {
 			}
 			if deps.Enrollment != nil {
 				r.Post("/servers/enrollment-tokens", NewEnrollmentTokenHandler(*deps.Enrollment).ServeHTTP)
+			}
+			if deps.System != nil {
+				r.Get("/system/version", NewSystemVersionHandler(*deps.System).ServeHTTP)
+				r.Post("/system/update", NewSystemUpdateHandler(*deps.System).ServeHTTP)
 			}
 		})
 	})

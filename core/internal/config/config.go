@@ -9,10 +9,14 @@ import (
 	"net"
 	"net/url"
 	"os"
+	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/catlinux/Talaia/core/internal/acme"
+	"github.com/catlinux/Talaia/core/internal/updates"
 	"github.com/pelletier/go-toml/v2"
 )
 
@@ -73,6 +77,15 @@ type Config struct {
 	// ACMEDirectoryURL is the ACME directory, to use the staging endpoint or a
 	// test server. It defaults to Let's Encrypt production.
 	ACMEDirectoryURL string
+	// UpdateRepo is the GitHub repository updates are checked against, as
+	// owner/name.
+	UpdateRepo string
+	// UpdateCheckInterval is how often the core asks GitHub for updates.
+	UpdateCheckInterval time.Duration
+	// UpdateAPIURL is the base URL of the GitHub API.
+	UpdateAPIURL string
+	// HostDir is the directory shared with the host update helper.
+	HostDir string
 }
 
 // fileConfig mirrors the TOML document. Pointer fields tell an absent key
@@ -94,7 +107,14 @@ type fileConfig struct {
 	ACMEProvider          *string   `toml:"acme_provider"`
 	ACMEEmail             *string   `toml:"acme_email"`
 	ACMEDirectoryURL      *string   `toml:"acme_directory_url"`
+	UpdateRepo            *string   `toml:"update_repo"`
+	UpdateCheckInterval   *string   `toml:"update_check_interval"`
+	UpdateAPIURL          *string   `toml:"update_api_url"`
+	HostDir               *string   `toml:"host_dir"`
 }
+
+// updateRepoPattern matches the owner/name form of a GitHub repository.
+var updateRepoPattern = regexp.MustCompile(`^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$`)
 
 var logLevels = map[string]slog.Level{
 	"debug": slog.LevelDebug,
@@ -126,6 +146,9 @@ func load(lookup func(string) (string, bool), defaultPath string) (Config, error
 		WebDir:                DefaultWebDir,
 		TerminalRecordingDays: DefaultTerminalRecordingDays,
 		ACMEDirectoryURL:      acme.DefaultDirectoryURL,
+		UpdateRepo:            updates.DefaultRepo,
+		UpdateCheckInterval:   updates.DefaultInterval,
+		UpdateAPIURL:          updates.DefaultAPIURL,
 	}
 
 	path := defaultPath
@@ -194,6 +217,22 @@ func load(lookup func(string) (string, bool), defaultPath string) (Config, error
 	}
 	if value, ok := lookup("TALAIA_ACME_DIRECTORY_URL"); ok {
 		cfg.ACMEDirectoryURL = strings.TrimSpace(value)
+	}
+	if value, ok := lookup("TALAIA_UPDATE_REPO"); ok {
+		cfg.UpdateRepo = strings.TrimSpace(value)
+	}
+	if value, ok := lookup("TALAIA_UPDATE_CHECK_INTERVAL"); ok {
+		interval, err := time.ParseDuration(strings.TrimSpace(value))
+		if err != nil {
+			return Config{}, fmt.Errorf("invalid update_check_interval %q (expected a duration such as 30m)", value)
+		}
+		cfg.UpdateCheckInterval = interval
+	}
+	if value, ok := lookup("TALAIA_UPDATE_API_URL"); ok {
+		cfg.UpdateAPIURL = strings.TrimSpace(value)
+	}
+	if value, ok := lookup("TALAIA_HOST_DIR"); ok {
+		cfg.HostDir = strings.TrimSpace(value)
 	}
 
 	if err := cfg.validate(); err != nil {
@@ -279,6 +318,22 @@ func applyFile(cfg *Config, path string, explicit bool) error {
 	}
 	if file.ACMEDirectoryURL != nil {
 		cfg.ACMEDirectoryURL = strings.TrimSpace(*file.ACMEDirectoryURL)
+	}
+	if file.UpdateRepo != nil {
+		cfg.UpdateRepo = strings.TrimSpace(*file.UpdateRepo)
+	}
+	if file.UpdateCheckInterval != nil {
+		interval, err := time.ParseDuration(strings.TrimSpace(*file.UpdateCheckInterval))
+		if err != nil {
+			return fmt.Errorf("invalid update_check_interval %q (expected a duration such as 30m)", *file.UpdateCheckInterval)
+		}
+		cfg.UpdateCheckInterval = interval
+	}
+	if file.UpdateAPIURL != nil {
+		cfg.UpdateAPIURL = strings.TrimSpace(*file.UpdateAPIURL)
+	}
+	if file.HostDir != nil {
+		cfg.HostDir = strings.TrimSpace(*file.HostDir)
 	}
 	return nil
 }
@@ -394,6 +449,22 @@ func (c *Config) validate() error {
 	}
 	if strings.TrimSpace(c.ACMEDirectoryURL) == "" {
 		c.ACMEDirectoryURL = acme.DefaultDirectoryURL
+	}
+
+	c.UpdateRepo = strings.TrimSpace(c.UpdateRepo)
+	if !updateRepoPattern.MatchString(c.UpdateRepo) {
+		return fmt.Errorf("invalid update_repo %q (expected owner/name)", c.UpdateRepo)
+	}
+	if c.UpdateCheckInterval < time.Minute {
+		return errors.New("update_check_interval must be at least 1m")
+	}
+	c.UpdateAPIURL = strings.TrimRight(strings.TrimSpace(c.UpdateAPIURL), "/")
+	if parsed, err := url.Parse(c.UpdateAPIURL); err != nil || parsed.Scheme == "" || parsed.Host == "" {
+		return fmt.Errorf("invalid update_api_url %q", c.UpdateAPIURL)
+	}
+	c.HostDir = strings.TrimSpace(c.HostDir)
+	if c.HostDir == "" {
+		c.HostDir = filepath.Join(c.DataDir, "host")
 	}
 	return nil
 }

@@ -47,10 +47,12 @@ COPY proto ./proto
 COPY VERSION ./VERSION
 
 # A build argument overrides the version stamped into the binary; without it the
-# VERSION file of the repository is used.
+# VERSION file of the repository is used. GIT_COMMIT is the commit the helper
+# passes at build time; empty leaves the version unknown.
 ARG VERSION=""
-RUN version="${VERSION:-$(cat VERSION)}" && \
-    CGO_ENABLED=0 go build -trimpath -ldflags "-s -w -X main.version=${version}" \
+ARG GIT_COMMIT=""
+RUN version="${VERSION:-$(cat VERSION)}" && commit="${GIT_COMMIT}" && \
+    CGO_ENABLED=0 go build -trimpath -ldflags "-s -w -X main.version=${version} -X main.commit=${commit}" \
     -o /out/talaia-core ./core/cmd/talaia-core
 
 # Stage 3: the agent packages the core hands to new servers (amd64 and arm64).

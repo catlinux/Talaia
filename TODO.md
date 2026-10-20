@@ -91,7 +91,7 @@ of the current phase and the next one.
 - [x] Two ports of its own, chosen free by the installer (8443 and 8444 by default, never 80/443 unless free and asked for): one for the panel, one for the agents
 - [x] Installer that checks the ports, asks for the public name and writes `.env`
 - [x] Trusted certificate for the panel by ACME DNS-01 inside the core (lego; OVH first), on any port; the agents keep pinning Talaia's own CA
-- [ ] Update detection (latest commit of `main` with green CI) and API
+- [x] Update detection (latest commit of `main` with green CI) and API
 - [ ] Host helper `talaia-hostd` (systemd) that pulls, rebuilds, checks `/healthz` and rolls back with a database copy; the core never gets the Docker socket
 - [ ] Settings screen with the version and the update button; ca/es/en
 - [ ] Documentation EN/ES (VPS with other services, OVH credential with minimal rights, updates)

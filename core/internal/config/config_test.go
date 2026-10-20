@@ -6,6 +6,7 @@ import (
 	"slices"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/catlinux/Talaia/core/internal/acme"
 )
@@ -587,5 +588,130 @@ acme_directory_url = "https://acme.example/directory"
 	}
 	if cfg.ACMEProvider != "ovh" || cfg.ACMEEmail != "file@example.com" || cfg.ACMEDirectoryURL != "https://acme.example/directory" {
 		t.Fatalf("ACME values from the file = %+v", cfg)
+	}
+}
+
+func TestUpdatesConfig(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "core.toml")
+	env := func(extra map[string]string) map[string]string {
+		all := map[string]string{"TALAIA_DATABASE_URL": testDatabaseURL}
+		for key, value := range extra {
+			all[key] = value
+		}
+		return all
+	}
+
+	cfg, err := load(lookupFrom(env(nil)), path)
+	if err != nil {
+		t.Fatalf("defaults: %v", err)
+	}
+	if cfg.UpdateRepo != "catlinux/Talaia" {
+		t.Errorf("update_repo = %q", cfg.UpdateRepo)
+	}
+	if cfg.UpdateCheckInterval != 30*time.Minute {
+		t.Errorf("update_check_interval = %v", cfg.UpdateCheckInterval)
+	}
+	if cfg.UpdateAPIURL != "https://api.github.com" {
+		t.Errorf("update_api_url = %q", cfg.UpdateAPIURL)
+	}
+	if want := filepath.Join(DefaultDataDir, "host"); cfg.HostDir != want {
+		t.Errorf("host_dir = %q, want %q", cfg.HostDir, want)
+	}
+
+	cfg, err = load(lookupFrom(env(map[string]string{
+		"TALAIA_DATA_DIR":              "/srv/talaia",
+		"TALAIA_UPDATE_REPO":           "example/repo",
+		"TALAIA_UPDATE_CHECK_INTERVAL": "5m",
+		"TALAIA_UPDATE_API_URL":        "https://github.example/api/",
+		"TALAIA_HOST_DIR":              "/srv/talaia-host",
+	})), path)
+	if err != nil {
+		t.Fatalf("environment: %v", err)
+	}
+	if cfg.UpdateRepo != "example/repo" || cfg.UpdateCheckInterval != 5*time.Minute {
+		t.Errorf("update values = %q, %v", cfg.UpdateRepo, cfg.UpdateCheckInterval)
+	}
+	if cfg.UpdateAPIURL != "https://github.example/api" {
+		t.Errorf("update_api_url = %q, want it without the trailing slash", cfg.UpdateAPIURL)
+	}
+	if cfg.HostDir != "/srv/talaia-host" {
+		t.Errorf("host_dir = %q", cfg.HostDir)
+	}
+
+	cfg, err = load(lookupFrom(env(map[string]string{"TALAIA_DATA_DIR": "/srv/talaia"})), path)
+	if err != nil {
+		t.Fatalf("host dir from the data dir: %v", err)
+	}
+	if want := filepath.Join("/srv/talaia", "host"); cfg.HostDir != want {
+		t.Errorf("host_dir = %q, want %q", cfg.HostDir, want)
+	}
+
+	errors := []struct {
+		name    string
+		extra   map[string]string
+		wantErr string
+	}{
+		{
+			name:    "repository without owner",
+			extra:   map[string]string{"TALAIA_UPDATE_REPO": "Talaia"},
+			wantErr: "invalid update_repo",
+		},
+		{
+			name:    "repository with a path",
+			extra:   map[string]string{"TALAIA_UPDATE_REPO": "a/b/c"},
+			wantErr: "invalid update_repo",
+		},
+		{
+			name:    "interval too short",
+			extra:   map[string]string{"TALAIA_UPDATE_CHECK_INTERVAL": "30s"},
+			wantErr: "at least 1m",
+		},
+		{
+			name:    "invalid interval",
+			extra:   map[string]string{"TALAIA_UPDATE_CHECK_INTERVAL": "often"},
+			wantErr: "invalid update_check_interval",
+		},
+		{
+			name:    "invalid API URL",
+			extra:   map[string]string{"TALAIA_UPDATE_API_URL": "not a url"},
+			wantErr: "invalid update_api_url",
+		},
+	}
+	for _, tt := range errors {
+		t.Run(tt.name, func(t *testing.T) {
+			if _, err := load(lookupFrom(env(tt.extra)), path); err == nil || !strings.Contains(err.Error(), tt.wantErr) {
+				t.Fatalf("error = %v, want it to contain %q", err, tt.wantErr)
+			}
+		})
+	}
+
+	file := `
+database_url = "postgres://file@example.com/talaia"
+update_repo = "o/r"
+update_check_interval = "10m"
+update_api_url = "https://api.example"
+host_dir = "/tmp/talaia-host"
+`
+	if err := os.WriteFile(path, []byte(file), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	cfg, err = load(lookupFrom(map[string]string{"TALAIA_CONFIG": path}), path)
+	if err != nil {
+		t.Fatalf("from the file: %v", err)
+	}
+	if cfg.UpdateRepo != "o/r" || cfg.UpdateCheckInterval != 10*time.Minute ||
+		cfg.UpdateAPIURL != "https://api.example" || cfg.HostDir != "/tmp/talaia-host" {
+		t.Fatalf("update values from the file = %+v", cfg)
+	}
+
+	badFile := `
+database_url = "postgres://file@example.com/talaia"
+update_check_interval = "soon"
+`
+	if err := os.WriteFile(path, []byte(badFile), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := load(lookupFrom(map[string]string{"TALAIA_CONFIG": path}), path); err == nil || !strings.Contains(err.Error(), "invalid update_check_interval") {
+		t.Fatalf("bad interval in the file = %v", err)
 	}
 }

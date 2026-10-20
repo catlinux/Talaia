@@ -29,10 +29,15 @@ import (
 	"github.com/catlinux/Talaia/core/internal/install"
 	"github.com/catlinux/Talaia/core/internal/store"
 	"github.com/catlinux/Talaia/core/internal/terminal"
+	"github.com/catlinux/Talaia/core/internal/updates"
 )
 
 // version is the version placeholder, overridden at build time.
 var version = "dev"
+
+// commit is the git commit placeholder, overridden at build time. An empty
+// value means the build does not know its commit.
+var commit = ""
 
 const (
 	shutdownTimeout = 10 * time.Second
@@ -94,6 +99,7 @@ type panelOptions struct {
 	// Containers enables the container and job API.
 	Containers   *api.ContainerDeps
 	Terminal     *api.TerminalDeps
+	System       *api.SystemDeps
 	Origins      []string
 	TLS          bool
 	Limiter      *api.RateLimiter
@@ -115,6 +121,7 @@ func newCoreRouter(st *store.Store, agents api.LiveAgents, options panelOptions)
 		Enrollment: options.Enrollment,
 		Containers: options.Containers,
 		Terminal:   options.Terminal,
+		System:     options.System,
 		Auth: api.AuthDeps{
 			Store:        st,
 			Box:          options.Box,
@@ -220,7 +227,7 @@ func serve() error {
 
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: cfg.Level()}))
 	slog.SetDefault(logger)
-	logger.Info("starting talaia-core", "version", version, "panel_listen", cfg.PanelListen, "agent_listen", cfg.AgentListen, "insecure_dev", cfg.InsecureDev)
+	logger.Info("starting talaia-core", "version", version, "commit", commit, "panel_listen", cfg.PanelListen, "agent_listen", cfg.AgentListen, "insecure_dev", cfg.InsecureDev)
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
@@ -301,6 +308,27 @@ func serve() error {
 		terminals = terminal.New(st, agentHub, st, box, terminal.DefaultConfig())
 		agentHub.SetTerminals(terminals)
 		panel.Terminal = api.NewTerminalDeps(api.TerminalDeps{Agents: agentHub, Terminals: terminals, Sessions: st, Origins: cfg.AllowedOrigins})
+
+		checker, err := updates.New(updates.Options{
+			Repo:          cfg.UpdateRepo,
+			APIURL:        cfg.UpdateAPIURL,
+			CurrentCommit: commit,
+			Version:       version,
+			Interval:      cfg.UpdateCheckInterval,
+			Logger:        logger,
+		})
+		if err != nil {
+			return fmt.Errorf("configure update checks: %w", err)
+		}
+		checker.Start(ctx)
+		panel.System = &api.SystemDeps{
+			Version:   version,
+			Commit:    commit,
+			Checker:   checker,
+			Requester: updates.NewRequester(cfg.HostDir),
+			Audit:     st,
+		}
+
 		purgeCtx, stopPurge := context.WithCancel(context.Background())
 		defer stopPurge()
 		go terminal.PurgeLoop(purgeCtx, st, cfg.TerminalRecordingDays, 24*time.Hour)
