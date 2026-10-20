@@ -296,3 +296,49 @@ func fingerprintFromOutput(t *testing.T, output string) string {
 	t.Fatalf("no ca-fingerprint line in %q", output)
 	return ""
 }
+
+type fakeLister struct {
+	servers []store.Server
+	err     error
+}
+
+func (f *fakeLister) ListServers(context.Context) ([]store.Server, error) {
+	return f.servers, f.err
+}
+
+func TestServerListPrintsIdsNamesAndState(t *testing.T) {
+	lister := &fakeLister{servers: []store.Server{
+		{ID: "c7a3a3b1", Name: "vps-web-01"},
+		{ID: "9f2e0d44", Name: "vps-old", RevokedAt: time.Now()},
+	}}
+	var stdout bytes.Buffer
+
+	if err := serverList(context.Background(), &stdout, lister); err != nil {
+		t.Fatalf("serverList: %v", err)
+	}
+
+	for _, want := range []string{"c7a3a3b1  vps-web-01  active", "9f2e0d44  vps-old  revoked"} {
+		if !strings.Contains(stdout.String(), want) {
+			t.Errorf("output %q does not contain %q", stdout.String(), want)
+		}
+	}
+}
+
+func TestServerListWithoutServers(t *testing.T) {
+	var stdout bytes.Buffer
+
+	if err := serverList(context.Background(), &stdout, &fakeLister{}); err != nil {
+		t.Fatalf("serverList: %v", err)
+	}
+	if !strings.Contains(stdout.String(), "no servers enrolled") {
+		t.Errorf("output = %q", stdout.String())
+	}
+}
+
+func TestServerListReportsErrors(t *testing.T) {
+	var stdout bytes.Buffer
+
+	if err := serverList(context.Background(), &stdout, &fakeLister{err: errors.New("db down")}); err == nil {
+		t.Fatal("expected an error")
+	}
+}

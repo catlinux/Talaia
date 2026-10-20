@@ -25,6 +25,7 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 - `packaging/core/install.sh`: prepara el núcleo con una sola orden (contraseña aleatoria de base de datos en `.env`, construcción, arranque, administrador), y la guía de instalación `docs/es/instalacion.md`.
 - Trabajo de CI `core stack (docker)`: ejecuta el instalador del núcleo y comprueba que sirve el panel, la CA, `install.sh` y los dos paquetes del agente, que `token create` imprime la orden de instalación, y que un servidor instala su agente con ella y se da de alta.
 - API `POST /api/v1/servers/enrollment-tokens` (sesión completa): crea un token de alta de un solo uso y 15 minutos para un nombre de servidor y devuelve la orden de instalación; se audita como `enrollment_token_created`.
+- `talaia-core server list` imprime los servidores dados de alta con sus ids, que necesita `server revoke`.
 - Botón «Añadir servidor» en la pantalla de flota: pide un nombre, crea el token de un solo uso y muestra la orden de instalación con un botón de copiar, en ca/es/en. El mensaje de flota vacía apunta ahora a él.
 - Enlace mínimo del agente: el hub del core acepta el stream del agente (HTTP/2 sin cifrar por ahora) y el agente envía inventario, latidos y métricas de CPU, leyendo `/etc/talaia/agent.toml`.
 - i18n para los componentes Go (go-i18n en core y CLI, ca/es/en) y `scripts/i18n-check.mjs`, que falla si falta una clave en algún idioma.

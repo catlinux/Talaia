@@ -34,6 +34,7 @@ func printUsage(w io.Writer) {
 Commands:
   serve                               start the core server (default)
   token create --name <name>          create a one-time enrollment token
+  server list                         list the enrolled servers with their ids
   server revoke <id>                  revoke an enrolled server
   user create --username <name>       create the administrator (asks for the password)
   user reset-2fa                      clear the second factor of the administrator
@@ -70,6 +71,12 @@ func runServer(args []string, stdout, stderr io.Writer) int {
 	}
 
 	switch args[0] {
+	case "list":
+		if err := serverListCommand(args[1:], stdout, stderr); err != nil {
+			fmt.Fprintf(stderr, "server list: %v\n", err)
+			return 1
+		}
+		return 0
 	case "revoke":
 		if err := serverRevokeCommand(args[1:], stdout, stderr); err != nil {
 			fmt.Fprintf(stderr, "server revoke: %v\n", err)
@@ -337,4 +344,61 @@ func serverRevoke(ctx context.Context, out io.Writer, revoker serverRevoker, id 
 // caDirectory is where the CA files live inside the data directory.
 func caDirectory(cfg config.Config) string {
 	return filepath.Join(cfg.DataDir, "ca")
+}
+
+// serverLister is the part of the store the list command needs.
+type serverLister interface {
+	ListServers(ctx context.Context) ([]store.Server, error)
+}
+
+// serverListCommand prints the enrolled servers. It does not need the CA.
+func serverListCommand(args []string, stdout, stderr io.Writer) error {
+	flags := flag.NewFlagSet("server list", flag.ContinueOnError)
+	flags.SetOutput(stderr)
+	if err := flags.Parse(args); err != nil {
+		return err
+	}
+	if flags.NArg() != 0 {
+		return errors.New("usage: talaia-core server list")
+	}
+
+	cfg, err := config.Load()
+	if err != nil {
+		return err
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), commandTimeout)
+	defer cancel()
+
+	st, err := store.Open(ctx, cfg.DatabaseURL)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = st.Close() }()
+	if err := st.Migrate(ctx); err != nil {
+		return err
+	}
+
+	return serverList(ctx, stdout, st)
+}
+
+// serverList prints one line per server: id, name and state.
+func serverList(ctx context.Context, out io.Writer, lister serverLister) error {
+	servers, err := lister.ListServers(ctx)
+	if err != nil {
+		return err
+	}
+	if len(servers) == 0 {
+		fmt.Fprintln(out, "no servers enrolled")
+		return nil
+	}
+
+	for _, server := range servers {
+		state := "active"
+		if !server.RevokedAt.IsZero() {
+			state = "revoked"
+		}
+		fmt.Fprintf(out, "%s  %s  %s\n", server.ID, server.Name, state)
+	}
+	return nil
 }
