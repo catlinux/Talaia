@@ -21,6 +21,7 @@ const (
 	jobTimeout         = 90 * time.Second
 	stackActionTimeout = 10 * time.Minute
 	stackWriteTimeout  = 2 * time.Minute
+	resourceTimeout    = 5 * time.Minute
 )
 
 // rememberedJobs is how many finished jobs the executor remembers to answer a
@@ -29,6 +30,9 @@ const rememberedJobs = 256
 
 // errNoStacks is the failure of a stack command on an executor without stacks.
 var errNoStacks = errors.New("stacks are not available on this agent")
+
+// errNoResources is the failure of a resource command on an executor without them.
+var errNoResources = errors.New("resources are not available on this agent")
 
 // Actions are the container operations the executor can run.
 type Actions interface {
@@ -45,11 +49,19 @@ type StackManager interface {
 	Adopt(ctx context.Context, name string) (string, error)
 }
 
+// ResourceManager lists and removes Docker images, volumes and networks.
+type ResourceManager interface {
+	ListResources(ctx context.Context, kind agentv1.ResourceKind) (string, error)
+	RemoveResources(ctx context.Context, items []*agentv1.ResourceRef) (string, error)
+}
+
 // Executor runs commands. Every command carries a job id; running the same id
 // twice does not repeat the effect, the executor sends the first outcome again.
 type Executor struct {
 	actions Actions
 	stacks  StackManager
+	// resources is nil until WithResources sets it.
+	resources ResourceManager
 
 	mu       sync.Mutex
 	finished map[string]*agentv1.JobEvent
@@ -72,13 +84,20 @@ func (e *Executor) WithStacks(manager StackManager) *Executor {
 	return e
 }
 
+// WithResources lets the executor list and remove Docker resources.
+func (e *Executor) WithResources(manager ResourceManager) *Executor {
+	e.resources = manager
+	return e
+}
+
 // Handle starts the command carried by msg, if it carries one, and reports
 // whether it did. The job runs in its own goroutine; emit is called from it, so
 // it must be safe for concurrent use.
 func (e *Executor) Handle(ctx context.Context, msg *agentv1.CoreMsg, emit func(*agentv1.AgentMsg)) bool {
 	action, logs := msg.GetContainerAction(), msg.GetReadLogs()
 	write, stackAction, read, adopt := msg.GetStackWrite(), msg.GetStackAction(), msg.GetStackRead(), msg.GetStackAdopt()
-	if action == nil && logs == nil && write == nil && stackAction == nil && read == nil && adopt == nil {
+	list, remove := msg.GetListResources(), msg.GetRemoveResources()
+	if action == nil && logs == nil && write == nil && stackAction == nil && read == nil && adopt == nil && list == nil && remove == nil {
 		return false
 	}
 
@@ -129,6 +148,20 @@ func (e *Executor) Handle(ctx context.Context, msg *agentv1.CoreMsg, emit func(*
 				return "", errNoStacks
 			}
 			return e.stacks.Do(ctx, stackAction.GetName(), stackAction.GetAction())
+		})
+	case list != nil:
+		go e.execute(ctx, jobID, "list resources", jobTimeout, emit, func(ctx context.Context) (string, error) {
+			if e.resources == nil {
+				return "", errNoResources
+			}
+			return e.resources.ListResources(ctx, list.GetKind())
+		})
+	case remove != nil:
+		go e.execute(ctx, jobID, "remove resources", resourceTimeout, emit, func(ctx context.Context) (string, error) {
+			if e.resources == nil {
+				return "", errNoResources
+			}
+			return e.resources.RemoveResources(ctx, remove.GetItems())
 		})
 	case adopt != nil:
 		go e.execute(ctx, jobID, "stack adopt", jobTimeout, emit, func(ctx context.Context) (string, error) {

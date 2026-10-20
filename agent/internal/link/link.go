@@ -77,7 +77,7 @@ func newLink(cfg config.Config, collector collect.Collector, identity *enroll.Id
 		collector:         collector,
 		identity:          identity,
 		client:            agentv1connect.NewAgentHubClient(connect.NewClient(rpcTransport)),
-		jobs:              jobs.New(jobs.NewDockerActions()).WithStacks(stacks.NewDefault().WithProjects(inventory.NewDocker())),
+		jobs:              newExecutor(),
 		HeartbeatInterval: 10 * time.Second,
 		MetricsInterval:   15 * time.Second,
 		InventoryInterval: 60 * time.Second,
@@ -350,4 +350,13 @@ func jitter(backoff time.Duration) time.Duration {
 	}
 	half := int64(backoff / 2)
 	return time.Duration(half + rand.Int64N(half+1))
+}
+
+// newExecutor builds the executor of a real agent: container actions, stacks and
+// Docker resources, all on the local Docker.
+func newExecutor() *jobs.Executor {
+	docker := jobs.NewDockerActions()
+	return jobs.New(docker).
+		WithStacks(stacks.NewDefault().WithProjects(inventory.NewDocker())).
+		WithResources(docker)
 }
