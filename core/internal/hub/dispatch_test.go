@@ -70,7 +70,9 @@ func TestDispatchToAnAgentThatIsNotConnected(t *testing.T) {
 
 	stream, done := startStreamedAgent(t, h, "server-1", "aa")
 	stream.close()
-	_ = <-done
+	if err := <-done; err != nil {
+		t.Fatalf("serve = %v after a clean close", err)
+	}
 	if err := h.Dispatch("server-1", restartCommand("job-2")); !errors.Is(err, ErrNotConnected) {
 		t.Errorf("Dispatch after the agent left = %v, want ErrNotConnected", err)
 	}
