@@ -81,6 +81,7 @@ type testHub struct {
 	metrics     []*agentv1.Metrics
 	jobEvents   []*agentv1.JobEvent
 	sentCommand bool
+	stats       []*agentv1.ContainerStats
 }
 
 func (h *testHub) Connect(_ context.Context, stream agentv1connect.AgentHubConnectServerStream) error {
@@ -107,6 +108,11 @@ func (h *testHub) Connect(_ context.Context, stream agentv1connect.AgentHubConne
 					return err
 				}
 			}
+
+		case msg.GetContainerStats() != nil:
+			h.mu.Lock()
+			h.stats = append(h.stats, msg.GetContainerStats())
+			h.mu.Unlock()
 
 		case msg.GetJobEvent() != nil:
 			h.mu.Lock()
@@ -645,4 +651,49 @@ func TestLinkResendsTheInventoryRightAfterAJob(t *testing.T) {
 	go func() { _ = agentLink.Run(ctx) }()
 
 	waitFor(t, func() bool { return hub.inventoryCount() >= 2 })
+}
+
+// fixedStats reports the same sample every time.
+type fixedStats struct {
+	mu    sync.Mutex
+	calls int
+}
+
+func (f *fixedStats) Stats(context.Context) *agentv1.ContainerStats {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.calls++
+	return &agentv1.ContainerStats{Items: []*agentv1.ContainerStat{{Id: "abcdefghijkl", CpuPercent: 12.5, MemUsedBytes: 1024}}}
+}
+
+func TestLinkSendsContainerStatsOnTheirOwnTimer(t *testing.T) {
+	hub := &testHub{}
+	url := newTestServer(t, hub)
+	source := &fixedStats{}
+
+	agentLink := NewInsecure(config.Config{CoreURL: url, LogLevel: "info"}, &fakeCollector{
+		inventory: inventoryWith("vps-test"),
+		metrics:   &agentv1.Metrics{Hostname: "vps-test"},
+	})
+	agentLink.stats = source
+	agentLink.HeartbeatInterval = time.Hour
+	agentLink.MetricsInterval = time.Hour
+	agentLink.InventoryInterval = time.Hour
+	agentLink.StatsInterval = 20 * time.Millisecond
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go func() { _ = agentLink.Run(ctx) }()
+
+	waitFor(t, func() bool {
+		hub.mu.Lock()
+		defer hub.mu.Unlock()
+		return len(hub.stats) >= 2
+	})
+
+	hub.mu.Lock()
+	defer hub.mu.Unlock()
+	if got := hub.stats[0].GetItems(); len(got) != 1 || got[0].GetId() != "abcdefghijkl" || got[0].GetCpuPercent() != 12.5 {
+		t.Errorf("stats = %v", hub.stats[0])
+	}
 }

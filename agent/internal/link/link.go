@@ -12,6 +12,7 @@ import (
 	"math/rand/v2"
 	"net/http"
 	"net/url"
+	"sync/atomic"
 	"time"
 
 	"connectrpc.com/connect/v2"
@@ -33,6 +34,12 @@ import (
 // reset to its base value.
 const streamResetAfter = 30 * time.Second
 
+// ContainerStatsSource samples the use of the running containers. It returns nil
+// when there is nothing to report, for example without Docker.
+type ContainerStatsSource interface {
+	Stats(ctx context.Context) *agentv1.ContainerStats
+}
+
 // Link maintains one outbound stream to the core.
 type Link struct {
 	cfg       config.Config
@@ -41,14 +48,18 @@ type Link struct {
 	client    agentv1connect.AgentHubClient
 	// jobs runs the typed commands the core sends.
 	jobs *jobs.Executor
+	// stats samples the running containers; nil leaves it out.
+	stats ContainerStatsSource
 
 	// Intervals and backoff bounds are fields so tests can use milliseconds.
 	HeartbeatInterval time.Duration
 	MetricsInterval   time.Duration
 	InventoryInterval time.Duration
-	RenewalInterval   time.Duration
-	BackoffBase       time.Duration
-	BackoffMax        time.Duration
+	// StatsInterval is how often the use of the containers is sampled and sent.
+	StatsInterval   time.Duration
+	RenewalInterval time.Duration
+	BackoffBase     time.Duration
+	BackoffMax      time.Duration
 
 	now func() time.Time
 }
@@ -81,6 +92,8 @@ func newLink(cfg config.Config, collector collect.Collector, identity *enroll.Id
 		HeartbeatInterval: 10 * time.Second,
 		MetricsInterval:   15 * time.Second,
 		InventoryInterval: 60 * time.Second,
+		StatsInterval:     15 * time.Second,
+		stats:             inventory.NewDocker(),
 		RenewalInterval:   time.Hour,
 		BackoffBase:       time.Second,
 		BackoffMax:        60 * time.Second,
@@ -165,6 +178,10 @@ func (l *Link) session(ctx context.Context) error {
 	defer metrics.Stop()
 	inventoryTicker := time.NewTicker(l.InventoryInterval)
 	defer inventoryTicker.Stop()
+	statsTicker := time.NewTicker(l.StatsInterval)
+	defer statsTicker.Stop()
+	// Sampling takes seconds, so it runs on its own and never overlaps itself.
+	var sampling atomic.Bool
 
 	// sendInventoryIfChanged collects the inventory and sends it when it differs
 	// from the last one. A failed collection is logged and retried later.
@@ -207,6 +224,16 @@ func (l *Link) session(ctx context.Context) error {
 				if err := sendInventoryIfChanged(); err != nil {
 					return err
 				}
+			}
+
+		case <-statsTicker.C:
+			if l.stats != nil && sampling.CompareAndSwap(false, true) {
+				go func() {
+					defer sampling.Store(false)
+					if sample := l.stats.Stats(streamCtx); sample != nil {
+						emit(&agentv1.AgentMsg{Msg: &agentv1.AgentMsg_ContainerStats{ContainerStats: sample}})
+					}
+				}()
 			}
 
 		case <-inventoryTicker.C:
