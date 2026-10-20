@@ -3,6 +3,7 @@ package jobs
 import (
 	"context"
 	"errors"
+	"fmt"
 	"sync"
 	"testing"
 	"time"
@@ -15,6 +16,14 @@ type fakeActions struct {
 	mu    sync.Mutex
 	calls []string
 	err   error
+	logs  string
+}
+
+func (f *fakeActions) Logs(_ context.Context, container string, tail int) (string, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.calls = append(f.calls, fmt.Sprintf("logs:%s:%d", container, tail))
+	return f.logs, f.err
 }
 
 func (f *fakeActions) Do(_ context.Context, container string, action agentv1.ContainerActionType) error {
@@ -142,5 +151,66 @@ func TestHandleIgnoresOtherMessages(t *testing.T) {
 	// A command without a job id cannot be reported, so it is dropped.
 	if !executor.Handle(context.Background(), command("", "web", agentv1.ContainerActionType_CONTAINER_ACTION_TYPE_START), func(*agentv1.AgentMsg) { t.Error("emitted") }) {
 		t.Error("a command without a job id was not recognised")
+	}
+}
+
+func logsCommand(jobID, container string, tail uint32) *agentv1.CoreMsg {
+	return &agentv1.CoreMsg{
+		JobId: jobID,
+		Cmd:   &agentv1.CoreMsg_ReadLogs{ReadLogs: &agentv1.ReadLogs{Container: container, Tail: tail}},
+	}
+}
+
+func TestHandleReadsLogsAndReturnsTheOutput(t *testing.T) {
+	actions := &fakeActions{logs: "2026-10-20T10:00:00Z hello\n"}
+	out := newCollector()
+	executor := New(actions)
+
+	if !executor.Handle(context.Background(), logsCommand("job-l1", "web", 50), out.emit) {
+		t.Fatal("the logs command was not handled")
+	}
+
+	out.next(t) // running
+	got := out.next(t)
+	if got.GetState() != agentv1.JobState_JOB_STATE_SUCCEEDED || got.GetOutput() != actions.logs {
+		t.Errorf("final event = %v", got)
+	}
+	if want := "logs:web:50"; actions.count() != 1 || actions.calls[0] != want {
+		t.Errorf("calls = %v, want [%s]", actions.calls, want)
+	}
+}
+
+func TestHandleLogsOfAnInvalidReferenceFail(t *testing.T) {
+	actions := &fakeActions{}
+	out := newCollector()
+
+	New(actions).Handle(context.Background(), logsCommand("job-l2", "../x", 10), out.emit)
+
+	out.next(t) // running
+	if got := out.next(t); got.GetState() != agentv1.JobState_JOB_STATE_FAILED {
+		t.Errorf("state = %v, want failed", got.GetState())
+	}
+	if actions.count() != 0 {
+		t.Error("an invalid reference reached the actions")
+	}
+}
+
+func TestRepeatedLogsJobDoesNotKeepTheOutput(t *testing.T) {
+	actions := &fakeActions{logs: "line\n"}
+	out := newCollector()
+	executor := New(actions)
+	msg := logsCommand("job-l3", "web", 5)
+
+	executor.Handle(context.Background(), msg, out.emit)
+	out.next(t)
+	out.next(t)
+	executor.Handle(context.Background(), msg, out.emit)
+	again := out.next(t)
+
+	if again.GetState() != agentv1.JobState_JOB_STATE_SUCCEEDED || again.GetOutput() != "" {
+		t.Errorf("repeated job answered %v", again)
+	}
+	if actions.count() != 1 {
+		t.Errorf("the logs were read %d times, want 1", actions.count())
 	}
 }

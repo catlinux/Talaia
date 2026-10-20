@@ -562,6 +562,8 @@ func (r *recordingActions) Do(_ context.Context, container string, action agentv
 	return r.err
 }
 
+func (r *recordingActions) Logs(context.Context, string, int) (string, error) { return "", r.err }
+
 func TestLinkRunsACommandAndReportsTheJob(t *testing.T) {
 	hub := &testHub{command: &agentv1.CoreMsg{
 		JobId: "job-42",
@@ -617,6 +619,8 @@ func (c changingActions) Do(context.Context, string, agentv1.ContainerActionType
 	c.collector.setInventory(changed)
 	return nil
 }
+
+func (c changingActions) Logs(context.Context, string, int) (string, error) { return "", nil }
 
 func TestLinkResendsTheInventoryRightAfterAJob(t *testing.T) {
 	hub := &testHub{command: &agentv1.CoreMsg{

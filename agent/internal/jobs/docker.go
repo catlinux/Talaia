@@ -101,6 +101,11 @@ func (d *DockerActions) call(ctx context.Context, method, path string) error {
 		return nil
 	}
 
+	return dockerError(response)
+}
+
+// dockerError turns a failed Engine answer into an error with Docker's message.
+func dockerError(response *http.Response) error {
 	body, _ := io.ReadAll(io.LimitReader(response.Body, maxErrorBody))
 	var detail struct {
 		Message string `json:"message"`
