@@ -60,7 +60,12 @@ export function KpiRow({ summary }: KpiRowProps) {
   return (
     <dl className="kpis">
       {kpis.map((kpi) => (
-        <div key={kpi.id} className={kpi.tone === '' ? 'kpi' : `kpi kpi--${kpi.tone}`}>
+        <div
+          key={kpi.id}
+          className={kpi.tone === '' ? 'kpi' : `kpi kpi--${kpi.tone}`}
+          data-kpi={kpi.id}
+          data-na={kpi.value === unavailable}
+        >
           <dt className="kpi__label">{kpi.label}</dt>
           <dd className="kpi__value">{kpi.value}</dd>
         </div>

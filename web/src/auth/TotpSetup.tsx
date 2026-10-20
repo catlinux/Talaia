@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import type { TotpSetup as Setup } from '../api/auth'
 import { errorMessage } from './AuthGate'
 import { QrCode } from './QrCode'
+import { AuthFrame } from './AuthFrame'
 
 export interface TotpSetupProps {
   start: () => Promise<Setup>
@@ -56,7 +57,7 @@ export function TotpSetup({ start, confirm }: TotpSetupProps) {
   }
 
   return (
-    <div className="auth">
+    <AuthFrame>
       <div className="auth__card">
         <h1 className="auth__title" id="setup-title">
           {t('auth:setup.title')}
@@ -107,6 +108,6 @@ export function TotpSetup({ start, confirm }: TotpSetupProps) {
           </form>
         )}
       </div>
-    </div>
+    </AuthFrame>
   )
 }

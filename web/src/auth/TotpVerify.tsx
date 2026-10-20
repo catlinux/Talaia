@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 
 import type { TotpPayload } from '../api/auth'
 import { errorMessage } from './AuthGate'
+import { AuthFrame } from './AuthFrame'
 
 export interface TotpVerifyProps {
   verify: (payload: TotpPayload) => Promise<void>
@@ -45,7 +46,7 @@ export function TotpVerify({ verify }: TotpVerifyProps) {
   }
 
   return (
-    <div className="auth">
+    <AuthFrame>
       <form className="auth__card" aria-labelledby="verify-title" onSubmit={submit}>
         <h1 className="auth__title" id="verify-title">
           {t('auth:verify.title')}
@@ -104,6 +105,6 @@ export function TotpVerify({ verify }: TotpVerifyProps) {
           {recovery ? t('auth:verify.useCode') : t('auth:verify.useRecovery')}
         </button>
       </form>
-    </div>
+    </AuthFrame>
   )
 }

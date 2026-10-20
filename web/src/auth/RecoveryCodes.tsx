@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { AuthFrame } from './AuthFrame'
 
 export interface RecoveryCodesProps {
   codes: string[]
@@ -37,7 +38,7 @@ export function RecoveryCodes({ codes, onContinue }: RecoveryCodesProps) {
   }
 
   return (
-    <div className="auth">
+    <AuthFrame>
       <div className="auth__card">
         <h1 className="auth__title">{t('recovery.title')}</h1>
         <p className="auth__intro">{t('recovery.intro')}</p>
@@ -75,6 +76,6 @@ export function RecoveryCodes({ codes, onContinue }: RecoveryCodesProps) {
           {t('recovery.continue')}
         </button>
       </div>
-    </div>
+    </AuthFrame>
   )
 }

@@ -67,6 +67,9 @@ of the current phase and the next one.
 - [x] Script that fails if any key is missing in `ca`, `es` or `en`
 - [x] go-i18n set up for core and CLI messages (the agent shows no text to users)
 
+### Interface
+- [ ] Credit the bundled fonts (Familjen Grotesk, IBM Plex Sans, JetBrains Mono, all SIL OFL 1.1) in the third-party section of the README (maintainer: credits are yours to approve)
+
 ### Test environment
 - [ ] Two disposable VPS: Debian 12 and Debian 13
 - [x] Clone-and-run guide for the Linux machine (`docs/en/installation.md`)

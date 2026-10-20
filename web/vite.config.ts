@@ -9,6 +9,10 @@ const version = readFileSync(fileURLToPath(new URL('../VERSION', import.meta.url
 
 export default defineConfig({
   plugins: [react()],
+  build: {
+    // The panel's CSP only allows its own origin, so no asset may become a data: URL.
+    assetsInlineLimit: 0,
+  },
   define: {
     __APP_VERSION__: JSON.stringify(version),
   },

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { errorMessage } from './AuthGate'
+import { AuthFrame } from './AuthFrame'
 
 export interface LoginProps {
   onSubmit: (username: string, password: string) => Promise<void>
@@ -38,7 +39,7 @@ export function Login({ onSubmit, expired = false }: LoginProps) {
   }
 
   return (
-    <div className="auth">
+    <AuthFrame>
       <form className="auth__card" aria-labelledby="login-title" onSubmit={submit}>
         <h1 className="auth__title" id="login-title">
           {t('auth:login.title')}
@@ -84,6 +85,6 @@ export function Login({ onSubmit, expired = false }: LoginProps) {
           {pending ? t('auth:login.submitting') : t('auth:login.submit')}
         </button>
       </form>
-    </div>
+    </AuthFrame>
   )
 }

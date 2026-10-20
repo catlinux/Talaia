@@ -6,6 +6,7 @@ import type { FleetClient } from '../api/client'
 import { isSignedOut } from '../api/http'
 import type { ActivityEvent, FleetSummary, Server } from '../api/types'
 import { ActivityFeed } from './fleet/ActivityFeed'
+import { WatchtowerArt } from '../components/WatchtowerArt'
 import { AddServer } from './fleet/AddServer'
 import { KpiRow } from './fleet/KpiRow'
 import { ServerCard } from './fleet/ServerCard'
@@ -120,22 +121,23 @@ export function Fleet({ client = defaultClient }: FleetProps) {
   return (
     <section className="fleet" aria-labelledby="fleet-title">
       <header className="fleet__head">
-        <h1 className="fleet__title" id="fleet-title">
-          {t('title')}
-        </h1>
-        {state.status === 'ready' ? (
-          <p className="fleet__subtitle">
-            {t('subtitle', {
-              count: state.servers.length,
-              time: formatTime(state.loadedAt, language),
-            })}
-          </p>
-        ) : null}
+        <div className="fleet__titles">
+          <h1 className="fleet__title" id="fleet-title">
+            {t('title')}
+          </h1>
+          {state.status === 'ready' ? (
+            <p className="fleet__subtitle">
+              {t('subtitle', {
+                count: state.servers.length,
+                time: formatTime(state.loadedAt, language),
+              })}
+            </p>
+          ) : null}
+        </div>
+        <div className="fleet__actions">
+          <AddServer create={client.createEnrollment} />
+        </div>
       </header>
-
-      <div className="fleet__actions">
-        <AddServer create={client.createEnrollment} />
-      </div>
 
       {state.status === 'loading' ? (
         <p className="fleet__message" role="status">
@@ -156,7 +158,8 @@ export function Fleet({ client = defaultClient }: FleetProps) {
       ) : null}
 
       {state.status === 'ready' && state.servers.length === 0 ? (
-        <div className="fleet__message">
+        <div className="fleet__empty">
+          <WatchtowerArt className="fleet__empty-art" />
           <p className="fleet__empty-title">{t('empty.title')}</p>
           <p>{t('empty.body')}</p>
         </div>
@@ -165,13 +168,17 @@ export function Fleet({ client = defaultClient }: FleetProps) {
       {state.status === 'ready' && state.servers.length > 0 ? (
         <>
           <KpiRow summary={summarizeFleet(state.servers, state.activity)} />
-          <div className="fleet__cols">
+          <div
+            className={
+              state.activity.length > 0 ? 'fleet__cols' : 'fleet__cols fleet__cols--single'
+            }
+          >
             <ul className="servers">
               {state.servers.map((server) => (
                 <ServerCard key={server.id} server={server} />
               ))}
             </ul>
-            <ActivityFeed events={state.activity} />
+            {state.activity.length > 0 ? <ActivityFeed events={state.activity} /> : null}
           </div>
         </>
       ) : null}

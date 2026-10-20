@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 
 import type { EnrollmentToken } from '../../api/types'
 import { errorMessage } from '../../auth/AuthGate'
+import { CheckIcon, CopyIcon, PlusIcon } from '../../components/icons'
 
 export interface AddServerProps {
   create: (name: string) => Promise<EnrollmentToken>
@@ -68,6 +69,7 @@ export function AddServer({ create }: AddServerProps) {
           setTimeout(() => nameField.current?.focus(), 0)
         }}
       >
+        <PlusIcon />
         {t('fleet:add.open')}
       </button>
     )
@@ -127,6 +129,7 @@ export function AddServer({ create }: AddServerProps) {
                   type="button"
                   onClick={() => void copy(created.command)}
                 >
+                  {copied ? <CheckIcon /> : <CopyIcon />}
                   {copied ? t('fleet:add.copied') : t('fleet:add.copy')}
                 </button>
               </div>

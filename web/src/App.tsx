@@ -5,7 +5,9 @@ import type { FleetClient } from './api/client'
 import { About } from './screens/About'
 import { Fleet } from './screens/Fleet'
 import { useAuth } from './auth/AuthGate'
+import { FleetIcon, InfoIcon, SignOutIcon } from './components/icons'
 import { LanguageSelector } from './components/LanguageSelector'
+import { Logo } from './components/Logo'
 import { ThemeToggle } from './theme/ThemeToggle'
 
 type Screen = 'fleet' | 'about'
@@ -15,51 +17,75 @@ interface AppProps {
   client?: FleetClient
 }
 
+/** initials returns up to two letters to draw the avatar of the signed-in user. */
+function initials(username: string): string {
+  return username.trim().slice(0, 2).toUpperCase()
+}
+
 export function App({ client }: AppProps) {
   const { t } = useTranslation(['common', 'auth'])
   const auth = useAuth()
   const [screen, setScreen] = useState<Screen>('fleet')
 
   return (
-    <div className="app">
-      <header className="app__bar">
-        <span className="app__name">{t('appName')}</span>
-        <nav className="app__nav" aria-label={t('nav.label')}>
+    <div className="shell">
+      <aside className="side">
+        <div className="side__brand">
+          <Logo className="side__logo" />
+          <span className="side__name">{t('appName')}</span>
+        </div>
+
+        <nav className="side__nav" aria-label={t('nav.label')}>
           <button
             type="button"
-            className={screen === 'fleet' ? 'app__tab app__tab--active' : 'app__tab'}
+            className={screen === 'fleet' ? 'side__link side__link--active' : 'side__link'}
             aria-current={screen === 'fleet' ? 'page' : undefined}
             onClick={() => setScreen('fleet')}
           >
+            <FleetIcon />
             {t('nav.fleet')}
           </button>
           <button
             type="button"
-            className={screen === 'about' ? 'app__tab app__tab--active' : 'app__tab'}
+            className={screen === 'about' ? 'side__link side__link--active' : 'side__link'}
             aria-current={screen === 'about' ? 'page' : undefined}
             onClick={() => setScreen('about')}
           >
+            <InfoIcon />
             {t('nav.about')}
           </button>
         </nav>
-        <div className="app__controls">
-          <LanguageSelector />
-          <ThemeToggle />
+
+        <div className="side__foot">
+          <div className="side__prefs">
+            <LanguageSelector />
+            <ThemeToggle />
+          </div>
           {auth !== null && (
-            <button
-              type="button"
-              className="app__signout"
-              onClick={() => {
-                void auth.signOut()
-              }}
-            >
-              {t('auth:signOut')}
-            </button>
+            <div className="side__user">
+              <span className="side__avatar" aria-hidden="true">
+                {initials(auth.username)}
+              </span>
+              <span className="side__username">{auth.username}</span>
+              <button
+                type="button"
+                className="side__signout"
+                onClick={() => {
+                  void auth.signOut()
+                }}
+              >
+                <SignOutIcon />
+                <span className="side__signout-text">{t('auth:signOut')}</span>
+              </button>
+            </div>
           )}
         </div>
-      </header>
-      <main className="app__main">
-        {screen === 'fleet' ? <Fleet client={client} /> : <About />}
+      </aside>
+
+      <main className="shell__main">
+        <div className="shell__page" key={screen}>
+          {screen === 'fleet' ? <Fleet client={client} /> : <About />}
+        </div>
       </main>
     </div>
   )

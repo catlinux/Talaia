@@ -1,34 +1,107 @@
-/* Sign-in, second-factor and recovery-code screens. */
+/*
+ * Sign-in, second-factor and recovery-code screens.
+ *
+ * A beam of light crosses the stage behind a glass card, with the brand above.
+ */
 
 .auth {
+  position: relative;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 26px;
   min-height: 100vh;
-  padding: 24px 16px;
+  padding: 32px 16px;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+/* The beam: a soft cone of the accent colour that sweeps from the top corner. */
+.auth::before {
+  content: '';
+  position: absolute;
+  inset: -20% -10% auto auto;
+  z-index: -1;
+  width: 120vmax;
+  height: 120vmax;
+  background: conic-gradient(
+    from 200deg at 100% 0,
+    transparent 0deg,
+    color-mix(in srgb, var(--accent) 20%, transparent) 14deg,
+    transparent 30deg
+  );
+  filter: blur(8px);
+  opacity: 0.9;
+}
+
+.auth::after {
+  content: '';
+  position: absolute;
+  inset: auto auto -30% -10%;
+  z-index: -1;
+  width: 60vmax;
+  height: 60vmax;
+  background: radial-gradient(
+    closest-side,
+    color-mix(in srgb, var(--signal) 13%, transparent),
+    transparent
+  );
+}
+
+.auth__brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  animation: rise 520ms var(--ease) both;
+}
+
+.auth__logo {
+  width: 42px;
+  height: 42px;
+  filter: drop-shadow(0 10px 22px var(--glow));
+}
+
+.auth__wordmark {
+  font-family: var(--f-display);
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
 }
 
 .auth__card {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
   width: 100%;
-  max-width: 420px;
-  padding: 24px;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  background: var(--surface);
+  max-width: 440px;
+  padding: 30px 30px 28px;
+  border: 1px solid color-mix(in srgb, var(--accent) 22%, var(--line));
+  border-radius: 20px;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--accent) 6%, transparent), transparent 120px),
+    color-mix(in srgb, var(--surface) 92%, transparent);
+  backdrop-filter: blur(16px);
+  box-shadow: var(--shadow-2);
+  animation: rise 560ms 70ms var(--ease) both;
+}
+
+.auth__card > form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
 }
 
 .auth__title {
   margin: 0;
-  font-family: var(--f-display);
-  font-size: 1.5rem;
-  line-height: 1.2;
+  font-size: 1.75rem;
+  font-weight: 700;
+  line-height: 1.12;
+  letter-spacing: -0.025em;
 }
 
 .auth__intro {
-  margin: 0;
+  margin: -4px 0 4px;
   color: var(--muted);
 }
 
@@ -40,16 +113,20 @@
 
 .auth__warning {
   margin: 0;
-  padding: 8px 12px;
+  padding: 10px 14px;
   border-left: 3px solid var(--warn);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
   background: var(--warn-soft);
+  font-size: 0.9375rem;
 }
 
 .auth__error {
   margin: 0;
-  padding: 8px 12px;
+  padding: 10px 14px;
   border-left: 3px solid var(--crit);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
   background: var(--crit-soft);
+  font-size: 0.9375rem;
 }
 
 .auth__status {
@@ -57,51 +134,76 @@
   color: var(--muted);
 }
 
+.auth__card.auth__status {
+  text-align: center;
+}
+
 .auth__field {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
 }
 
 .auth__label {
   margin: 0;
-  font-size: 0.875rem;
   color: var(--muted);
+  font-family: var(--f-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
 }
 
 .auth__input {
   width: 100%;
-  padding: 8px 10px;
+  padding: 12px 14px;
   border: 1px solid var(--line);
-  border-radius: 6px;
-  background: var(--bg);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--bg) 70%, var(--surface));
   color: var(--ink);
   font: inherit;
+  transition:
+    border-color 160ms var(--ease),
+    box-shadow 160ms var(--ease);
+}
+
+.auth__input:focus-visible {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 18%, transparent);
+  outline: none;
 }
 
 .auth__input--code {
   font-family: var(--f-mono);
-  font-size: 1.125rem;
-  letter-spacing: 0.12em;
+  font-size: 1.375rem;
+  letter-spacing: 0.32em;
+  text-align: center;
 }
 
+/* The QR code sits on a white plate so every authenticator app can read it. */
 .auth__qr {
   display: block;
-  width: 200px;
+  width: 212px;
   max-width: 100%;
   height: auto;
-  margin: 0 auto 16px;
-  border-radius: 6px;
+  margin: 4px auto 14px;
+  padding: 10px;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow:
+    0 0 0 1px var(--line),
+    0 18px 36px -22px color-mix(in srgb, var(--accent) 70%, transparent);
 }
 
 .auth__secret {
   display: block;
-  padding: 10px 12px;
-  border-radius: 6px;
-  background: var(--surface-2);
-  color: var(--ink);
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--code-bg);
+  color: var(--code-ink);
   font-family: var(--f-mono);
   font-size: 1rem;
+  letter-spacing: 0.04em;
   line-height: 1.5;
   overflow-wrap: anywhere;
   user-select: all;
@@ -112,6 +214,8 @@
   font: inherit;
   text-align: left;
   text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--accent) 40%, transparent);
+  text-underline-offset: 3px;
   background: none;
   border: 0;
   padding: 0;
@@ -125,14 +229,24 @@
 
 .auth__submit,
 .auth__button {
-  padding: 10px 14px;
+  padding: 12px 16px;
   border: 1px solid transparent;
-  border-radius: 6px;
-  background: var(--accent);
+  border-radius: 12px;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 88%, #fff), var(--accent));
   color: var(--accent-ink);
   font: inherit;
   font-weight: 600;
   cursor: pointer;
+  box-shadow:
+    0 1px 0 color-mix(in srgb, #fff 35%, transparent) inset,
+    0 14px 26px -14px var(--accent);
+  transition:
+    transform 160ms var(--ease),
+    box-shadow 160ms var(--ease);
+}
+
+.auth__submit:hover:not(:disabled) {
+  transform: translateY(-1px);
 }
 
 .auth__button {
@@ -140,52 +254,59 @@
   color: var(--ink);
   border-color: var(--line);
   font-weight: 500;
+  box-shadow: none;
 }
 
 .auth__submit:disabled,
 .auth__button:disabled {
-  opacity: 0.6;
+  opacity: 0.55;
   cursor: not-allowed;
 }
 
 .auth__actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 10px;
 }
 
 .auth__codes {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-  gap: 6px 12px;
+  gap: 8px 12px;
   margin: 0;
-  padding: 12px;
-  border-radius: 6px;
-  background: var(--surface-2);
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--code-bg);
   list-style: none;
 }
 
 .auth__codes code {
+  color: var(--code-ink);
   font-family: var(--f-mono);
   font-size: 0.9375rem;
+  letter-spacing: 0.04em;
   user-select: all;
 }
 
 .auth__check {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 0.9375rem;
+  gap: 10px;
 }
 
-/* The sign-out button of the app header. */
-.app__signout {
-  padding: 4px 10px;
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  background: var(--surface-2);
-  color: var(--ink);
-  font: inherit;
-  font-size: 0.875rem;
-  cursor: pointer;
+.auth__check input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent);
+}
+
+@media (max-width: 480px) {
+  .auth__card {
+    padding: 24px 20px;
+  }
+
+  .auth__wordmark {
+    font-size: 1.6rem;
+  }
 }

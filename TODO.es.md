@@ -67,6 +67,9 @@ tareas concretas de la fase actual y de la siguiente.
 - [x] Script que falle si falta alguna clave en `ca`, `es` o `en`
 - [x] go-i18n preparado para los mensajes del núcleo y la CLI (el agente no muestra texto a los usuarios)
 
+### Interfaz
+- [ ] Reconocer las tipografías incluidas (Familjen Grotesk, IBM Plex Sans y JetBrains Mono, todas SIL OFL 1.1) en la sección de terceros del README (mantenedor: los créditos los apruebas tú)
+
 ### Entorno de pruebas
 - [ ] Dos VPS desechables: Debian 12 y Debian 13
 - [x] Guía de clonar y ejecutar en el equipo Linux (`docs/es/instalacion.md`)
