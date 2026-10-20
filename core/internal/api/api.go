@@ -58,6 +58,8 @@ func NewRouter(deps RouterDeps) http.Handler {
 				r.Post("/servers/{serverID}/containers/{container}/actions", NewContainerActionHandler(*deps.Containers).ServeHTTP)
 				r.Post("/servers/{serverID}/containers/{container}/logs", NewContainerLogsHandler(*deps.Containers).ServeHTTP)
 				r.Get("/jobs/{jobID}", NewJobHandler(*deps.Containers).ServeHTTP)
+				r.Post("/servers/{serverID}/resources/list", NewResourcesListHandler(*deps.Containers).ServeHTTP)
+				r.Post("/servers/{serverID}/resources/remove", NewResourcesRemoveHandler(*deps.Containers).ServeHTTP)
 				r.Get("/servers/{serverID}/stacks", NewStacksHandler(*deps.Containers).ServeHTTP)
 				r.Put("/servers/{serverID}/stacks/{name}", NewStackWriteHandler(*deps.Containers).ServeHTTP)
 				r.Post("/servers/{serverID}/stacks/{name}/read", NewStackReadHandler(*deps.Containers).ServeHTTP)
