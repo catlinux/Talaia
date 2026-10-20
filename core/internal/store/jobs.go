@@ -93,9 +93,13 @@ func (s *Store) UpdateJobState(ctx context.Context, id, serverID, state, message
 		return false, fmt.Errorf("invalid job state %q", state)
 	}
 
+	// PostgreSQL refuses text that is not valid UTF-8; the cut can split a
+	// character.
 	if len(output) > MaxJobOutput {
 		output = output[len(output)-MaxJobOutput:]
 	}
+	output = strings.ToValidUTF8(output, "�")
+	message = strings.ToValidUTF8(message, "�")
 
 	tag, err := s.pool.Exec(ctx,
 		`UPDATE job

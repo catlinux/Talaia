@@ -264,6 +264,24 @@ func TestStaleJobsAreClosed(t *testing.T) {
 	}
 }
 
+func TestJobTimeoutOutlastsTheAgent(t *testing.T) {
+	// The longest time the agent gives each kind of work.
+	agent := map[string]time.Duration{
+		containerActionKind: 90 * time.Second,
+		stackReadKind:       90 * time.Second,
+		stackAdoptKind:      90 * time.Second,
+		resourcesListKind:   90 * time.Second,
+		stackWriteKind:      2 * time.Minute,
+		resourcesRemoveKind: 5 * time.Minute,
+		stackActionKind:     10 * time.Minute,
+	}
+	for kind, limit := range agent {
+		if got := jobTimeout(kind); got <= limit {
+			t.Errorf("jobTimeout(%s) = %s, want more than %s", kind, got, limit)
+		}
+	}
+}
+
 // get sends a GET with the session of the panel client.
 func (p *testPanel) get(t *testing.T, path string) *http.Response {
 	t.Helper()

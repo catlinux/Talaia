@@ -47,6 +47,7 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 - Panel authentication (ahead of phase 3): single administrator created from the console, argon2id password, mandatory TOTP with single-use recovery codes, secure session cookie, CSRF protection, brute-force limits, audit log, and the sign-in screens in ca/es/en.
 - Core deployment with Docker Compose (`packaging/core/`): one image with the core and the web panel, PostgreSQL 16 + TimescaleDB, read-only root filesystem and no capabilities.
 - `GET /api/v1/servers` (full session required) and the fleet screen fed by it, refreshed every 15 seconds; data that does not exist yet is shown as not available instead of sample numbers.
+- Security review of the jobs and stacks: the agent writes stack files through an exclusive temporary file, so a symbolic link planted in the directory of an adopted project can no longer make it overwrite another file as root; reading an adopted stack refuses symbolic links; adoption refuses a compose file that is a link and files or directories other users can write; a new stack can no longer take the name of a running project Talaia does not manage (its `up --remove-orphans` would remove that project's containers).
 
 ### Changed
 
@@ -68,6 +69,9 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ### Fixed
 
+- A stack action that takes more than two minutes (a slow `pull` or `up`) is no longer reported as timed out while it is still running: each kind of job now waits a little longer than the agent gives it.
+- A job whose output or message was cut in the middle of a character is no longer lost: the agent and the core keep the text valid UTF-8.
+- Validating an edited adopted stack with an empty `.env` no longer uses the old `.env` of its directory, which saving deletes.
 - The core no longer crashes on start when `TALAIA_PUBLIC_HOSTNAMES` holds only IP addresses.
 - The shell scripts (`packaging/install.sh`, `scripts/*.sh`) are now stored as executable, so `./install.sh` works after a clone.
 

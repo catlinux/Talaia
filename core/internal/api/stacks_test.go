@@ -65,7 +65,7 @@ func TestWriteStackSendsTheFilesAndAuditsOnlyHashes(t *testing.T) {
 	serverID := enrollTestServer(t, panel)
 	panel.agents.set(agentWithStacks(serverID))
 
-	response := panel.do(t, panel.client, http.MethodPut, stackPath(serverID, "shop", ""),
+	response := panel.do(t, panel.client, http.MethodPut, stackPath(serverID, "blog", ""),
 		map[string]any{"compose": sampleStackCompose, "env": "SECRET_TOKEN=hunter2\n"})
 	if response.StatusCode != http.StatusAccepted {
 		t.Fatalf("status = %d, want 202", response.StatusCode)
@@ -78,7 +78,7 @@ func TestWriteStackSendsTheFilesAndAuditsOnlyHashes(t *testing.T) {
 		t.Fatalf("sent %d commands, want 1", len(sent))
 	}
 	write := sent[0].GetStackWrite()
-	if write.GetName() != "shop" || write.GetComposeYaml() != sampleStackCompose || write.GetEnv() != "SECRET_TOKEN=hunter2\n" ||
+	if write.GetName() != "blog" || write.GetComposeYaml() != sampleStackCompose || write.GetEnv() != "SECRET_TOKEN=hunter2\n" ||
 		sent[0].GetJobId() != created.JobID {
 		t.Errorf("command = %v", sent[0])
 	}
@@ -98,7 +98,7 @@ func TestWriteStackSendsTheFilesAndAuditsOnlyHashes(t *testing.T) {
 		if strings.Contains(text, "hunter2") || strings.Contains(text, "nginx") {
 			t.Errorf("the audit log holds file contents: %v", entry.Details)
 		}
-		if entry.Details["stack"] != "shop" || entry.Details["compose_sha256"] != hashOf(sampleStackCompose) {
+		if entry.Details["stack"] != "blog" || entry.Details["compose_sha256"] != hashOf(sampleStackCompose) {
 			t.Errorf("audit details = %v", entry.Details)
 		}
 	}
@@ -114,7 +114,7 @@ func TestWriteStackValidation(t *testing.T) {
 	serverID := enrollTestServer(t, panel)
 
 	valid := map[string]any{"compose": sampleStackCompose}
-	if got := panel.do(t, panel.client, http.MethodPut, stackPath(serverID, "shop", ""), valid).StatusCode; got != http.StatusConflict {
+	if got := panel.do(t, panel.client, http.MethodPut, stackPath(serverID, "blog", ""), valid).StatusCode; got != http.StatusConflict {
 		t.Errorf("offline status = %d, want 409", got)
 	}
 
@@ -125,13 +125,14 @@ func TestWriteStackValidation(t *testing.T) {
 		body  map[string]any
 		want  int
 	}{
-		{"valid", "shop", valid, http.StatusAccepted},
-		{"empty compose", "shop", map[string]any{"compose": "  "}, http.StatusBadRequest},
-		{"missing compose", "shop", map[string]any{}, http.StatusBadRequest},
+		{"valid", "blog", valid, http.StatusAccepted},
+		{"name of a running project", "shop", valid, http.StatusConflict},
+		{"empty compose", "blog", map[string]any{"compose": "  "}, http.StatusBadRequest},
+		{"missing compose", "blog", map[string]any{}, http.StatusBadRequest},
 		{"upper case name", "Shop", valid, http.StatusBadRequest},
 		{"name with a dot", "a.b", valid, http.StatusBadRequest},
-		{"huge compose", "shop", map[string]any{"compose": strings.Repeat("a", maxComposeBytes+1)}, http.StatusBadRequest},
-		{"huge env", "shop", map[string]any{"compose": sampleStackCompose, "env": strings.Repeat("A", maxEnvBytes+1)}, http.StatusBadRequest},
+		{"huge compose", "blog", map[string]any{"compose": strings.Repeat("a", maxComposeBytes+1)}, http.StatusBadRequest},
+		{"huge env", "blog", map[string]any{"compose": sampleStackCompose, "env": strings.Repeat("A", maxEnvBytes+1)}, http.StatusBadRequest},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

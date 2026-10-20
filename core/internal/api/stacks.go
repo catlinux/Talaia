@@ -92,8 +92,16 @@ func NewStackWriteHandler(deps ContainerDeps) http.Handler {
 			writeError(w, http.StatusBadRequest, "invalid_request")
 			return
 		}
-		if _, connected := connectedAgent(deps.Agents, serverID); !connected {
+		agent, connected := connectedAgent(deps.Agents, serverID)
+		if !connected {
 			writeError(w, http.StatusConflict, "agent_offline")
+			return
+		}
+		// A new stack named like a running project Talaia does not manage would
+		// take that project over: "up --remove-orphans" removes its containers.
+		// That project is adopted instead.
+		if slices.Contains(adoptableProjects(agent), name) {
+			writeError(w, http.StatusConflict, "name_taken")
 			return
 		}
 

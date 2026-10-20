@@ -3,8 +3,10 @@ package store
 import (
 	"context"
 	"errors"
+	"strings"
 	"testing"
 	"time"
+	"unicode/utf8"
 )
 
 // newTestServerID enrolls a throw-away server and returns its id.
@@ -95,6 +97,26 @@ func TestJobValidation(t *testing.T) {
 	}
 	if _, err := s.GetJob(ctx, "00000000-0000-0000-0000-000000000000"); !errors.Is(err, ErrNotFound) {
 		t.Errorf("GetJob of an unknown id = %v, want ErrNotFound", err)
+	}
+}
+
+func TestUpdateJobStateStoresBrokenUTF8(t *testing.T) {
+	s := newTestStore(t)
+	ctx := context.Background()
+	serverID := newTestServerID(t, s)
+
+	job, err := s.CreateJob(ctx, serverID, "stack_action", nil, "admin")
+	if err != nil {
+		t.Fatalf("CreateJob: %v", err)
+	}
+	// Half a character at both ends, as a cut at a byte limit leaves it.
+	output := "\x9c\x94 pulled\n" + strings.Repeat("x", MaxJobOutput) + "\xe2\x9c"
+	if changed, err := s.UpdateJobState(ctx, job.ID, serverID, JobSucceeded, "ok \xe2", output); err != nil || !changed {
+		t.Fatalf("UpdateJobState = %v, %v", changed, err)
+	}
+	got, _ := s.GetJob(ctx, job.ID)
+	if got.State != JobSucceeded || !utf8.ValidString(got.Output) || !utf8.ValidString(got.Message) {
+		t.Errorf("job = %s, output valid %v", got.State, utf8.ValidString(got.Output))
 	}
 }
 

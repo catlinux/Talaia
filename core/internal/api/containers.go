@@ -19,9 +19,23 @@ import (
 // containerActionKind is the kind of the jobs created by container actions.
 const containerActionKind = "container_action"
 
-// jobTimeout is how long an unfinished job may live before it is reported as
-// failed, for example because the agent disconnected without answering.
-const jobTimeout = 2 * time.Minute
+// jobTimeout is how long an unfinished job of a kind may live before it is
+// reported as failed, for example because the agent disconnected without
+// answering. It must outlast the timeout the agent gives the same work, or a
+// slow job that succeeds would already be closed as failed.
+func jobTimeout(kind string) time.Duration {
+	const margin = 30 * time.Second
+	switch kind {
+	case stackActionKind:
+		return 10*time.Minute + margin
+	case resourcesRemoveKind:
+		return 5*time.Minute + margin
+	case stackWriteKind:
+		return 2*time.Minute + margin
+	default:
+		return 90*time.Second + margin
+	}
+}
 
 // containerRef matches a container id or name. The agent checks it again.
 var containerRef = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,127}$`)
@@ -204,12 +218,6 @@ func NewJobHandler(deps ContainerDeps) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		id := chi.URLParam(r, "jobID")
 
-		// A job nobody finished is closed here, so the interface never waits for
-		// an agent that is gone.
-		if _, err := deps.Jobs.FailStaleJob(r.Context(), id, jobTimeout); err != nil {
-			slog.Warn("fail stale job", "job_id", id, "error", err)
-		}
-
 		job, err := deps.Jobs.GetJob(r.Context(), id)
 		if errors.Is(err, store.ErrNotFound) {
 			writeError(w, http.StatusNotFound, "not_found")
@@ -219,6 +227,22 @@ func NewJobHandler(deps ContainerDeps) http.Handler {
 			slog.Error("get job", "job_id", id, "error", err)
 			writeError(w, http.StatusInternalServerError, "internal")
 			return
+		}
+
+		// A job nobody finished is closed here, so the interface never waits for
+		// an agent that is gone.
+		if job.State == store.JobPending || job.State == store.JobRunning {
+			changed, err := deps.Jobs.FailStaleJob(r.Context(), id, jobTimeout(job.Kind))
+			if err != nil {
+				slog.Warn("fail stale job", "job_id", id, "error", err)
+			}
+			if changed {
+				if job, err = deps.Jobs.GetJob(r.Context(), id); err != nil {
+					slog.Error("get job", "job_id", id, "error", err)
+					writeError(w, http.StatusInternalServerError, "internal")
+					return
+				}
+			}
 		}
 
 		response := jobResponse{
@@ -257,9 +281,11 @@ func (j JobRecorder) RecordJobEvent(ctx context.Context, serverID string, event 
 		return
 	}
 
-	message := strings.TrimSpace(event.GetMessage())
+	// PostgreSQL refuses text that is not valid UTF-8, and a cut can split a
+	// character, so the event would be lost.
+	message := strings.ToValidUTF8(strings.TrimSpace(event.GetMessage()), "�")
 	if len(message) > 500 {
-		message = message[:500]
+		message = strings.ToValidUTF8(message[:500], "")
 	}
 	if _, err := j.Jobs.UpdateJobState(ctx, event.GetJobId(), serverID, state, message, event.GetOutput()); err != nil {
 		slog.Warn("record job event", "job_id", event.GetJobId(), "error", err)

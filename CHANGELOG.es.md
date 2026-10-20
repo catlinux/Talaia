@@ -47,6 +47,7 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 - Autenticación del panel (adelantada de la fase 3): administrador único creado desde la consola, contraseña con argon2id, TOTP obligatorio con códigos de recuperación de un solo uso, cookie de sesión segura, protección CSRF, límites contra fuerza bruta, registro de auditoría y pantallas de acceso en ca/es/en.
 - Despliegue del core con Docker Compose (`packaging/core/`): una imagen con el core y el panel web, PostgreSQL 16 + TimescaleDB, sistema de archivos de solo lectura y sin capacidades.
 - `GET /api/v1/servers` (requiere sesión completa) y la pantalla de flota alimentada por él, refrescada cada 15 segundos; los datos que aún no existen se muestran como no disponibles en lugar de números de ejemplo.
+- Revisión de seguridad de los trabajos y los stacks: el agente escribe los archivos de un stack mediante un archivo temporal exclusivo, así que un enlace simbólico dejado en el directorio de un proyecto adoptado ya no puede hacerle sobrescribir otro archivo como root; leer un stack adoptado rechaza los enlaces simbólicos; la adopción rechaza un archivo compose que sea un enlace y archivos o directorios que puedan escribir otros usuarios; un stack nuevo ya no puede tomar el nombre de un proyecto en marcha que Talaia no gestiona (su `up --remove-orphans` borraría los contenedores de ese proyecto).
 
 ### Cambiado
 
@@ -68,6 +69,9 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ### Corregido
 
+- Una acción de stack que tarda más de dos minutos (un `pull` o un `up` lentos) ya no aparece como caducada mientras sigue en marcha: cada tipo de trabajo espera ahora algo más de lo que le da el agente.
+- Un trabajo cuya salida o mensaje se cortaba a mitad de un carácter ya no se pierde: el agente y el core mantienen el texto en UTF-8 válido.
+- Validar un stack adoptado editado con el `.env` vacío ya no usa el `.env` antiguo de su directorio, que al guardar se borra.
 - El core ya no se cae al arrancar cuando `TALAIA_PUBLIC_HOSTNAMES` solo contiene direcciones IP.
 - Los scripts de shell (`packaging/install.sh`, `scripts/*.sh`) se guardan ahora como ejecutables, así que `./install.sh` funciona tras clonar.
 
