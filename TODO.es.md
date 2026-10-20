@@ -106,4 +106,4 @@ Apunta aquí las ideas nuevas en lugar de añadirlas a la fase actual.
 - App móvil (PWA) con notificaciones push
 - Integración con Tailscale/Headscale para crear la red privada automáticamente
 - Panel de costes por proveedor
-- Headscale u otra VPN para máquinas que deban quedar privadas. Aparcado el 2026-10-20: Headscale pide el puerto 443 en producción, lo que rompe el principio de arriba, y un core público ya llega a servidores detrás de NAT porque los agentes conectan hacia fuera
+- Opción futura: Headscale u otra VPN, para dejar privados el panel o algunas máquinas (el mantenedor decidió el 2026-10-20 dejarlo para más adelante). Aparcado por ahora: Headscale pide el puerto 443 en producción, lo que rompe el principio de arriba, y un core público ya llega a servidores detrás de NAT porque los agentes conectan hacia fuera

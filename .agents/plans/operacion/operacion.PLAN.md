@@ -9,7 +9,7 @@ Talaia se instala desde GitHub en máquinas que no conocemos. **No puede depende
 ## Decisiones
 
 1. **Core en un servidor con IP pública** (de momento el VPS de `talaia.invierteconcriterio.es`, instalación desde cero). Los agentes conectan **hacia fuera** al core: un servidor detrás de NAT (el Debian de casa) llega sin VPN.
-2. **Headscale se descarta** para este bloque (pendiente de confirmar por el mantenedor): pide 443 para producción (su documentación lo recomienda con fuerza porque los clientes de Tailscale lo asumen en algunos casos), lo que rompe el principio, y con el core público ya no hace falta para lo pedido. Pasa a *Ideas*.
+2. **Headscale se descarta** para este bloque (confirmado por el mantenedor el 2026-10-20; la VPN queda en *Ideas* del TODO como opción futura): pide 443 para producción (su documentación lo recomienda con fuerza porque los clientes de Tailscale lo asumen en algunos casos), lo que rompe el principio, y con el core público ya no hace falta para lo pedido. Pasa a *Ideas*.
 3. **Dos puertos propios**, elegidos por el instalador entre los libres (por defecto 8443 y 8444; nunca 80/443 salvo que estén libres y la persona lo pida):
    - **Panel** (`panel_port`): panel, API y WebSocket de terminal. Certificado válido si hay ACME; si no, el de la CA propia.
    - **Agentes** (`agent_port`): stream gRPC, `/enroll`, `/renew`, `/ca.pem`, `/install.sh`, `/agent/*`. **Siempre** con el certificado de la CA propia.

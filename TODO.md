@@ -106,4 +106,4 @@ Write new ideas here instead of adding them to the current phase.
 - Mobile app (PWA) with push notifications
 - Integration with Tailscale/Headscale to create the private network automatically
 - Cost dashboard per provider
-- Headscale or another VPN for machines that must stay private. Set aside on 2026-10-20: Headscale wants port 443 in production, which breaks the principle above, and a public core already reaches servers behind NAT because agents connect outward
+- Future option: Headscale or another VPN, to keep the panel or some machines private (decided by the maintainer on 2026-10-20 to leave it for later). Set aside for now: Headscale wants port 443 in production, which breaks the principle above, and a public core already reaches servers behind NAT because agents connect outward
