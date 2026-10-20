@@ -37,6 +37,7 @@ message AgentMsg {
     Metrics metrics = 2;     // every 15 s
     JobEvent job_event = 3;  // progress and result of a command
     Inventory inventory = 4; // on connect and on change
+    ContainerStats container_stats = 5; // every 15 s while Docker is available
   }
 }
 
@@ -214,6 +215,22 @@ message SystemdUnit {
   string load_state = 3;   // loaded | not-found | masked ...
   string active_state = 4; // active | inactive | failed ...
   string sub_state = 5;    // running | exited | dead | failed ...
+}
+
+// ContainerStats is the resource use of the running containers at one instant.
+message ContainerStats {
+  google.protobuf.Timestamp sampled_at = 1;
+  repeated ContainerStat items = 2;
+}
+
+// ContainerStat is the use of one running container, like docker stats shows it.
+message ContainerStat {
+  string id = 1;               // short id (12 chars), as in Container.id
+  double cpu_percent = 2;      // of one core: 100 means one full core
+  uint64 mem_used_bytes = 3;   // without the cache the kernel can reclaim
+  uint64 mem_limit_bytes = 4;  // 0 when the container has no limit
+  uint64 net_rx_bytes = 5;     // cumulative, summed over its networks
+  uint64 net_tx_bytes = 6;
 }
 
 message Metrics {
