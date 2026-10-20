@@ -4,6 +4,7 @@ go 1.26.0
 
 require (
 	connectrpc.com/connect/v2 v2.0.1
+	github.com/coder/websocket v1.8.15
 	github.com/go-chi/chi/v5 v5.5.0
 	github.com/jackc/pgx/v5 v5.11.0
 	github.com/nicksnyder/go-i18n/v2 v2.6.1

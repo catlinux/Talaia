@@ -92,6 +92,7 @@ type panelOptions struct {
 	Enrollment *api.EnrollmentTokenDeps
 	// Containers enables the container and job API.
 	Containers   *api.ContainerDeps
+	Terminal     *api.TerminalDeps
 	Origins      []string
 	TLS          bool
 	Limiter      *api.RateLimiter
@@ -112,6 +113,7 @@ func newCoreRouter(st *store.Store, agents api.LiveAgents, options panelOptions)
 		Agents:     agents,
 		Enrollment: options.Enrollment,
 		Containers: options.Containers,
+		Terminal:   options.Terminal,
 		Auth: api.AuthDeps{
 			Store:        st,
 			Box:          options.Box,
@@ -259,6 +261,7 @@ func serve() error {
 		Limiter: api.NewAuthRateLimiter(),
 	}
 
+	var terminals *terminal.Manager
 	tlsEnabled := !cfg.InsecureDev
 	if tlsEnabled {
 		if err := cfg.ValidateCertificateHosts(); err != nil {
@@ -289,7 +292,9 @@ func serve() error {
 		if err := terminal.CloseOrphans(context.Background(), st); err != nil {
 			return fmt.Errorf("close the terminal sessions left open: %w", err)
 		}
-		agentHub.SetTerminals(terminal.New(st, agentHub, st, box, terminal.DefaultConfig()))
+		terminals = terminal.New(st, agentHub, st, box, terminal.DefaultConfig())
+		agentHub.SetTerminals(terminals)
+		panel.Terminal = api.NewTerminalDeps(api.TerminalDeps{Agents: agentHub, Terminals: terminals, Sessions: st, Origins: cfg.AllowedOrigins})
 		purgeCtx, stopPurge := context.WithCancel(context.Background())
 		defer stopPurge()
 		go terminal.PurgeLoop(purgeCtx, st, cfg.TerminalRecordingDays, 24*time.Hour)
@@ -331,6 +336,9 @@ func serve() error {
 
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
 	defer cancel()
+	if terminals != nil {
+		terminals.Shutdown(shutdownCtx)
+	}
 	if err := srv.Shutdown(shutdownCtx); err != nil {
 		return fmt.Errorf("shut down HTTP server: %w", err)
 	}

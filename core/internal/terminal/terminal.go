@@ -30,6 +30,7 @@ const (
 	ReasonIdle         = "idle"
 	ReasonMaxDuration  = "max_duration"
 	ReasonCoreRestart  = "core_restart"
+	ReasonShutdown     = "core_shutdown"
 )
 
 // maxInputBytes is the most keystrokes one message may carry; the agent checks it
@@ -506,6 +507,29 @@ func (m *Manager) auditEvent(ctx context.Context, action string, s *Session, ext
 	}
 	if err := m.audit.AppendAudit(ctx, store.AuditEvent{Actor: s.actor, Action: action, IP: s.ip, Result: "ok", Details: details}); err != nil {
 		slog.Error("append audit event", "action", action, "error", err)
+	}
+}
+
+// Shutdown ends every session and waits, until ctx ends, for their recordings to
+// be stored. HTTP servers do not close WebSockets on shutdown, so the core calls
+// this first.
+func (m *Manager) Shutdown(ctx context.Context) {
+	m.mu.Lock()
+	all := make([]*Session, 0, len(m.sessions))
+	for _, s := range m.sessions {
+		all = append(all, s)
+	}
+	m.mu.Unlock()
+
+	for _, s := range all {
+		s.finish(ReasonShutdown, 0, true)
+	}
+	for _, s := range all {
+		select {
+		case <-s.done:
+		case <-ctx.Done():
+			return
+		}
 	}
 }
 

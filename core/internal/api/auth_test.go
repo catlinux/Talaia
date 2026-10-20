@@ -21,6 +21,7 @@ import (
 
 	"github.com/catlinux/Talaia/core/internal/auth"
 	"github.com/catlinux/Talaia/core/internal/store"
+	"github.com/catlinux/Talaia/core/internal/terminal"
 )
 
 // testOrigin is the panel origin the test server allows.
@@ -109,6 +110,10 @@ type testPanel struct {
 	// agents and dispatcher stand for the connected agents of the hub.
 	agents     *controlledAgents
 	dispatcher *fakeDispatcher
+	// terminals runs on the real store; terminalAgent stands for the agents it
+	// talks to.
+	terminals     *terminal.Manager
+	terminalAgent *fakeTerminalAgent
 }
 
 // testPanelOptions tweak the test panel.
@@ -117,6 +122,7 @@ type testPanelOptions struct {
 	lockDuration time.Duration
 	idleTimeout  time.Duration
 	webDir       string
+	ticketTTL    time.Duration
 }
 
 // panelOption tweaks the test panel.
@@ -163,11 +169,20 @@ func newTestPanel(t *testing.T, options ...panelOption) *testPanel {
 
 	agents := &controlledAgents{}
 	dispatcher := &fakeDispatcher{}
+	terminalAgent := &fakeTerminalAgent{}
+	terminalConfig := terminal.DefaultConfig()
+	terminalConfig.OpenTimeout = 2 * time.Second
+	terminalConfig.FlushEvery = 20 * time.Millisecond
+	terminals := terminal.New(st, terminalAgent, st, box, terminalConfig)
 	router := NewRouter(RouterDeps{
 		DB:       st,
 		WebDir:   settings.webDir,
 		Security: SecurityConfig{TLS: true, Origins: []string{testOrigin}},
 		Session:  SessionDeps{Store: st, Now: clock.Now, IdleTimeout: settings.idleTimeout},
+		Terminal: NewTerminalDeps(TerminalDeps{
+			Agents: agents, Terminals: terminals, Sessions: st, Origins: []string{testOrigin},
+			CheckInterval: 50 * time.Millisecond, TicketTTL: settings.ticketTTL,
+		}),
 		Containers: &ContainerDeps{
 			Agents:     agents,
 			Dispatcher: dispatcher,
@@ -203,6 +218,9 @@ func newTestPanel(t *testing.T, options ...panelOption) *testPanel {
 		client:     &http.Client{Transport: server.Client().Transport, Jar: jar},
 		agents:     agents,
 		dispatcher: dispatcher,
+
+		terminals:     terminals,
+		terminalAgent: terminalAgent,
 	}
 }
 
