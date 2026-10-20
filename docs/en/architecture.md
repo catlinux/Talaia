@@ -80,8 +80,8 @@ Go CLI that uses the same REST API with an API key. Intended for scripts, CI pip
 ### 3.1 Enrollment
 
 1. The user clicks **Add server** in the panel. The core creates a one-time token valid for 15 minutes.
-2. On the VPS: `curl -fsSL https://<core>/install.sh | bash -s -- --token <token>` (or `apt install
-   talaia-agent` + `talaia-agent enroll`).
+2. On the VPS: the command the panel shows (it downloads `install.sh` from the core and checks it) or, alternatively,
+   `apt install talaia-agent` + `talaia-agent enroll`.
 3. The agent generates a private key that never leaves the server and sends a CSR with the token.
 4. The core's internal CA signs a 90-day certificate bound to the server ID. It renews automatically at
    two thirds of its life.
@@ -90,8 +90,14 @@ Go CLI that uses the same REST API with an API key. Intended for scripts, CI pip
 
 Implemented so far (phase 1, design in `.agents/plans/fase1/D-enrolamiento.DESIGN.md`, pending review):
 
-- Until the panel has users (phase 3) the token is created with `talaia-core token create --name <server>`,
-  which also prints the **CA fingerprint** (SHA-256). `install.sh` takes `--token` and `--ca-fingerprint`.
+- The token is created from the panel (**Add server**, `POST /api/v1/servers/enrollment-tokens`, full session
+  only, audited) or from the console with `talaia-core token create --name <server>`. Both give the **CA
+  fingerprint** (SHA-256) and a ready-to-paste command; `install.sh` takes `--url`, `--token` and
+  `--ca-fingerprint`.
+- The core serves `install.sh` and the agent packages (`/install.sh`, `/agent/talaia-agent_<arch>.deb`, built
+  into its image). The command downloads the script before the server trusts the CA, so it carries the SHA-256
+  of the script and refuses to run a different one; the package is then downloaded over a connection that trusts
+  the CA alone, after the fingerprint check.
 - Trust anchor: the agent downloads `GET /ca.pem` once without verification and continues **only if** its
   SHA-256 matches the fingerprint; everything after that is verified TLS 1.3.
 - The token is stored hashed, expires in 15 minutes, is consumed atomically and a rejected token never says

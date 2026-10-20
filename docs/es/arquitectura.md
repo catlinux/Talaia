@@ -84,8 +84,8 @@ sincronización GitOps.
 
 1. El usuario pulsa **Añadir servidor** en el panel. El núcleo crea un token de un solo uso válido
    durante 15 minutos.
-2. En el VPS: `curl -fsSL https://<núcleo>/install.sh | bash -s -- --token <token>` (o `apt install
-   talaia-agent` + `talaia-agent enroll`).
+2. En el VPS: la orden que muestra el panel (descarga `install.sh` del núcleo y lo comprueba) o, como alternativa,
+   `apt install talaia-agent` + `talaia-agent enroll`.
 3. El agente genera una clave privada que nunca sale del servidor y envía una CSR con el token.
 4. La CA interna del núcleo firma un certificado de 90 días vinculado al ID del servidor. Se renueva
    automáticamente a los dos tercios de su vida.
@@ -95,9 +95,14 @@ sincronización GitOps.
 Implementado hasta ahora (fase 1, diseño en `.agents/plans/fase1/D-enrolamiento.DESIGN.md`, pendiente de
 revisión):
 
-- Hasta que el panel tenga usuarios (fase 3), el token se crea con `talaia-core token create --name
-  <servidor>`, que también imprime la **huella de la CA** (SHA-256). `install.sh` recibe `--token` y
+- El token se crea desde el panel (**Añadir servidor**, `POST /api/v1/servers/enrollment-tokens`, solo con
+  sesión completa y auditado) o desde la consola con `talaia-core token create --name <servidor>`. Ambos dan
+  la **huella de la CA** (SHA-256) y una orden lista para pegar; `install.sh` recibe `--url`, `--token` y
   `--ca-fingerprint`.
+- El núcleo sirve `install.sh` y los paquetes del agente (`/install.sh`, `/agent/talaia-agent_<arq>.deb`,
+  construidos dentro de su imagen). La orden descarga el script antes de que el servidor confíe en la CA, así
+  que lleva el SHA-256 del script y se niega a ejecutar uno distinto; el paquete se descarga después por una
+  conexión que solo confía en la CA, tras comprobar la huella.
 - Ancla de confianza: el agente descarga `GET /ca.pem` una vez sin verificar y continúa **solo si** su
   SHA-256 coincide con la huella; todo lo demás va con TLS 1.3 verificado.
 - El token se guarda con hash, caduca a los 15 minutos, se consume de forma atómica y un token rechazado
