@@ -84,6 +84,8 @@ tareas concretas de la fase actual y de la siguiente.
 
 ## Bloque de operación (decidido el 2026-10-20, antes de cerrar la fase 2)
 
+**Prioridad ahora (mantenedor, 2026-10-20):** las actualizaciones desde el panel y el acceso externo, para seguir actualizando y gestionando desde fuera de casa.
+
 Primero el diseño con un modelo potente (Opus), escrito en `.agents/plans/operacion/operacion.PLAN.md`; después se ejecuta con uno más barato.
 
 ### Actualizaciones desde el panel
@@ -94,13 +96,15 @@ Primero el diseño con un modelo potente (Opus), escrito en `.agents/plans/opera
 - [ ] Documentación: instalar el ayudante una vez en el Debian con `sudo`; después no hacen falta órdenes
 - [ ] Más adelante: actualizar desde el core los agentes de los demás servidores (hoy: `server upgrade-command` pegado a mano)
 
-### Acceso remoto y HTTPS de confianza (decidido por el mantenedor: Headscale con dominio propio)
-- [ ] Headscale en uno de los VPS (IP pública), instalado directamente y no en un contenedor (sus mantenedores no recomiendan contenedores ni proxies inversos: comprobar la documentación actual); clientes de Tailscale en la máquina del core, los VPS, el PC y el móvil. Pregunta abierta: qué VPS lo aloja; si cae, no pueden empezar conexiones nuevas
-- [ ] Dominio propio en OVH: un registro A como `panel.<dominio>` que apunte a la dirección privada del core en la VPN, y un certificado de Let's Encrypt por DNS-01 mediante la API de OVH con una credencial limitada a esa zona. Pregunta abierta: qué dominio y subdominio, y si la zona está alojada en OVH
-- [ ] Renovar el certificado desde el ayudante del host y que el core lo recargue desde disco
-- [ ] Core: presentar el certificado válido a los navegadores y el de su propia CA a los agentes, según el nombre que pidan; los agentes se conectan por la dirección de la VPN
-- [ ] Limitar en la VPN lo que cada VPS puede alcanzar al puerto del core
-- [ ] Documentación EN/ES: el core sigue sin depender de una red concreta; Headscale es la vía recomendada, con WireGuard o un puerto abierto como alternativas. Sustituir la sección 6 de la guía de instalación, que está sin probar
+### Acceso remoto y HTTPS de confianza (decidido por el mantenedor el 2026-10-20: core, panel y Headscale en el VPS)
+- [ ] Prioritario junto con las actualizaciones: seguir actualizando y gestionando desde fuera de casa
+- [ ] Instalar el core, el panel y Headscale en el VPS con IP fija, en `talaia.invierteconcriterio.es`. Instalación desde cero: el core de casa era solo de pruebas, así que el Debian de casa pasa a ser un servidor más y se le vuelve a instalar el agente. Headscale va instalado directamente y no en un contenedor (sus mantenedores no recomiendan contenedores ni proxies inversos: comprobar la documentación actual)
+- [ ] Ese VPS ya aloja muchas otras webs, así que primero hay que averiguar qué proxy tiene los puertos 80 y 443 (nginx, Caddy, Traefik; en el host o en Docker). El mTLS de los agentes tiene que llegar al core sin que ese proxy termine el TLS: elegir en el diseño entre un puerto aparte para los agentes, paso directo por nombre, o el core en su propio puerto
+- [ ] DNS en OVH: un registro A público `talaia.invierteconcriterio.es` hacia el VPS y un certificado de Let's Encrypt (DNS-01 mediante la API de OVH con una credencial limitada a la zona, o HTTP-01 si el proxy existente lo permite)
+- [ ] Core: presentar el certificado válido a los navegadores y el de su propia CA a los agentes, según el nombre que pidan; renovar y recargar el certificado sin reinicios (desde el ayudante del host)
+- [ ] Headscale y la VPN sirven para llegar a máquinas sin IP pública (el Debian de casa) y para el acceso privado; el panel público no depende de ellos
+- [ ] El nombre no puede estar fijado en ningún sitio: más adelante el mantenedor comprará un dominio nuevo y un VPS más potente. Dejar escrita y probada la mudanza (nombre nuevo en `TALAIA_PUBLIC_HOSTNAMES`, certificado nuevo, agentes apuntados a la dirección nueva o conservados gracias a la CA, volumen de datos copiado)
+- [ ] Documentación EN/ES: el core sigue sin depender de una red concreta; sustituir la sección 6 de la guía de instalación, que está sin probar
 
 ## Ideas (sin planificar)
 

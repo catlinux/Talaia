@@ -84,6 +84,8 @@ of the current phase and the next one.
 
 ## Operations block (decided 2026-10-20, before closing phase 2)
 
+**Priority now (maintainer, 2026-10-20):** the updates from the panel and the external access, to keep updating and managing from outside the home.
+
 Design first with a powerful model (Opus), written to `.agents/plans/operacion/operacion.PLAN.md`; then run it with a cheaper one.
 
 ### Updates from the panel
@@ -94,13 +96,15 @@ Design first with a powerful model (Opus), written to `.agents/plans/operacion/o
 - [ ] Documentation: install the helper once on the Debian with `sudo`; after that no commands are needed
 - [ ] Later: update the agents of the other servers from the core (today: `server upgrade-command` pasted by hand)
 
-### Remote access and trusted HTTPS (decided by the maintainer: Headscale with their own domain)
-- [ ] Headscale on one of the VPS (public IP), run natively and not in a container (its maintainers do not recommend containers or reverse proxies: check the current documentation); Tailscale clients on the core machine, the VPS, the PC and the phone. Open question: which VPS hosts it; if it is down, new connections cannot start
-- [ ] Own domain on OVH: an A record such as `panel.<domain>` pointing to the private VPN address of the core, and a Let's Encrypt certificate by DNS-01 through the OVH API with a credential limited to that zone. Open question: which domain and subdomain, and whether the zone is hosted at OVH
-- [ ] Renew the certificate from the host helper and let the core reload it from disk
-- [ ] Core: present the valid certificate to browsers and the certificate of its own CA to agents, according to the name they ask for; agents connect through the VPN address
-- [ ] Limit what each VPS may reach in the VPN to the core port
-- [ ] Documentation EN/ES: the core stays network-agnostic; Headscale is the recommended way, with WireGuard or an open port as alternatives. Replace the untested section 6 of the installation guide
+### Remote access and trusted HTTPS (decided by the maintainer on 2026-10-20: core, panel and Headscale on the VPS)
+- [ ] Priority with the updates: keep updating and managing from outside the home
+- [ ] Install the core, the panel and Headscale on the VPS with a fixed IP, at `talaia.invierteconcriterio.es`. Fresh install: the core at home was only for tests, so the Debian at home becomes one more server and its agent is installed again. Headscale runs natively and not in a container (its maintainers do not recommend containers or reverse proxies: check the current documentation)
+- [ ] That VPS already hosts many other websites, so find out first which proxy owns ports 80 and 443 (nginx, Caddy, Traefik; on the host or in Docker). The mTLS of the agents has to reach the core without that proxy ending the TLS: choose in the design between a separate port for the agents, passthrough by name, or the core on its own port
+- [ ] DNS at OVH: a public A record `talaia.invierteconcriterio.es` to the VPS and a Let's Encrypt certificate (DNS-01 through the OVH API with a credential limited to the zone, or HTTP-01 if the existing proxy allows it)
+- [ ] Core: present the valid certificate to browsers and the certificate of its own CA to agents, according to the name they ask for; renew and reload the certificate without restarts (from the host helper)
+- [ ] Headscale and the VPN are for reaching machines without a public IP (the Debian at home) and for private access; the public panel does not depend on them
+- [ ] The name must not be hardcoded anywhere: later the maintainer will buy a new domain and a more powerful VPS. Write down and test the move (new name in `TALAIA_PUBLIC_HOSTNAMES`, new certificate, agents pointed to the new address or kept thanks to the CA, data volume copied)
+- [ ] Documentation EN/ES: the core stays network-agnostic; replace the untested section 6 of the installation guide
 
 ## Ideas (not planned yet)
 
