@@ -25,6 +25,7 @@ import (
 
 	"github.com/catlinux/Talaia/agent/internal/config"
 	"github.com/catlinux/Talaia/agent/internal/enroll"
+	"github.com/catlinux/Talaia/agent/internal/jobs"
 	agentv1 "github.com/catlinux/Talaia/proto/gen/go"
 	"github.com/catlinux/Talaia/proto/gen/go/agentv1connect"
 )
@@ -70,12 +71,16 @@ func inventoryWith(hostname string) *agentv1.Inventory {
 // to reconnect.
 type testHub struct {
 	closeFirst bool
+	// command is sent to the agent once, after its first inventory.
+	command *agentv1.CoreMsg
 
 	mu          sync.Mutex
 	connects    int
 	inventories []*agentv1.Inventory
 	acks        []uint64
 	metrics     []*agentv1.Metrics
+	jobEvents   []*agentv1.JobEvent
+	sentCommand bool
 }
 
 func (h *testHub) Connect(_ context.Context, stream agentv1connect.AgentHubConnectServerStream) error {
@@ -94,6 +99,18 @@ func (h *testHub) Connect(_ context.Context, stream agentv1connect.AgentHubConne
 		case msg.GetInventory() != nil:
 			h.mu.Lock()
 			h.inventories = append(h.inventories, msg.GetInventory())
+			send := h.command != nil && !h.sentCommand
+			h.sentCommand = h.sentCommand || send
+			h.mu.Unlock()
+			if send {
+				if err := stream.Send(h.command); err != nil {
+					return err
+				}
+			}
+
+		case msg.GetJobEvent() != nil:
+			h.mu.Lock()
+			h.jobEvents = append(h.jobEvents, msg.GetJobEvent())
 			h.mu.Unlock()
 
 		case msg.GetHeartbeat() != nil:
@@ -528,5 +545,62 @@ func TestLinkRejectsAServerFromAnotherCA(t *testing.T) {
 
 	if err := agentLink.session(ctx); err == nil {
 		t.Fatal("the link must reject a core whose certificate comes from another CA")
+	}
+}
+
+// recordingActions answers every container action with err and remembers them.
+type recordingActions struct {
+	mu    sync.Mutex
+	calls []string
+	err   error
+}
+
+func (r *recordingActions) Do(_ context.Context, container string, action agentv1.ContainerActionType) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.calls = append(r.calls, action.String()+":"+container)
+	return r.err
+}
+
+func TestLinkRunsACommandAndReportsTheJob(t *testing.T) {
+	hub := &testHub{command: &agentv1.CoreMsg{
+		JobId: "job-42",
+		Cmd: &agentv1.CoreMsg_ContainerAction{ContainerAction: &agentv1.ContainerAction{
+			Container: "web",
+			Action:    agentv1.ContainerActionType_CONTAINER_ACTION_TYPE_RESTART,
+		}},
+	}}
+	url := newTestServer(t, hub)
+
+	actions := &recordingActions{}
+	agentLink := NewInsecure(config.Config{CoreURL: url, LogLevel: "info"}, &fakeCollector{
+		inventory: inventoryWith("vps-test"),
+		metrics:   &agentv1.Metrics{Hostname: "vps-test"},
+	})
+	agentLink.jobs = jobs.New(actions)
+	agentLink.HeartbeatInterval = time.Hour
+	agentLink.MetricsInterval = time.Hour
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go func() { _ = agentLink.Run(ctx) }()
+
+	waitFor(t, func() bool {
+		hub.mu.Lock()
+		defer hub.mu.Unlock()
+		return len(hub.jobEvents) >= 2
+	})
+
+	hub.mu.Lock()
+	defer hub.mu.Unlock()
+	if hub.jobEvents[0].GetState() != agentv1.JobState_JOB_STATE_RUNNING ||
+		hub.jobEvents[1].GetState() != agentv1.JobState_JOB_STATE_SUCCEEDED ||
+		hub.jobEvents[1].GetJobId() != "job-42" {
+		t.Errorf("job events = %v", hub.jobEvents)
+	}
+	actions.mu.Lock()
+	defer actions.mu.Unlock()
+	if len(actions.calls) != 1 || actions.calls[0] != "CONTAINER_ACTION_TYPE_RESTART:web" {
+		t.Errorf("actions = %v", actions.calls)
 	}
 }

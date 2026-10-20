@@ -22,6 +22,7 @@ import (
 	"github.com/catlinux/Talaia/agent/internal/collect"
 	"github.com/catlinux/Talaia/agent/internal/config"
 	"github.com/catlinux/Talaia/agent/internal/enroll"
+	"github.com/catlinux/Talaia/agent/internal/jobs"
 	agentv1 "github.com/catlinux/Talaia/proto/gen/go"
 	"github.com/catlinux/Talaia/proto/gen/go/agentv1connect"
 )
@@ -36,6 +37,8 @@ type Link struct {
 	collector collect.Collector
 	identity  *enroll.Identity
 	client    agentv1connect.AgentHubClient
+	// jobs runs the typed commands the core sends.
+	jobs *jobs.Executor
 
 	// Intervals and backoff bounds are fields so tests can use milliseconds.
 	HeartbeatInterval time.Duration
@@ -72,6 +75,7 @@ func newLink(cfg config.Config, collector collect.Collector, identity *enroll.Id
 		collector:         collector,
 		identity:          identity,
 		client:            agentv1connect.NewAgentHubClient(connect.NewClient(rpcTransport)),
+		jobs:              jobs.New(jobs.NewDockerActions()),
 		HeartbeatInterval: 10 * time.Second,
 		MetricsInterval:   15 * time.Second,
 		InventoryInterval: 60 * time.Second,
@@ -135,9 +139,22 @@ func (l *Link) session(ctx context.Context) error {
 	sentInventory := inventory
 	slog.Info("connected to core", "core_url", l.cfg.CoreURL, "hostname", inventory.GetHostname())
 
+	// Job events are queued here and sent from this loop, the only place that
+	// writes to the stream.
+	// A job that outlives the stream drops its events instead of blocking.
+	streamCtx, endStream := context.WithCancel(ctx)
+	defer endStream()
+	events := make(chan *agentv1.AgentMsg, 32)
+	emit := func(msg *agentv1.AgentMsg) {
+		select {
+		case events <- msg:
+		case <-streamCtx.Done():
+		}
+	}
+
 	received := make(chan error, 1)
 	go func() {
-		received <- l.receive(stream)
+		received <- l.receive(ctx, stream, emit)
 	}()
 
 	heartbeat := time.NewTicker(l.HeartbeatInterval)
@@ -158,6 +175,11 @@ func (l *Link) session(ctx context.Context) error {
 				return errors.New("core closed the stream")
 			}
 			return fmt.Errorf("receive from core: %w", err)
+
+		case event := <-events:
+			if err := stream.Send(event); err != nil {
+				return fmt.Errorf("send job event: %w", err)
+			}
 
 		case <-inventoryTicker.C:
 			current, err := l.collector.Inventory()
@@ -204,7 +226,7 @@ func (l *Link) session(ctx context.Context) error {
 }
 
 // receive reads the core messages until the stream ends.
-func (l *Link) receive(stream agentv1connect.AgentHubConnectClientStream) error {
+func (l *Link) receive(ctx context.Context, stream agentv1connect.AgentHubConnectClientStream, emit func(*agentv1.AgentMsg)) error {
 	for {
 		msg, err := stream.Receive()
 		if err != nil {
@@ -212,7 +234,9 @@ func (l *Link) receive(stream agentv1connect.AgentHubConnectClientStream) error 
 		}
 		if ack := msg.GetHeartbeatAck(); ack != nil {
 			slog.Debug("heartbeat acknowledged", "seq", ack.GetSeq())
+			continue
 		}
+		l.jobs.Handle(ctx, msg, emit)
 	}
 }
 
