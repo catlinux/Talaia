@@ -26,6 +26,8 @@ const (
 	DefaultDataDir = "/var/lib/talaia"
 	// DefaultWebDir holds the compiled web panel.
 	DefaultWebDir = "/usr/share/talaia/web"
+	// DefaultTerminalRecordingDays is how long the recordings of terminal sessions are kept.
+	DefaultTerminalRecordingDays = 90
 )
 
 // Config is the runtime configuration of talaia-core.
@@ -48,6 +50,9 @@ type Config struct {
 	// AllowedOrigins are the browser origins the panel may be served from, as
 	// scheme://host[:port]. They are derived from PublicHostnames when unset.
 	AllowedOrigins []string
+	// TerminalRecordingDays is how many days the recording of a terminal session
+	// is kept; 0 keeps them for ever.
+	TerminalRecordingDays int
 	// InsecureDev disables TLS. It must never be used in production.
 	InsecureDev bool
 }
@@ -55,16 +60,17 @@ type Config struct {
 // fileConfig mirrors the TOML document. Pointer fields tell an absent key
 // apart from an empty value, so defaults are only replaced when the key is set.
 type fileConfig struct {
-	Listen          *string   `toml:"listen"`
-	DatabaseURL     *string   `toml:"database_url"`
-	LogLevel        *string   `toml:"log_level"`
-	DataDir         *string   `toml:"data_dir"`
-	WebDir          *string   `toml:"web_dir"`
-	DistDir         *string   `toml:"dist_dir"`
-	PublicPort      *string   `toml:"public_port"`
-	PublicHostnames *[]string `toml:"public_hostnames"`
-	AllowedOrigins  *[]string `toml:"allowed_origins"`
-	InsecureDev     *bool     `toml:"insecure_dev"`
+	Listen                *string   `toml:"listen"`
+	DatabaseURL           *string   `toml:"database_url"`
+	LogLevel              *string   `toml:"log_level"`
+	DataDir               *string   `toml:"data_dir"`
+	WebDir                *string   `toml:"web_dir"`
+	DistDir               *string   `toml:"dist_dir"`
+	PublicPort            *string   `toml:"public_port"`
+	PublicHostnames       *[]string `toml:"public_hostnames"`
+	AllowedOrigins        *[]string `toml:"allowed_origins"`
+	InsecureDev           *bool     `toml:"insecure_dev"`
+	TerminalRecordingDays *int      `toml:"terminal_recording_days"`
 }
 
 var logLevels = map[string]slog.Level{
@@ -90,10 +96,11 @@ func (c Config) Level() slog.Level {
 // tests do not depend on the host configuration.
 func load(lookup func(string) (string, bool), defaultPath string) (Config, error) {
 	cfg := Config{
-		Listen:   DefaultListen,
-		LogLevel: DefaultLogLevel,
-		DataDir:  DefaultDataDir,
-		WebDir:   DefaultWebDir,
+		Listen:                DefaultListen,
+		LogLevel:              DefaultLogLevel,
+		DataDir:               DefaultDataDir,
+		WebDir:                DefaultWebDir,
+		TerminalRecordingDays: DefaultTerminalRecordingDays,
 	}
 
 	path := defaultPath
@@ -133,6 +140,13 @@ func load(lookup func(string) (string, bool), defaultPath string) (Config, error
 	}
 	if value, ok := lookup("TALAIA_ALLOWED_ORIGINS"); ok {
 		cfg.AllowedOrigins = splitList(value)
+	}
+	if value, ok := lookup("TALAIA_TERMINAL_RECORDING_DAYS"); ok {
+		days, err := strconv.Atoi(strings.TrimSpace(value))
+		if err != nil {
+			return Config{}, fmt.Errorf("invalid terminal_recording_days value %q (expected a number of days)", value)
+		}
+		cfg.TerminalRecordingDays = days
 	}
 	if value, ok := lookup("TALAIA_INSECURE_DEV"); ok {
 		insecure, err := parseInsecureDev(value)
@@ -208,6 +222,9 @@ func applyFile(cfg *Config, path string, explicit bool) error {
 	if file.InsecureDev != nil {
 		cfg.InsecureDev = *file.InsecureDev
 	}
+	if file.TerminalRecordingDays != nil {
+		cfg.TerminalRecordingDays = *file.TerminalRecordingDays
+	}
 	return nil
 }
 
@@ -247,6 +264,9 @@ func (c *Config) validate() error {
 	}
 	if strings.TrimSpace(c.DataDir) == "" {
 		return errors.New("data_dir is required")
+	}
+	if c.TerminalRecordingDays < 0 {
+		return errors.New("terminal_recording_days cannot be negative")
 	}
 	if strings.TrimSpace(c.WebDir) == "" {
 		return errors.New("web_dir is required")

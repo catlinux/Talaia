@@ -40,6 +40,8 @@ Commands:
   user create --username <name>       create the administrator (asks for the password)
   user reset-2fa                      clear the second factor of the administrator
   session revoke-all                  revoke every panel session
+  terminal list                       list the terminal sessions and their recordings
+  terminal export <id>                print the recording of a session (asciicast v2)
 `)
 }
 

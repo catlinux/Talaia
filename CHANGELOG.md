@@ -1,5 +1,7 @@
 # Changelog
 - Terminal sessions in the agent (not reachable from the panel yet): a shell from a closed list (`/bin/sh` or `/bin/bash`) runs through the Docker exec API with a terminal, as the user of the container and without privileges, and ends with the stream to the core. Limits: 4 sessions, 15 minutes without activity, 4 hours in total, 16 KiB per output message and 1 MiB/s of output; a shell that does not read its input is closed instead of stalling the agent. It reports whether the container is as good as root on the host (privileged, host PID namespace or Docker socket mounted).
+- Terminal sessions in the core (not reachable from the panel yet): sessions are routed by server and session id, so an agent can only feed its own; at most 4 per server and one per user and container; every session is recorded as an asciicast v2 file in chunks sealed with the secrets key and bound to their position, so a dropped, repeated or swapped chunk is detected on export; a session that cannot be recorded (database down, 50 MiB reached) is closed; keystrokes are not recorded. Keystrokes wait for a busy agent instead of being lost, and a browser that reads too slowly ends its session. Audited as `terminal_open` and `terminal_close`.
+- `talaia-core terminal list` and `talaia-core terminal export <id>` (prints the recording for `asciinema play`), and the setting `terminal_recording_days` / `TALAIA_TERMINAL_RECORDING_DAYS` (default 90, 0 keeps them for ever) with a daily purge. Sessions a restart left open are closed at start.
 
 [Leer en castellano](CHANGELOG.es.md)
 

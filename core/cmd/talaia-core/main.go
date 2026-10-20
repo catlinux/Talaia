@@ -27,6 +27,7 @@ import (
 	"github.com/catlinux/Talaia/core/internal/hub"
 	"github.com/catlinux/Talaia/core/internal/install"
 	"github.com/catlinux/Talaia/core/internal/store"
+	"github.com/catlinux/Talaia/core/internal/terminal"
 )
 
 // version is the version placeholder, overridden at build time.
@@ -63,6 +64,8 @@ func run(args []string, stdout, stderr io.Writer) int {
 		return runUser(rest, os.Stdin, stdout, stderr)
 	case "session":
 		return runSession(rest, stdout, stderr)
+	case "terminal":
+		return runTerminal(rest, stdout, stderr)
 	default:
 		fmt.Fprintf(stderr, "unknown command %q\n\n", command)
 		printUsage(stderr)
@@ -281,6 +284,15 @@ func serve() error {
 		agentHub := hub.New(st)
 		agentHub.SetJobEvents(api.JobRecorder{Jobs: st})
 		panel.Containers = &api.ContainerDeps{Agents: agentHub, Dispatcher: agentHub, Jobs: st, Audit: st}
+
+		// Terminal sessions: the ones an earlier run left open are closed first.
+		if err := terminal.CloseOrphans(context.Background(), st); err != nil {
+			return fmt.Errorf("close the terminal sessions left open: %w", err)
+		}
+		agentHub.SetTerminals(terminal.New(st, agentHub, st, box, terminal.DefaultConfig()))
+		purgeCtx, stopPurge := context.WithCancel(context.Background())
+		defer stopPurge()
+		go terminal.PurgeLoop(purgeCtx, st, cfg.TerminalRecordingDays, 24*time.Hour)
 		srv.Handler = newTLSRouter(st, authority, agentHub, panel)
 		srv.Protocols = newTLSProtocols()
 		srv.TLSConfig = &tls.Config{

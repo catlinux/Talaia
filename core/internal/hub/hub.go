@@ -36,11 +36,25 @@ type JobEvents interface {
 	RecordJobEvent(ctx context.Context, serverID string, event *agentv1.JobEvent)
 }
 
+// TerminalEvents receives what the agents report about their terminal sessions.
+// The hub calls it from the loop that reads the stream of the agent, so it must
+// not block. serverID is the server the stream belongs to: a session id from any
+// other server is not theirs.
+type TerminalEvents interface {
+	TerminalOpened(serverID string, msg *agentv1.TerminalOpened)
+	TerminalOutput(serverID string, msg *agentv1.TerminalOutput)
+	TerminalClosed(serverID string, msg *agentv1.TerminalClosed)
+	// AgentGone says the stream of the server ended: its shells are gone too.
+	AgentGone(serverID string)
+}
+
 // agentConn is the live stream of one agent. Every message to the agent goes
 // through outbox, so a single goroutine writes to the stream.
 type agentConn struct {
 	token  uint64
 	outbox chan *agentv1.CoreMsg
+	// done is closed when the connection ends.
+	done chan struct{}
 }
 
 // defaultCheckInterval is how often at most the hub re-validates a connection
@@ -143,6 +157,8 @@ type Hub struct {
 
 	// jobEvents is told about the events of the commands; nil ignores them.
 	jobEvents JobEvents
+	// terminals is told about the terminal sessions; nil ignores them.
+	terminals TerminalEvents
 
 	now func() time.Time
 }
@@ -190,6 +206,34 @@ func (h *Hub) SetJobEvents(events JobEvents) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	h.jobEvents = events
+}
+
+// SetTerminals sets who is told about the terminal sessions of the agents.
+func (h *Hub) SetTerminals(events TerminalEvents) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	h.terminals = events
+}
+
+// DispatchWait queues a message for the agent of a server and, when the queue
+// is full, waits for room until ctx ends. Terminal input uses it: waiting pushes
+// the pressure back to the browser instead of losing keystrokes.
+func (h *Hub) DispatchWait(ctx context.Context, serverID string, msg *agentv1.CoreMsg) error {
+	h.mu.RLock()
+	link, ok := h.conns[serverID]
+	h.mu.RUnlock()
+	if !ok {
+		return ErrNotConnected
+	}
+
+	select {
+	case link.outbox <- msg:
+		return nil
+	case <-link.done:
+		return ErrNotConnected
+	case <-ctx.Done():
+		return ErrAgentBusy
+	}
 }
 
 // Dispatch queues a command for the agent of a server. It never blocks: when the
@@ -270,14 +314,17 @@ func (h *Hub) serve(ctx context.Context, stream agentStream) error {
 	// from the rest of the core queue here.
 	ctx, cancelStream := context.WithCancel(ctx)
 	defer cancelStream()
-	link := &agentConn{token: info.token, outbox: make(chan *agentv1.CoreMsg, outboxSize)}
+	link := &agentConn{token: info.token, outbox: make(chan *agentv1.CoreMsg, outboxSize), done: make(chan struct{})}
 	h.register(key, link)
 	go writeLoop(ctx, stream, link.outbox, cancelStream)
 	h.touchServer(ctx, serverID)
 	slog.Info("agent connected", "server_id", serverID, "hostname", hostname, "agent_version", info.AgentVersion)
 
 	defer func() {
-		h.unregister(key, link)
+		close(link.done)
+		if h.unregister(key, link) {
+			h.terminalsGone(serverID)
+		}
 		h.remove(info)
 		slog.Info("agent disconnected", "server_id", serverID, "hostname", hostname)
 	}()
@@ -322,6 +369,9 @@ func (h *Hub) serve(ctx context.Context, stream agentStream) error {
 
 		case msg.GetJobEvent() != nil:
 			h.recordJobEvent(ctx, serverID, msg.GetJobEvent())
+
+		case msg.GetTerminalOpened() != nil || msg.GetTerminalOutput() != nil || msg.GetTerminalClosed() != nil:
+			h.terminalEvent(serverID, msg)
 
 		case msg.GetMetrics() != nil:
 			metrics := msg.GetMetrics()
@@ -449,12 +499,44 @@ func (h *Hub) register(key string, link *agentConn) {
 	h.conns[key] = link
 }
 
-// unregister drops the connection only when it is still the current one.
-func (h *Hub) unregister(key string, link *agentConn) {
+// unregister drops the connection only when it is still the current one, and
+// reports whether it was.
+func (h *Hub) unregister(key string, link *agentConn) bool {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	if h.conns[key] == link {
 		delete(h.conns, key)
+		return true
+	}
+	return false
+}
+
+func (h *Hub) terminalSink() TerminalEvents {
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+	return h.terminals
+}
+
+// terminalEvent passes a terminal message of the agent of serverID on. The
+// server comes from the connection, never from the message.
+func (h *Hub) terminalEvent(serverID string, msg *agentv1.AgentMsg) {
+	sink := h.terminalSink()
+	if sink == nil || serverID == "" {
+		return
+	}
+	switch {
+	case msg.GetTerminalOpened() != nil:
+		sink.TerminalOpened(serverID, msg.GetTerminalOpened())
+	case msg.GetTerminalOutput() != nil:
+		sink.TerminalOutput(serverID, msg.GetTerminalOutput())
+	case msg.GetTerminalClosed() != nil:
+		sink.TerminalClosed(serverID, msg.GetTerminalClosed())
+	}
+}
+
+func (h *Hub) terminalsGone(serverID string) {
+	if sink := h.terminalSink(); sink != nil && serverID != "" {
+		sink.AgentGone(serverID)
 	}
 }
 

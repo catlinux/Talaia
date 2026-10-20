@@ -414,3 +414,40 @@ func TestPublicURL(t *testing.T) {
 		})
 	}
 }
+
+func TestTerminalRecordingDays(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "core.toml")
+	base := map[string]string{"TALAIA_DATABASE_URL": testDatabaseURL}
+	with := func(key, value string) map[string]string {
+		env := map[string]string{key: value}
+		for k, v := range base {
+			env[k] = v
+		}
+		return env
+	}
+
+	cfg, err := load(lookupFrom(base), path)
+	if err != nil || cfg.TerminalRecordingDays != DefaultTerminalRecordingDays {
+		t.Fatalf("default = %d, %v", cfg.TerminalRecordingDays, err)
+	}
+	cfg, err = load(lookupFrom(with("TALAIA_TERMINAL_RECORDING_DAYS", " 30 ")), path)
+	if err != nil || cfg.TerminalRecordingDays != 30 {
+		t.Errorf("from the environment = %d, %v", cfg.TerminalRecordingDays, err)
+	}
+	cfg, err = load(lookupFrom(with("TALAIA_TERMINAL_RECORDING_DAYS", "0")), path)
+	if err != nil || cfg.TerminalRecordingDays != 0 {
+		t.Errorf("keep for ever = %d, %v", cfg.TerminalRecordingDays, err)
+	}
+	for _, bad := range []string{"-1", "many"} {
+		if _, err := load(lookupFrom(with("TALAIA_TERMINAL_RECORDING_DAYS", bad)), path); err == nil {
+			t.Errorf("%q was accepted", bad)
+		}
+	}
+
+	if err := os.WriteFile(path, []byte("database_url = \"postgres://file@example.com/talaia\"\nterminal_recording_days = 7\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if cfg, err := load(lookupFrom(map[string]string{"TALAIA_CONFIG": path}), path); err != nil || cfg.TerminalRecordingDays != 7 {
+		t.Errorf("from the file = %d, %v", cfg.TerminalRecordingDays, err)
+	}
+}

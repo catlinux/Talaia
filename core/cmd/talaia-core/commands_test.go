@@ -372,3 +372,32 @@ func TestUpgradeCommandNeedsAnAddressAndTheInstaller(t *testing.T) {
 		t.Errorf("nothing must be printed on error, got %q", stdout.String())
 	}
 }
+
+type fakeSessions []store.TerminalSession
+
+func (f fakeSessions) ListTerminalSessions(context.Context, int) ([]store.TerminalSession, error) {
+	return f, nil
+}
+
+func TestTerminalList(t *testing.T) {
+	var out bytes.Buffer
+	if err := terminalList(context.Background(), &out, fakeSessions{}); err != nil || strings.TrimSpace(out.String()) != "no terminal sessions" {
+		t.Errorf("empty list = %q, %v", out.String(), err)
+	}
+
+	opened := time.Date(2026, 10, 20, 10, 0, 0, 0, time.UTC)
+	sessions := fakeSessions{
+		{ID: "id-open", Container: "web", CreatedBy: "admin", OpenedAt: opened},
+		{ID: "id-done", Container: "db", CreatedBy: "admin", OpenedAt: opened, ClosedAt: opened.Add(90 * time.Second),
+			CloseReason: "exited", Privileged: true, RecordedBytes: 1234},
+	}
+	out.Reset()
+	if err := terminalList(context.Background(), &out, sessions); err != nil {
+		t.Fatalf("terminalList: %v", err)
+	}
+	lines := strings.Split(strings.TrimSpace(out.String()), "\n")
+	if len(lines) != 2 || !strings.Contains(lines[0], "id-open  2026-10-20T10:00:00Z  open  admin  web") ||
+		!strings.Contains(lines[1], "exited  admin  db  1m30s  1234 bytes  root-equivalent") {
+		t.Errorf("list =\n%s", out.String())
+	}
+}
