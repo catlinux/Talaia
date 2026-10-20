@@ -3,6 +3,7 @@ package api
 import (
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 )
 
@@ -149,5 +150,22 @@ func TestSecurityOriginCheck(t *testing.T) {
 				t.Errorf("body = %q, want the forbidden_origin code", recorder.Body.String())
 			}
 		})
+	}
+}
+
+func TestPolicyOnlyRelaxesStyleElements(t *testing.T) {
+	// The terminal needs <style> elements; nothing else may be loosened: no inline
+	// or eval scripts, no inline style attributes, no foreign origins.
+	for _, forbidden := range []string{"script-src", "unsafe-eval", "https:", "http:", "*", "data:"} {
+		if strings.Contains(contentSecurityPolicy, forbidden) {
+			t.Errorf("the policy contains %q: %s", forbidden, contentSecurityPolicy)
+		}
+	}
+	if strings.Count(contentSecurityPolicy, "unsafe-inline") != 1 ||
+		!strings.Contains(contentSecurityPolicy, "style-src-elem 'self' 'unsafe-inline'") {
+		t.Errorf("unsafe-inline must appear only for style-src-elem: %s", contentSecurityPolicy)
+	}
+	if !strings.Contains(contentSecurityPolicy, "default-src 'self'") {
+		t.Errorf("the default must stay on the origin of the panel: %s", contentSecurityPolicy)
 	}
 }

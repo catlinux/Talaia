@@ -7,8 +7,10 @@ import (
 )
 
 // contentSecurityPolicy is the policy of the panel: no inline or third-party
-// code, no framing, and forms only post to the panel itself.
-const contentSecurityPolicy = "default-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'"
+// code, no framing, and forms only post to the panel itself. The terminal
+// (xterm.js) writes <style> elements to colour its cells, which only
+// style-src-elem governs: inline style attributes and every script stay blocked.
+const contentSecurityPolicy = "default-src 'self'; style-src-elem 'self' 'unsafe-inline'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'"
 
 // SecurityConfig are the settings of the security middleware.
 type SecurityConfig struct {
