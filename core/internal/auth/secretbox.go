@@ -104,22 +104,34 @@ func NewSecretBox(key []byte) (*SecretBox, error) {
 // Seal encrypts plaintext and returns the random nonce followed by the
 // ciphertext.
 func (b *SecretBox) Seal(plaintext []byte) []byte {
+	return b.SealWithContext(plaintext, nil)
+}
+
+// SealWithContext is Seal, binding the value to bound: it only opens with the
+// same bound data, so a sealed value cannot be moved to another place (for example
+// another position of a recording) without being noticed.
+func (b *SecretBox) SealWithContext(plaintext, bound []byte) []byte {
 	nonce := make([]byte, nonceLength)
 	rand.Read(nonce)
 
 	// Seal appends the ciphertext to the nonce, so the nonce travels with it.
-	return b.aead.Seal(nonce, nonce, plaintext, nil)
+	return b.aead.Seal(nonce, nonce, plaintext, bound)
 }
 
 // Open decrypts a value returned by Seal. It fails when the value was tampered
 // with or sealed with another key.
 func (b *SecretBox) Open(sealed []byte) ([]byte, error) {
+	return b.OpenWithContext(sealed, nil)
+}
+
+// OpenWithContext opens a value sealed with SealWithContext and the same data.
+func (b *SecretBox) OpenWithContext(sealed, bound []byte) ([]byte, error) {
 	if len(sealed) < nonceLength+b.aead.Overhead() {
 		return nil, errors.New("the sealed value is too short")
 	}
 
 	nonce, ciphertext := sealed[:nonceLength], sealed[nonceLength:]
-	plaintext, err := b.aead.Open(nil, nonce, ciphertext, nil)
+	plaintext, err := b.aead.Open(nil, nonce, ciphertext, bound)
 	if err != nil {
 		return nil, fmt.Errorf("decrypt: %w", err)
 	}

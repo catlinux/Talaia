@@ -150,3 +150,21 @@ func TestSecretBoxOpenRejectsAlteredValues(t *testing.T) {
 		t.Error("another key opened the value")
 	}
 }
+
+func TestSealWithContextOnlyOpensWithTheSameContext(t *testing.T) {
+	box, err := NewSecretBox(bytes.Repeat([]byte{7}, secretKeyLength))
+	if err != nil {
+		t.Fatal(err)
+	}
+	sealed := box.SealWithContext([]byte("output"), []byte("session|1"))
+
+	if got, err := box.OpenWithContext(sealed, []byte("session|1")); err != nil || string(got) != "output" {
+		t.Fatalf("OpenWithContext = %q, %v", got, err)
+	}
+	if _, err := box.OpenWithContext(sealed, []byte("session|2")); err == nil {
+		t.Error("a value sealed for one position opened at another")
+	}
+	if _, err := box.Open(sealed); err == nil {
+		t.Error("a value sealed with a context opened without it")
+	}
+}
