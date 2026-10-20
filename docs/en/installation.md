@@ -126,7 +126,24 @@ The log must say `enrolled with the core` and `connected to core`. The server th
   accepting its certificate. Then, on the server itself, `sudo apt purge talaia-agent` removes the agent and its
   configuration.
 
-## 6. Troubleshooting
+## 6. Reaching the panel from outside your network
+
+By default the panel only answers on your local network, and nothing is exposed to the internet. The safest way to
+reach it from elsewhere is a private VPN such as Tailscale: install it on the core machine and on the devices you
+browse from (follow its own documentation), then tell the core about the new address:
+
+1. In `packaging/core/.env`, add the VPN address or name of the core machine to `TALAIA_PUBLIC_HOSTNAMES`, separated
+   by a comma from the existing one, for example `TALAIA_PUBLIC_HOSTNAMES=192.0.2.10,100.64.0.7`.
+2. Run `sudo docker compose up -d` in `packaging/core`. The core signs its certificate for every listed name when it
+   starts, and accepts the panel from each of them.
+3. Open `https://<vpn-address>:<port>` from your device.
+
+Servers on other networks can enroll through the same address. Opening the port of your router instead is not
+recommended: it would put the panel and the agent endpoint on the internet.
+
+> This section was written from the code, not tested on a real VPN yet.
+
+## 7. Troubleshooting
 
 | Symptom | Cause and fix |
 |---|---|

@@ -127,7 +127,25 @@ pantalla **Flota** del panel con su CPU, memoria, disco y contenedores.
   el núcleo deja de aceptar su certificado. Después, en el propio servidor, `sudo apt purge talaia-agent` quita el
   agente y su configuración.
 
-## 6. Problemas frecuentes
+## 6. Llegar al panel desde fuera de tu red
+
+Por defecto el panel solo responde en tu red local y no se expone nada a internet. La forma más segura de llegar a él
+desde otro sitio es una VPN privada como Tailscale: instálala en la máquina del núcleo y en los dispositivos desde los
+que navegas (sigue su propia documentación) y avisa al núcleo de la nueva dirección:
+
+1. En `packaging/core/.env`, añade la dirección o el nombre de VPN de la máquina del núcleo a
+   `TALAIA_PUBLIC_HOSTNAMES`, separada por una coma de la que ya hay, por ejemplo
+   `TALAIA_PUBLIC_HOSTNAMES=192.0.2.10,100.64.0.7`.
+2. Ejecuta `sudo docker compose up -d` en `packaging/core`. El núcleo firma su certificado para todos los nombres de
+   la lista al arrancar y acepta el panel desde cada uno.
+3. Abre `https://<dirección-vpn>:<puerto>` desde tu dispositivo.
+
+Los servidores de otras redes pueden darse de alta por la misma dirección. No se recomienda abrir en cambio el puerto
+del router: pondría el panel y el punto de entrada de los agentes en internet.
+
+> Esta sección está escrita a partir del código, todavía sin probar en una VPN real.
+
+## 7. Problemas frecuentes
 
 | Síntoma | Causa y solución |
 |---|---|

@@ -27,6 +27,7 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 - API `POST /api/v1/servers/enrollment-tokens` (sesión completa): crea un token de alta de un solo uso y 15 minutos para un nombre de servidor y devuelve la orden de instalación; se audita como `enrollment_token_created`.
 - `talaia-core server list` imprime los servidores dados de alta con sus ids, que necesita `server revoke`.
 - La orden de instalación incluye ahora el SHA-256 de `install.sh` y se niega a ejecutar un script que no coincida, de modo que una máquina intermedia no puede cambiar el script que se descarga antes de confiar en la CA.
+- Sección de la guía de instalación sobre cómo llegar al panel desde fuera mediante una VPN privada.
 - Botón «Añadir servidor» en la pantalla de flota: pide un nombre, crea el token de un solo uso y muestra la orden de instalación con un botón de copiar, en ca/es/en. El mensaje de flota vacía apunta ahora a él.
 - Enlace mínimo del agente: el hub del core acepta el stream del agente (HTTP/2 sin cifrar por ahora) y el agente envía inventario, latidos y métricas de CPU, leyendo `/etc/talaia/agent.toml`.
 - i18n para los componentes Go (go-i18n en core y CLI, ca/es/en) y `scripts/i18n-check.mjs`, que falla si falta una clave en algún idioma.
