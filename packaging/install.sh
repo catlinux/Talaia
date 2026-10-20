@@ -4,6 +4,7 @@
 #
 # Usage:
 #   install.sh --url <https-core-url> --token <token> --ca-fingerprint <sha256-hex> [--deb <path-or-https-url>]
+#   install.sh --upgrade --url <https-core-url> --ca-fingerprint <sha256-hex> [--deb <path-or-https-url>]
 #
 # The agent enrolls on its first start: it fetches the core CA, checks it against
 # --ca-fingerprint (the trust anchor), and exchanges the one-time token for its
@@ -16,12 +17,15 @@ TOKEN_FILE=/etc/talaia/enroll.token
 usage() {
     cat >&2 <<'EOF'
 Usage: install.sh --url <https-core-url> --token <token> --ca-fingerprint <sha256-hex> [--deb <path-or-https-url>]
+       install.sh --upgrade --url <https-core-url> --ca-fingerprint <sha256-hex> [--deb <path-or-https-url>]
 
   --url <core_url>  core URL the agent connects to (required)
   --deb <source>    path to a .deb file or an https:// URL; by default the package is
                     downloaded from the core, after checking the CA fingerprint
   --token <token>   one-time enrollment token (from "talaia-core token create")
   --ca-fingerprint <hex>  SHA-256 fingerprint of the core CA (printed with the token)
+  --upgrade         update the installed agent only: keeps its configuration and
+                    identity, needs no token
   -h, --help        show this help
 EOF
 }
@@ -30,6 +34,7 @@ core_url=""
 deb_source=""
 token=""
 ca_fingerprint=""
+upgrade=0
 
 while [ "$#" -gt 0 ]; do
     case "$1" in
@@ -42,6 +47,10 @@ while [ "$#" -gt 0 ]; do
             [ "$#" -ge 2 ] || { echo "error: --deb needs a value" >&2; exit 1; }
             deb_source="$2"
             shift 2
+            ;;
+        --upgrade)
+            upgrade=1
+            shift
             ;;
         --token)
             [ "$#" -ge 2 ] || { echo "error: --token needs a value" >&2; exit 1; }
@@ -83,8 +92,8 @@ case "$core_url" in
         ;;
 esac
 
-if [ -z "$token" ] || [ -z "$ca_fingerprint" ]; then
-    echo "error: --token and --ca-fingerprint are required" >&2
+if [ -z "$ca_fingerprint" ] || { [ "$upgrade" -eq 0 ] && [ -z "$token" ]; }; then
+    echo "error: --token and --ca-fingerprint are required (--upgrade needs only --ca-fingerprint)" >&2
     usage
     exit 1
 fi
@@ -201,7 +210,20 @@ case "$deb_source" in
 esac
 
 echo "installing the talaia-agent package"
-apt-get install -y "$deb_file"
+# --reinstall makes the same version install again, which an upgrade of a build
+# with the same version number needs.
+apt-get install -y --reinstall "$deb_file"
+
+if [ "$upgrade" -eq 1 ]; then
+    if [ ! -f "$CONFIG" ]; then
+        echo "error: --upgrade needs an installed agent: $CONFIG was not found" >&2
+        exit 1
+    fi
+    systemctl daemon-reload
+    systemctl restart talaia-agent
+    echo "talaia-agent upgraded and restarted (configuration and identity kept)"
+    exit 0
+fi
 
 # Write core_url and ca_fingerprint into the configuration, replacing previous values.
 mkdir -p /etc/talaia /var/lib/talaia

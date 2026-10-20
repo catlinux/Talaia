@@ -121,6 +121,10 @@ The log must say `enrolled with the core` and `connected to core`. The server th
 - **Lost the authenticator or the codes:** `sudo docker compose run --rm core user reset-2fa` clears the second
   factor and closes all sessions; the next sign-in sets it up again.
 - **Logs:** `sudo docker compose logs core`.
+- **Update the agents:** after updating the core, its image carries the new agent package. On the core machine,
+  `sudo docker compose run --rm -T core server upgrade-command` prints a command; run it on each server. It checks
+  the script like the install command does, reinstalls the package and restarts the agent, keeping its
+  configuration and identity (no token needed).
 - **Remove a server:** on the core machine, `sudo docker compose run --rm -T core server list` prints each server's
   id, name and state, and `sudo docker compose run --rm -T core server revoke <id>` revokes it: the core stops
   accepting its certificate. Then, on the server itself, `sudo apt purge talaia-agent` removes the agent and its

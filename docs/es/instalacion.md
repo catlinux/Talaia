@@ -122,6 +122,10 @@ pantalla **Flota** del panel con su CPU, memoria, disco y contenedores.
   factor). Sin `core-data`, todos los agentes tendrían que darse de alta de nuevo.
 - **Has perdido la aplicación o los códigos:** `sudo docker compose run --rm core user reset-2fa` borra el
   segundo factor y cierra todas las sesiones; en el siguiente acceso se vuelve a configurar.
+- **Actualizar los agentes:** tras actualizar el núcleo, su imagen trae el paquete nuevo del agente. En la máquina
+  del núcleo, `sudo docker compose run --rm -T core server upgrade-command` imprime una orden; ejecútala en cada
+  servidor. Comprueba el script igual que la orden de instalación, reinstala el paquete y reinicia el agente,
+  conservando su configuración e identidad (no hace falta token).
 - **Quitar un servidor:** en la máquina del núcleo, `sudo docker compose run --rm -T core server list` imprime el
   id, el nombre y el estado de cada servidor, y `sudo docker compose run --rm -T core server revoke <id>` lo revoca:
   el núcleo deja de aceptar su certificado. Después, en el propio servidor, `sudo apt purge talaia-agent` quita el

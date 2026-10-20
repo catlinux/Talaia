@@ -345,3 +345,30 @@ func TestServerListReportsErrors(t *testing.T) {
 		t.Fatal("expected an error")
 	}
 }
+
+func TestUpgradeCommandPrintsTheCommand(t *testing.T) {
+	var stdout bytes.Buffer
+
+	if err := upgradeCommand(&stdout, "https://192.0.2.10:8443", strings.Repeat("ab", 32), strings.Repeat("cd", 32)); err != nil {
+		t.Fatalf("upgradeCommand: %v", err)
+	}
+	for _, want := range []string{"--upgrade --url https://192.0.2.10:8443", "--ca-fingerprint " + strings.Repeat("ab", 32), "sha256sum -c -"} {
+		if !strings.Contains(stdout.String(), want) {
+			t.Errorf("output %q does not contain %q", stdout.String(), want)
+		}
+	}
+}
+
+func TestUpgradeCommandNeedsAnAddressAndTheInstaller(t *testing.T) {
+	var stdout bytes.Buffer
+
+	if err := upgradeCommand(&stdout, "", "ab", "cd"); err == nil {
+		t.Error("expected an error without a public address")
+	}
+	if err := upgradeCommand(&stdout, "https://192.0.2.10:8443", "ab", ""); err == nil {
+		t.Error("expected an error without the installer")
+	}
+	if stdout.Len() != 0 {
+		t.Errorf("nothing must be printed on error, got %q", stdout.String())
+	}
+}

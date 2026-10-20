@@ -42,3 +42,19 @@ func TestScriptSHA256(t *testing.T) {
 		t.Errorf("ScriptSHA256() without a directory = %q, want empty", got)
 	}
 }
+
+func TestUpgradeCommand(t *testing.T) {
+	hash := strings.Repeat("cd", 32)
+	got := UpgradeCommand("https://192.0.2.10:8443", "ff00", hash)
+	want := `f=$(mktemp) && curl -fsSk https://192.0.2.10:8443/install.sh -o "$f" && echo "` + hash +
+		`  $f" | sha256sum -c - && sudo bash "$f" --upgrade --url https://192.0.2.10:8443 --ca-fingerprint ff00; rm -f "$f"`
+	if got != want {
+		t.Errorf("UpgradeCommand() = %q, want %q", got, want)
+	}
+	if strings.Contains(got, "--token") {
+		t.Error("the upgrade command must not carry a token")
+	}
+	if got := UpgradeCommand("", "ff00", hash); got != "" {
+		t.Errorf("UpgradeCommand() without an address = %q, want empty", got)
+	}
+}

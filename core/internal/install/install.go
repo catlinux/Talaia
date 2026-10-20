@@ -40,3 +40,15 @@ func Command(publicURL, token, fingerprint, scriptSHA256 string) string {
 	return fmt.Sprintf(`f=$(mktemp) && curl -fsSk %s/install.sh -o "$f" && echo "%s  $f" | sha256sum -c - && sudo bash "$f" --url %s --token %s --ca-fingerprint %s; rm -f "$f"`,
 		publicURL, scriptSHA256, publicURL, token, fingerprint)
 }
+
+// UpgradeCommand returns the command that updates the agent already installed on
+// a server: like Command, it checks the script hash first, and it passes
+// --upgrade so the agent keeps its configuration and identity and no token is
+// needed.
+func UpgradeCommand(publicURL, fingerprint, scriptSHA256 string) string {
+	if publicURL == "" || scriptSHA256 == "" {
+		return ""
+	}
+	return fmt.Sprintf(`f=$(mktemp) && curl -fsSk %s/install.sh -o "$f" && echo "%s  $f" | sha256sum -c - && sudo bash "$f" --upgrade --url %s --ca-fingerprint %s; rm -f "$f"`,
+		publicURL, scriptSHA256, publicURL, fingerprint)
+}

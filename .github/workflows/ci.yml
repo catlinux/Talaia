@@ -168,6 +168,17 @@ jobs:
           sudo journalctl -u talaia-agent --no-pager | grep -q 'enrolled with the core'
           sudo journalctl -u talaia-agent --no-pager | grep -q 'connected to core'
           test "$(docker compose exec -T db psql -U talaia -d talaia -tAc "SELECT count(*) FROM server WHERE name = 'ci'" | tr -d '[:space:]')" = 1
+      - name: Upgrade the agent with the printed command
+        working-directory: packaging/core
+        run: |
+          set -eu
+          docker compose run --rm -T core server upgrade-command | tee "$RUNNER_TEMP/upgrade.txt"
+          command="$(grep '^f=$(mktemp) && curl -fsSk ' "$RUNNER_TEMP/upgrade.txt")"
+          bash -c "$command"
+          sudo systemctl is-active --quiet talaia-agent
+          test "$(sudo journalctl -u talaia-agent --no-pager | grep -c 'starting talaia-agent')" -ge 2
+          # The agent kept its identity: no second server was created.
+          test "$(docker compose exec -T db psql -U talaia -d talaia -tAc "SELECT count(*) FROM server" | tr -d '[:space:]')" = 1
       - name: Logs on failure
         if: failure()
         working-directory: packaging/core
