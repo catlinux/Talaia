@@ -169,6 +169,22 @@ describe('Fleet', () => {
     expect(listServers).toHaveBeenCalledTimes(1)
   })
 
+  it('opens the screen of a server from its name', async () => {
+    const onOpenServer = vi.fn()
+    render(
+      <Fleet
+        client={clientReturning(() => Promise.resolve([server({ id: 'srv-9', name: 'vps-9' })]))}
+        onOpenServer={onOpenServer}
+      />,
+    )
+
+    fireEvent.click(await screen.findByRole('button', { name: 'vps-9' }))
+
+    expect(onOpenServer).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'srv-9', name: 'vps-9' }),
+    )
+  })
+
   describe('add server', () => {
     const created: EnrollmentToken = {
       token: 'tl_enr_abc',

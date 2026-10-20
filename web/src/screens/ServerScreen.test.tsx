@@ -1,0 +1,184 @@
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+
+import type { Container, ContainerList, ContainersApi, Job } from '../api/containers'
+import { ApiError } from '../api/http'
+import i18n from '../i18n'
+import { ServerScreen } from './ServerScreen'
+
+const server = { id: 'srv-1', name: 'vps-web-01' }
+
+function container(overrides: Partial<Container> = {}): Container {
+  return {
+    id: 'aaaaaaaaaaaa',
+    name: 'web',
+    image: 'nginx:1.27',
+    state: 'running',
+    status: 'Up 2 hours',
+    composeProject: 'shop',
+    composeService: 'web',
+    ...overrides,
+  }
+}
+
+const listOf = (...containers: Container[]): ContainerList => ({
+  connected: true,
+  dockerAvailable: true,
+  containers,
+})
+
+/** apiWith builds a fake API; the job answers each poll in order. */
+function apiWith(
+  list: ContainerList | (() => Promise<ContainerList>),
+  jobs: Job[] = [{ id: 'job-1', state: 'succeeded', message: '' }],
+): ContainersApi & { run: ReturnType<typeof vi.fn>; list: ReturnType<typeof vi.fn> } {
+  const queue = [...jobs]
+  return {
+    list: vi.fn(typeof list === 'function' ? list : () => Promise.resolve(list)),
+    run: vi.fn(() => Promise.resolve('job-1')),
+    job: vi.fn(() => Promise.resolve(queue.length > 1 ? (queue.shift() as Job) : queue[0]!)),
+  }
+}
+
+function renderScreen(api: ContainersApi, onBack = () => undefined) {
+  render(<ServerScreen server={server} api={api} onBack={onBack} pollMs={1} />)
+}
+
+describe('ServerScreen', () => {
+  beforeEach(async () => {
+    await i18n.changeLanguage('en')
+  })
+
+  afterEach(() => {
+    cleanup()
+  })
+
+  it('lists the containers of the server, stacks together and running first', async () => {
+    renderScreen(
+      apiWith(
+        listOf(
+          container({ id: 'bbbbbbbbbbbb', name: 'db', state: 'exited', composeProject: 'shop' }),
+          container({ id: 'cccccccccccc', name: 'solo', composeProject: '' }),
+          container(),
+        ),
+      ),
+    )
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'vps-web-01' })).toBeTruthy()
+    expect(screen.getByText('3 containers · 2 running')).toBeTruthy()
+
+    const names = within(screen.getByRole('list', { name: 'Containers' }))
+      .getAllByRole('heading', { level: 3 })
+      .map((heading) => heading.textContent)
+    // The stack first (running before stopped), the standalone container last.
+    expect(names).toEqual(['web', 'db', 'solo'])
+    expect(screen.getAllByText('stack shop')).toHaveLength(2)
+  })
+
+  it('explains an offline agent, a missing Docker and an empty server', async () => {
+    renderScreen(apiWith({ connected: false, dockerAvailable: false, containers: [] }))
+    expect(await screen.findByText(/agent of this server is not connected/)).toBeTruthy()
+    cleanup()
+
+    renderScreen(apiWith({ connected: true, dockerAvailable: false, containers: [] }))
+    expect(await screen.findByText('Docker is not available on this server.')).toBeTruthy()
+    cleanup()
+
+    renderScreen(apiWith(listOf()))
+    expect(await screen.findByText('This server has no containers yet.')).toBeTruthy()
+  })
+
+  it('offers the actions that make sense for the state of each container', async () => {
+    renderScreen(
+      apiWith(listOf(container(), container({ id: 'bbbbbbbbbbbb', name: 'db', state: 'exited' }))),
+    )
+    await screen.findByText('web')
+
+    const rows = screen.getAllByRole('listitem')
+    expect(
+      within(rows[0]!)
+        .getAllByRole('button')
+        .map((b) => b.textContent),
+    ).toEqual(['Restart', 'Stop', 'Remove'])
+    expect(
+      within(rows[1]!)
+        .getAllByRole('button')
+        .map((b) => b.textContent),
+    ).toEqual(['Start', 'Remove'])
+  })
+
+  it('runs an action as a job, follows it and reloads the list', async () => {
+    const api = apiWith(listOf(container()), [
+      { id: 'job-1', state: 'running', message: '' },
+      { id: 'job-1', state: 'succeeded', message: '' },
+    ])
+    renderScreen(api)
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Stop' }))
+
+    expect(api.run).toHaveBeenCalledWith('srv-1', 'web', 'stop', false)
+    expect(await screen.findByText('Done')).toBeTruthy()
+    await waitFor(() => expect(api.list).toHaveBeenCalledTimes(2))
+  })
+
+  it('shows why an action failed', async () => {
+    const api = apiWith(listOf(container()), [
+      { id: 'job-1', state: 'failed', message: 'docker: cannot stop the container' },
+    ])
+    renderScreen(api)
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Restart' }))
+
+    expect((await screen.findByRole('alert')).textContent).toBe(
+      'Failed: docker: cannot stop the container',
+    )
+  })
+
+  it('shows a core error when the action cannot be sent', async () => {
+    const api = apiWith(listOf(container()))
+    api.run.mockRejectedValueOnce(new ApiError('agent_offline', 409))
+    renderScreen(api)
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Stop' }))
+
+    expect((await screen.findByRole('alert')).textContent).toContain(
+      'The agent of this server is not connected.',
+    )
+  })
+
+  it('asks before removing and only then sends the confirmation', async () => {
+    const api = apiWith(listOf(container({ state: 'exited' })))
+    renderScreen(api)
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Remove' }))
+    expect(api.run).not.toHaveBeenCalled()
+    expect(screen.getByText('Remove web?')).toBeTruthy()
+    expect(screen.getByText('The container is deleted. Its volumes are kept.')).toBeTruthy()
+
+    // Cancelling sends nothing.
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+    expect(api.run).not.toHaveBeenCalled()
+    expect(screen.queryByText('Remove web?')).toBeNull()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Remove' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Remove the container' }))
+
+    expect(api.run).toHaveBeenCalledWith('srv-1', 'web', 'remove', true)
+    expect(await screen.findByText('Done')).toBeTruthy()
+  })
+
+  it('goes back to the fleet', async () => {
+    const onBack = vi.fn()
+    renderScreen(apiWith(listOf(container())), onBack)
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Back to the fleet' }))
+
+    expect(onBack).toHaveBeenCalledTimes(1)
+  })
+
+  it('shows an error when the first load fails', async () => {
+    renderScreen(apiWith(() => Promise.reject(new ApiError('internal', 500))))
+
+    expect(await screen.findByRole('alert')).toBeTruthy()
+  })
+})

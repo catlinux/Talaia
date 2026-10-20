@@ -1,0 +1,38 @@
+{
+  "back": "Volver a la flota",
+  "loading": "Cargando los contenedores…",
+  "title": "Contenedores",
+  "summary_one": "{{count}} contenedor · {{running}} en marcha",
+  "summary_other": "{{count}} contenedores · {{running}} en marcha",
+  "offline": "El agente de este servidor no está conectado: no se pueden mostrar ni gestionar sus contenedores.",
+  "noDocker": "Docker no está disponible en este servidor.",
+  "empty": "Este servidor todavía no tiene contenedores.",
+  "refreshFailed": "No se ha podido actualizar la lista: se muestran los últimos datos.",
+  "project": "stack {{name}}",
+  "state": {
+    "running": "En marcha",
+    "exited": "Parado",
+    "paused": "En pausa",
+    "restarting": "Reiniciándose",
+    "created": "Creado",
+    "dead": "Caído"
+  },
+  "action": {
+    "start": "Iniciar",
+    "stop": "Parar",
+    "restart": "Reiniciar",
+    "remove": "Eliminar"
+  },
+  "confirm": {
+    "removeTitle": "¿Eliminar {{name}}?",
+    "removeBody": "Se borra el contenedor. Sus volúmenes se conservan.",
+    "yes": "Eliminar el contenedor",
+    "no": "Cancelar"
+  },
+  "progress": {
+    "working": "Trabajando…",
+    "done": "Hecho",
+    "failed": "Ha fallado: {{message}}",
+    "timeout": "El agente no ha respondido a tiempo."
+  }
+}

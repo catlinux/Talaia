@@ -1,0 +1,38 @@
+{
+  "back": "Back to the fleet",
+  "loading": "Loading the containers…",
+  "title": "Containers",
+  "summary_one": "{{count}} container · {{running}} running",
+  "summary_other": "{{count}} containers · {{running}} running",
+  "offline": "The agent of this server is not connected, so its containers cannot be shown or managed.",
+  "noDocker": "Docker is not available on this server.",
+  "empty": "This server has no containers yet.",
+  "refreshFailed": "The list could not be refreshed: the last data is shown.",
+  "project": "stack {{name}}",
+  "state": {
+    "running": "Running",
+    "exited": "Stopped",
+    "paused": "Paused",
+    "restarting": "Restarting",
+    "created": "Created",
+    "dead": "Dead"
+  },
+  "action": {
+    "start": "Start",
+    "stop": "Stop",
+    "restart": "Restart",
+    "remove": "Remove"
+  },
+  "confirm": {
+    "removeTitle": "Remove {{name}}?",
+    "removeBody": "The container is deleted. Its volumes are kept.",
+    "yes": "Remove the container",
+    "no": "Cancel"
+  },
+  "progress": {
+    "working": "Working…",
+    "done": "Done",
+    "failed": "Failed: {{message}}",
+    "timeout": "The agent did not answer in time."
+  }
+}

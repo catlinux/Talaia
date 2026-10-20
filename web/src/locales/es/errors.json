@@ -8,5 +8,9 @@
   "rateLimited": "Demasiados intentos seguidos. Espera unos minutos y vuelve a probar.",
   "nameTaken": "Ya hay un servidor o un token pendiente con ese nombre.",
   "network": "No se ha podido contactar con el servidor.",
-  "generic": "Algo ha fallado. Vuelve a probar."
+  "generic": "Algo ha fallado. Vuelve a probar.",
+  "confirmationRequired": "Hace falta confirmar esta acción.",
+  "agentOffline": "El agente de este servidor no está conectado.",
+  "agentBusy": "El agente tiene demasiados comandos pendientes. Espera un momento.",
+  "notFound": "No se ha encontrado lo que buscas."
 }

@@ -6,9 +6,11 @@ import { formatNumber, formatPercent, formatRelativeTime } from './format'
 
 interface ServerCardProps {
   server: Server
+  /** onOpen opens the screen of the server; without it the name is plain text. */
+  onOpen?: (server: Server) => void
 }
 
-export function ServerCard({ server }: ServerCardProps) {
+export function ServerCard({ server, onOpen }: ServerCardProps) {
   const { t, i18n } = useTranslation('fleet')
   const language = i18n.resolvedLanguage ?? i18n.language
 
@@ -19,7 +21,15 @@ export function ServerCard({ server }: ServerCardProps) {
   return (
     <li className={`server server--${server.status}`}>
       <div className="server__head">
-        <h3 className="server__name">{server.name}</h3>
+        <h3 className="server__name">
+          {onOpen ? (
+            <button type="button" className="server__open" onClick={() => onOpen(server)}>
+              {server.name}
+            </button>
+          ) : (
+            server.name
+          )}
+        </h3>
         <span className={`status status--${server.status}`}>{status}</span>
       </div>
       {server.os !== '' ? (

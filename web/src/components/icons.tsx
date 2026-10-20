@@ -76,3 +76,43 @@ export function CheckIcon({ className }: IconProps) {
     </Icon>
   )
 }
+
+export function PlayIcon({ className }: IconProps) {
+  return (
+    <Icon className={className}>
+      <path d="M7 5v14l12-7z" />
+    </Icon>
+  )
+}
+
+export function StopIcon({ className }: IconProps) {
+  return (
+    <Icon className={className}>
+      <rect x="6" y="6" width="12" height="12" rx="2" />
+    </Icon>
+  )
+}
+
+export function RestartIcon({ className }: IconProps) {
+  return (
+    <Icon className={className}>
+      <path d="M20 12a8 8 0 1 1-2.6-5.9M20 4v4h-4" />
+    </Icon>
+  )
+}
+
+export function TrashIcon({ className }: IconProps) {
+  return (
+    <Icon className={className}>
+      <path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6" />
+    </Icon>
+  )
+}
+
+export function ArrowLeftIcon({ className }: IconProps) {
+  return (
+    <Icon className={className}>
+      <path d="M19 12H5M11 6l-6 6 6 6" />
+    </Icon>
+  )
+}

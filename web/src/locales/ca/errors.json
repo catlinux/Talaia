@@ -8,5 +8,9 @@
   "rateLimited": "Massa intents seguits. Espera uns minuts i torna-ho a provar.",
   "nameTaken": "Ja hi ha un servidor o un token pendent amb aquest nom.",
   "network": "No s'ha pogut contactar amb el servidor.",
-  "generic": "Alguna cosa ha fallat. Torna-ho a provar."
+  "generic": "Alguna cosa ha fallat. Torna-ho a provar.",
+  "confirmationRequired": "Cal confirmar aquesta acció.",
+  "agentOffline": "L'agent d'aquest servidor no està connectat.",
+  "agentBusy": "L'agent té massa ordres pendents. Espera un moment.",
+  "notFound": "No s'ha trobat el que busques."
 }

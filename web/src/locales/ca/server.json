@@ -1,0 +1,38 @@
+{
+  "back": "Torna a la flota",
+  "loading": "Carregant els contenidors…",
+  "title": "Contenidors",
+  "summary_one": "{{count}} contenidor · {{running}} en marxa",
+  "summary_other": "{{count}} contenidors · {{running}} en marxa",
+  "offline": "L'agent d'aquest servidor no està connectat: no es poden mostrar ni gestionar els seus contenidors.",
+  "noDocker": "Docker no està disponible en aquest servidor.",
+  "empty": "Aquest servidor encara no té contenidors.",
+  "refreshFailed": "No s'ha pogut actualitzar la llista: es mostren les últimes dades.",
+  "project": "stack {{name}}",
+  "state": {
+    "running": "En marxa",
+    "exited": "Aturat",
+    "paused": "En pausa",
+    "restarting": "Reiniciant-se",
+    "created": "Creat",
+    "dead": "Caigut"
+  },
+  "action": {
+    "start": "Inicia",
+    "stop": "Atura",
+    "restart": "Reinicia",
+    "remove": "Elimina"
+  },
+  "confirm": {
+    "removeTitle": "Eliminar {{name}}?",
+    "removeBody": "Se suprimeix el contenidor. Els seus volums es conserven.",
+    "yes": "Elimina el contenidor",
+    "no": "Cancel·la"
+  },
+  "progress": {
+    "working": "Treballant…",
+    "done": "Fet",
+    "failed": "Ha fallat: {{message}}",
+    "timeout": "L'agent no ha respost a temps."
+  }
+}

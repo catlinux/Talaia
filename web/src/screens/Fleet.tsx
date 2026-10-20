@@ -18,6 +18,8 @@ export const refreshInterval = 15_000
 interface FleetProps {
   /** Data source. Tests inject their own client; the panel uses the API. */
   client?: FleetClient
+  /** onOpenServer opens the screen of a server; the cards are not links without it. */
+  onOpenServer?: (server: Server) => void
 }
 
 type FleetState =
@@ -73,7 +75,7 @@ function summarizeFleet(servers: Server[], activity: ActivityEvent[]): FleetSumm
   return summary
 }
 
-export function Fleet({ client = defaultClient }: FleetProps) {
+export function Fleet({ client = defaultClient, onOpenServer }: FleetProps) {
   const { t, i18n } = useTranslation('fleet')
   const language = i18n.resolvedLanguage ?? i18n.language
   const [state, setState] = useState<FleetState>({ status: 'loading' })
@@ -175,7 +177,7 @@ export function Fleet({ client = defaultClient }: FleetProps) {
           >
             <ul className="servers">
               {state.servers.map((server) => (
-                <ServerCard key={server.id} server={server} />
+                <ServerCard key={server.id} server={server} onOpen={onOpenServer} />
               ))}
             </ul>
             {state.activity.length > 0 ? <ActivityFeed events={state.activity} /> : null}

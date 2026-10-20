@@ -5,6 +5,7 @@ import { App } from './App'
 import { AuthGate } from './auth/AuthGate'
 import type { AuthApi } from './api/auth'
 import { createMockFleetClient } from './api/client'
+import type { ContainersApi } from './api/containers'
 import i18n from './i18n'
 import { ATTRIBUTION } from './screens/About'
 
@@ -91,5 +92,41 @@ describe('App', () => {
     expect(currentTitle()).toBe(fleetTitles.ca)
     expect(screen.getByRole('button', { name: navFleet.ca })).toBeTruthy()
     expect(screen.getByRole('button', { name: navAbout.ca })).toBeTruthy()
+  })
+
+  it('opens the containers of a server and goes back to the fleet', async () => {
+    const containersApi: ContainersApi = {
+      list: () =>
+        Promise.resolve({
+          connected: true,
+          dockerAvailable: true,
+          containers: [
+            {
+              id: 'aaaaaaaaaaaa',
+              name: 'shop-web-1',
+              image: 'nginx',
+              state: 'running',
+              status: 'Up',
+              composeProject: 'shop',
+              composeService: 'web',
+            },
+          ],
+        }),
+      run: () => Promise.reject(new Error('unexpected')),
+      job: () => Promise.reject(new Error('unexpected')),
+    }
+    render(
+      <AuthGate api={signedInApi}>
+        <App client={createMockFleetClient()} containersApi={containersApi} />
+      </AuthGate>,
+    )
+
+    fireEvent.click(await screen.findByRole('button', { name: 'vps-web-01' }))
+
+    expect(await screen.findByText('shop-web-1')).toBeTruthy()
+    expect(currentTitle()).toBe('vps-web-01')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Back to the fleet' }))
+    expect(currentTitle()).toBe(fleetTitles.en)
   })
 })

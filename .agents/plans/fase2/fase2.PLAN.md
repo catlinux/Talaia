@@ -19,6 +19,10 @@ Reglas que mandan en toda la fase (CLAUDE.md §3): comandos **tipados**, nunca t
 
 Entregable: `.agents/plans/fase2/D-trabajos.DESIGN.md`, revisado por el mantenedor antes de seguir.
 
+## Avance (2026-10-20, por petición «sigue con el desarrollo»)
+
+Hecho como primer corte vertical, **sin pasar por la revisión de diseño D1–D6** (decisiones tomadas: cliente propio del socket Docker con la biblioteca estándar, `JobEvent` con estados que solo avanzan, comandos por una cola por agente con un único escritor al stream, el core exige `confirm` para eliminar y solo actúa sobre contenedores que el agente informó): pasos 1 (contrato, cola e historial de trabajos), 2 (acciones de contenedor en el agente), 3 (API con permisos y confirmación) y 4 en parte (pantalla de servidor con acciones). Falta de ellos: registros y estadísticas en vivo, y revisión de seguridad (Opus) del diseño antes de dar la fase por buena.
+
 ## Pasos
 
 | # | Paso | Archivos | Terminado cuando | Ejecutor |
