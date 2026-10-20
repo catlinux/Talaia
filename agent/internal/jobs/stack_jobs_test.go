@@ -39,6 +39,13 @@ func (f *fakeStacks) Read(_ context.Context, name string) (string, error) {
 	return f.output, f.err
 }
 
+func (f *fakeStacks) Adopt(_ context.Context, name string) (string, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.calls = append(f.calls, "adopt:"+name)
+	return f.output, f.err
+}
+
 func (f *fakeStacks) recorded() []string {
 	f.mu.Lock()
 	defer f.mu.Unlock()
@@ -118,5 +125,22 @@ func TestStackCommandsFailCleanlyWithoutAStackManager(t *testing.T) {
 	got := out.next(t)
 	if got.GetState() != agentv1.JobState_JOB_STATE_FAILED || got.GetMessage() == "" {
 		t.Errorf("final event = %v", got)
+	}
+}
+
+func TestHandleRunsAdoption(t *testing.T) {
+	stacks := &fakeStacks{output: "stack adopted"}
+	out := newCollector()
+
+	New(&fakeActions{}).WithStacks(stacks).Handle(context.Background(),
+		&agentv1.CoreMsg{JobId: "j6", Cmd: &agentv1.CoreMsg_StackAdopt{StackAdopt: &agentv1.StackAdopt{Name: "wiki"}}}, out.emit)
+
+	out.next(t)
+	got := out.next(t)
+	if got.GetState() != agentv1.JobState_JOB_STATE_SUCCEEDED || got.GetOutput() != "stack adopted" {
+		t.Errorf("final event = %v", got)
+	}
+	if calls := stacks.recorded(); len(calls) != 1 || calls[0] != "adopt:wiki" {
+		t.Errorf("calls = %v", calls)
 	}
 }

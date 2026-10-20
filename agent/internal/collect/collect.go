@@ -91,6 +91,7 @@ func (s System) Inventory() (*agentv1.Inventory, error) {
 		ComposeProjects: running.Projects,
 		Services:        running.Services,
 		ManagedStacks:   running.ManagedStacks,
+		AdoptedStacks:   running.AdoptedStacks,
 	}, nil
 }
 

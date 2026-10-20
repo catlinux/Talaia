@@ -22,6 +22,7 @@ type ServiceSource interface {
 // StackSource lists the stacks Talaia manages on this host.
 type StackSource interface {
 	List() []string
+	Adopted() []string
 }
 
 // Provider combines the sources. The zero value reads nothing, which lets
@@ -50,6 +51,7 @@ type Result struct {
 	Projects        []*agentv1.ComposeProject
 	Services        []*agentv1.SystemdUnit
 	ManagedStacks   []string
+	AdoptedStacks   []string
 }
 
 // Collect reads both sources. It never fails: a source that is not available
@@ -69,6 +71,7 @@ func (p Provider) Collect(ctx context.Context) Result {
 	}
 	if p.Stacks != nil {
 		result.ManagedStacks = p.Stacks.List()
+		result.AdoptedStacks = p.Stacks.Adopted()
 	}
 
 	return result

@@ -42,6 +42,7 @@ type StackManager interface {
 	Write(ctx context.Context, name, compose, env string) (string, error)
 	Do(ctx context.Context, name string, action agentv1.StackActionType) (string, error)
 	Read(ctx context.Context, name string) (string, error)
+	Adopt(ctx context.Context, name string) (string, error)
 }
 
 // Executor runs commands. Every command carries a job id; running the same id
@@ -76,8 +77,8 @@ func (e *Executor) WithStacks(manager StackManager) *Executor {
 // it must be safe for concurrent use.
 func (e *Executor) Handle(ctx context.Context, msg *agentv1.CoreMsg, emit func(*agentv1.AgentMsg)) bool {
 	action, logs := msg.GetContainerAction(), msg.GetReadLogs()
-	write, stackAction, read := msg.GetStackWrite(), msg.GetStackAction(), msg.GetStackRead()
-	if action == nil && logs == nil && write == nil && stackAction == nil && read == nil {
+	write, stackAction, read, adopt := msg.GetStackWrite(), msg.GetStackAction(), msg.GetStackRead(), msg.GetStackAdopt()
+	if action == nil && logs == nil && write == nil && stackAction == nil && read == nil && adopt == nil {
 		return false
 	}
 
@@ -128,6 +129,13 @@ func (e *Executor) Handle(ctx context.Context, msg *agentv1.CoreMsg, emit func(*
 				return "", errNoStacks
 			}
 			return e.stacks.Do(ctx, stackAction.GetName(), stackAction.GetAction())
+		})
+	case adopt != nil:
+		go e.execute(ctx, jobID, "stack adopt", jobTimeout, emit, func(ctx context.Context) (string, error) {
+			if e.stacks == nil {
+				return "", errNoStacks
+			}
+			return e.stacks.Adopt(ctx, adopt.GetName())
 		})
 	default:
 		go e.execute(ctx, jobID, "stack read", jobTimeout, emit, func(ctx context.Context) (string, error) {

@@ -22,6 +22,7 @@ import (
 	"github.com/catlinux/Talaia/agent/internal/collect"
 	"github.com/catlinux/Talaia/agent/internal/config"
 	"github.com/catlinux/Talaia/agent/internal/enroll"
+	"github.com/catlinux/Talaia/agent/internal/inventory"
 	"github.com/catlinux/Talaia/agent/internal/jobs"
 	"github.com/catlinux/Talaia/agent/internal/stacks"
 	agentv1 "github.com/catlinux/Talaia/proto/gen/go"
@@ -76,7 +77,7 @@ func newLink(cfg config.Config, collector collect.Collector, identity *enroll.Id
 		collector:         collector,
 		identity:          identity,
 		client:            agentv1connect.NewAgentHubClient(connect.NewClient(rpcTransport)),
-		jobs:              jobs.New(jobs.NewDockerActions()).WithStacks(stacks.NewDefault()),
+		jobs:              jobs.New(jobs.NewDockerActions()).WithStacks(stacks.NewDefault().WithProjects(inventory.NewDocker())),
 		HeartbeatInterval: 10 * time.Second,
 		MetricsInterval:   15 * time.Second,
 		InventoryInterval: 60 * time.Second,

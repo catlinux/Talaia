@@ -12,6 +12,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/catlinux/Talaia/agent/internal/stacks"
 	agentv1 "github.com/catlinux/Talaia/proto/gen/go"
 )
 
@@ -211,4 +212,16 @@ func splitConfigFiles(value string) []string {
 		}
 	}
 	return files
+}
+
+// Project finds a running Compose project by its name, from the labels of its
+// containers. It lets the stack manager adopt a project without being told where
+// its files are.
+func (d *Docker) Project(ctx context.Context, name string) (stacks.Project, bool) {
+	for _, project := range d.Collect(ctx).Projects {
+		if project.GetName() == name {
+			return stacks.Project{WorkingDir: project.GetWorkingDir(), ConfigFiles: project.GetConfigFiles()}, true
+		}
+	}
+	return stacks.Project{}, false
 }
