@@ -31,3 +31,7 @@ Pendiente:
 - **Primer despliegue real hecho** en el Debian de casa: core en Docker, administrador con 2FA, `.deb` del agente instalado con `install.sh`, enrolamiento con token + huella de la CA, y el servidor aparece en la flota con CPU, RAM, disco y contenedores. Quedan por comprobar de la regla «Terminada cuando» de la fase: que sobreviva a un reinicio del core en ese despliegue real (`docker compose restart core`) y probar con un VPS de verdad.
 - D, F y H están resueltas: la autenticación del panel se adelantó de la fase 3 (`.agents/plans/auth/auth.DESIGN.md`) y la flota lee la API real.
 - Mejoras del instalador (commits locales sin subir): el core sirve `install.sh` y los `.deb` (la imagen los construye), `token create` imprime la orden completa, `packaging/core/install.sh` prepara el core en una orden y hay un trabajo de CI que lo prueba entero. Todo eso está probado por piezas; la imagen y el instalador del core aún no se han ejecutado en una máquina real.
+
+## Criterio de la fase comprobado (2026-10-20)
+
+En el Debian de casa el agente sobrevivió a un reinicio de la máquina (04:05→04:06: carga su identidad guardada, un primer intento falla porque el core aún arranca y se reconecta al segundo siguiente) y a la recreación del contenedor del core (05:20: reconexión en 1 s sin volver a darse de alta). Los registros de `journalctl -u talaia-agent` lo muestran. Falta solo repetirlo con un VPS real (no una máquina de casa) para dar el criterio por cerrado.
