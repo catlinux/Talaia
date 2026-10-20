@@ -75,6 +75,33 @@ tareas concretas de la fase actual y de la siguiente.
 - [x] Guía de clonar y ejecutar en el equipo Linux (`docs/es/instalacion.md`)
 - [ ] Verificar `packaging/core/install.sh` y la descarga del agente desde el núcleo de principio a fin en una máquina limpia
 
+## Fase 2 · Lo que queda (ver `.agents/plans/fase2/`)
+
+- [ ] Terminal en contenedor, paso 6: documentación EN/ES (seguridad: el administrador es root en los servidores; grabación y retención; `terminal export`) y prueba con un Docker real en el Debian
+- [ ] Terminal en contenedor, paso 7: revisión final de seguridad de todo el diff (Opus)
+- [ ] Pantalla de stack (maqueta 3), registros en directo (`-f`) y una nota fija en el editor de stacks: un compose se ejecuta como root en el servidor
+- [ ] Cerrar la fase contra su criterio; versión 0.3.0 solo si el mantenedor lo pide
+
+## Bloque de operación (decidido el 2026-10-20, antes de cerrar la fase 2)
+
+Primero el diseño con un modelo potente (Opus), escrito en `.agents/plans/operacion/operacion.PLAN.md`; después se ejecuta con uno más barato.
+
+### Actualizaciones desde el panel
+- [ ] Ayudante del host `talaia-hostd` (systemd, root) con una lista cerrada de operaciones. El core solo escribe ficheros de petición en su volumen de datos; nunca recibe el socket de Docker (el contenedor es de solo lectura y sin privilegios a propósito)
+- [ ] Detectar: el core pregunta a GitHub por el último commit de `main` cada ~30 minutos (peticiones condicionales), lo compara con el commit grabado en su imagen al construirla y ofrece solo commits con el CI en verde
+- [ ] Aplicar: `git pull --ff-only` y `docker compose up -d --build`, esperar a `/healthz` y volver al commit anterior si no responde (las migraciones de la base de datos solo avanzan: dejarlo dicho en el plan)
+- [ ] Pantalla de Ajustes (todavía no existe): tarjeta de versión, «N commits nuevos», botón de actualizar con confirmación, progreso y resultado; ca/es/en
+- [ ] Documentación: instalar el ayudante una vez en el Debian con `sudo`; después no hacen falta órdenes
+- [ ] Más adelante: actualizar desde el core los agentes de los demás servidores (hoy: `server upgrade-command` pegado a mano)
+
+### Acceso remoto y HTTPS de confianza (decidido por el mantenedor: Headscale con dominio propio)
+- [ ] Headscale en uno de los VPS (IP pública), instalado directamente y no en un contenedor (sus mantenedores no recomiendan contenedores ni proxies inversos: comprobar la documentación actual); clientes de Tailscale en la máquina del core, los VPS, el PC y el móvil. Pregunta abierta: qué VPS lo aloja; si cae, no pueden empezar conexiones nuevas
+- [ ] Dominio propio en OVH: un registro A como `panel.<dominio>` que apunte a la dirección privada del core en la VPN, y un certificado de Let's Encrypt por DNS-01 mediante la API de OVH con una credencial limitada a esa zona. Pregunta abierta: qué dominio y subdominio, y si la zona está alojada en OVH
+- [ ] Renovar el certificado desde el ayudante del host y que el core lo recargue desde disco
+- [ ] Core: presentar el certificado válido a los navegadores y el de su propia CA a los agentes, según el nombre que pidan; los agentes se conectan por la dirección de la VPN
+- [ ] Limitar en la VPN lo que cada VPS puede alcanzar al puerto del core
+- [ ] Documentación EN/ES: el core sigue sin depender de una red concreta; Headscale es la vía recomendada, con WireGuard o un puerto abierto como alternativas. Sustituir la sección 6 de la guía de instalación, que está sin probar
+
 ## Ideas (sin planificar)
 
 Apunta aquí las ideas nuevas en lugar de añadirlas a la fase actual.
