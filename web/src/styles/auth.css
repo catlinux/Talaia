@@ -269,6 +269,10 @@
   gap: 10px;
 }
 
+.auth__actions .auth__button {
+  flex: 1 1 auto;
+}
+
 .auth__codes {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));

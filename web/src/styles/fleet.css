@@ -47,6 +47,12 @@
   display: flex;
 }
 
+/* While the add-server panel is open it takes a full row under the title. */
+.fleet__actions:has(.addserver) {
+  flex-basis: 100%;
+  order: 3;
+}
+
 .fleet__message {
   margin: 0;
   color: var(--muted);
@@ -114,7 +120,7 @@
 
 .kpis {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(190px, 100%), 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(164px, 100%), 1fr));
   gap: 14px;
   margin: 0;
 }
