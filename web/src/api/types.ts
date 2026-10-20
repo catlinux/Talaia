@@ -47,3 +47,13 @@ export interface ActivityEvent {
   /** Translation key of the origin of the event, for example source.apt. */
   source: string
 }
+
+/** EnrollmentToken is a one-time token to add a server, with its install command. */
+export interface EnrollmentToken {
+  token: string
+  caFingerprint: string
+  /** expiresIn is how many seconds the token stays valid. */
+  expiresIn: number
+  /** command is the line to run on the new server; empty when the core has no public address. */
+  command: string
+}

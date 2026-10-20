@@ -13,6 +13,7 @@ export type ApiErrorCode =
   | 'invalid_request'
   | 'weak_password'
   | 'rate_limited'
+  | 'name_taken'
   | 'internal'
   | 'network'
 
@@ -24,6 +25,7 @@ const knownCodes: readonly ApiErrorCode[] = [
   'invalid_request',
   'weak_password',
   'rate_limited',
+  'name_taken',
   'internal',
 ]
 

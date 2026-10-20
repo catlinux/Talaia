@@ -157,4 +157,33 @@ describe('api fleet client', () => {
     await expect(client.listActivity()).resolves.toEqual([])
     await expect(client.listServers()).resolves.toEqual([])
   })
+
+  it('creates an enrollment token for a server name', async () => {
+    const fetchImpl = vi.fn(() =>
+      Promise.resolve(
+        new Response(
+          JSON.stringify({
+            token: 'tl_enr_abc',
+            ca_fingerprint: 'ab'.repeat(32),
+            expires_in: 900,
+            command: 'curl …',
+          }),
+          { status: 201, headers: { 'Content-Type': 'application/json' } },
+        ),
+      ),
+    )
+    const client = createApiFleetClient(fetchImpl)
+
+    await expect(client.createEnrollment('vps-new')).resolves.toEqual({
+      token: 'tl_enr_abc',
+      caFingerprint: 'ab'.repeat(32),
+      expiresIn: 900,
+      command: 'curl …',
+    })
+
+    const [path, init] = fetchImpl.mock.calls[0] as unknown as [string, RequestInit]
+    expect(path).toBe('/api/v1/servers/enrollment-tokens')
+    expect(init.method).toBe('POST')
+    expect(init.body).toBe(JSON.stringify({ name: 'vps-new' }))
+  })
 })

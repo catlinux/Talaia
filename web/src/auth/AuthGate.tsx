@@ -26,6 +26,7 @@ const errorKeys: Record<ApiErrorCode, string> = {
   invalid_request: 'invalidRequest',
   weak_password: 'weakPassword',
   rate_limited: 'rateLimited',
+  name_taken: 'nameTaken',
   internal: 'generic',
   network: 'network',
 }

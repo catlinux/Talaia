@@ -4,6 +4,24 @@
   "subtitle_other": "{{count}} servidores · actualizado a las {{time}}",
   "loading": "Cargando la flota…",
   "error": "No se ha podido cargar la flota",
+  "add": {
+    "open": "Añadir servidor",
+    "title": "Añadir un servidor",
+    "intro": "Pon un nombre al servidor. Se creará un token de un solo uso para instalar el agente.",
+    "nameLabel": "Nombre del servidor",
+    "nameHint": "Letras, cifras, punto, guion y guion bajo; hasta 63 caracteres.",
+    "create": "Crear token",
+    "creating": "Creando…",
+    "cancel": "Cancelar",
+    "runOnServer": "Ejecuta esta orden en el servidor, como root o con sudo, en los próximos {{minutes}} minutos:",
+    "copy": "Copiar la orden",
+    "copied": "Copiada",
+    "once": "El token vale una sola vez y no se volverá a mostrar.",
+    "noAddress": "El core no sabe su dirección pública (TALAIA_PUBLIC_HOSTNAMES), así que no puede montar la orden. Usa estos datos con install.sh.",
+    "tokenLabel": "Token",
+    "fingerprintLabel": "Huella de la CA",
+    "done": "Hecho"
+  },
   "kpi": {
     "serversOnline": "Servidores en línea",
     "serversOnlineValue": "{{online}} / {{total}}",
@@ -55,7 +73,7 @@
   "refreshFailed": "No se ha podido actualizar la flota: se muestran los últimos datos.",
   "empty": {
     "title": "Todavía no hay ningún servidor",
-    "body": "Crea un token de alta en el core con <code>{{command}}</code> y ejecuta install.sh en el servidor."
+    "body": "Pulsa «Añadir servidor» y ejecuta en el servidor la orden que te mostrará."
   },
   "event": {
     "diskHigh": "Disco por encima del 90% en {{server}}",

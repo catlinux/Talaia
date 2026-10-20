@@ -74,7 +74,10 @@ the `core-data` volume) could impersonate sites for it.
 
 ## 4. Add a server
 
-On the core machine:
+In the panel, open **Fleet** and press **Add server**: type a name, press **Create token** and copy the command it
+shows. The token is created for that name and the command is the one described below.
+
+From the console of the core machine you can do the same:
 
 ```bash
 cd Talaia/packaging/core

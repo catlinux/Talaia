@@ -76,7 +76,10 @@ la CA (está en el volumen `core-data`) podría suplantar sitios para ese equipo
 
 ## 4. Añadir un servidor
 
-En la máquina del núcleo:
+En el panel, abre **Flota** y pulsa **Añadir servidor**: escribe un nombre, pulsa **Crear token** y copia la orden
+que muestra. El token se crea para ese nombre y la orden es la que se describe más abajo.
+
+Desde la consola de la máquina del núcleo se puede hacer lo mismo:
 
 ```bash
 cd Talaia/packaging/core

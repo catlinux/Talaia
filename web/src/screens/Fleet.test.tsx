@@ -1,8 +1,9 @@
-import { act, cleanup, render, screen } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { createMockFleetClient, type FleetClient } from '../api/client'
-import type { ActivityEvent, Server } from '../api/types'
+import { ApiError } from '../api/http'
+import type { ActivityEvent, EnrollmentToken, Server } from '../api/types'
 import i18n from '../i18n'
 import { Fleet, refreshInterval } from './Fleet'
 
@@ -39,6 +40,7 @@ function clientReturning(
   return {
     listServers: servers,
     listActivity: () => Promise.resolve(activity),
+    createEnrollment: () => Promise.reject(new Error('unexpected enrollment')),
   }
 }
 
@@ -93,6 +95,7 @@ describe('Fleet', () => {
     const client: FleetClient = {
       listServers: () => Promise.reject(new Error('no connection')),
       listActivity: () => Promise.resolve([]),
+      createEnrollment: () => Promise.reject(new Error('unexpected enrollment')),
     }
 
     render(<Fleet client={client} />)
@@ -115,7 +118,7 @@ describe('Fleet', () => {
     render(<Fleet client={clientReturning(() => Promise.resolve([]))} />)
 
     expect(await screen.findByText('No servers yet')).toBeTruthy()
-    expect(screen.getByText('talaia-core token create --name <server>').tagName).toBe('CODE')
+    expect(screen.getByText(/Press "Add server"/)).toBeTruthy()
     expect(screen.queryByText('Servers online')).toBeNull()
   })
 
@@ -164,5 +167,75 @@ describe('Fleet', () => {
     })
 
     expect(listServers).toHaveBeenCalledTimes(1)
+  })
+
+  describe('add server', () => {
+    const created: EnrollmentToken = {
+      token: 'tl_enr_abc',
+      caFingerprint: 'ab'.repeat(32),
+      expiresIn: 900,
+      command: 'curl -fsSk https://192.0.2.10:8443/install.sh | sudo bash -s -- --token tl_enr_abc',
+    }
+
+    function addServerClient(createEnrollment: FleetClient['createEnrollment']): FleetClient {
+      return { ...clientReturning(() => Promise.resolve([server()])), createEnrollment }
+    }
+
+    it('creates a token and shows the command to run on the server', async () => {
+      const createEnrollment = vi.fn(() => Promise.resolve(created))
+      render(<Fleet client={addServerClient(createEnrollment)} />)
+
+      fireEvent.click(await screen.findByRole('button', { name: 'Add server' }))
+      fireEvent.change(screen.getByLabelText('Server name'), { target: { value: ' vps-new ' } })
+      fireEvent.submit(screen.getByRole('button', { name: 'Create token' }).closest('form')!)
+
+      expect(await screen.findByText(created.command)).toBeTruthy()
+      expect(createEnrollment).toHaveBeenCalledWith('vps-new')
+      expect(screen.getByText(/within the next 15 minutes/)).toBeTruthy()
+      expect(screen.getByText('The token works once and will not be shown again.')).toBeTruthy()
+
+      fireEvent.click(screen.getByRole('button', { name: 'Done' }))
+      expect(screen.getByRole('button', { name: 'Add server' })).toBeTruthy()
+      expect(screen.queryByText(created.command)).toBeNull()
+    })
+
+    it('copies the command to the clipboard', async () => {
+      const writeText = vi.fn(() => Promise.resolve())
+      Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true })
+      render(<Fleet client={addServerClient(() => Promise.resolve(created))} />)
+
+      fireEvent.click(await screen.findByRole('button', { name: 'Add server' }))
+      fireEvent.change(screen.getByLabelText('Server name'), { target: { value: 'vps-new' } })
+      fireEvent.submit(screen.getByRole('button', { name: 'Create token' }).closest('form')!)
+      fireEvent.click(await screen.findByRole('button', { name: 'Copy the command' }))
+
+      await waitFor(() => expect(writeText).toHaveBeenCalledWith(created.command))
+      expect(await screen.findByRole('button', { name: 'Copied' })).toBeTruthy()
+    })
+
+    it('says when the name is already taken', async () => {
+      const createEnrollment = () => Promise.reject(new ApiError('name_taken', 409))
+      render(<Fleet client={addServerClient(createEnrollment)} />)
+
+      fireEvent.click(await screen.findByRole('button', { name: 'Add server' }))
+      fireEvent.change(screen.getByLabelText('Server name'), { target: { value: 'vps-web-01' } })
+      fireEvent.submit(screen.getByRole('button', { name: 'Create token' }).closest('form')!)
+
+      expect((await screen.findByRole('alert')).textContent).toBe(
+        'A server or a pending token with that name already exists.',
+      )
+    })
+
+    it('shows the raw values when the core has no public address', async () => {
+      const createEnrollment = () => Promise.resolve({ ...created, command: '' })
+      render(<Fleet client={addServerClient(createEnrollment)} />)
+
+      fireEvent.click(await screen.findByRole('button', { name: 'Add server' }))
+      fireEvent.change(screen.getByLabelText('Server name'), { target: { value: 'vps-new' } })
+      fireEvent.submit(screen.getByRole('button', { name: 'Create token' }).closest('form')!)
+
+      expect(await screen.findByText('tl_enr_abc')).toBeTruthy()
+      expect(screen.getByText('ab'.repeat(32))).toBeTruthy()
+    })
   })
 })

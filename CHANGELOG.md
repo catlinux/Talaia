@@ -25,6 +25,7 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 - `packaging/core/install.sh`: sets up the core in one command (random database password in `.env`, build, start, administrator), and the installation guide `docs/en/installation.md`.
 - CI job `core stack (docker)`: runs the core installer and checks that the core serves the panel, the CA, `install.sh` and both agent packages, and that `token create` prints the install command.
 - API `POST /api/v1/servers/enrollment-tokens` (full session): creates a 15-minute, single-use enrollment token for a server name and returns the install command; audited as `enrollment_token_created`.
+- "Add server" button on the fleet screen: asks for a name, creates the one-time token and shows the install command with a copy button, in ca/es/en. The empty-fleet message now points to it.
 - Minimal agent link: the core hub accepts the agent stream (plaintext HTTP/2 for now) and the agent sends its inventory, heartbeats and CPU metrics, reading `/etc/talaia/agent.toml`.
 - i18n for Go components (go-i18n in core and CLI, ca/es/en) and `scripts/i18n-check.mjs`, which fails when a key is missing in any language.
 - `make dev`: local development environment (PostgreSQL + TimescaleDB in Docker Compose, core, agent and web dev server).

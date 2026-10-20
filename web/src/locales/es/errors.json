@@ -6,6 +6,7 @@
   "invalidRequest": "La petición no es válida.",
   "weakPassword": "La contraseña es demasiado débil.",
   "rateLimited": "Demasiados intentos seguidos. Espera unos minutos y vuelve a probar.",
+  "nameTaken": "Ya hay un servidor o un token pendiente con ese nombre.",
   "network": "No se ha podido contactar con el servidor.",
   "generic": "Algo ha fallado. Vuelve a probar."
 }

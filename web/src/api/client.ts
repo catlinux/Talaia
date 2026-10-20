@@ -1,6 +1,6 @@
 import { createHttpClient } from './http'
 import { sampleActivity, sampleServers } from './fixtures'
-import type { ActivityEvent, Server, ServerStatus } from './types'
+import type { ActivityEvent, EnrollmentToken, Server, ServerStatus } from './types'
 
 /**
  * Data source of the fleet screen. The panel uses the API client; the tests
@@ -9,6 +9,8 @@ import type { ActivityEvent, Server, ServerStatus } from './types'
 export interface FleetClient {
   listServers(): Promise<Server[]>
   listActivity(): Promise<ActivityEvent[]>
+  /** createEnrollment creates the one-time token that adds a server with this name. */
+  createEnrollment(name: string): Promise<EnrollmentToken>
 }
 
 /** Mock client backed by the sample data in fixtures.ts. */
@@ -16,6 +18,15 @@ export function createMockFleetClient(): FleetClient {
   return {
     listServers: () => Promise.resolve(sampleServers),
     listActivity: () => Promise.resolve(sampleActivity),
+    createEnrollment: () =>
+      Promise.resolve({
+        token: 'tl_enr_EXAMPLE',
+        caFingerprint: '0'.repeat(64),
+        expiresIn: 900,
+        command:
+          'curl -fsSk https://panel.example.com/install.sh | sudo bash -s -- --url https://panel.example.com --token tl_enr_EXAMPLE --ca-fingerprint ' +
+          '0'.repeat(64),
+      }),
   }
 }
 
@@ -53,6 +64,14 @@ interface apiServer {
   cert_not_after: string | null
   connected: boolean
   live?: apiLiveAgent
+}
+
+/** apiEnrollment is the answer of POST /api/v1/servers/enrollment-tokens. */
+interface apiEnrollment {
+  token: string
+  ca_fingerprint: string
+  expires_in: number
+  command: string
 }
 
 interface serversResponse {
@@ -136,5 +155,14 @@ export function createApiFleetClient(fetchImpl?: typeof fetch): FleetClient {
     // There is no activity API yet: the screen shows placeholders instead of
     // inventing numbers.
     listActivity: () => Promise.resolve([]),
+    createEnrollment: async (name) => {
+      const body = await http.post<apiEnrollment>('/api/v1/servers/enrollment-tokens', { name })
+      return {
+        token: body.token,
+        caFingerprint: body.ca_fingerprint,
+        expiresIn: body.expires_in,
+        command: body.command,
+      }
+    },
   }
 }

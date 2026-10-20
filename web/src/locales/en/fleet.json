@@ -4,6 +4,24 @@
   "subtitle_other": "{{count}} servers · updated at {{time}}",
   "loading": "Loading the fleet…",
   "error": "The fleet could not be loaded",
+  "add": {
+    "open": "Add server",
+    "title": "Add a server",
+    "intro": "Give the server a name. A single-use token is created to install the agent.",
+    "nameLabel": "Server name",
+    "nameHint": "Letters, digits, dot, dash and underscore; up to 63 characters.",
+    "create": "Create token",
+    "creating": "Creating…",
+    "cancel": "Cancel",
+    "runOnServer": "Run this command on the server, as root or with sudo, within the next {{minutes}} minutes:",
+    "copy": "Copy the command",
+    "copied": "Copied",
+    "once": "The token works once and will not be shown again.",
+    "noAddress": "The core does not know its public address (TALAIA_PUBLIC_HOSTNAMES), so it cannot build the command. Use these values with install.sh.",
+    "tokenLabel": "Token",
+    "fingerprintLabel": "CA fingerprint",
+    "done": "Done"
+  },
   "kpi": {
     "serversOnline": "Servers online",
     "serversOnlineValue": "{{online}} / {{total}}",
@@ -55,7 +73,7 @@
   "refreshFailed": "The fleet could not be refreshed: showing the last data.",
   "empty": {
     "title": "No servers yet",
-    "body": "Create an enrollment token on the core with <code>{{command}}</code>, then run install.sh on the server."
+    "body": "Press \"Add server\" and run the command it shows on the server."
   },
   "event": {
     "diskHigh": "Disk above 90% on {{server}}",

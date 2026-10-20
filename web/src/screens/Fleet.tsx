@@ -1,20 +1,18 @@
 import { useEffect, useState } from 'react'
-import { Trans, useTranslation } from 'react-i18next'
+import { useTranslation } from 'react-i18next'
 
 import { createApiFleetClient } from '../api/client'
 import type { FleetClient } from '../api/client'
 import { isSignedOut } from '../api/http'
 import type { ActivityEvent, FleetSummary, Server } from '../api/types'
 import { ActivityFeed } from './fleet/ActivityFeed'
+import { AddServer } from './fleet/AddServer'
 import { KpiRow } from './fleet/KpiRow'
 import { ServerCard } from './fleet/ServerCard'
 import { formatTime } from './fleet/format'
 
 /** refreshInterval is how often the fleet is reloaded while the tab is visible. */
 export const refreshInterval = 15_000
-
-/** enrollmentCommand is the console command that adds a server. */
-const enrollmentCommand = 'talaia-core token create --name <server>'
 
 interface FleetProps {
   /** Data source. Tests inject their own client; the panel uses the API. */
@@ -135,6 +133,10 @@ export function Fleet({ client = defaultClient }: FleetProps) {
         ) : null}
       </header>
 
+      <div className="fleet__actions">
+        <AddServer create={client.createEnrollment} />
+      </div>
+
       {state.status === 'loading' ? (
         <p className="fleet__message" role="status">
           {t('loading')}
@@ -156,14 +158,7 @@ export function Fleet({ client = defaultClient }: FleetProps) {
       {state.status === 'ready' && state.servers.length === 0 ? (
         <div className="fleet__message">
           <p className="fleet__empty-title">{t('empty.title')}</p>
-          <p>
-            <Trans
-              ns="fleet"
-              i18nKey="empty.body"
-              values={{ command: enrollmentCommand }}
-              components={{ code: <code /> }}
-            />
-          </p>
+          <p>{t('empty.body')}</p>
         </div>
       ) : null}
 

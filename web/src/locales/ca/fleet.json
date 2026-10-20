@@ -4,6 +4,24 @@
   "subtitle_other": "{{count}} servidors · actualitzat a les {{time}}",
   "loading": "Carregant la flota…",
   "error": "No s'ha pogut carregar la flota",
+  "add": {
+    "open": "Afegeix un servidor",
+    "title": "Afegeix un servidor",
+    "intro": "Posa un nom al servidor. Es crearà un token d'un sol ús per instal·lar l'agent.",
+    "nameLabel": "Nom del servidor",
+    "nameHint": "Lletres, xifres, punt, guió i guió baix; fins a 63 caràcters.",
+    "create": "Crea el token",
+    "creating": "Creant…",
+    "cancel": "Cancel·la",
+    "runOnServer": "Executa aquesta ordre al servidor, com a root o amb sudo, en els pròxims {{minutes}} minuts:",
+    "copy": "Copia l'ordre",
+    "copied": "Copiada",
+    "once": "El token val una sola vegada i no es tornarà a mostrar.",
+    "noAddress": "El core no sap la seva adreça pública (TALAIA_PUBLIC_HOSTNAMES), així que no pot muntar l'ordre. Fes servir aquestes dades amb install.sh.",
+    "tokenLabel": "Token",
+    "fingerprintLabel": "Empremta de la CA",
+    "done": "Fet"
+  },
   "kpi": {
     "serversOnline": "Servidors en línia",
     "serversOnlineValue": "{{online}} / {{total}}",
@@ -55,7 +73,7 @@
   "refreshFailed": "No s'ha pogut actualitzar la flota: es mostren les últimes dades.",
   "empty": {
     "title": "Encara no hi ha cap servidor",
-    "body": "Crea un testimoni d'alta al core amb <code>{{command}}</code> i executa install.sh al servidor."
+    "body": "Prem «Afegeix un servidor» i executa al servidor l'ordre que et mostrarà."
   },
   "event": {
     "diskHigh": "Disc per sobre del 90% a {{server}}",
