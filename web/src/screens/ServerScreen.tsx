@@ -19,6 +19,7 @@ import {
   TrashIcon,
 } from '../components/icons'
 import { LogsPanel } from './server/LogsPanel'
+import { StacksSection } from './server/StacksSection'
 import { TimedOut, waitForJob } from './server/waitForJob'
 
 /** refreshEvery is how often the list reloads while the screen is open. */
@@ -200,6 +201,16 @@ export function ServerScreen({
       ) : null}
       {list !== null && list.connected && list.dockerAvailable && containers.length === 0 ? (
         <p className="serverscreen__message">{t('server:empty')}</p>
+      ) : null}
+
+      {list !== null && list.connected && list.dockerAvailable ? (
+        <StacksSection
+          api={api}
+          serverId={server.id}
+          containers={list.containers}
+          pollMs={pollMs}
+          onChanged={() => void load()}
+        />
       ) : null}
 
       {containers.length > 0 ? (

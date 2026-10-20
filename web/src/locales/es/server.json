@@ -43,5 +43,47 @@
     "close": "Cerrar",
     "empty": "No hay líneas de registro.",
     "note": "Últimas 200 líneas, con la hora de cada una."
+  },
+  "stacks": {
+    "title": "Stacks",
+    "intro": "Proyectos Docker Compose que Talaia guarda en el servidor y gestiona por ti.",
+    "new": "Nuevo stack",
+    "empty": "Todavía no hay stacks gestionados. Crea el primero con «Nuevo stack».",
+    "summary_one": "{{count}} contenedor · {{running}} en marcha",
+    "summary_other": "{{count}} contenedores · {{running}} en marcha",
+    "noContainers": "Sin contenedores (parado)",
+    "action": {
+      "up": "Iniciar",
+      "down": "Parar",
+      "pull": "Actualizar imágenes",
+      "restart": "Reiniciar",
+      "remove": "Eliminar",
+      "edit": "Editar"
+    },
+    "confirm": {
+      "downTitle": "¿Parar {{name}}?",
+      "downBody": "Se detienen y eliminan sus contenedores. Los volúmenes se conservan.",
+      "downYes": "Parar el stack",
+      "removeTitle": "¿Eliminar {{name}}?",
+      "removeBody": "Se paran sus contenedores y se borran sus archivos del servidor. Los volúmenes se conservan.",
+      "removeYes": "Eliminar el stack",
+      "no": "Cancelar"
+    },
+    "editor": {
+      "titleNew": "Nuevo stack",
+      "titleEdit": "Editar {{name}}",
+      "name": "Nombre",
+      "nameHint": "Minúsculas, cifras, guion y guion bajo.",
+      "compose": "compose.yaml",
+      "env": ".env (opcional)",
+      "envHint": "Variables para el compose. Se guarda en el servidor con permisos solo para root.",
+      "loading": "Leyendo los archivos…",
+      "save": "Validar y guardar",
+      "saveStart": "Guardar e iniciar",
+      "saving": "Validando…",
+      "cancel": "Cancelar",
+      "saved": "Guardado",
+      "started": "Guardado e iniciado"
+    }
   }
 }

@@ -43,5 +43,47 @@
     "close": "Tanca",
     "empty": "No hi ha línies de registre.",
     "note": "Últimes 200 línies, amb l’hora de cadascuna."
+  },
+  "stacks": {
+    "title": "Stacks",
+    "intro": "Projectes Docker Compose que Talaia desa al servidor i gestiona per tu.",
+    "new": "Nou stack",
+    "empty": "Encara no hi ha stacks gestionats. Crea el primer amb «Nou stack».",
+    "summary_one": "{{count}} contenidor · {{running}} en marxa",
+    "summary_other": "{{count}} contenidors · {{running}} en marxa",
+    "noContainers": "Sense contenidors (aturat)",
+    "action": {
+      "up": "Inicia",
+      "down": "Atura",
+      "pull": "Actualitza les imatges",
+      "restart": "Reinicia",
+      "remove": "Elimina",
+      "edit": "Edita"
+    },
+    "confirm": {
+      "downTitle": "Aturar {{name}}?",
+      "downBody": "S’aturen i s’eliminen els seus contenidors. Els volums es conserven.",
+      "downYes": "Atura el stack",
+      "removeTitle": "Eliminar {{name}}?",
+      "removeBody": "S’aturen els seus contenidors i se n’esborren els fitxers del servidor. Els volums es conserven.",
+      "removeYes": "Elimina el stack",
+      "no": "Cancel·la"
+    },
+    "editor": {
+      "titleNew": "Nou stack",
+      "titleEdit": "Edita {{name}}",
+      "name": "Nom",
+      "nameHint": "Minúscules, xifres, guió i guió baix.",
+      "compose": "compose.yaml",
+      "env": ".env (opcional)",
+      "envHint": "Variables per al compose. Es desa al servidor amb permisos només per a root.",
+      "loading": "Llegint els fitxers…",
+      "save": "Valida i desa",
+      "saveStart": "Desa i inicia",
+      "saving": "Validant…",
+      "cancel": "Cancel·la",
+      "saved": "Desat",
+      "started": "Desat i iniciat"
+    }
   }
 }

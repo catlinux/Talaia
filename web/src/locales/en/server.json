@@ -43,5 +43,47 @@
     "close": "Close",
     "empty": "There are no log lines.",
     "note": "Last 200 lines, each with its time."
+  },
+  "stacks": {
+    "title": "Stacks",
+    "intro": "Docker Compose projects Talaia keeps on the server and manages for you.",
+    "new": "New stack",
+    "empty": "There are no managed stacks yet. Create the first one with \"New stack\".",
+    "summary_one": "{{count}} container · {{running}} running",
+    "summary_other": "{{count}} containers · {{running}} running",
+    "noContainers": "No containers (stopped)",
+    "action": {
+      "up": "Start",
+      "down": "Stop",
+      "pull": "Pull images",
+      "restart": "Restart",
+      "remove": "Remove",
+      "edit": "Edit"
+    },
+    "confirm": {
+      "downTitle": "Stop {{name}}?",
+      "downBody": "Its containers are stopped and removed. Volumes are kept.",
+      "downYes": "Stop the stack",
+      "removeTitle": "Remove {{name}}?",
+      "removeBody": "Its containers are stopped and its files are deleted from the server. Volumes are kept.",
+      "removeYes": "Remove the stack",
+      "no": "Cancel"
+    },
+    "editor": {
+      "titleNew": "New stack",
+      "titleEdit": "Edit {{name}}",
+      "name": "Name",
+      "nameHint": "Lower case letters, digits, dash and underscore.",
+      "compose": "compose.yaml",
+      "env": ".env (optional)",
+      "envHint": "Variables for the compose file. It is stored on the server readable by root only.",
+      "loading": "Reading the files…",
+      "save": "Validate and save",
+      "saveStart": "Save and start",
+      "saving": "Validating…",
+      "cancel": "Cancel",
+      "saved": "Saved",
+      "started": "Saved and started"
+    }
   }
 }

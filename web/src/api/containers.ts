@@ -23,6 +23,22 @@ export interface ContainerList {
 
 export type ContainerAction = 'start' | 'stop' | 'restart' | 'remove'
 
+/** StackAction is a docker compose operation on a managed stack. */
+export type StackAction = 'up' | 'down' | 'pull' | 'restart' | 'remove'
+
+/** StackList is the answer of the stacks endpoint. */
+export interface StackList {
+  connected: boolean
+  /** stacks are the names of the stacks Talaia manages on the server. */
+  stacks: string[]
+}
+
+/** StackFiles are the files of a managed stack. */
+export interface StackFiles {
+  compose: string
+  env: string
+}
+
 export type JobState = 'pending' | 'running' | 'succeeded' | 'failed'
 
 /** Job is the progress of a command sent to an agent. */
@@ -45,6 +61,13 @@ export interface ContainersApi {
     action: ContainerAction,
     confirm?: boolean,
   ): Promise<string>
+  stacks(serverId: string): Promise<StackList>
+  /** writeStack validates and stores a stack; it returns the id of the job. */
+  writeStack(serverId: string, name: string, compose: string, env: string): Promise<string>
+  /** readStack asks for the files of a stack; the job output holds them as JSON. */
+  readStack(serverId: string, name: string): Promise<string>
+  /** runStack sends an operation on a stack and returns the id of the job. */
+  runStack(serverId: string, name: string, action: StackAction, confirm?: boolean): Promise<string>
   /** logs asks for the last lines of a container and returns the id of the job. */
   logs(serverId: string, container: string, tail?: number): Promise<string>
   job(id: string): Promise<Job>
@@ -106,6 +129,33 @@ export function createContainersApi(fetchImpl?: typeof fetch): ContainersApi {
     job: async (id) => {
       const body = await http.get<apiJob>(`/api/v1/jobs/${encodeURIComponent(id)}`)
       return { id: body.id, state: body.state, message: body.message, output: body.output ?? '' }
+    },
+    stacks: async (serverId) => {
+      const body = await http.get<StackList>(
+        `/api/v1/servers/${encodeURIComponent(serverId)}/stacks`,
+      )
+      return { connected: body.connected, stacks: body.stacks }
+    },
+    writeStack: async (serverId, name, compose, env) => {
+      const body = await http.put<{ job_id: string }>(
+        `/api/v1/servers/${encodeURIComponent(serverId)}/stacks/${encodeURIComponent(name)}`,
+        { compose, env },
+      )
+      return body.job_id
+    },
+    readStack: async (serverId, name) => {
+      const body = await http.post<{ job_id: string }>(
+        `/api/v1/servers/${encodeURIComponent(serverId)}/stacks/${encodeURIComponent(name)}/read`,
+        {},
+      )
+      return body.job_id
+    },
+    runStack: async (serverId, name, action, confirm = false) => {
+      const body = await http.post<{ job_id: string }>(
+        `/api/v1/servers/${encodeURIComponent(serverId)}/stacks/${encodeURIComponent(name)}/actions`,
+        { action, confirm },
+      )
+      return body.job_id
     },
     logs: async (serverId, container, tail = 0) => {
       const body = await http.post<{ job_id: string }>(

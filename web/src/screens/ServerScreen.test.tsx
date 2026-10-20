@@ -41,6 +41,10 @@ function apiWith(
     list: vi.fn(typeof list === 'function' ? list : () => Promise.resolve(list)),
     run: vi.fn(() => Promise.resolve('job-1')),
     logs: vi.fn(() => Promise.resolve('job-1')),
+    stacks: vi.fn(() => Promise.resolve({ connected: true, stacks: [] })),
+    writeStack: vi.fn(() => Promise.resolve('job-1')),
+    readStack: vi.fn(() => Promise.resolve('job-1')),
+    runStack: vi.fn(() => Promise.resolve('job-1')),
     job: vi.fn(() => Promise.resolve(queue.length > 1 ? (queue.shift() as Job) : queue[0]!)),
   }
 }

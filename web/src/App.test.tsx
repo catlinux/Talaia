@@ -114,6 +114,10 @@ describe('App', () => {
         }),
       run: () => Promise.reject(new Error('unexpected')),
       logs: () => Promise.reject(new Error('unexpected')),
+      stacks: () => Promise.resolve({ connected: true, stacks: [] }),
+      writeStack: () => Promise.reject(new Error('unexpected')),
+      readStack: () => Promise.reject(new Error('unexpected')),
+      runStack: () => Promise.reject(new Error('unexpected')),
       job: () => Promise.reject(new Error('unexpected')),
     }
     render(

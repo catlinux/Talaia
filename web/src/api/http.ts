@@ -84,6 +84,7 @@ function notifySignedOut(): void {
 export interface HttpClient {
   get<T>(path: string): Promise<T>
   post<T>(path: string, body?: unknown): Promise<T>
+  put<T>(path: string, body?: unknown): Promise<T>
 }
 
 /** errorCode reads {error:{code}} and falls back to a generic code. */
@@ -120,7 +121,11 @@ function defaultFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Res
 
 /** createHttpClient returns a client that talks to the core API. */
 export function createHttpClient(fetchImpl: typeof fetch = defaultFetch): HttpClient {
-  async function request(method: 'GET' | 'POST', path: string, body?: unknown): Promise<unknown> {
+  async function request(
+    method: 'GET' | 'POST' | 'PUT',
+    path: string,
+    body?: unknown,
+  ): Promise<unknown> {
     const headers: Record<string, string> = {}
     if (method !== 'GET') {
       headers['Content-Type'] = 'application/json'
@@ -153,5 +158,6 @@ export function createHttpClient(fetchImpl: typeof fetch = defaultFetch): HttpCl
     get: <T>(path: string): Promise<T> => request('GET', path) as Promise<T>,
     post: <T>(path: string, body?: unknown): Promise<T> =>
       request('POST', path, body) as Promise<T>,
+    put: <T>(path: string, body?: unknown): Promise<T> => request('PUT', path, body) as Promise<T>,
   }
 }
