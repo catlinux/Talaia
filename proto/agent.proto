@@ -24,6 +24,7 @@ message CoreMsg {
     StackWrite stack_write = 12;
     StackAction stack_action = 13;
     StackRead stack_read = 14;
+    StackAdopt stack_adopt = 15;
   }
 }
 
@@ -91,6 +92,16 @@ enum StackActionType {
   STACK_ACTION_TYPE_RESTART = 4;
   // docker compose down and deletion of the stack files; volumes are kept.
   STACK_ACTION_TYPE_REMOVE = 5;
+  // Stops managing an adopted stack: only the record of Talaia is deleted; the
+  // containers and the files stay as they are.
+  STACK_ACTION_TYPE_FORGET = 6;
+}
+
+// StackAdopt makes Talaia manage a Compose project that is already running. The
+// agent finds the project by its name among its containers and records where its
+// files are; the core never sends a path.
+message StackAdopt {
+  string name = 1;
 }
 
 // StackRead returns the files of a managed stack as the JSON output of the job
@@ -145,6 +156,9 @@ message Inventory {
   // Names of the stacks Talaia manages on this server (directories of
   // /opt/talaia/stacks that hold a compose.yaml).
   repeated string managed_stacks = 14;
+  // The managed stacks that were adopted: they stay where they were and Talaia
+  // only points at them. A subset of managed_stacks.
+  repeated string adopted_stacks = 15;
 }
 
 message Container {
