@@ -26,6 +26,7 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 - CI job `core stack (docker)`: runs the core installer and checks that the core serves the panel, the CA, `install.sh` and both agent packages, that `token create` prints the install command, and that a server installs its agent with it and enrolls.
 - API `POST /api/v1/servers/enrollment-tokens` (full session): creates a 15-minute, single-use enrollment token for a server name and returns the install command; audited as `enrollment_token_created`.
 - `talaia-core server list` prints the enrolled servers with their ids, which `server revoke` needs.
+- The install command now includes the SHA-256 of `install.sh` and refuses to run a script that does not match, so a machine in the middle cannot swap the script that is fetched before the CA is trusted.
 - "Add server" button on the fleet screen: asks for a name, creates the one-time token and shows the install command with a copy button, in ca/es/en. The empty-fleet message now points to it.
 - Minimal agent link: the core hub accepts the agent stream (plaintext HTTP/2 for now) and the agent sends its inventory, heartbeats and CPU metrics, reading `/etc/talaia/agent.toml`.
 - i18n for Go components (go-i18n in core and CLI, ca/es/en) and `scripts/i18n-check.mjs`, which fails when a key is missing in any language.

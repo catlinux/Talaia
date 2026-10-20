@@ -5,9 +5,14 @@ import (
 	"net/http"
 	"strings"
 	"testing"
+
+	"github.com/catlinux/Talaia/core/internal/install"
 )
 
-var testFingerprint = strings.Repeat("ab", 32)
+var (
+	testFingerprint = strings.Repeat("ab", 32)
+	testScriptHash  = strings.Repeat("cd", 32)
+)
 
 type tokenResponse struct {
 	Token         string `json:"token"`
@@ -54,9 +59,8 @@ func TestEnrollmentTokenCreation(t *testing.T) {
 	if created.CAFingerprint != testFingerprint || created.ExpiresIn != 900 {
 		t.Errorf("fingerprint = %q, expires_in = %d", created.CAFingerprint, created.ExpiresIn)
 	}
-	wantCommand := "curl -fsSk https://192.0.2.10:8443/install.sh | sudo bash -s -- --url https://192.0.2.10:8443 --token " +
-		created.Token + " --ca-fingerprint " + testFingerprint
-	if created.Command != wantCommand {
+	wantCommand := install.Command("https://192.0.2.10:8443", created.Token, testFingerprint, testScriptHash)
+	if created.Command != wantCommand || !strings.Contains(created.Command, testScriptHash) {
 		t.Errorf("command = %q, want %q", created.Command, wantCommand)
 	}
 

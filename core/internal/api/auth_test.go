@@ -168,6 +168,7 @@ func newTestPanel(t *testing.T, options ...panelOption) *testPanel {
 			Audit:         st,
 			CAFingerprint: testFingerprint,
 			PublicURL:     "https://192.0.2.10:8443",
+			ScriptSHA256:  testScriptHash,
 		},
 		Auth: AuthDeps{
 			Store:        st,

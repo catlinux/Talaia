@@ -264,12 +264,12 @@ func tokenCreateCommand(args []string, stdout, stderr io.Writer) error {
 		return err
 	}
 
-	return tokenCreate(ctx, stdout, st, *name, *ttl, authority.Fingerprint(), cfg.PublicURL())
+	return tokenCreate(ctx, stdout, st, *name, *ttl, authority.Fingerprint(), cfg.PublicURL(), install.ScriptSHA256(cfg.DistDir))
 }
 
 // tokenCreate stores the token and prints the block the installation needs. The
 // token is shown once and never stored in plaintext.
-func tokenCreate(ctx context.Context, out io.Writer, creator tokenCreator, name string, ttl time.Duration, fingerprint, publicURL string) error {
+func tokenCreate(ctx context.Context, out io.Writer, creator tokenCreator, name string, ttl time.Duration, fingerprint, publicURL, scriptSHA256 string) error {
 	token, err := creator.CreateEnrollmentToken(ctx, name, ttl)
 	if err != nil {
 		return err
@@ -283,7 +283,7 @@ ca-fingerprint: %s
 This token is shown only once: store it now.
 `, name, ttl, token, fingerprint)
 
-	if command := install.Command(publicURL, token, fingerprint); command != "" {
+	if command := install.Command(publicURL, token, fingerprint, scriptSHA256); command != "" {
 		fmt.Fprintf(out, "\nTo install the agent, run this on the server (as root, or with sudo):\n\n%s\n", command)
 	}
 

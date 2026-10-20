@@ -35,6 +35,8 @@ type EnrollmentTokenDeps struct {
 	Audit  Auditor
 	// CAFingerprint is the SHA-256 of the core CA, the trust anchor of the agent.
 	CAFingerprint string
+	// ScriptSHA256 is the hash of install.sh, which the command makes the server check.
+	ScriptSHA256 string
 	// PublicURL is the address servers reach the core at; empty when unknown.
 	PublicURL string
 }
@@ -97,7 +99,7 @@ func NewEnrollmentTokenHandler(deps EnrollmentTokenDeps) http.Handler {
 			Token:         token,
 			CAFingerprint: deps.CAFingerprint,
 			ExpiresIn:     int(enrollmentTokenTTL / time.Second),
-			Command:       install.Command(deps.PublicURL, token, deps.CAFingerprint),
+			Command:       install.Command(deps.PublicURL, token, deps.CAFingerprint, deps.ScriptSHA256),
 		})
 	})
 }

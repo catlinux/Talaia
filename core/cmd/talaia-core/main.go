@@ -25,6 +25,7 @@ import (
 	"github.com/catlinux/Talaia/core/internal/ca"
 	"github.com/catlinux/Talaia/core/internal/config"
 	"github.com/catlinux/Talaia/core/internal/hub"
+	"github.com/catlinux/Talaia/core/internal/install"
 	"github.com/catlinux/Talaia/core/internal/store"
 )
 
@@ -272,6 +273,7 @@ func serve() error {
 			Audit:         st,
 			CAFingerprint: authority.Fingerprint(),
 			PublicURL:     cfg.PublicURL(),
+			ScriptSHA256:  install.ScriptSHA256(cfg.DistDir),
 		}
 		srv.Handler = newTLSRouter(st, authority, hub.New(st), panel)
 		srv.Protocols = newTLSProtocols()

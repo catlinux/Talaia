@@ -89,7 +89,7 @@ sudo docker compose run --rm core token create --name mi-servidor
 Imprime el token, la huella de la CA y una orden lista para pegar:
 
 ```bash
-curl -fsSk https://192.0.2.10:8443/install.sh | sudo bash -s -- --url https://192.0.2.10:8443 --token … --ca-fingerprint …
+f=$(mktemp) && curl -fsSk https://192.0.2.10:8443/install.sh -o "$f" && echo "<sha256>  $f" | sha256sum -c - && sudo bash "$f" --url https://192.0.2.10:8443 --token … --ca-fingerprint …; rm -f "$f"
 ```
 
 Ejecuta esa línea **en el servidor que quieres añadir**, en menos de 15 minutos. El token vale una sola vez:
@@ -100,8 +100,9 @@ crea otro para el siguiente servidor. El instalador:
 - escribe `/etc/talaia/agent.toml` y arranca `talaia-agent`, que se da de alta con el token y recibe su
   propio certificado.
 
-El propio `install.sh` es el único fichero que se descarga sin verificar (`-k`), como en cualquier
-`curl | bash`. Si prefieres, descárgalo antes, léelo y ejecútalo desde disco. Con `--deb <ruta>` se instala un
+La orden descarga `install.sh` antes de que el servidor confíe en la CA del núcleo, así que no puede verificar la
+conexión (`-k`). En su lugar lleva el SHA-256 del script, copiado desde tu panel o tu consola, y se niega a ejecutar
+un script que no coincida. También puedes descargarlo antes, leerlo y ejecutarlo desde disco. Con `--deb <ruta>` se instala un
 paquete que hayas construido tú (`scripts/build-deb.sh`).
 
 Comprueba el resultado en el servidor:
