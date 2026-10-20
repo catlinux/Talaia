@@ -5,6 +5,7 @@ go 1.26.0
 require (
 	connectrpc.com/connect/v2 v2.0.1
 	github.com/coder/websocket v1.8.15
+	github.com/go-acme/lego/v4 v4.35.2
 	github.com/go-chi/chi/v5 v5.5.0
 	github.com/jackc/pgx/v5 v5.11.0
 	github.com/nicksnyder/go-i18n/v2 v2.6.1
@@ -15,8 +16,17 @@ require (
 )
 
 require (
+	github.com/cenkalti/backoff/v5 v5.0.3 // indirect
+	github.com/go-jose/go-jose/v4 v4.1.4 // indirect
+	github.com/miekg/dns v1.1.72 // indirect
+	github.com/ovh/go-ovh v1.9.0 // indirect
+	golang.org/x/mod v0.41.0 // indirect
+	golang.org/x/net v0.61.0 // indirect
+	golang.org/x/oauth2 v0.36.0 // indirect
 	golang.org/x/sys v0.49.0 // indirect
+	golang.org/x/tools v0.51.0 // indirect
 	google.golang.org/protobuf v1.36.12 // indirect
+	gopkg.in/ini.v1 v1.67.1 // indirect
 )
 
 require (

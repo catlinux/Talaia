@@ -6,6 +6,8 @@ import (
 	"slices"
 	"strings"
 	"testing"
+
+	"github.com/catlinux/Talaia/core/internal/acme"
 )
 
 const testDatabaseURL = "postgres://talaia@example.com/talaia?sslmode=disable"
@@ -486,5 +488,104 @@ func TestAgentAndPanelPorts(t *testing.T) {
 	}
 	if _, err := load(env(map[string]string{"TALAIA_AGENT_PORT": "0"}), path); err == nil || !strings.Contains(err.Error(), "invalid agent_port") {
 		t.Errorf("agent_port 0 = %v, want an error", err)
+	}
+}
+
+func TestACME(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "core.toml")
+	env := func(extra map[string]string) map[string]string {
+		all := map[string]string{
+			"TALAIA_DATABASE_URL":     testDatabaseURL,
+			"TALAIA_PUBLIC_HOSTNAMES": "panel.example.com, 192.0.2.10",
+		}
+		for key, value := range extra {
+			all[key] = value
+		}
+		return all
+	}
+
+	cfg, err := load(lookupFrom(env(nil)), path)
+	if err != nil {
+		t.Fatalf("without ACME: %v", err)
+	}
+	if cfg.ACMEProvider != "" {
+		t.Errorf("acme_provider = %q, want it empty", cfg.ACMEProvider)
+	}
+	if cfg.ACMEDirectoryURL != acme.DefaultDirectoryURL {
+		t.Errorf("acme_directory_url = %q, want the production one", cfg.ACMEDirectoryURL)
+	}
+
+	cfg, err = load(lookupFrom(env(map[string]string{
+		"TALAIA_ACME_PROVIDER":      " OVH ",
+		"TALAIA_ACME_EMAIL":         " ops@example.com ",
+		"TALAIA_ACME_DIRECTORY_URL": "https://acme-staging-v02.api.letsencrypt.org/directory",
+	})), path)
+	if err != nil {
+		t.Fatalf("with ACME: %v", err)
+	}
+	if cfg.ACMEProvider != "ovh" || cfg.ACMEEmail != "ops@example.com" {
+		t.Errorf("provider and email = %q, %q", cfg.ACMEProvider, cfg.ACMEEmail)
+	}
+	if cfg.ACMEDirectoryURL != "https://acme-staging-v02.api.letsencrypt.org/directory" {
+		t.Errorf("acme_directory_url = %q, want the staging one", cfg.ACMEDirectoryURL)
+	}
+	if got := cfg.ACMEDomains(); !slices.Equal(got, []string{"panel.example.com"}) {
+		t.Errorf("ACMEDomains() = %v, want only the DNS name", got)
+	}
+
+	errors := []struct {
+		name    string
+		extra   map[string]string
+		wantErr string
+	}{
+		{
+			name:    "unsupported provider",
+			extra:   map[string]string{"TALAIA_ACME_PROVIDER": "cloudflare", "TALAIA_ACME_EMAIL": "ops@example.com"},
+			wantErr: "invalid acme_provider",
+		},
+		{
+			name: "only IP addresses",
+			extra: map[string]string{
+				"TALAIA_ACME_PROVIDER":    "ovh",
+				"TALAIA_ACME_EMAIL":       "ops@example.com",
+				"TALAIA_PUBLIC_HOSTNAMES": "192.0.2.10, 192.0.2.11",
+			},
+			wantErr: "at least one DNS name",
+		},
+		{
+			name: "insecure development",
+			extra: map[string]string{
+				"TALAIA_ACME_PROVIDER": "ovh",
+				"TALAIA_ACME_EMAIL":    "ops@example.com",
+				"TALAIA_INSECURE_DEV":  "1",
+				"TALAIA_PANEL_LISTEN":  "127.0.0.1:8080",
+			},
+			wantErr: "insecure_dev",
+		},
+	}
+	for _, tt := range errors {
+		t.Run(tt.name, func(t *testing.T) {
+			if _, err := load(lookupFrom(env(tt.extra)), path); err == nil || !strings.Contains(err.Error(), tt.wantErr) {
+				t.Fatalf("error = %v, want it to contain %q", err, tt.wantErr)
+			}
+		})
+	}
+
+	file := `
+database_url = "postgres://file@example.com/talaia"
+public_hostnames = ["panel.example.com"]
+acme_provider = "ovh"
+acme_email = "file@example.com"
+acme_directory_url = "https://acme.example/directory"
+`
+	if err := os.WriteFile(path, []byte(file), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	cfg, err = load(lookupFrom(map[string]string{"TALAIA_CONFIG": path}), path)
+	if err != nil {
+		t.Fatalf("from the file: %v", err)
+	}
+	if cfg.ACMEProvider != "ovh" || cfg.ACMEEmail != "file@example.com" || cfg.ACMEDirectoryURL != "https://acme.example/directory" {
+		t.Fatalf("ACME values from the file = %+v", cfg)
 	}
 }

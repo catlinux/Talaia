@@ -20,6 +20,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/catlinux/Talaia/core/internal/acme"
 	"github.com/catlinux/Talaia/core/internal/api"
 	"github.com/catlinux/Talaia/core/internal/auth"
 	"github.com/catlinux/Talaia/core/internal/ca"
@@ -305,11 +306,30 @@ func serve() error {
 		go terminal.PurgeLoop(purgeCtx, st, cfg.TerminalRecordingDays, 24*time.Hour)
 		srv.Handler = newPanelRouter(st, agentHub, panel)
 		srv.Protocols = newTLSProtocols()
-		// Browsers are never asked for a client certificate.
+		// Browsers are never asked for a client certificate. Until ACME has a
+		// certificate ready, GetCertificate returns the one of the own CA.
+		panelCertificate := func(*tls.ClientHelloInfo) (*tls.Certificate, error) {
+			return &certificate, nil
+		}
+		if cfg.ACMEProvider != "" {
+			manager, err := acme.New(acme.Options{
+				Provider:     cfg.ACMEProvider,
+				Email:        cfg.ACMEEmail,
+				DirectoryURL: cfg.ACMEDirectoryURL,
+				Domains:      cfg.ACMEDomains(),
+				DataDir:      cfg.DataDir,
+				Logger:       logger,
+			}, certificate)
+			if err != nil {
+				return fmt.Errorf("configure ACME: %w", err)
+			}
+			manager.Start(ctx)
+			panelCertificate = manager.GetCertificate
+		}
 		srv.TLSConfig = &tls.Config{
-			MinVersion:   tls.VersionTLS13,
-			Certificates: []tls.Certificate{certificate},
-			NextProtos:   []string{"h2", "http/1.1"},
+			MinVersion:     tls.VersionTLS13,
+			GetCertificate: panelCertificate,
+			NextProtos:     []string{"h2", "http/1.1"},
 		}
 
 		// Agents always get the certificate of the own CA, so a certificate the

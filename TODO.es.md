@@ -90,7 +90,7 @@ tareas concretas de la fase actual y de la siguiente.
 
 - [x] Dos puertos propios, elegidos libres por el instalador (8443 y 8444 por defecto, nunca 80/443 salvo que estén libres y se pida): uno para el panel y otro para los agentes
 - [x] Instalador que comprueba los puertos, pregunta el nombre público y escribe `.env`
-- [ ] Certificado de confianza para el panel por ACME DNS-01 dentro del core (lego; primero OVH), en cualquier puerto; los agentes siguen fijando la CA propia de Talaia
+- [x] Certificado de confianza para el panel por ACME DNS-01 dentro del core (lego; primero OVH), en cualquier puerto; los agentes siguen fijando la CA propia de Talaia
 - [ ] Detección de actualizaciones (último commit de `main` con el CI en verde) y API
 - [ ] Ayudante del host `talaia-hostd` (systemd) que trae los cambios, reconstruye, comprueba `/healthz` y vuelve atrás con una copia de la base de datos; el core nunca recibe el socket de Docker
 - [ ] Pantalla de Ajustes con la versión y el botón de actualizar; ca/es/en

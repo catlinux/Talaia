@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/catlinux/Talaia/core/internal/acme"
 	"github.com/pelletier/go-toml/v2"
 )
 
@@ -64,6 +65,14 @@ type Config struct {
 	TerminalRecordingDays int
 	// InsecureDev disables TLS. It must never be used in production.
 	InsecureDev bool
+	// ACMEProvider is the DNS provider that obtains the panel certificate over
+	// ACME DNS-01. Empty keeps the certificate of Talaia's own CA.
+	ACMEProvider string
+	// ACMEEmail is the contact address of the ACME account.
+	ACMEEmail string
+	// ACMEDirectoryURL is the ACME directory, to use the staging endpoint or a
+	// test server. It defaults to Let's Encrypt production.
+	ACMEDirectoryURL string
 }
 
 // fileConfig mirrors the TOML document. Pointer fields tell an absent key
@@ -82,6 +91,9 @@ type fileConfig struct {
 	AllowedOrigins        *[]string `toml:"allowed_origins"`
 	InsecureDev           *bool     `toml:"insecure_dev"`
 	TerminalRecordingDays *int      `toml:"terminal_recording_days"`
+	ACMEProvider          *string   `toml:"acme_provider"`
+	ACMEEmail             *string   `toml:"acme_email"`
+	ACMEDirectoryURL      *string   `toml:"acme_directory_url"`
 }
 
 var logLevels = map[string]slog.Level{
@@ -113,6 +125,7 @@ func load(lookup func(string) (string, bool), defaultPath string) (Config, error
 		DataDir:               DefaultDataDir,
 		WebDir:                DefaultWebDir,
 		TerminalRecordingDays: DefaultTerminalRecordingDays,
+		ACMEDirectoryURL:      acme.DefaultDirectoryURL,
 	}
 
 	path := defaultPath
@@ -172,6 +185,15 @@ func load(lookup func(string) (string, bool), defaultPath string) (Config, error
 			return Config{}, err
 		}
 		cfg.InsecureDev = insecure
+	}
+	if value, ok := lookup("TALAIA_ACME_PROVIDER"); ok {
+		cfg.ACMEProvider = strings.TrimSpace(value)
+	}
+	if value, ok := lookup("TALAIA_ACME_EMAIL"); ok {
+		cfg.ACMEEmail = strings.TrimSpace(value)
+	}
+	if value, ok := lookup("TALAIA_ACME_DIRECTORY_URL"); ok {
+		cfg.ACMEDirectoryURL = strings.TrimSpace(value)
 	}
 
 	if err := cfg.validate(); err != nil {
@@ -248,6 +270,15 @@ func applyFile(cfg *Config, path string, explicit bool) error {
 	}
 	if file.TerminalRecordingDays != nil {
 		cfg.TerminalRecordingDays = *file.TerminalRecordingDays
+	}
+	if file.ACMEProvider != nil {
+		cfg.ACMEProvider = strings.TrimSpace(*file.ACMEProvider)
+	}
+	if file.ACMEEmail != nil {
+		cfg.ACMEEmail = strings.TrimSpace(*file.ACMEEmail)
+	}
+	if file.ACMEDirectoryURL != nil {
+		cfg.ACMEDirectoryURL = strings.TrimSpace(*file.ACMEDirectoryURL)
 	}
 	return nil
 }
@@ -347,6 +378,23 @@ func (c *Config) validate() error {
 		return fmt.Errorf("invalid log_level %q (expected debug, info, warn or error)", c.LogLevel)
 	}
 	c.LogLevel = level
+
+	provider := strings.ToLower(strings.TrimSpace(c.ACMEProvider))
+	c.ACMEProvider = provider
+	if provider != "" {
+		if !acme.SupportedProvider(provider) {
+			return fmt.Errorf("invalid acme_provider %q (expected %s)", c.ACMEProvider, strings.Join(acme.Providers(), ", "))
+		}
+		if c.InsecureDev {
+			return errors.New("acme_provider cannot be used with insecure_dev, which disables TLS")
+		}
+		if len(c.ACMEDomains()) == 0 {
+			return errors.New("acme_provider requires at least one DNS name in public_hostnames: IP addresses cannot get an ACME certificate")
+		}
+	}
+	if strings.TrimSpace(c.ACMEDirectoryURL) == "" {
+		c.ACMEDirectoryURL = acme.DefaultDirectoryURL
+	}
 	return nil
 }
 
@@ -397,6 +445,13 @@ func (c Config) agentPort() string {
 		return c.AgentPort
 	}
 	return listenPort(c.AgentListen)
+}
+
+// ACMEDomains returns the public hostnames an ACME certificate can cover. IP
+// addresses are left out: certificate authorities do not issue certificates for
+// them.
+func (c Config) ACMEDomains() []string {
+	return acme.DNSNames(c.PublicHostnames)
 }
 
 // AgentURL returns the https address agents reach the core at, built from the

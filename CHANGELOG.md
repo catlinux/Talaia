@@ -20,6 +20,7 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ### Added
 
+- The panel can serve a certificate that browsers already trust: when `acme_provider` / `TALAIA_ACME_PROVIDER` is set (currently `ovh`), the core obtains it over ACME DNS-01 with lego, without a reverse proxy and without using ports 80/443, stores the account and the certificate in `<data_dir>/acme/`, renews it 30 days before it expires with backoff on failures and swaps it without a restart, and keeps serving the certificate of Talaia's own CA until the public one is ready; `acme_email` and `acme_directory_url` (for staging or a test server) are the other settings.
 - Contract for terminals in containers (`TerminalOpen`, `TerminalInput`, `TerminalResize`, `TerminalClose` from the core; `TerminalOpened`, `TerminalOutput`, `TerminalClosed` from the agent). Not used yet: it only defines the messages.
 - Monorepo skeleton: Go workspace, empty `core`, `agent` and `cli` modules, `Makefile` and `scripts/bump-version.sh`.
 - Agent contract `proto/agent.proto` v0 (`Heartbeat`, `Inventory`, `Metrics`) with `buf` configuration.
