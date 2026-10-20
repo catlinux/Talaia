@@ -22,7 +22,8 @@
     "stop": "Atura",
     "restart": "Reinicia",
     "remove": "Elimina",
-    "logs": "Registres"
+    "logs": "Registres",
+    "terminal": "Terminal"
   },
   "confirm": {
     "removeTitle": "Eliminar {{name}}?",
@@ -132,5 +133,37 @@
   },
   "use": {
     "title": "Ús del contenidor"
+  },
+  "terminal": {
+    "title": "Terminal de {{name}}",
+    "close": "Tanca",
+    "confirmTitle": "Obrir un terminal a {{name}}?",
+    "confirmBody": "Obtens una shell dins del contenidor, amb els permisos del seu usuari. La sessió s'enregistra: es conserva tot el que el contenidor mostra, també el que escrius quan la pantalla ho mostra.",
+    "shell": "Shell",
+    "shellSh": "sh (sempre hi és)",
+    "shellBash": "bash (si el contenidor la té)",
+    "start": "Obre el terminal",
+    "cancel": "Cancel·la",
+    "opening": "Obrint el terminal…",
+    "recording": "Enregistrant",
+    "recordingHint": "Aquesta sessió s'enregistra. No escriguis contrasenyes que la pantalla mostri.",
+    "privileged": "Aquest contenidor té accés total al servidor (privilegiat, processos de l'amfitrió o sòcol de Docker). El terminal equival a root del servidor.",
+    "again": "Obre un terminal nou",
+    "connectionLost": "S’ha perdut la connexió amb el terminal.",
+    "ended": {
+      "exited": "La shell ha acabat (codi de sortida {{code}}).",
+      "closed": "El terminal s’ha tancat.",
+      "idle": "Tancat després de 15 minuts sense activitat.",
+      "max_duration": "Tancat: una sessió no pot durar més de 4 hores.",
+      "agent_offline": "L’agent del servidor s’ha desconnectat.",
+      "agent_busy": "L’agent no ha pogut seguir el ritme de les tecles.",
+      "slow_client": "Tancat perquè el navegador no seguia el ritme de la sortida.",
+      "session_revoked": "La sessió del panell ha acabat.",
+      "ticket_expired": "El terminal no es va connectar a temps.",
+      "recording_limit": "Tancat: l’enregistrament ha arribat al límit de mida.",
+      "recording_failed": "Tancat: no s’ha pogut desar l’enregistrament.",
+      "core_shutdown": "El core s’ha apagat.",
+      "other": "El terminal ha acabat ({{reason}})."
+    }
   }
 }

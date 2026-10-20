@@ -22,7 +22,8 @@
     "stop": "Parar",
     "restart": "Reiniciar",
     "remove": "Eliminar",
-    "logs": "Registros"
+    "logs": "Registros",
+    "terminal": "Terminal"
   },
   "confirm": {
     "removeTitle": "¿Eliminar {{name}}?",
@@ -132,5 +133,37 @@
   },
   "use": {
     "title": "Uso del contenedor"
+  },
+  "terminal": {
+    "title": "Terminal de {{name}}",
+    "close": "Cerrar",
+    "confirmTitle": "¿Abrir una terminal en {{name}}?",
+    "confirmBody": "Obtienes una shell dentro del contenedor, con los permisos de su usuario. La sesión se graba: se conserva todo lo que el contenedor muestra, también lo que escribes cuando la pantalla lo muestra.",
+    "shell": "Shell",
+    "shellSh": "sh (siempre está)",
+    "shellBash": "bash (si el contenedor la tiene)",
+    "start": "Abrir la terminal",
+    "cancel": "Cancelar",
+    "opening": "Abriendo la terminal…",
+    "recording": "Grabando",
+    "recordingHint": "Esta sesión se graba. No escribas contraseñas que la pantalla muestre.",
+    "privileged": "Este contenedor tiene acceso total al servidor (privilegiado, procesos del anfitrión o socket de Docker). La terminal equivale a root del servidor.",
+    "again": "Abrir una terminal nueva",
+    "connectionLost": "Se ha perdido la conexión con la terminal.",
+    "ended": {
+      "exited": "La shell ha terminado (código de salida {{code}}).",
+      "closed": "La terminal se ha cerrado.",
+      "idle": "Cerrada tras 15 minutos sin actividad.",
+      "max_duration": "Cerrada: una sesión no puede durar más de 4 horas.",
+      "agent_offline": "El agente del servidor se ha desconectado.",
+      "agent_busy": "El agente no ha podido seguir el ritmo de las pulsaciones.",
+      "slow_client": "Cerrada porque el navegador no seguía el ritmo de la salida.",
+      "session_revoked": "La sesión del panel ha terminado.",
+      "ticket_expired": "La terminal no se conectó a tiempo.",
+      "recording_limit": "Cerrada: la grabación llegó a su límite de tamaño.",
+      "recording_failed": "Cerrada: no se pudo guardar la grabación.",
+      "core_shutdown": "El core se ha apagado.",
+      "other": "La terminal ha terminado ({{reason}})."
+    }
   }
 }

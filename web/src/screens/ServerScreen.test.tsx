@@ -113,7 +113,7 @@ describe('ServerScreen', () => {
       within(rows[0]!)
         .getAllByRole('button')
         .map((b) => b.textContent),
-    ).toEqual(['Logs', 'Restart', 'Stop', 'Remove'])
+    ).toEqual(['Logs', 'Terminal', 'Restart', 'Stop', 'Remove'])
     expect(
       within(rows[1]!)
         .getAllByRole('button')

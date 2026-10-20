@@ -125,6 +125,14 @@ export function LogsIcon({ className }: IconProps) {
   )
 }
 
+export function TerminalIcon({ className }: IconProps) {
+  return (
+    <Icon className={className}>
+      <path d="M3 5h18v14H3zM7 10l3 2-3 2M12 15h5" />
+    </Icon>
+  )
+}
+
 export function CloseIcon({ className }: IconProps) {
   return (
     <Icon className={className}>

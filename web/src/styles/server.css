@@ -741,3 +741,169 @@
 .container__use .meter {
   grid-template-columns: 34px minmax(0, 1fr) minmax(0, auto);
 }
+
+/* ---------- Terminal in a container ---------- */
+
+/* xterm gives its own element the class "terminal", so the panel cannot use it. */
+.terminal-panel {
+  grid-column: 1 / -1;
+  /* The terminal has a width of its own: it must shrink with the screen, not push it. */
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 14px;
+  border-top: 1px dashed var(--line);
+  animation: rise 320ms var(--ease) both;
+}
+
+.terminal__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+}
+
+.terminal__title {
+  margin: 0;
+  font-family: var(--f-mono);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+.terminal__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+
+/* The session is recorded: a red beacon says so for as long as it lasts. */
+.terminal__rec {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 10px;
+  border: 1px solid color-mix(in srgb, var(--crit) 40%, var(--line));
+  border-radius: 999px;
+  background: var(--crit-soft);
+  color: var(--crit);
+  font-family: var(--f-mono);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: help;
+}
+
+.terminal__rec-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--crit);
+  animation: terminal-rec 1.8s ease-in-out infinite;
+}
+
+@keyframes terminal-rec {
+  50% {
+    opacity: 0.25;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .terminal__rec-dot {
+    animation: none;
+  }
+}
+
+.terminal__confirm {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 520px;
+  padding: 14px 16px;
+  border: 1px solid color-mix(in srgb, var(--warn) 45%, var(--line));
+  border-radius: var(--radius-sm);
+  background: var(--warn-soft);
+}
+
+.terminal__confirm-title {
+  margin: 0;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.terminal__confirm-body {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+.terminal__field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-width: 280px;
+  font-size: 0.8125rem;
+  color: var(--muted);
+}
+
+.terminal__field select {
+  padding: 7px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+}
+
+.terminal__warning {
+  margin: 0;
+  padding: 10px 14px;
+  border: 1px solid color-mix(in srgb, var(--crit) 55%, var(--line));
+  border-radius: var(--radius-sm);
+  background: var(--crit-soft);
+  color: var(--crit);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.terminal__message {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+.terminal__message--error {
+  color: var(--crit);
+}
+
+.terminal__ended {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+}
+
+/* xterm paints inside this box; the colours come from the code tokens. */
+.terminal__screen {
+  min-width: 0;
+  min-height: 340px;
+  padding: 10px 12px;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--code-key) 18%, transparent);
+  border-radius: 10px;
+  background: var(--code-bg);
+  transition: opacity 200ms var(--ease);
+}
+
+.terminal__screen--idle {
+  opacity: 0.6;
+}
+
+.terminal__screen[hidden] {
+  display: none;
+}

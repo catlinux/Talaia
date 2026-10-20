@@ -12,5 +12,8 @@
   "confirmationRequired": "This action needs to be confirmed.",
   "agentOffline": "The agent of this server is not connected.",
   "agentBusy": "The agent has too many pending commands. Wait a moment.",
-  "notFound": "What you asked for was not found."
+  "notFound": "What you asked for was not found.",
+  "tooManyTerminals": "This server already has the most terminals it allows.",
+  "terminalExists": "You already have a terminal open in this container.",
+  "terminalOpenFailed": "The terminal could not be started in the container."
 }

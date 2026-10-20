@@ -12,5 +12,8 @@
   "confirmationRequired": "Hace falta confirmar esta acción.",
   "agentOffline": "El agente de este servidor no está conectado.",
   "agentBusy": "El agente tiene demasiados comandos pendientes. Espera un momento.",
-  "notFound": "No se ha encontrado lo que buscas."
+  "notFound": "No se ha encontrado lo que buscas.",
+  "tooManyTerminals": "Este servidor ya tiene el máximo de terminales que permite.",
+  "terminalExists": "Ya tienes un terminal abierto en este contenedor.",
+  "terminalOpenFailed": "No se ha podido iniciar el terminal en el contenedor."
 }

@@ -12,5 +12,8 @@
   "confirmationRequired": "Cal confirmar aquesta acció.",
   "agentOffline": "L'agent d'aquest servidor no està connectat.",
   "agentBusy": "L'agent té massa ordres pendents. Espera un moment.",
-  "notFound": "No s'ha trobat el que busques."
+  "notFound": "No s'ha trobat el que busques.",
+  "tooManyTerminals": "Aquest servidor ja té el màxim de terminals que permet.",
+  "terminalExists": "Ja tens un terminal obert en aquest contenidor.",
+  "terminalOpenFailed": "No s'ha pogut iniciar el terminal al contenidor."
 }

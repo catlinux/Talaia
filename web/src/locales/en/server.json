@@ -22,7 +22,8 @@
     "stop": "Stop",
     "restart": "Restart",
     "remove": "Remove",
-    "logs": "Logs"
+    "logs": "Logs",
+    "terminal": "Terminal"
   },
   "confirm": {
     "removeTitle": "Remove {{name}}?",
@@ -132,5 +133,37 @@
   },
   "use": {
     "title": "Container use"
+  },
+  "terminal": {
+    "title": "Terminal of {{name}}",
+    "close": "Close",
+    "confirmTitle": "Open a terminal in {{name}}?",
+    "confirmBody": "You get a shell inside the container, with the permissions of its user. The session is recorded: everything the container prints is kept, including what you type when the screen shows it.",
+    "shell": "Shell",
+    "shellSh": "sh (always there)",
+    "shellBash": "bash (if the container has it)",
+    "start": "Open the terminal",
+    "cancel": "Cancel",
+    "opening": "Opening the terminal…",
+    "recording": "Recording",
+    "recordingHint": "This session is recorded. Do not type passwords that the screen shows.",
+    "privileged": "This container has full access to the server (privileged, host processes or the Docker socket). The terminal is as good as root on the server.",
+    "again": "Open a new terminal",
+    "connectionLost": "The connection with the terminal was lost.",
+    "ended": {
+      "exited": "The shell ended (exit code {{code}}).",
+      "closed": "The terminal was closed.",
+      "idle": "Closed after 15 minutes without activity.",
+      "max_duration": "Closed: a session cannot last more than 4 hours.",
+      "agent_offline": "The agent of the server disconnected.",
+      "agent_busy": "The agent could not keep up with the keystrokes.",
+      "slow_client": "Closed because the browser did not keep up with the output.",
+      "session_revoked": "The panel session ended.",
+      "ticket_expired": "The terminal was not connected in time.",
+      "recording_limit": "Closed: the recording reached its size limit.",
+      "recording_failed": "Closed: the recording could not be stored.",
+      "core_shutdown": "The core was shut down.",
+      "other": "The terminal ended ({{reason}})."
+    }
   }
 }

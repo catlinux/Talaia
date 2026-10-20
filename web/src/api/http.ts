@@ -17,6 +17,9 @@ export type ApiErrorCode =
   | 'confirmation_required'
   | 'agent_offline'
   | 'agent_busy'
+  | 'too_many_terminals'
+  | 'terminal_exists'
+  | 'terminal_open_failed'
   | 'not_found'
   | 'internal'
   | 'network'
@@ -33,6 +36,9 @@ const knownCodes: readonly ApiErrorCode[] = [
   'confirmation_required',
   'agent_offline',
   'agent_busy',
+  'too_many_terminals',
+  'terminal_exists',
+  'terminal_open_failed',
   'not_found',
   'internal',
 ]

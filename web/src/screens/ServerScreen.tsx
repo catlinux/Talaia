@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import {
@@ -9,6 +9,7 @@ import {
   type ContainersApi,
 } from '../api/containers'
 import { isSignedOut } from '../api/http'
+import { createTerminalApi, type TerminalApi } from '../api/terminal'
 import { errorMessage } from '../auth/AuthGate'
 import {
   ArrowLeftIcon,
@@ -16,6 +17,7 @@ import {
   PlayIcon,
   RestartIcon,
   StopIcon,
+  TerminalIcon,
   TrashIcon,
 } from '../components/icons'
 import { formatBytes, formatPercent } from './fleet/format'
@@ -31,13 +33,20 @@ export const refreshEvery = 10_000
 /** pollEvery is how often a running job is asked for its progress. */
 const pollEvery = 800
 
+// xterm is a third of the panel: it is only fetched when a terminal is opened.
+const TerminalPanel = lazy(() =>
+  import('./server/TerminalPanel').then((module) => ({ default: module.TerminalPanel })),
+)
+
 const defaultApi = createContainersApi()
+const defaultTerminalApi = createTerminalApi()
 
 interface ServerScreenProps {
   server: { id: string; name: string }
   onBack: () => void
   /** Tests inject their own API; the panel uses the real one. */
   api?: ContainersApi
+  terminalApi?: TerminalApi
   /** pollMs overrides the job polling interval, for the tests. */
   pollMs?: number
 }
@@ -84,6 +93,7 @@ export function ServerScreen({
   server,
   onBack,
   api = defaultApi,
+  terminalApi = defaultTerminalApi,
   pollMs = pollEvery,
 }: ServerScreenProps) {
   const { t } = useTranslation(['server', 'errors'])
@@ -93,6 +103,8 @@ export function ServerScreen({
   const [confirming, setConfirming] = useState<string | null>(null)
   // The container whose logs are open, if any.
   const [logsFor, setLogsFor] = useState<string | null>(null)
+  // The container whose terminal is open, if any.
+  const [terminalFor, setTerminalFor] = useState<string | null>(null)
   const mounted = useRef(true)
 
   const load = useCallback(async () => {
@@ -233,6 +245,27 @@ export function ServerScreen({
               onToggleLogs={() =>
                 setLogsFor((current) => (current === container.id ? null : container.id))
               }
+              onToggleTerminal={() =>
+                setTerminalFor((current) => (current === container.id ? null : container.id))
+              }
+              terminal={
+                terminalFor === container.id ? (
+                  <Suspense
+                    fallback={
+                      <p className="terminal__message" role="status">
+                        {t('server:terminal.opening')}
+                      </p>
+                    }
+                  >
+                    <TerminalPanel
+                      api={terminalApi}
+                      serverId={server.id}
+                      container={container.name}
+                      onClose={() => setTerminalFor(null)}
+                    />
+                  </Suspense>
+                ) : null
+              }
               logs={
                 logsFor === container.id ? (
                   <LogsPanel
@@ -264,8 +297,11 @@ interface ContainerRowProps {
   onConfirm: () => void
   onCancel: () => void
   onToggleLogs: () => void
+  onToggleTerminal: () => void
   /** logs is the open log viewer of this container, if any. */
   logs: ReactNode
+  /** terminal is the open terminal of this container, if any. */
+  terminal: ReactNode
 }
 
 function ContainerRow({
@@ -276,7 +312,9 @@ function ContainerRow({
   onConfirm,
   onCancel,
   onToggleLogs,
+  onToggleTerminal,
   logs,
+  terminal,
 }: ContainerRowProps) {
   const { t } = useTranslation('server')
   const busy = outcome?.kind === 'working'
@@ -348,6 +386,17 @@ function ContainerRow({
             <LogsIcon />
             {t('action.logs')}
           </button>
+          {isRunning ? (
+            <button
+              type="button"
+              className="cbtn"
+              aria-expanded={terminal !== null}
+              onClick={onToggleTerminal}
+            >
+              <TerminalIcon />
+              {t('action.terminal')}
+            </button>
+          ) : null}
           {actions.map((action) => {
             const ActionIcon = actionIcons[action]
             return (
@@ -366,6 +415,7 @@ function ContainerRow({
         </div>
       )}
       {logs}
+      {terminal}
     </li>
   )
 }
