@@ -81,6 +81,69 @@ func (ContainerActionType) EnumDescriptor() ([]byte, []int) {
 	return file_agent_proto_rawDescGZIP(), []int{0}
 }
 
+type StackActionType int32
+
+const (
+	StackActionType_STACK_ACTION_TYPE_UNSPECIFIED StackActionType = 0
+	// docker compose up -d --remove-orphans
+	StackActionType_STACK_ACTION_TYPE_UP StackActionType = 1
+	// docker compose down; volumes are kept.
+	StackActionType_STACK_ACTION_TYPE_DOWN StackActionType = 2
+	// docker compose pull
+	StackActionType_STACK_ACTION_TYPE_PULL StackActionType = 3
+	// docker compose restart
+	StackActionType_STACK_ACTION_TYPE_RESTART StackActionType = 4
+	// docker compose down and deletion of the stack files; volumes are kept.
+	StackActionType_STACK_ACTION_TYPE_REMOVE StackActionType = 5
+)
+
+// Enum value maps for StackActionType.
+var (
+	StackActionType_name = map[int32]string{
+		0: "STACK_ACTION_TYPE_UNSPECIFIED",
+		1: "STACK_ACTION_TYPE_UP",
+		2: "STACK_ACTION_TYPE_DOWN",
+		3: "STACK_ACTION_TYPE_PULL",
+		4: "STACK_ACTION_TYPE_RESTART",
+		5: "STACK_ACTION_TYPE_REMOVE",
+	}
+	StackActionType_value = map[string]int32{
+		"STACK_ACTION_TYPE_UNSPECIFIED": 0,
+		"STACK_ACTION_TYPE_UP":          1,
+		"STACK_ACTION_TYPE_DOWN":        2,
+		"STACK_ACTION_TYPE_PULL":        3,
+		"STACK_ACTION_TYPE_RESTART":     4,
+		"STACK_ACTION_TYPE_REMOVE":      5,
+	}
+)
+
+func (x StackActionType) Enum() *StackActionType {
+	p := new(StackActionType)
+	*p = x
+	return p
+}
+
+func (x StackActionType) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (StackActionType) Descriptor() protoreflect.EnumDescriptor {
+	return file_agent_proto_enumTypes[1].Descriptor()
+}
+
+func (StackActionType) Type() protoreflect.EnumType {
+	return &file_agent_proto_enumTypes[1]
+}
+
+func (x StackActionType) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use StackActionType.Descriptor instead.
+func (StackActionType) EnumDescriptor() ([]byte, []int) {
+	return file_agent_proto_rawDescGZIP(), []int{1}
+}
+
 type JobState int32
 
 const (
@@ -117,11 +180,11 @@ func (x JobState) String() string {
 }
 
 func (JobState) Descriptor() protoreflect.EnumDescriptor {
-	return file_agent_proto_enumTypes[1].Descriptor()
+	return file_agent_proto_enumTypes[2].Descriptor()
 }
 
 func (JobState) Type() protoreflect.EnumType {
-	return &file_agent_proto_enumTypes[1]
+	return &file_agent_proto_enumTypes[2]
 }
 
 func (x JobState) Number() protoreflect.EnumNumber {
@@ -130,7 +193,7 @@ func (x JobState) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use JobState.Descriptor instead.
 func (JobState) EnumDescriptor() ([]byte, []int) {
-	return file_agent_proto_rawDescGZIP(), []int{1}
+	return file_agent_proto_rawDescGZIP(), []int{2}
 }
 
 // core -> agent
@@ -143,6 +206,9 @@ type CoreMsg struct {
 	//	*CoreMsg_HeartbeatAck
 	//	*CoreMsg_ContainerAction
 	//	*CoreMsg_ReadLogs
+	//	*CoreMsg_StackWrite
+	//	*CoreMsg_StackAction
+	//	*CoreMsg_StackRead
 	Cmd           isCoreMsg_Cmd `protobuf_oneof:"cmd"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -219,6 +285,33 @@ func (x *CoreMsg) GetReadLogs() *ReadLogs {
 	return nil
 }
 
+func (x *CoreMsg) GetStackWrite() *StackWrite {
+	if x != nil {
+		if x, ok := x.Cmd.(*CoreMsg_StackWrite); ok {
+			return x.StackWrite
+		}
+	}
+	return nil
+}
+
+func (x *CoreMsg) GetStackAction() *StackAction {
+	if x != nil {
+		if x, ok := x.Cmd.(*CoreMsg_StackAction); ok {
+			return x.StackAction
+		}
+	}
+	return nil
+}
+
+func (x *CoreMsg) GetStackRead() *StackRead {
+	if x != nil {
+		if x, ok := x.Cmd.(*CoreMsg_StackRead); ok {
+			return x.StackRead
+		}
+	}
+	return nil
+}
+
 type isCoreMsg_Cmd interface {
 	isCoreMsg_Cmd()
 }
@@ -237,11 +330,29 @@ type CoreMsg_ReadLogs struct {
 	ReadLogs *ReadLogs `protobuf:"bytes,11,opt,name=read_logs,json=readLogs,proto3,oneof"`
 }
 
+type CoreMsg_StackWrite struct {
+	StackWrite *StackWrite `protobuf:"bytes,12,opt,name=stack_write,json=stackWrite,proto3,oneof"`
+}
+
+type CoreMsg_StackAction struct {
+	StackAction *StackAction `protobuf:"bytes,13,opt,name=stack_action,json=stackAction,proto3,oneof"`
+}
+
+type CoreMsg_StackRead struct {
+	StackRead *StackRead `protobuf:"bytes,14,opt,name=stack_read,json=stackRead,proto3,oneof"`
+}
+
 func (*CoreMsg_HeartbeatAck) isCoreMsg_Cmd() {}
 
 func (*CoreMsg_ContainerAction) isCoreMsg_Cmd() {}
 
 func (*CoreMsg_ReadLogs) isCoreMsg_Cmd() {}
+
+func (*CoreMsg_StackWrite) isCoreMsg_Cmd() {}
+
+func (*CoreMsg_StackAction) isCoreMsg_Cmd() {}
+
+func (*CoreMsg_StackRead) isCoreMsg_Cmd() {}
 
 // agent -> core
 type AgentMsg struct {
@@ -468,6 +579,170 @@ func (x *ReadLogs) GetTail() uint32 {
 	return 0
 }
 
+// StackWrite validates a Compose project and stores it as the managed stack
+// <name>. It does not start anything: StackAction does.
+type StackWrite struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Stack name: lower case letters, digits, dash and underscore, 1 to 63 characters.
+	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	// Contents of compose.yaml.
+	ComposeYaml string `protobuf:"bytes,2,opt,name=compose_yaml,json=composeYaml,proto3" json:"compose_yaml,omitempty"`
+	// Contents of the .env file next to it; may be empty.
+	Env           string `protobuf:"bytes,3,opt,name=env,proto3" json:"env,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *StackWrite) Reset() {
+	*x = StackWrite{}
+	mi := &file_agent_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *StackWrite) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*StackWrite) ProtoMessage() {}
+
+func (x *StackWrite) ProtoReflect() protoreflect.Message {
+	mi := &file_agent_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use StackWrite.ProtoReflect.Descriptor instead.
+func (*StackWrite) Descriptor() ([]byte, []int) {
+	return file_agent_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *StackWrite) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *StackWrite) GetComposeYaml() string {
+	if x != nil {
+		return x.ComposeYaml
+	}
+	return ""
+}
+
+func (x *StackWrite) GetEnv() string {
+	if x != nil {
+		return x.Env
+	}
+	return ""
+}
+
+// StackAction runs a docker compose operation on a managed stack.
+type StackAction struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Action        StackActionType        `protobuf:"varint,2,opt,name=action,proto3,enum=talaia.agent.v1.StackActionType" json:"action,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *StackAction) Reset() {
+	*x = StackAction{}
+	mi := &file_agent_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *StackAction) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*StackAction) ProtoMessage() {}
+
+func (x *StackAction) ProtoReflect() protoreflect.Message {
+	mi := &file_agent_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use StackAction.ProtoReflect.Descriptor instead.
+func (*StackAction) Descriptor() ([]byte, []int) {
+	return file_agent_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *StackAction) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *StackAction) GetAction() StackActionType {
+	if x != nil {
+		return x.Action
+	}
+	return StackActionType_STACK_ACTION_TYPE_UNSPECIFIED
+}
+
+// StackRead returns the files of a managed stack as the JSON output of the job
+// ({"compose": "...", "env": "..."}).
+type StackRead struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *StackRead) Reset() {
+	*x = StackRead{}
+	mi := &file_agent_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *StackRead) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*StackRead) ProtoMessage() {}
+
+func (x *StackRead) ProtoReflect() protoreflect.Message {
+	mi := &file_agent_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use StackRead.ProtoReflect.Descriptor instead.
+func (*StackRead) Descriptor() ([]byte, []int) {
+	return file_agent_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *StackRead) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
 // JobEvent reports how a command (identified by CoreMsg.job_id) is going.
 type JobEvent struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -484,7 +759,7 @@ type JobEvent struct {
 
 func (x *JobEvent) Reset() {
 	*x = JobEvent{}
-	mi := &file_agent_proto_msgTypes[4]
+	mi := &file_agent_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -496,7 +771,7 @@ func (x *JobEvent) String() string {
 func (*JobEvent) ProtoMessage() {}
 
 func (x *JobEvent) ProtoReflect() protoreflect.Message {
-	mi := &file_agent_proto_msgTypes[4]
+	mi := &file_agent_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -509,7 +784,7 @@ func (x *JobEvent) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use JobEvent.ProtoReflect.Descriptor instead.
 func (*JobEvent) Descriptor() ([]byte, []int) {
-	return file_agent_proto_rawDescGZIP(), []int{4}
+	return file_agent_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *JobEvent) GetJobId() string {
@@ -558,7 +833,7 @@ type Heartbeat struct {
 
 func (x *Heartbeat) Reset() {
 	*x = Heartbeat{}
-	mi := &file_agent_proto_msgTypes[5]
+	mi := &file_agent_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -570,7 +845,7 @@ func (x *Heartbeat) String() string {
 func (*Heartbeat) ProtoMessage() {}
 
 func (x *Heartbeat) ProtoReflect() protoreflect.Message {
-	mi := &file_agent_proto_msgTypes[5]
+	mi := &file_agent_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -583,7 +858,7 @@ func (x *Heartbeat) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Heartbeat.ProtoReflect.Descriptor instead.
 func (*Heartbeat) Descriptor() ([]byte, []int) {
-	return file_agent_proto_rawDescGZIP(), []int{5}
+	return file_agent_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *Heartbeat) GetSeq() uint64 {
@@ -609,7 +884,7 @@ type HeartbeatAck struct {
 
 func (x *HeartbeatAck) Reset() {
 	*x = HeartbeatAck{}
-	mi := &file_agent_proto_msgTypes[6]
+	mi := &file_agent_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -621,7 +896,7 @@ func (x *HeartbeatAck) String() string {
 func (*HeartbeatAck) ProtoMessage() {}
 
 func (x *HeartbeatAck) ProtoReflect() protoreflect.Message {
-	mi := &file_agent_proto_msgTypes[6]
+	mi := &file_agent_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -634,7 +909,7 @@ func (x *HeartbeatAck) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use HeartbeatAck.ProtoReflect.Descriptor instead.
 func (*HeartbeatAck) Descriptor() ([]byte, []int) {
-	return file_agent_proto_rawDescGZIP(), []int{6}
+	return file_agent_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *HeartbeatAck) GetSeq() uint64 {
@@ -660,13 +935,16 @@ type Inventory struct {
 	Containers      []*Container      `protobuf:"bytes,11,rep,name=containers,proto3" json:"containers,omitempty"`
 	ComposeProjects []*ComposeProject `protobuf:"bytes,12,rep,name=compose_projects,json=composeProjects,proto3" json:"compose_projects,omitempty"`
 	Services        []*SystemdUnit    `protobuf:"bytes,13,rep,name=services,proto3" json:"services,omitempty"`
-	unknownFields   protoimpl.UnknownFields
-	sizeCache       protoimpl.SizeCache
+	// Names of the stacks Talaia manages on this server (directories of
+	// /opt/talaia/stacks that hold a compose.yaml).
+	ManagedStacks []string `protobuf:"bytes,14,rep,name=managed_stacks,json=managedStacks,proto3" json:"managed_stacks,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *Inventory) Reset() {
 	*x = Inventory{}
-	mi := &file_agent_proto_msgTypes[7]
+	mi := &file_agent_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -678,7 +956,7 @@ func (x *Inventory) String() string {
 func (*Inventory) ProtoMessage() {}
 
 func (x *Inventory) ProtoReflect() protoreflect.Message {
-	mi := &file_agent_proto_msgTypes[7]
+	mi := &file_agent_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -691,7 +969,7 @@ func (x *Inventory) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Inventory.ProtoReflect.Descriptor instead.
 func (*Inventory) Descriptor() ([]byte, []int) {
-	return file_agent_proto_rawDescGZIP(), []int{7}
+	return file_agent_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *Inventory) GetHostname() string {
@@ -785,6 +1063,13 @@ func (x *Inventory) GetServices() []*SystemdUnit {
 	return nil
 }
 
+func (x *Inventory) GetManagedStacks() []string {
+	if x != nil {
+		return x.ManagedStacks
+	}
+	return nil
+}
+
 type Container struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	Id             string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`     // short id (12 chars)
@@ -800,7 +1085,7 @@ type Container struct {
 
 func (x *Container) Reset() {
 	*x = Container{}
-	mi := &file_agent_proto_msgTypes[8]
+	mi := &file_agent_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -812,7 +1097,7 @@ func (x *Container) String() string {
 func (*Container) ProtoMessage() {}
 
 func (x *Container) ProtoReflect() protoreflect.Message {
-	mi := &file_agent_proto_msgTypes[8]
+	mi := &file_agent_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -825,7 +1110,7 @@ func (x *Container) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Container.ProtoReflect.Descriptor instead.
 func (*Container) Descriptor() ([]byte, []int) {
-	return file_agent_proto_rawDescGZIP(), []int{8}
+	return file_agent_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *Container) GetId() string {
@@ -890,7 +1175,7 @@ type ComposeProject struct {
 
 func (x *ComposeProject) Reset() {
 	*x = ComposeProject{}
-	mi := &file_agent_proto_msgTypes[9]
+	mi := &file_agent_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -902,7 +1187,7 @@ func (x *ComposeProject) String() string {
 func (*ComposeProject) ProtoMessage() {}
 
 func (x *ComposeProject) ProtoReflect() protoreflect.Message {
-	mi := &file_agent_proto_msgTypes[9]
+	mi := &file_agent_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -915,7 +1200,7 @@ func (x *ComposeProject) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ComposeProject.ProtoReflect.Descriptor instead.
 func (*ComposeProject) Descriptor() ([]byte, []int) {
-	return file_agent_proto_rawDescGZIP(), []int{9}
+	return file_agent_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *ComposeProject) GetName() string {
@@ -966,7 +1251,7 @@ type SystemdUnit struct {
 
 func (x *SystemdUnit) Reset() {
 	*x = SystemdUnit{}
-	mi := &file_agent_proto_msgTypes[10]
+	mi := &file_agent_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -978,7 +1263,7 @@ func (x *SystemdUnit) String() string {
 func (*SystemdUnit) ProtoMessage() {}
 
 func (x *SystemdUnit) ProtoReflect() protoreflect.Message {
-	mi := &file_agent_proto_msgTypes[10]
+	mi := &file_agent_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -991,7 +1276,7 @@ func (x *SystemdUnit) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SystemdUnit.ProtoReflect.Descriptor instead.
 func (*SystemdUnit) Descriptor() ([]byte, []int) {
-	return file_agent_proto_rawDescGZIP(), []int{10}
+	return file_agent_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *SystemdUnit) GetName() string {
@@ -1046,7 +1331,7 @@ type Metrics struct {
 
 func (x *Metrics) Reset() {
 	*x = Metrics{}
-	mi := &file_agent_proto_msgTypes[11]
+	mi := &file_agent_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1058,7 +1343,7 @@ func (x *Metrics) String() string {
 func (*Metrics) ProtoMessage() {}
 
 func (x *Metrics) ProtoReflect() protoreflect.Message {
-	mi := &file_agent_proto_msgTypes[11]
+	mi := &file_agent_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1071,7 +1356,7 @@ func (x *Metrics) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Metrics.ProtoReflect.Descriptor instead.
 func (*Metrics) Descriptor() ([]byte, []int) {
-	return file_agent_proto_rawDescGZIP(), []int{11}
+	return file_agent_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *Metrics) GetSampledAt() *timestamppb.Timestamp {
@@ -1134,13 +1419,18 @@ var File_agent_proto protoreflect.FileDescriptor
 
 const file_agent_proto_rawDesc = "" +
 	"\n" +
-	"\vagent.proto\x12\x0ftalaia.agent.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\xf6\x01\n" +
+	"\vagent.proto\x12\x0ftalaia.agent.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\xb6\x03\n" +
 	"\aCoreMsg\x12\x15\n" +
 	"\x06job_id\x18\x01 \x01(\tR\x05jobId\x12D\n" +
 	"\rheartbeat_ack\x18\x02 \x01(\v2\x1d.talaia.agent.v1.HeartbeatAckH\x00R\fheartbeatAck\x12M\n" +
 	"\x10container_action\x18\n" +
 	" \x01(\v2 .talaia.agent.v1.ContainerActionH\x00R\x0fcontainerAction\x128\n" +
-	"\tread_logs\x18\v \x01(\v2\x19.talaia.agent.v1.ReadLogsH\x00R\breadLogsB\x05\n" +
+	"\tread_logs\x18\v \x01(\v2\x19.talaia.agent.v1.ReadLogsH\x00R\breadLogs\x12>\n" +
+	"\vstack_write\x18\f \x01(\v2\x1b.talaia.agent.v1.StackWriteH\x00R\n" +
+	"stackWrite\x12A\n" +
+	"\fstack_action\x18\r \x01(\v2\x1c.talaia.agent.v1.StackActionH\x00R\vstackAction\x12;\n" +
+	"\n" +
+	"stack_read\x18\x0e \x01(\v2\x1a.talaia.agent.v1.StackReadH\x00R\tstackReadB\x05\n" +
 	"\x03cmd\"\xf9\x01\n" +
 	"\bAgentMsg\x12:\n" +
 	"\theartbeat\x18\x01 \x01(\v2\x1a.talaia.agent.v1.HeartbeatH\x00R\theartbeat\x124\n" +
@@ -1153,7 +1443,17 @@ const file_agent_proto_rawDesc = "" +
 	"\x06action\x18\x02 \x01(\x0e2$.talaia.agent.v1.ContainerActionTypeR\x06action\"<\n" +
 	"\bReadLogs\x12\x1c\n" +
 	"\tcontainer\x18\x01 \x01(\tR\tcontainer\x12\x12\n" +
-	"\x04tail\x18\x02 \x01(\rR\x04tail\"\xb0\x01\n" +
+	"\x04tail\x18\x02 \x01(\rR\x04tail\"U\n" +
+	"\n" +
+	"StackWrite\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12!\n" +
+	"\fcompose_yaml\x18\x02 \x01(\tR\vcomposeYaml\x12\x10\n" +
+	"\x03env\x18\x03 \x01(\tR\x03env\"[\n" +
+	"\vStackAction\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x128\n" +
+	"\x06action\x18\x02 \x01(\x0e2 .talaia.agent.v1.StackActionTypeR\x06action\"\x1f\n" +
+	"\tStackRead\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\"\xb0\x01\n" +
 	"\bJobEvent\x12\x15\n" +
 	"\x06job_id\x18\x01 \x01(\tR\x05jobId\x12/\n" +
 	"\x05state\x18\x02 \x01(\x0e2\x19.talaia.agent.v1.JobStateR\x05state\x12\x18\n" +
@@ -1164,7 +1464,7 @@ const file_agent_proto_rawDesc = "" +
 	"\x03seq\x18\x01 \x01(\x04R\x03seq\x123\n" +
 	"\asent_at\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\x06sentAt\" \n" +
 	"\fHeartbeatAck\x12\x10\n" +
-	"\x03seq\x18\x01 \x01(\x04R\x03seq\"\x89\x04\n" +
+	"\x03seq\x18\x01 \x01(\x04R\x03seq\"\xb0\x04\n" +
 	"\tInventory\x12\x1a\n" +
 	"\bhostname\x18\x01 \x01(\tR\bhostname\x12\x17\n" +
 	"\aos_name\x18\x02 \x01(\tR\x06osName\x12\x1d\n" +
@@ -1182,7 +1482,8 @@ const file_agent_proto_rawDesc = "" +
 	"containers\x18\v \x03(\v2\x1a.talaia.agent.v1.ContainerR\n" +
 	"containers\x12J\n" +
 	"\x10compose_projects\x18\f \x03(\v2\x1f.talaia.agent.v1.ComposeProjectR\x0fcomposeProjects\x128\n" +
-	"\bservices\x18\r \x03(\v2\x1c.talaia.agent.v1.SystemdUnitR\bservices\"\xc5\x01\n" +
+	"\bservices\x18\r \x03(\v2\x1c.talaia.agent.v1.SystemdUnitR\bservices\x12%\n" +
+	"\x0emanaged_stacks\x18\x0e \x03(\tR\rmanagedStacks\"\xc5\x01\n" +
 	"\tContainer\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x14\n" +
@@ -1223,7 +1524,14 @@ const file_agent_proto_rawDesc = "" +
 	"\x1bCONTAINER_ACTION_TYPE_START\x10\x01\x12\x1e\n" +
 	"\x1aCONTAINER_ACTION_TYPE_STOP\x10\x02\x12!\n" +
 	"\x1dCONTAINER_ACTION_TYPE_RESTART\x10\x03\x12 \n" +
-	"\x1cCONTAINER_ACTION_TYPE_REMOVE\x10\x04*k\n" +
+	"\x1cCONTAINER_ACTION_TYPE_REMOVE\x10\x04*\xc3\x01\n" +
+	"\x0fStackActionType\x12!\n" +
+	"\x1dSTACK_ACTION_TYPE_UNSPECIFIED\x10\x00\x12\x18\n" +
+	"\x14STACK_ACTION_TYPE_UP\x10\x01\x12\x1a\n" +
+	"\x16STACK_ACTION_TYPE_DOWN\x10\x02\x12\x1a\n" +
+	"\x16STACK_ACTION_TYPE_PULL\x10\x03\x12\x1d\n" +
+	"\x19STACK_ACTION_TYPE_RESTART\x10\x04\x12\x1c\n" +
+	"\x18STACK_ACTION_TYPE_REMOVE\x10\x05*k\n" +
 	"\bJobState\x12\x19\n" +
 	"\x15JOB_STATE_UNSPECIFIED\x10\x00\x12\x15\n" +
 	"\x11JOB_STATE_RUNNING\x10\x01\x12\x17\n" +
@@ -1246,48 +1554,56 @@ func file_agent_proto_rawDescGZIP() []byte {
 	return file_agent_proto_rawDescData
 }
 
-var file_agent_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_agent_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
+var file_agent_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
+var file_agent_proto_msgTypes = make([]protoimpl.MessageInfo, 15)
 var file_agent_proto_goTypes = []any{
 	(ContainerActionType)(0),      // 0: talaia.agent.v1.ContainerActionType
-	(JobState)(0),                 // 1: talaia.agent.v1.JobState
-	(*CoreMsg)(nil),               // 2: talaia.agent.v1.CoreMsg
-	(*AgentMsg)(nil),              // 3: talaia.agent.v1.AgentMsg
-	(*ContainerAction)(nil),       // 4: talaia.agent.v1.ContainerAction
-	(*ReadLogs)(nil),              // 5: talaia.agent.v1.ReadLogs
-	(*JobEvent)(nil),              // 6: talaia.agent.v1.JobEvent
-	(*Heartbeat)(nil),             // 7: talaia.agent.v1.Heartbeat
-	(*HeartbeatAck)(nil),          // 8: talaia.agent.v1.HeartbeatAck
-	(*Inventory)(nil),             // 9: talaia.agent.v1.Inventory
-	(*Container)(nil),             // 10: talaia.agent.v1.Container
-	(*ComposeProject)(nil),        // 11: talaia.agent.v1.ComposeProject
-	(*SystemdUnit)(nil),           // 12: talaia.agent.v1.SystemdUnit
-	(*Metrics)(nil),               // 13: talaia.agent.v1.Metrics
-	(*timestamppb.Timestamp)(nil), // 14: google.protobuf.Timestamp
+	(StackActionType)(0),          // 1: talaia.agent.v1.StackActionType
+	(JobState)(0),                 // 2: talaia.agent.v1.JobState
+	(*CoreMsg)(nil),               // 3: talaia.agent.v1.CoreMsg
+	(*AgentMsg)(nil),              // 4: talaia.agent.v1.AgentMsg
+	(*ContainerAction)(nil),       // 5: talaia.agent.v1.ContainerAction
+	(*ReadLogs)(nil),              // 6: talaia.agent.v1.ReadLogs
+	(*StackWrite)(nil),            // 7: talaia.agent.v1.StackWrite
+	(*StackAction)(nil),           // 8: talaia.agent.v1.StackAction
+	(*StackRead)(nil),             // 9: talaia.agent.v1.StackRead
+	(*JobEvent)(nil),              // 10: talaia.agent.v1.JobEvent
+	(*Heartbeat)(nil),             // 11: talaia.agent.v1.Heartbeat
+	(*HeartbeatAck)(nil),          // 12: talaia.agent.v1.HeartbeatAck
+	(*Inventory)(nil),             // 13: talaia.agent.v1.Inventory
+	(*Container)(nil),             // 14: talaia.agent.v1.Container
+	(*ComposeProject)(nil),        // 15: talaia.agent.v1.ComposeProject
+	(*SystemdUnit)(nil),           // 16: talaia.agent.v1.SystemdUnit
+	(*Metrics)(nil),               // 17: talaia.agent.v1.Metrics
+	(*timestamppb.Timestamp)(nil), // 18: google.protobuf.Timestamp
 }
 var file_agent_proto_depIdxs = []int32{
-	8,  // 0: talaia.agent.v1.CoreMsg.heartbeat_ack:type_name -> talaia.agent.v1.HeartbeatAck
-	4,  // 1: talaia.agent.v1.CoreMsg.container_action:type_name -> talaia.agent.v1.ContainerAction
-	5,  // 2: talaia.agent.v1.CoreMsg.read_logs:type_name -> talaia.agent.v1.ReadLogs
-	7,  // 3: talaia.agent.v1.AgentMsg.heartbeat:type_name -> talaia.agent.v1.Heartbeat
-	13, // 4: talaia.agent.v1.AgentMsg.metrics:type_name -> talaia.agent.v1.Metrics
-	6,  // 5: talaia.agent.v1.AgentMsg.job_event:type_name -> talaia.agent.v1.JobEvent
-	9,  // 6: talaia.agent.v1.AgentMsg.inventory:type_name -> talaia.agent.v1.Inventory
-	0,  // 7: talaia.agent.v1.ContainerAction.action:type_name -> talaia.agent.v1.ContainerActionType
-	1,  // 8: talaia.agent.v1.JobEvent.state:type_name -> talaia.agent.v1.JobState
-	14, // 9: talaia.agent.v1.JobEvent.at:type_name -> google.protobuf.Timestamp
-	14, // 10: talaia.agent.v1.Heartbeat.sent_at:type_name -> google.protobuf.Timestamp
-	10, // 11: talaia.agent.v1.Inventory.containers:type_name -> talaia.agent.v1.Container
-	11, // 12: talaia.agent.v1.Inventory.compose_projects:type_name -> talaia.agent.v1.ComposeProject
-	12, // 13: talaia.agent.v1.Inventory.services:type_name -> talaia.agent.v1.SystemdUnit
-	14, // 14: talaia.agent.v1.Metrics.sampled_at:type_name -> google.protobuf.Timestamp
-	3,  // 15: talaia.agent.v1.AgentHub.Connect:input_type -> talaia.agent.v1.AgentMsg
-	2,  // 16: talaia.agent.v1.AgentHub.Connect:output_type -> talaia.agent.v1.CoreMsg
-	16, // [16:17] is the sub-list for method output_type
-	15, // [15:16] is the sub-list for method input_type
-	15, // [15:15] is the sub-list for extension type_name
-	15, // [15:15] is the sub-list for extension extendee
-	0,  // [0:15] is the sub-list for field type_name
+	12, // 0: talaia.agent.v1.CoreMsg.heartbeat_ack:type_name -> talaia.agent.v1.HeartbeatAck
+	5,  // 1: talaia.agent.v1.CoreMsg.container_action:type_name -> talaia.agent.v1.ContainerAction
+	6,  // 2: talaia.agent.v1.CoreMsg.read_logs:type_name -> talaia.agent.v1.ReadLogs
+	7,  // 3: talaia.agent.v1.CoreMsg.stack_write:type_name -> talaia.agent.v1.StackWrite
+	8,  // 4: talaia.agent.v1.CoreMsg.stack_action:type_name -> talaia.agent.v1.StackAction
+	9,  // 5: talaia.agent.v1.CoreMsg.stack_read:type_name -> talaia.agent.v1.StackRead
+	11, // 6: talaia.agent.v1.AgentMsg.heartbeat:type_name -> talaia.agent.v1.Heartbeat
+	17, // 7: talaia.agent.v1.AgentMsg.metrics:type_name -> talaia.agent.v1.Metrics
+	10, // 8: talaia.agent.v1.AgentMsg.job_event:type_name -> talaia.agent.v1.JobEvent
+	13, // 9: talaia.agent.v1.AgentMsg.inventory:type_name -> talaia.agent.v1.Inventory
+	0,  // 10: talaia.agent.v1.ContainerAction.action:type_name -> talaia.agent.v1.ContainerActionType
+	1,  // 11: talaia.agent.v1.StackAction.action:type_name -> talaia.agent.v1.StackActionType
+	2,  // 12: talaia.agent.v1.JobEvent.state:type_name -> talaia.agent.v1.JobState
+	18, // 13: talaia.agent.v1.JobEvent.at:type_name -> google.protobuf.Timestamp
+	18, // 14: talaia.agent.v1.Heartbeat.sent_at:type_name -> google.protobuf.Timestamp
+	14, // 15: talaia.agent.v1.Inventory.containers:type_name -> talaia.agent.v1.Container
+	15, // 16: talaia.agent.v1.Inventory.compose_projects:type_name -> talaia.agent.v1.ComposeProject
+	16, // 17: talaia.agent.v1.Inventory.services:type_name -> talaia.agent.v1.SystemdUnit
+	18, // 18: talaia.agent.v1.Metrics.sampled_at:type_name -> google.protobuf.Timestamp
+	4,  // 19: talaia.agent.v1.AgentHub.Connect:input_type -> talaia.agent.v1.AgentMsg
+	3,  // 20: talaia.agent.v1.AgentHub.Connect:output_type -> talaia.agent.v1.CoreMsg
+	20, // [20:21] is the sub-list for method output_type
+	19, // [19:20] is the sub-list for method input_type
+	19, // [19:19] is the sub-list for extension type_name
+	19, // [19:19] is the sub-list for extension extendee
+	0,  // [0:19] is the sub-list for field type_name
 }
 
 func init() { file_agent_proto_init() }
@@ -1299,6 +1615,9 @@ func file_agent_proto_init() {
 		(*CoreMsg_HeartbeatAck)(nil),
 		(*CoreMsg_ContainerAction)(nil),
 		(*CoreMsg_ReadLogs)(nil),
+		(*CoreMsg_StackWrite)(nil),
+		(*CoreMsg_StackAction)(nil),
+		(*CoreMsg_StackRead)(nil),
 	}
 	file_agent_proto_msgTypes[1].OneofWrappers = []any{
 		(*AgentMsg_Heartbeat)(nil),
@@ -1311,8 +1630,8 @@ func file_agent_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_agent_proto_rawDesc), len(file_agent_proto_rawDesc)),
-			NumEnums:      2,
-			NumMessages:   12,
+			NumEnums:      3,
+			NumMessages:   15,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
