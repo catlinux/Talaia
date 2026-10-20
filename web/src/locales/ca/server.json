@@ -95,5 +95,39 @@
       "intro": "Projectes Compose que ja corren al servidor. En gestionar-los es queden on són: no es copia ni es reinicia res.",
       "button": "Gestiona amb Talaia"
     }
+  },
+  "resources": {
+    "title": "Imatges, volums i xarxes",
+    "intro": "El que Docker desa al servidor. El que cap contenidor fa servir es pot eliminar per alliberar espai.",
+    "show": "Mostra i neteja",
+    "hide": "Amaga",
+    "kinds": {
+      "image": "Imatges",
+      "volume": "Volums",
+      "network": "Xarxes"
+    },
+    "loading": "Llegint la llista…",
+    "refresh": "Actualitza",
+    "empty": "No hi ha res d’aquest tipus.",
+    "summary": "{{unused}} sense usar de {{total}}",
+    "summarySize": "{{unused}} sense usar de {{total}} · {{size}} alliberables",
+    "inUse": "En ús",
+    "free": "Sense usar",
+    "system": "Del sistema",
+    "untagged": "sense etiqueta",
+    "selectUnused": "Selecciona el que no es fa servir",
+    "clearSelection": "Treu la selecció",
+    "removeSelected": "Elimina la selecció ({{count}})",
+    "selectRow": "Selecciona {{name}}",
+    "confirmTitle_other": "Eliminar {{count}} elements?",
+    "confirmTitle_one": "Eliminar {{count}} element?",
+    "confirmBody": "No es pot desfer. Docker rebutja per si mateix el que encara està en ús.",
+    "confirmVolumes": "Entre ells hi ha volums: poden contenir dades que no es podran recuperar.",
+    "confirmYes": "Elimina",
+    "confirmNo": "Cancel·la",
+    "removing": "Eliminant…",
+    "resultOk": "Eliminat",
+    "resultFailed": "No s’ha pogut eliminar: {{message}}",
+    "summaryDone": "S’han eliminat {{ok}} de {{total}}."
   }
 }

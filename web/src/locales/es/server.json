@@ -95,5 +95,39 @@
       "intro": "Proyectos Compose que ya corren en el servidor. Al gestionarlos se quedan donde están: no se copia ni se reinicia nada.",
       "button": "Gestionar con Talaia"
     }
+  },
+  "resources": {
+    "title": "Imágenes, volúmenes y redes",
+    "intro": "Lo que Docker guarda en el servidor. Lo que ningún contenedor usa se puede eliminar para liberar espacio.",
+    "show": "Ver y limpiar",
+    "hide": "Ocultar",
+    "kinds": {
+      "image": "Imágenes",
+      "volume": "Volúmenes",
+      "network": "Redes"
+    },
+    "loading": "Leyendo la lista…",
+    "refresh": "Actualizar",
+    "empty": "No hay nada de este tipo.",
+    "summary": "{{unused}} sin usar de {{total}}",
+    "summarySize": "{{unused}} sin usar de {{total}} · {{size}} liberables",
+    "inUse": "En uso",
+    "free": "Sin usar",
+    "system": "Del sistema",
+    "untagged": "sin etiqueta",
+    "selectUnused": "Seleccionar lo que no se usa",
+    "clearSelection": "Quitar la selección",
+    "removeSelected": "Eliminar la selección ({{count}})",
+    "selectRow": "Seleccionar {{name}}",
+    "confirmTitle_other": "¿Eliminar {{count}} elementos?",
+    "confirmTitle_one": "¿Eliminar {{count}} elemento?",
+    "confirmBody": "No se puede deshacer. Docker rechaza por sí mismo lo que siga en uso.",
+    "confirmVolumes": "Entre ellos hay volúmenes: pueden contener datos que no se podrán recuperar.",
+    "confirmYes": "Eliminar",
+    "confirmNo": "Cancelar",
+    "removing": "Eliminando…",
+    "resultOk": "Eliminado",
+    "resultFailed": "No se pudo eliminar: {{message}}",
+    "summaryDone": "Se eliminaron {{ok}} de {{total}}."
   }
 }

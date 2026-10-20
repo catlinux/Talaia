@@ -42,6 +42,8 @@ function fakeApi(
       }),
     ),
     adoptStack: vi.fn(() => Promise.resolve('job')),
+    listResources: vi.fn(() => Promise.resolve('job')),
+    removeResources: vi.fn(() => Promise.resolve('job')),
     writeStack: vi.fn(() => Promise.resolve('job')),
     readStack: vi.fn(() => Promise.resolve('job')),
     runStack: vi.fn(() => Promise.resolve('job')),

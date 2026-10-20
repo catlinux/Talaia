@@ -45,6 +45,8 @@ function apiWith(
       Promise.resolve({ connected: true, stacks: [], adopted: [], adoptable: [] }),
     ),
     adoptStack: vi.fn(() => Promise.resolve('job-1')),
+    listResources: vi.fn(() => Promise.resolve('job-1')),
+    removeResources: vi.fn(() => Promise.resolve('job-1')),
     writeStack: vi.fn(() => Promise.resolve('job-1')),
     readStack: vi.fn(() => Promise.resolve('job-1')),
     runStack: vi.fn(() => Promise.resolve('job-1')),

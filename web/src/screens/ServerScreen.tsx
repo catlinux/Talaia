@@ -19,6 +19,7 @@ import {
   TrashIcon,
 } from '../components/icons'
 import { LogsPanel } from './server/LogsPanel'
+import { ResourcesSection } from './server/ResourcesSection'
 import { StacksSection } from './server/StacksSection'
 import { TimedOut, waitForJob } from './server/waitForJob'
 
@@ -244,6 +245,10 @@ export function ServerScreen({
             />
           ))}
         </ul>
+      ) : null}
+
+      {list !== null && list.connected && list.dockerAvailable ? (
+        <ResourcesSection api={api} serverId={server.id} pollMs={pollMs} />
       ) : null}
     </section>
   )

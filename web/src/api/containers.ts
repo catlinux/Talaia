@@ -23,6 +23,37 @@ export interface ContainerList {
 
 export type ContainerAction = 'start' | 'stop' | 'restart' | 'remove'
 
+/** ResourceKind is a kind of Docker resource that can be cleaned up. */
+export type ResourceKind = 'image' | 'volume' | 'network'
+
+/** ResourceItem is one image, volume or network of a server. */
+export interface ResourceItem {
+  /** id is what a removal needs: an image id, a volume name or a network id. */
+  id: string
+  name?: string
+  tags?: string[]
+  driver?: string
+  size?: number
+  created?: string
+  in_use: boolean
+  /** system marks the networks Docker needs and never removes. */
+  system?: boolean
+}
+
+/** ResourceListing is the output of a listing job. */
+export interface ResourceListing {
+  kind: ResourceKind
+  items: ResourceItem[]
+}
+
+/** RemovalResult is the outcome of removing one resource. */
+export interface RemovalResult {
+  kind: ResourceKind
+  id: string
+  ok: boolean
+  message?: string
+}
+
 /** StackAction is a docker compose operation on a managed stack. */
 export type StackAction = 'up' | 'down' | 'pull' | 'restart' | 'remove' | 'forget'
 
@@ -70,6 +101,10 @@ export interface ContainersApi {
   writeStack(serverId: string, name: string, compose: string, env: string): Promise<string>
   /** readStack asks for the files of a stack; the job output holds them as JSON. */
   readStack(serverId: string, name: string): Promise<string>
+  /** listResources asks for the resources of one kind; the job output holds them as JSON. */
+  listResources(serverId: string, kind: ResourceKind): Promise<string>
+  /** removeResources removes the given resources (never forced); it returns the id of the job. */
+  removeResources(serverId: string, items: { kind: ResourceKind; id: string }[]): Promise<string>
   /** adoptStack makes Talaia manage a running project; it returns the id of the job. */
   adoptStack(serverId: string, name: string): Promise<string>
   /** runStack sends an operation on a stack and returns the id of the job. */
@@ -158,6 +193,20 @@ export function createContainersApi(fetchImpl?: typeof fetch): ContainersApi {
       const body = await http.post<{ job_id: string }>(
         `/api/v1/servers/${encodeURIComponent(serverId)}/stacks/${encodeURIComponent(name)}/read`,
         {},
+      )
+      return body.job_id
+    },
+    listResources: async (serverId, kind) => {
+      const body = await http.post<{ job_id: string }>(
+        `/api/v1/servers/${encodeURIComponent(serverId)}/resources/list`,
+        { kind },
+      )
+      return body.job_id
+    },
+    removeResources: async (serverId, items) => {
+      const body = await http.post<{ job_id: string }>(
+        `/api/v1/servers/${encodeURIComponent(serverId)}/resources/remove`,
+        { items, confirm: true },
       )
       return body.job_id
     },

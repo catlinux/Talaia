@@ -95,5 +95,39 @@
       "intro": "Compose projects that already run on the server. When you manage them they stay where they are: nothing is copied or restarted.",
       "button": "Manage with Talaia"
     }
+  },
+  "resources": {
+    "title": "Images, volumes and networks",
+    "intro": "What Docker keeps on the server. What no container uses can be removed to free space.",
+    "show": "View and clean up",
+    "hide": "Hide",
+    "kinds": {
+      "image": "Images",
+      "volume": "Volumes",
+      "network": "Networks"
+    },
+    "loading": "Reading the list…",
+    "refresh": "Refresh",
+    "empty": "There is nothing of this kind.",
+    "summary": "{{unused}} unused of {{total}}",
+    "summarySize": "{{unused}} unused of {{total}} · {{size}} can be freed",
+    "inUse": "In use",
+    "free": "Unused",
+    "system": "System",
+    "untagged": "untagged",
+    "selectUnused": "Select what is unused",
+    "clearSelection": "Clear the selection",
+    "removeSelected": "Remove the selection ({{count}})",
+    "selectRow": "Select {{name}}",
+    "confirmTitle_other": "Remove {{count}} items?",
+    "confirmTitle_one": "Remove {{count}} item?",
+    "confirmBody": "This cannot be undone. Docker refuses by itself what is still in use.",
+    "confirmVolumes": "Volumes are among them: they may hold data that cannot be recovered.",
+    "confirmYes": "Remove",
+    "confirmNo": "Cancel",
+    "removing": "Removing…",
+    "resultOk": "Removed",
+    "resultFailed": "Could not remove: {{message}}",
+    "summaryDone": "{{ok}} of {{total}} removed."
   }
 }

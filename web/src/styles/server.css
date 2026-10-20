@@ -577,3 +577,153 @@
   margin-left: 10px;
   vertical-align: middle;
 }
+
+/* ---------- Docker resources ---------- */
+
+.resources {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding-top: 8px;
+}
+
+.resources__body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow-1);
+}
+
+.resources__tabs {
+  display: flex;
+  gap: 2px;
+  border-bottom: 1px solid var(--line);
+}
+
+.resources__tab {
+  margin-bottom: -1px;
+  padding: 8px 14px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.9375rem;
+  cursor: pointer;
+}
+
+.resources__tab:hover {
+  color: var(--ink);
+}
+
+.resources__tab--on {
+  border-bottom-color: var(--accent);
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.resources__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 14px;
+}
+
+.resources__summary {
+  margin: 0;
+  color: var(--muted);
+  font-family: var(--f-mono);
+  font-size: 0.8125rem;
+}
+
+.resources__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.resources__message {
+  margin: 0;
+  color: var(--muted);
+}
+
+.resources__message--error {
+  color: var(--crit);
+}
+
+.resourcelist {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  max-height: 420px;
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  list-style: none;
+}
+
+.resource {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+.resource:last-child {
+  border-bottom: 0;
+}
+
+.resource--used {
+  background: color-mix(in srgb, var(--surface-2) 55%, transparent);
+}
+
+.resource__check {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent);
+}
+
+.resource__main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.resource__name {
+  font-family: var(--f-mono);
+  font-size: 0.875rem;
+  overflow-wrap: anywhere;
+}
+
+.resource__meta {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.resources__footer {
+  display: flex;
+}
+
+.resources__confirm {
+  max-width: 460px;
+}
+
+.resources__report {
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+}
+
+.resources__results {
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+}
