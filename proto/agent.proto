@@ -25,6 +25,8 @@ message CoreMsg {
     StackAction stack_action = 13;
     StackRead stack_read = 14;
     StackAdopt stack_adopt = 15;
+    ListResources list_resources = 16;
+    RemoveResources remove_resources = 17;
   }
 }
 
@@ -108,6 +110,33 @@ message StackAdopt {
 // ({"compose": "...", "env": "..."}).
 message StackRead {
   string name = 1;
+}
+
+// ResourceKind is a kind of Docker resource the panel can list and clean up.
+enum ResourceKind {
+  RESOURCE_KIND_UNSPECIFIED = 0;
+  RESOURCE_KIND_IMAGE = 1;
+  RESOURCE_KIND_VOLUME = 2;
+  RESOURCE_KIND_NETWORK = 3;
+}
+
+// ListResources lists the resources of one kind with whether a container uses
+// each. The list comes back as the JSON output of the job.
+message ListResources {
+  ResourceKind kind = 1;
+}
+
+// ResourceRef points at one resource: an image id, a volume name or a network id.
+message ResourceRef {
+  ResourceKind kind = 1;
+  string id = 2;
+}
+
+// RemoveResources removes the given resources one by one, without force: Docker
+// refuses the ones that are in use. The per-resource results come back as the
+// JSON output of the job.
+message RemoveResources {
+  repeated ResourceRef items = 1;
 }
 
 // JobEvent reports how a command (identified by CoreMsg.job_id) is going.
