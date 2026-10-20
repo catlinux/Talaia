@@ -93,7 +93,7 @@ of the current phase and the next one.
 - [x] Trusted certificate for the panel by ACME DNS-01 inside the core (lego; OVH first), on any port; the agents keep pinning Talaia's own CA
 - [x] Update detection (latest commit of `main` with green CI) and API
 - [ ] Host helper `talaia-hostd` (systemd) that pulls, rebuilds, checks `/healthz` and rolls back with a database copy; the core never gets the Docker socket
-- [ ] Settings screen with the version and the update button; ca/es/en
+- [x] Settings screen with the version and the update button; ca/es/en
 - [ ] Documentation EN/ES (VPS with other services, OVH credential with minimal rights, updates)
 - [ ] Security review (Opus)
 - [ ] Real install at `talaia.invierteconcriterio.es` with the maintainer (fresh install; the Debian at home becomes one more server)

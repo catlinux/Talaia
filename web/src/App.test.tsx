@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import { App } from './App'
@@ -6,12 +6,15 @@ import { AuthGate } from './auth/AuthGate'
 import type { AuthApi } from './api/auth'
 import { createMockFleetClient } from './api/client'
 import type { ContainersApi } from './api/containers'
+import type { SystemApi } from './api/system'
 import i18n from './i18n'
 import { ATTRIBUTION } from './screens/About'
 
 const fleetTitles = { ca: 'Flota', es: 'Flota', en: 'Fleet' } as const
+const settingsTitles = { ca: 'Configuració', es: 'Ajustes', en: 'Settings' } as const
 const aboutTitles = { ca: 'Sobre Talaia', es: 'Acerca de Talaia', en: 'About Talaia' } as const
 const navFleet = { ca: 'Flota', es: 'Flota', en: 'Fleet' } as const
+const navSettings = { ca: 'Configuració', es: 'Ajustes', en: 'Settings' } as const
 const navAbout = { ca: 'Sobre', es: 'Acerca de', en: 'About' } as const
 
 /** signedInApi is the authentication API of an already verified session. */
@@ -25,10 +28,10 @@ const signedInApi: AuthApi = {
 }
 
 /** renderApp mounts the panel behind an authenticated gate. */
-function renderApp() {
+function renderApp(systemApi?: SystemApi) {
   render(
     <AuthGate api={signedInApi}>
-      <App client={createMockFleetClient()} />
+      <App client={createMockFleetClient()} systemApi={systemApi} />
     </AuthGate>,
   )
 }
@@ -69,6 +72,48 @@ describe('App', () => {
 
     fireEvent.click(screen.getByRole('button', { name: navFleet.en }))
     expect(currentTitle()).toBe(fleetTitles.en)
+  })
+
+  it('shows Settings between Fleet and About and renders the version', async () => {
+    const systemApi: SystemApi = {
+      version: () =>
+        Promise.resolve({
+          version: '1.2.3',
+          commit: 'a'.repeat(40),
+          update: {
+            current: 'a'.repeat(40),
+            latest: 'a'.repeat(40),
+            pending: [],
+            ci: 'green',
+            checkedAt: '2026-10-21T08:00:00Z',
+            error: '',
+            updateAvailable: false,
+          },
+          status: {
+            state: 'idle',
+            from: '',
+            to: '',
+            startedAt: '',
+            finishedAt: '',
+            log: [],
+          },
+        }),
+      update: () => Promise.reject(new Error('unexpected update')),
+    }
+    renderApp(systemApi)
+    await screen.findByText('vps-web-01')
+
+    const nav = screen.getByRole('navigation', { name: 'Main navigation' })
+    expect(
+      within(nav)
+        .getAllByRole('button')
+        .map((button) => button.textContent),
+    ).toEqual([navFleet.en, navSettings.en, navAbout.en])
+
+    fireEvent.click(screen.getByRole('button', { name: navSettings.en }))
+
+    expect(currentTitle()).toBe(settingsTitles.en)
+    expect(await screen.findByText('1.2.3')).toBeTruthy()
   })
 
   it('keeps the attribution text in every language', async () => {

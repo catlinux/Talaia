@@ -1,0 +1,60 @@
+{
+  "title": "Settings",
+  "subtitle": "Version and updates",
+  "version": {
+    "title": "Version",
+    "current": "Running version",
+    "commit": "Commit",
+    "unknown": "unknown version",
+    "latest": "Latest green commit {{sha}}",
+    "checked": "Last checked",
+    "never": "not checked yet"
+  },
+  "state": {
+    "checking": "Checking for updates…",
+    "upToDate": "Up to date",
+    "available": "A newer version is available",
+    "pending_one": "{{count}} commit pending",
+    "pending_other": "{{count}} commits pending",
+    "noGreen": "No green build yet"
+  },
+  "ci": {
+    "label": "CI",
+    "green": "green",
+    "red": "not green"
+  },
+  "pending": {
+    "title": "Pending commits",
+    "more_one": "and {{count}} more",
+    "more_other": "and {{count}} more"
+  },
+  "update": {
+    "to": "Update to {{sha}}",
+    "none": "No update available",
+    "busy": "Update in progress…"
+  },
+  "confirm": {
+    "title": "Update Talaia?",
+    "body": "The panel will be unavailable for a few minutes while {{sha}} is built and started.",
+    "backup": "A copy of the database is taken before the update. If the new version does not start, the previous one is restored.",
+    "yes": "Update now",
+    "no": "Cancel"
+  },
+  "progress": {
+    "title": "Update progress",
+    "queued": "The update is queued. The host helper will start it.",
+    "running": "The update is running.",
+    "restarting": "The core is restarting. Waiting…",
+    "succeeded": "Updated. The panel is running {{version}}.",
+    "failed": "The update failed.",
+    "rolledBack": "The update failed and the previous version was restored.",
+    "unknown": "The update state is not available.",
+    "log": "Last lines of the log"
+  },
+  "updateError": {
+    "hostHelperMissing": "The host update helper is not installed, so the panel cannot apply updates.",
+    "rateLimited": "GitHub has rate-limited the update checks. The panel will try again later.",
+    "unreachable": "The update server could not be reached. The panel will try again later.",
+    "generic": "The update check failed. The panel will try again later."
+  }
+}

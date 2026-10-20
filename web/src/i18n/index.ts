@@ -8,18 +8,21 @@ import caCommon from '../locales/ca/common.json'
 import caErrors from '../locales/ca/errors.json'
 import caFleet from '../locales/ca/fleet.json'
 import caServer from '../locales/ca/server.json'
+import caSettings from '../locales/ca/settings.json'
 import enAbout from '../locales/en/about.json'
 import enAuth from '../locales/en/auth.json'
 import enCommon from '../locales/en/common.json'
 import enErrors from '../locales/en/errors.json'
 import enFleet from '../locales/en/fleet.json'
 import enServer from '../locales/en/server.json'
+import enSettings from '../locales/en/settings.json'
 import esAbout from '../locales/es/about.json'
 import esAuth from '../locales/es/auth.json'
 import esCommon from '../locales/es/common.json'
 import esErrors from '../locales/es/errors.json'
 import esFleet from '../locales/es/fleet.json'
 import esServer from '../locales/es/server.json'
+import esSettings from '../locales/es/settings.json'
 
 export const supportedLanguages = ['ca', 'es', 'en'] as const
 
@@ -38,6 +41,7 @@ void i18n
         about: caAbout,
         fleet: caFleet,
         server: caServer,
+        settings: caSettings,
         auth: caAuth,
         errors: caErrors,
       },
@@ -46,6 +50,7 @@ void i18n
         about: esAbout,
         fleet: esFleet,
         server: esServer,
+        settings: esSettings,
         auth: esAuth,
         errors: esErrors,
       },
@@ -54,13 +59,14 @@ void i18n
         about: enAbout,
         fleet: enFleet,
         server: enServer,
+        settings: enSettings,
         auth: enAuth,
         errors: enErrors,
       },
     },
     supportedLngs: [...supportedLanguages],
     fallbackLng: 'en',
-    ns: ['common', 'about', 'fleet', 'server', 'auth', 'errors'],
+    ns: ['common', 'about', 'fleet', 'server', 'settings', 'auth', 'errors'],
     defaultNS: 'common',
     load: 'languageOnly',
     initAsync: false,

@@ -21,6 +21,10 @@ export type ApiErrorCode =
   | 'terminal_exists'
   | 'terminal_open_failed'
   | 'not_found'
+  | 'target_not_offered'
+  | 'update_in_progress'
+  | 'host_helper_missing'
+  | 'update_check_pending'
   | 'internal'
   | 'network'
 
@@ -40,6 +44,10 @@ const knownCodes: readonly ApiErrorCode[] = [
   'terminal_exists',
   'terminal_open_failed',
   'not_found',
+  'target_not_offered',
+  'update_in_progress',
+  'host_helper_missing',
+  'update_check_pending',
   'internal',
 ]
 

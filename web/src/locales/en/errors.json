@@ -15,5 +15,9 @@
   "notFound": "What you asked for was not found.",
   "tooManyTerminals": "This server already has the most terminals it allows.",
   "terminalExists": "You already have a terminal open in this container.",
-  "terminalOpenFailed": "The terminal could not be started in the container."
+  "terminalOpenFailed": "The terminal could not be started in the container.",
+  "targetNotOffered": "The commit offered for the update changed. Reload the page and try again.",
+  "updateInProgress": "An update is already queued or running.",
+  "hostHelperMissing": "The host update helper is not available, so the panel cannot update itself.",
+  "updateCheckPending": "The update check has not finished yet. Try again in a moment."
 }

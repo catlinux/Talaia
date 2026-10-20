@@ -3,22 +3,26 @@ import { useTranslation } from 'react-i18next'
 
 import type { FleetClient } from './api/client'
 import type { ContainersApi } from './api/containers'
+import type { SystemApi } from './api/system'
 import { About } from './screens/About'
 import { Fleet } from './screens/Fleet'
 import { ServerScreen } from './screens/ServerScreen'
+import { Settings } from './screens/Settings'
 import { useAuth } from './auth/AuthGate'
-import { FleetIcon, InfoIcon, SignOutIcon } from './components/icons'
+import { FleetIcon, GearIcon, InfoIcon, SignOutIcon } from './components/icons'
 import { LanguageSelector } from './components/LanguageSelector'
 import { Logo } from './components/Logo'
 import { ThemeToggle } from './theme/ThemeToggle'
 
-type Screen = 'fleet' | 'about'
+type Screen = 'fleet' | 'settings' | 'about'
 
 interface AppProps {
   /** Data source of the fleet screen. Tests inject their own client. */
   client?: FleetClient
   /** Container API of the server screen. Tests inject their own. */
   containersApi?: ContainersApi
+  /** Version and update API of the settings screen. Tests inject their own. */
+  systemApi?: SystemApi
 }
 
 /** initials returns up to two letters to draw the avatar of the signed-in user. */
@@ -26,7 +30,7 @@ function initials(username: string): string {
   return username.trim().slice(0, 2).toUpperCase()
 }
 
-export function App({ client, containersApi }: AppProps) {
+export function App({ client, containersApi, systemApi }: AppProps) {
   const { t } = useTranslation(['common', 'auth'])
   const auth = useAuth()
   const [screen, setScreen] = useState<Screen>('fleet')
@@ -53,6 +57,18 @@ export function App({ client, containersApi }: AppProps) {
           >
             <FleetIcon />
             {t('nav.fleet')}
+          </button>
+          <button
+            type="button"
+            className={screen === 'settings' ? 'side__link side__link--active' : 'side__link'}
+            aria-current={screen === 'settings' ? 'page' : undefined}
+            onClick={() => {
+              setScreen('settings')
+              setOpenServer(null)
+            }}
+          >
+            <GearIcon />
+            {t('nav.settings')}
           </button>
           <button
             type="button"
@@ -95,6 +111,8 @@ export function App({ client, containersApi }: AppProps) {
         <div className="shell__page" key={`${screen}-${openServer?.id ?? ''}`}>
           {screen === 'about' ? (
             <About />
+          ) : screen === 'settings' ? (
+            <Settings api={systemApi} />
           ) : openServer !== null ? (
             <ServerScreen
               server={openServer}

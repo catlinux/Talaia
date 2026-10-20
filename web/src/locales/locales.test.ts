@@ -2,21 +2,27 @@ import { describe, expect, it } from 'vitest'
 
 import caAbout from './ca/about.json'
 import caCommon from './ca/common.json'
+import caErrors from './ca/errors.json'
+import caSettings from './ca/settings.json'
 import enAbout from './en/about.json'
 import enCommon from './en/common.json'
+import enErrors from './en/errors.json'
+import enSettings from './en/settings.json'
 import esAbout from './es/about.json'
 import esCommon from './es/common.json'
+import esErrors from './es/errors.json'
+import esSettings from './es/settings.json'
 
 const languages = ['ca', 'es', 'en'] as const
-const namespaces = ['common', 'about'] as const
+const namespaces = ['common', 'about', 'settings', 'errors'] as const
 
 type Language = (typeof languages)[number]
 type Namespace = (typeof namespaces)[number]
 
 const resources: Record<Language, Record<Namespace, unknown>> = {
-  ca: { common: caCommon, about: caAbout },
-  es: { common: esCommon, about: esAbout },
-  en: { common: enCommon, about: enAbout },
+  ca: { common: caCommon, about: caAbout, settings: caSettings, errors: caErrors },
+  es: { common: esCommon, about: esAbout, settings: esSettings, errors: esErrors },
+  en: { common: enCommon, about: enAbout, settings: enSettings, errors: enErrors },
 }
 
 function keyPaths(value: unknown, prefix = ''): string[] {

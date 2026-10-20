@@ -15,5 +15,9 @@
   "notFound": "No se ha encontrado lo que buscas.",
   "tooManyTerminals": "Este servidor ya tiene el máximo de terminales que permite.",
   "terminalExists": "Ya tienes un terminal abierto en este contenedor.",
-  "terminalOpenFailed": "No se ha podido iniciar el terminal en el contenedor."
+  "terminalOpenFailed": "No se ha podido iniciar el terminal en el contenedor.",
+  "targetNotOffered": "El commit ofrecido para la actualización ha cambiado. Recarga la página y vuelve a probarlo.",
+  "updateInProgress": "Ya hay una actualización en cola o en marcha.",
+  "hostHelperMissing": "El ayudante de actualización del host no está disponible, así que el panel no puede actualizarse solo.",
+  "updateCheckPending": "La comprobación de actualizaciones aún no ha terminado. Vuelve a probar en un momento."
 }

@@ -1,0 +1,60 @@
+{
+  "title": "Configuració",
+  "subtitle": "Versió i actualitzacions",
+  "version": {
+    "title": "Versió",
+    "current": "Versió en marxa",
+    "commit": "Commit",
+    "unknown": "versió desconeguda",
+    "latest": "Darrer commit en verd {{sha}}",
+    "checked": "Darrera comprovació",
+    "never": "encara no s'ha comprovat"
+  },
+  "state": {
+    "checking": "S'estan comprovant les actualitzacions…",
+    "upToDate": "Al dia",
+    "available": "Hi ha una versió més nova disponible",
+    "pending_one": "{{count}} commit pendent",
+    "pending_other": "{{count}} commits pendents",
+    "noGreen": "Encara no hi ha cap compilació en verd"
+  },
+  "ci": {
+    "label": "CI",
+    "green": "en verd",
+    "red": "no està en verd"
+  },
+  "pending": {
+    "title": "Commits pendents",
+    "more_one": "i {{count}} més",
+    "more_other": "i {{count}} més"
+  },
+  "update": {
+    "to": "Actualitza a {{sha}}",
+    "none": "No hi ha cap actualització disponible",
+    "busy": "Actualització en curs…"
+  },
+  "confirm": {
+    "title": "Vols actualitzar el Talaia?",
+    "body": "El panell no estarà disponible durant uns minuts mentre es compila i s'inicia {{sha}}.",
+    "backup": "Abans de l'actualització es fa una còpia de la base de dades. Si la versió nova no arrenca, es restaura l'anterior.",
+    "yes": "Actualitza ara",
+    "no": "Cancel·la"
+  },
+  "progress": {
+    "title": "Progrés de l'actualització",
+    "queued": "L'actualització està en cua. L'ajudant de l'amfitrió la començarà.",
+    "running": "L'actualització està en marxa.",
+    "restarting": "El core s'està reiniciant. S'espera…",
+    "succeeded": "Actualitzat. El panell funciona amb la versió {{version}}.",
+    "failed": "L'actualització ha fallat.",
+    "rolledBack": "L'actualització ha fallat i s'ha restaurat la versió anterior.",
+    "unknown": "L'estat de l'actualització no està disponible.",
+    "log": "Darreres línies del registre"
+  },
+  "updateError": {
+    "hostHelperMissing": "L'ajudant d'actualització de l'amfitrió no està instal·lat, així que el panell no pot aplicar actualitzacions.",
+    "rateLimited": "GitHub ha limitat les comprovacions d'actualitzacions. El panell ho tornarà a provar més tard.",
+    "unreachable": "No s'ha pogut contactar amb el servidor d'actualitzacions. El panell ho tornarà a provar més tard.",
+    "generic": "La comprovació d'actualitzacions ha fallat. El panell ho tornarà a provar més tard."
+  }
+}

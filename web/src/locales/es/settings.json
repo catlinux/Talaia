@@ -1,0 +1,60 @@
+{
+  "title": "Ajustes",
+  "subtitle": "Versión y actualizaciones",
+  "version": {
+    "title": "Versión",
+    "current": "Versión en marcha",
+    "commit": "Commit",
+    "unknown": "versión desconocida",
+    "latest": "Último commit en verde {{sha}}",
+    "checked": "Última comprobación",
+    "never": "aún no se ha comprobado"
+  },
+  "state": {
+    "checking": "Comprobando actualizaciones…",
+    "upToDate": "Al día",
+    "available": "Hay una versión más nueva disponible",
+    "pending_one": "{{count}} commit pendiente",
+    "pending_other": "{{count}} commits pendientes",
+    "noGreen": "Todavía no hay ninguna compilación en verde"
+  },
+  "ci": {
+    "label": "CI",
+    "green": "en verde",
+    "red": "no está en verde"
+  },
+  "pending": {
+    "title": "Commits pendientes",
+    "more_one": "y {{count}} más",
+    "more_other": "y {{count}} más"
+  },
+  "update": {
+    "to": "Actualizar a {{sha}}",
+    "none": "No hay ninguna actualización disponible",
+    "busy": "Actualización en curso…"
+  },
+  "confirm": {
+    "title": "¿Actualizar Talaia?",
+    "body": "El panel no estará disponible durante unos minutos mientras se compila e inicia {{sha}}.",
+    "backup": "Antes de la actualización se hace una copia de la base de datos. Si la versión nueva no arranca, se restaura la anterior.",
+    "yes": "Actualizar ahora",
+    "no": "Cancelar"
+  },
+  "progress": {
+    "title": "Progreso de la actualización",
+    "queued": "La actualización está en cola. El ayudante del host la comenzará.",
+    "running": "La actualización está en marcha.",
+    "restarting": "El core se está reiniciando. Esperando…",
+    "succeeded": "Actualizado. El panel funciona con la versión {{version}}.",
+    "failed": "La actualización ha fallado.",
+    "rolledBack": "La actualización ha fallado y se ha restaurado la versión anterior.",
+    "unknown": "El estado de la actualización no está disponible.",
+    "log": "Últimas líneas del registro"
+  },
+  "updateError": {
+    "hostHelperMissing": "El ayudante de actualización del host no está instalado, así que el panel no puede aplicar actualizaciones.",
+    "rateLimited": "GitHub ha limitado las comprobaciones de actualizaciones. El panel lo volverá a intentar más tarde.",
+    "unreachable": "No se ha podido contactar con el servidor de actualizaciones. El panel lo volverá a intentar más tarde.",
+    "generic": "La comprobación de actualizaciones ha fallado. El panel lo volverá a intentar más tarde."
+  }
+}

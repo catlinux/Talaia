@@ -474,3 +474,329 @@ code {
     padding-top: 22px;
   }
 }
+
+/* ---------- Settings ---------- */
+
+.settings {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 880px;
+}
+
+.settings__head {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.settings__title {
+  margin: 0;
+  font-size: clamp(1.8rem, 3.4vw, 2.4rem);
+  line-height: 1.1;
+}
+
+.settings__subtitle {
+  margin: 0;
+  color: var(--muted);
+}
+
+.settings__message {
+  margin: 0;
+  color: var(--muted);
+}
+
+.settings__message--error {
+  color: var(--crit);
+}
+
+.settings__notice {
+  margin: 0;
+  padding: 10px 14px;
+  border: 1px solid color-mix(in srgb, var(--warn) 40%, transparent);
+  border-radius: var(--radius-sm);
+  background: var(--warn-soft);
+  font-size: 0.9375rem;
+}
+
+.settings__card {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 24px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: var(--shadow-1);
+}
+
+.settings__card-title {
+  margin: 0;
+  font-size: 1.125rem;
+}
+
+.settings__facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 14px 22px;
+  margin: 0;
+}
+
+.settings__fact {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.settings__fact dt {
+  color: var(--muted);
+  font-family: var(--f-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.settings__fact dd {
+  margin: 0;
+  font-family: var(--f-mono);
+  font-size: 0.9375rem;
+  overflow-wrap: anywhere;
+}
+
+.settings__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 16px;
+}
+
+.settings__state {
+  color: var(--muted);
+}
+
+.settings__state--error {
+  color: var(--crit);
+}
+
+.settings__latest {
+  color: var(--muted);
+  font-family: var(--f-mono);
+  font-size: 0.8125rem;
+}
+
+.settings__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 9px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-family: var(--f-mono);
+  font-size: 0.75rem;
+}
+
+.settings__badge--green {
+  border-color: color-mix(in srgb, var(--ok) 45%, transparent);
+  background: var(--ok-soft);
+  color: var(--ok);
+}
+
+.settings__badge--red {
+  border-color: color-mix(in srgb, var(--crit) 45%, transparent);
+  background: var(--crit-soft);
+  color: var(--crit);
+}
+
+.settings__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.settings__button {
+  padding: 9px 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    background-color 160ms var(--ease),
+    border-color 160ms var(--ease),
+    color 160ms var(--ease),
+    opacity 160ms var(--ease);
+}
+
+.settings__button:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
+}
+
+.settings__button--primary {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+.settings__button--primary:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--accent) 86%, var(--ink));
+  background: color-mix(in srgb, var(--accent) 86%, var(--ink));
+}
+
+.settings__button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.settings__pending {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.settings__commit {
+  display: grid;
+  grid-template-columns: 5.5rem minmax(0, 1fr) auto;
+  gap: 4px 14px;
+  align-items: baseline;
+  padding: 10px 0;
+  border-top: 1px dashed var(--line);
+}
+
+.settings__commit:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.settings__commit code {
+  color: var(--accent);
+  font-size: 0.8125rem;
+}
+
+.settings__commit-subject {
+  overflow-wrap: anywhere;
+}
+
+.settings__commit-author {
+  color: var(--muted);
+  font-size: 0.8125rem;
+}
+
+.settings__more {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.8125rem;
+}
+
+.settings__progress {
+  border-left: 3px solid var(--accent);
+}
+
+/* After the progress card, so a running update is seen first. */
+.settings__card[aria-labelledby="settings-pending-title"] {
+  order: 1;
+}
+
+.settings__progress--ok {
+  border-left-color: var(--ok);
+  background: var(--ok-soft);
+}
+
+.settings__progress--error {
+  border-left-color: var(--crit);
+  background: var(--crit-soft);
+}
+
+.settings__progress-state {
+  margin: 0;
+}
+
+.settings__log {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 220px;
+  margin: 0;
+  padding: 12px 14px;
+  overflow: auto;
+  border-radius: var(--radius-sm);
+  background: var(--code-bg);
+  color: var(--code-ink);
+  font-family: var(--f-mono);
+  font-size: 0.75rem;
+  line-height: 1.5;
+  list-style: none;
+}
+
+.settings__log li {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.settings__overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: color-mix(in srgb, var(--shadow-ink) 55%, transparent);
+}
+
+.settings__dialog {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: min(520px, 100%);
+  padding: 24px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: var(--shadow-2);
+}
+
+.settings__dialog-title {
+  margin: 0;
+  font-size: 1.375rem;
+}
+
+.settings__dialog-body {
+  margin: 0;
+  color: var(--muted);
+}
+
+.settings__dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+@media (max-width: 720px) {
+  .settings__card {
+    padding: 18px;
+  }
+
+  .settings__commit {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 2px;
+  }
+
+  .settings__commit-author {
+    font-size: 0.75rem;
+  }
+
+  .settings__dialog-actions {
+    flex-direction: column-reverse;
+  }
+
+  .settings__dialog-actions .settings__button {
+    width: 100%;
+  }
+}
