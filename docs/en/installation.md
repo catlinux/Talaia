@@ -41,8 +41,7 @@ Replace `192.0.2.10` with the address the panel will be reached at (in a termina
 With `--acme ovh` (or answering yes when it asks, in a terminal) it also prepares a trusted certificate for the
 panel by ACME DNS-01: the OVH credentials are read from `OVH_ENDPOINT`, `OVH_APPLICATION_KEY`,
 `OVH_APPLICATION_SECRET` and `OVH_CONSUMER_KEY` or asked for without echo, and are stored in
-`packaging/core/.env.acme` (mode 0600, ignored by git). `--acme-email` sets the contact address. The core
-starts using them in a later release.
+`packaging/core/.env.acme` (mode 0600, ignored by git). `--acme-email` sets the contact address. See section 6.
 
 It is safe to run again. If your user cannot talk to Docker, it uses `sudo docker` on its own.
 
@@ -126,6 +125,7 @@ The log must say `enrolled with the core` and `connected to core`. The server th
 ## 5. Day to day
 
 - **Update the core:** `git pull`, then in `packaging/core` run `sudo docker compose up -d --build`.
+- **See if there is an update:** the **Settings** screen of the panel shows the running version and the newest commit of `main` whose CI is green, with the commits you would get. Applying it from the panel needs the host helper, which is not built yet: for now, update as in the first bullet.
 - **Keep the volumes:** `db-data` (database) and `core-data` (the CA and the key that encrypts the second
   factor). Without `core-data` every agent would have to enroll again.
 - **Lost the authenticator or the codes:** `sudo docker compose run --rm core user reset-2fa` clears the second
@@ -140,22 +140,55 @@ The log must say `enrolled with the core` and `connected to core`. The server th
   accepting its certificate. Then, on the server itself, `sudo apt purge talaia-agent` removes the agent and its
   configuration.
 
-## 6. Reaching the panel from outside your network
+## 6. Running the core on a public server
 
-By default the panel only answers on your local network, and nothing is exposed to the internet. The safest way to
-reach it from elsewhere is a private VPN such as Tailscale: install it on the core machine and on the devices you
-browse from (follow its own documentation), then tell the core about the new address:
+The agents connect **outbound** to the core, so the best place for the core is a machine with a public IP address
+(a VPS): servers behind a home router or any NAT enroll and stay connected without a VPN or an open port on their
+side.
 
-1. In `packaging/core/.env`, add the VPN address or name of the core machine to `TALAIA_PUBLIC_HOSTNAMES`, separated
-   by a comma from the existing one, for example `TALAIA_PUBLIC_HOSTNAMES=192.0.2.10,100.64.0.7`.
-2. Run `sudo docker compose up -d` in `packaging/core`. The core signs its certificate for every listed name when it
-   starts, and accepts the panel from each of them.
-3. Open `https://<vpn-address>:<port>` from your device.
+- **It does not need ports 80 or 443.** The installer picks free ports (8443 and 8444 by default), so a VPS that
+  already runs a web server or a reverse proxy keeps working. Open the two chosen ports in the firewall of the VPS
+  (they are written to `packaging/core/.env`) and point a DNS `A` record at the VPS.
+- **Install with the public name:** `packaging/core/install.sh --hostname talaia.example.com --username admin`.
+- **The panel is then on the internet.** What protects it is the password plus the second factor, the rate limit
+  and the lockout after 5 failed sign-ins (see section 7). Keep the password long and the authenticator safe.
 
-Servers on other networks can enroll through the same address. Opening the port of your router instead is not
-recommended: it would put the panel and the agent endpoint on the internet.
+### A certificate browsers trust (ACME DNS-01)
 
-> This section was written from the code, not tested on a real VPN yet.
+With the internal CA the browser warns that the panel is "not secure". If the DNS zone of your domain is at OVH,
+the core can obtain a certificate from Let's Encrypt on its own. DNS-01 proves the name through a DNS record, so
+it works on any port and needs no web server. It needs a DNS name in `--hostname` (an IP address cannot get one).
+
+1. Create an OVH API application and a consumer key following the
+   [OVH guide](https://docs.ovh.com/gb/en/customer/first-steps-with-ovh-api/). Give the consumer key the minimum
+   rights, as lego (the ACME library the core uses) documents:
+
+   ```json
+   { "accessRules": [
+       { "method": "POST", "path": "/domain/zone/*" },
+       { "method": "DELETE", "path": "/domain/zone/*" }
+   ] }
+   ```
+
+2. Install with the provider: `packaging/core/install.sh --hostname talaia.example.com --acme ovh --acme-email you@example.com`
+   (the email is optional). The credentials go to `packaging/core/.env.acme` (mode 0600) and the core reads them as
+   `OVH_ENDPOINT`, `OVH_APPLICATION_KEY`, `OVH_APPLICATION_SECRET` and `OVH_CONSUMER_KEY`.
+3. Until the certificate is ready the panel answers with the certificate of the internal CA; then it swaps to the
+   trusted one without a restart. The core logs `ACME certificate ready`. The account and the certificate are kept
+   in the `core-data` volume (`/var/lib/talaia/acme`) and renewed 30 days before they expire.
+
+The **agents port always uses the internal CA**, never the public certificate: agents pin the CA fingerprint, so
+nobody who gets control of your DNS can impersonate the core and send commands to your servers.
+
+> Written from the code and its tests with a simulated ACME server; not tried yet against Let's Encrypt or OVH.
+
+### Alternative: a private VPN
+
+If you prefer not to expose the panel, keep the core on a private network and reach it through a VPN such as
+Tailscale: install it on the core machine and on your devices (follow its own documentation), add the VPN address
+or name to `TALAIA_PUBLIC_HOSTNAMES` in `packaging/core/.env` separated by a comma, run `sudo docker compose up -d`
+in `packaging/core` and open `https://<vpn-address>:<port>`. The core signs its certificate for every listed name.
+This was written from the code and has not been tested on a real VPN.
 
 ## 7. Troubleshooting
 

@@ -43,8 +43,7 @@ Cambia `192.0.2.10` por la dirección desde la que se llegará al panel (en un t
 Con `--acme ovh` (o contestando que sí cuando lo pregunta, en un terminal) prepara además un certificado de
 confianza para el panel por ACME DNS-01: las credenciales de OVH se leen de `OVH_ENDPOINT`,
 `OVH_APPLICATION_KEY`, `OVH_APPLICATION_SECRET` y `OVH_CONSUMER_KEY` o se piden sin eco, y se guardan en
-`packaging/core/.env.acme` (modo 0600, ignorado por git). `--acme-email` fija el correo de contacto. El núcleo
-empezará a usarlas en una versión posterior.
+`packaging/core/.env.acme` (modo 0600, ignorado por git). `--acme-email` fija el correo de contacto. Véase la sección 6.
 
 Se puede volver a ejecutar sin riesgo. Si tu usuario no puede hablar con Docker, usa `sudo docker` por su cuenta.
 
@@ -128,6 +127,7 @@ pantalla **Flota** del panel con su CPU, memoria, disco y contenedores.
 ## 5. Día a día
 
 - **Actualizar el núcleo:** `git pull` y, en `packaging/core`, `sudo docker compose up -d --build`.
+- **Ver si hay una actualización:** la pantalla **Ajustes** del panel muestra la versión en marcha y el commit más reciente de `main` con el CI en verde, con los commits que recibirías. Aplicarla desde el panel necesita el ayudante del host, que todavía no está hecho: por ahora, actualiza como en el primer punto.
 - **Conserva los volúmenes:** `db-data` (base de datos) y `core-data` (la CA y la clave que cifra el segundo
   factor). Sin `core-data`, todos los agentes tendrían que darse de alta de nuevo.
 - **Has perdido la aplicación o los códigos:** `sudo docker compose run --rm core user reset-2fa` borra el
@@ -141,23 +141,58 @@ pantalla **Flota** del panel con su CPU, memoria, disco y contenedores.
   el núcleo deja de aceptar su certificado. Después, en el propio servidor, `sudo apt purge talaia-agent` quita el
   agente y su configuración.
 
-## 6. Llegar al panel desde fuera de tu red
+## 6. El núcleo en un servidor público
 
-Por defecto el panel solo responde en tu red local y no se expone nada a internet. La forma más segura de llegar a él
-desde otro sitio es una VPN privada como Tailscale: instálala en la máquina del núcleo y en los dispositivos desde los
-que navegas (sigue su propia documentación) y avisa al núcleo de la nueva dirección:
+Los agentes se conectan **hacia fuera** con el núcleo, así que el mejor sitio para este es una máquina con IP
+pública (un VPS): los servidores detrás del router de casa o de cualquier NAT se dan de alta y siguen conectados sin
+VPN ni puerto abierto por su lado.
 
-1. En `packaging/core/.env`, añade la dirección o el nombre de VPN de la máquina del núcleo a
-   `TALAIA_PUBLIC_HOSTNAMES`, separada por una coma de la que ya hay, por ejemplo
-   `TALAIA_PUBLIC_HOSTNAMES=192.0.2.10,100.64.0.7`.
-2. Ejecuta `sudo docker compose up -d` en `packaging/core`. El núcleo firma su certificado para todos los nombres de
-   la lista al arrancar y acepta el panel desde cada uno.
-3. Abre `https://<dirección-vpn>:<puerto>` desde tu dispositivo.
+- **No necesita los puertos 80 ni 443.** El instalador elige puertos libres (8443 y 8444 por defecto), de modo que
+  un VPS que ya tenga un servidor web o un proxy inverso sigue funcionando. Abre los dos puertos elegidos en el
+  cortafuegos del VPS (quedan escritos en `packaging/core/.env`) y apunta un registro DNS `A` al VPS.
+- **Instala con el nombre público:** `packaging/core/install.sh --hostname talaia.example.com --username admin`.
+- **El panel queda entonces en internet.** Lo protegen la contraseña más el segundo factor, el límite de intentos y
+  el bloqueo tras 5 accesos fallidos (véase la sección 7). Usa una contraseña larga y guarda bien la aplicación de
+  autenticación.
 
-Los servidores de otras redes pueden darse de alta por la misma dirección. No se recomienda abrir en cambio el puerto
-del router: pondría el panel y el punto de entrada de los agentes en internet.
+### Un certificado en el que confían los navegadores (ACME DNS-01)
 
-> Esta sección está escrita a partir del código, todavía sin probar en una VPN real.
+Con la CA interna el navegador avisa de que el panel «no es seguro». Si la zona DNS de tu dominio está en OVH, el
+núcleo puede obtener solo un certificado de Let's Encrypt. DNS-01 demuestra el nombre con un registro DNS, así que
+funciona en cualquier puerto y no necesita servidor web. Hace falta un nombre DNS en `--hostname` (una dirección IP
+no puede tenerlo).
+
+1. Crea una aplicación de la API de OVH y una clave de consumidor siguiendo la
+   [guía de OVH](https://docs.ovh.com/gb/en/customer/first-steps-with-ovh-api/). Da a la clave de consumidor los
+   derechos mínimos, tal como los documenta lego (la biblioteca ACME que usa el núcleo):
+
+   ```json
+   { "accessRules": [
+       { "method": "POST", "path": "/domain/zone/*" },
+       { "method": "DELETE", "path": "/domain/zone/*" }
+   ] }
+   ```
+
+2. Instala con el proveedor: `packaging/core/install.sh --hostname talaia.example.com --acme ovh --acme-email tu@example.com`
+   (el correo es opcional). Las credenciales van a `packaging/core/.env.acme` (modo 0600) y el núcleo las lee como
+   `OVH_ENDPOINT`, `OVH_APPLICATION_KEY`, `OVH_APPLICATION_SECRET` y `OVH_CONSUMER_KEY`.
+3. Hasta que el certificado esté listo, el panel responde con el de la CA interna; después pasa al de confianza sin
+   reiniciar. El núcleo registra `ACME certificate ready`. La cuenta y el certificado se guardan en el volumen
+   `core-data` (`/var/lib/talaia/acme`) y se renuevan 30 días antes de caducar.
+
+El **puerto de los agentes usa siempre la CA interna**, nunca el certificado público: los agentes fijan la huella de
+la CA, así que quien se haga con tu DNS no puede hacerse pasar por el núcleo y mandar órdenes a tus servidores.
+
+> Escrito a partir del código y de sus pruebas con un servidor ACME simulado; todavía sin probar contra Let's
+> Encrypt ni OVH.
+
+### Alternativa: una VPN privada
+
+Si prefieres no exponer el panel, deja el núcleo en una red privada y llega a él por una VPN como Tailscale:
+instálala en la máquina del núcleo y en tus dispositivos (sigue su propia documentación), añade la dirección o el
+nombre de VPN a `TALAIA_PUBLIC_HOSTNAMES` en `packaging/core/.env`, separada por una coma, ejecuta
+`sudo docker compose up -d` en `packaging/core` y abre `https://<dirección-vpn>:<puerto>`. El núcleo firma su
+certificado para todos los nombres de la lista. Escrito a partir del código y sin probar en una VPN real.
 
 ## 7. Problemas frecuentes
 
