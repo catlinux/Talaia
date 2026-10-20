@@ -153,7 +153,24 @@ jobs:
           set -eu
           docker compose run --rm -T core token create --name ci | tee "$RUNNER_TEMP/token.txt"
           grep -q 'curl -fsSk https://127.0.0.1:8443/install.sh | sudo bash -s -- --url https://127.0.0.1:8443 --token ' "$RUNNER_TEMP/token.txt"
+      - name: Install the agent with the printed command and check it enrolls
+        working-directory: packaging/core
+        run: |
+          set -eu
+          command="$(grep '^curl -fsSk ' "$RUNNER_TEMP/token.txt")"
+          bash -c "$command"
+          for _ in $(seq 1 30); do
+            if sudo journalctl -u talaia-agent --no-pager | grep -q 'connected to core'; then
+              break
+            fi
+            sleep 2
+          done
+          sudo journalctl -u talaia-agent --no-pager | grep -q 'enrolled with the core'
+          sudo journalctl -u talaia-agent --no-pager | grep -q 'connected to core'
+          test "$(docker compose exec -T db psql -U talaia -d talaia -tAc "SELECT count(*) FROM server WHERE name = 'ci'" | tr -d '[:space:]')" = 1
       - name: Logs on failure
         if: failure()
         working-directory: packaging/core
-        run: docker compose logs --no-color
+        run: |
+          docker compose logs --no-color
+          sudo journalctl -u talaia-agent --no-pager || true
