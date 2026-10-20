@@ -84,27 +84,20 @@ tareas concretas de la fase actual y de la siguiente.
 
 ## Bloque de operación (decidido el 2026-10-20, antes de cerrar la fase 2)
 
-**Prioridad ahora (mantenedor, 2026-10-20):** las actualizaciones desde el panel y el acceso externo, para seguir actualizando y gestionando desde fuera de casa.
+**Prioridad ahora (mantenedor, 2026-10-20):** las actualizaciones desde el panel y el acceso externo, para seguir actualizando y gestionando desde fuera de casa. Diseño y pasos: [`.agents/plans/operacion/operacion.PLAN.md`](.agents/plans/operacion/operacion.PLAN.md).
 
-Primero el diseño con un modelo potente (Opus), escrito en `.agents/plans/operacion/operacion.PLAN.md`; después se ejecuta con uno más barato.
+**Principio:** Talaia se instala desde GitHub en máquinas que no conocemos, así que no puede depender de lo que ya haya: ni de un proxy inverso, ni de que 80/443 estén libres, ni de un servicio de VPN de terceros.
 
-### Actualizaciones desde el panel
-- [ ] Ayudante del host `talaia-hostd` (systemd, root) con una lista cerrada de operaciones. El core solo escribe ficheros de petición en su volumen de datos; nunca recibe el socket de Docker (el contenedor es de solo lectura y sin privilegios a propósito)
-- [ ] Detectar: el core pregunta a GitHub por el último commit de `main` cada ~30 minutos (peticiones condicionales), lo compara con el commit grabado en su imagen al construirla y ofrece solo commits con el CI en verde
-- [ ] Aplicar: `git pull --ff-only` y `docker compose up -d --build`, esperar a `/healthz` y volver al commit anterior si no responde (las migraciones de la base de datos solo avanzan: dejarlo dicho en el plan)
-- [ ] Pantalla de Ajustes (todavía no existe): tarjeta de versión, «N commits nuevos», botón de actualizar con confirmación, progreso y resultado; ca/es/en
-- [ ] Documentación: instalar el ayudante una vez en el Debian con `sudo`; después no hacen falta órdenes
-- [ ] Más adelante: actualizar desde el core los agentes de los demás servidores (hoy: `server upgrade-command` pegado a mano)
-
-### Acceso remoto y HTTPS de confianza (decidido por el mantenedor el 2026-10-20: core, panel y Headscale en el VPS)
-- [ ] Prioritario junto con las actualizaciones: seguir actualizando y gestionando desde fuera de casa
-- [ ] Instalar el core, el panel y Headscale en el VPS con IP fija, en `talaia.invierteconcriterio.es`. Instalación desde cero: el core de casa era solo de pruebas, así que el Debian de casa pasa a ser un servidor más y se le vuelve a instalar el agente. Headscale va instalado directamente y no en un contenedor (sus mantenedores no recomiendan contenedores ni proxies inversos: comprobar la documentación actual)
-- [ ] Ese VPS ya aloja muchas otras webs, así que primero hay que averiguar qué proxy tiene los puertos 80 y 443 (nginx, Caddy, Traefik; en el host o en Docker). El mTLS de los agentes tiene que llegar al core sin que ese proxy termine el TLS: elegir en el diseño entre un puerto aparte para los agentes, paso directo por nombre, o el core en su propio puerto
-- [ ] DNS en OVH: un registro A público `talaia.invierteconcriterio.es` hacia el VPS y un certificado de Let's Encrypt (DNS-01 mediante la API de OVH con una credencial limitada a la zona, o HTTP-01 si el proxy existente lo permite)
-- [ ] Core: presentar el certificado válido a los navegadores y el de su propia CA a los agentes, según el nombre que pidan; renovar y recargar el certificado sin reinicios (desde el ayudante del host)
-- [ ] Headscale y la VPN sirven para llegar a máquinas sin IP pública (el Debian de casa) y para el acceso privado; el panel público no depende de ellos
-- [ ] El nombre no puede estar fijado en ningún sitio: más adelante el mantenedor comprará un dominio nuevo y un VPS más potente. Dejar escrita y probada la mudanza (nombre nuevo en `TALAIA_PUBLIC_HOSTNAMES`, certificado nuevo, agentes apuntados a la dirección nueva o conservados gracias a la CA, volumen de datos copiado)
-- [ ] Documentación EN/ES: el core sigue sin depender de una red concreta; sustituir la sección 6 de la guía de instalación, que está sin probar
+- [ ] Dos puertos propios, elegidos libres por el instalador (8443 y 8444 por defecto, nunca 80/443 salvo que estén libres y se pida): uno para el panel y otro para los agentes
+- [ ] Instalador que comprueba los puertos, pregunta el nombre público y escribe `.env`
+- [ ] Certificado de confianza para el panel por ACME DNS-01 dentro del core (lego; primero OVH), en cualquier puerto; los agentes siguen fijando la CA propia de Talaia
+- [ ] Detección de actualizaciones (último commit de `main` con el CI en verde) y API
+- [ ] Ayudante del host `talaia-hostd` (systemd) que trae los cambios, reconstruye, comprueba `/healthz` y vuelve atrás con una copia de la base de datos; el core nunca recibe el socket de Docker
+- [ ] Pantalla de Ajustes con la versión y el botón de actualizar; ca/es/en
+- [ ] Documentación EN/ES (VPS con otros servicios, credencial de OVH con derechos mínimos, actualizaciones)
+- [ ] Revisión de seguridad (Opus)
+- [ ] Instalación real en `talaia.invierteconcriterio.es` con el mantenedor (desde cero; el Debian de casa pasa a ser un servidor más)
+- [ ] Más adelante: cambiar la dirección del core en los agentes con una orden tipada (para mudarse al dominio y VPS nuevos) y actualizar los agentes desde el core
 
 ## Ideas (sin planificar)
 
@@ -113,3 +106,4 @@ Apunta aquí las ideas nuevas en lugar de añadirlas a la fase actual.
 - App móvil (PWA) con notificaciones push
 - Integración con Tailscale/Headscale para crear la red privada automáticamente
 - Panel de costes por proveedor
+- Headscale u otra VPN para máquinas que deban quedar privadas. Aparcado el 2026-10-20: Headscale pide el puerto 443 en producción, lo que rompe el principio de arriba, y un core público ya llega a servidores detrás de NAT porque los agentes conectan hacia fuera
