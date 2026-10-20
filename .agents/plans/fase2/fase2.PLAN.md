@@ -17,7 +17,7 @@ Reglas que mandan en toda la fase (CLAUDE.md §3): comandos **tipados**, nunca t
 | D5 | Stacks | Directorio `/opt/talaia/stacks/<nombre>/` (compose.yaml + .env con permisos 0600), validación con `docker compose config`, secretos fuera del registro |
 | D6 | Adopción | Cómo pasar a Talaia un proyecto Compose existente sin recrearlo (copiar o enlazar archivos, conservar el nombre del proyecto) |
 
-Entregable: `.agents/plans/fase2/D-trabajos.DESIGN.md`, revisado por el mantenedor antes de seguir.
+Entregable: `.agents/plans/fase2/D-trabajos.DESIGN.md` (escrito a posteriori sobre lo construido) y, para la terminal, `D-terminal.DESIGN.md` (borrador). Ambos pendientes de revisión de seguridad con Opus.
 
 ## Avance (2026-10-20, por petición «sigue con el desarrollo»)
 
