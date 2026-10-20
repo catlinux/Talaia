@@ -11,9 +11,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"sort"
 	"strings"
 
@@ -112,7 +114,13 @@ func (m *Manager) Write(ctx context.Context, name, compose, env string) (string,
 	if err := os.WriteFile(filepath.Join(staging, composeFile), []byte(compose), 0o644); err != nil {
 		return "", err
 	}
-	if env != "" {
+	record, adopted, err := m.adoption(name)
+	if err != nil {
+		return "", err
+	}
+	// An adopted stack is validated with the new .env even when it is empty, not
+	// with the one of its directory, which an empty field deletes.
+	if env != "" || adopted {
 		if err := os.WriteFile(filepath.Join(staging, envFile), []byte(env), 0o600); err != nil {
 			return "", err
 		}
@@ -120,17 +128,11 @@ func (m *Manager) Write(ctx context.Context, name, compose, env string) (string,
 
 	// An adopted stack keeps living in its own directory, so the relative paths
 	// of the file resolve there while it is validated.
-	record, adopted, err := m.adoption(name)
-	if err != nil {
-		return "", err
-	}
 	validate := []string{"compose", "--project-name", name}
 	validateDir := staging
 	if adopted {
-		validate = append(validate, "--project-directory", record.WorkingDir, "-f", filepath.Join(staging, composeFile))
-		if env != "" {
-			validate = append(validate, "--env-file", filepath.Join(staging, envFile))
-		}
+		validate = append(validate, "--project-directory", record.WorkingDir,
+			"-f", filepath.Join(staging, composeFile), "--env-file", filepath.Join(staging, envFile))
 		validateDir = record.WorkingDir
 	}
 	validate = append(validate, "config", "--quiet")
@@ -189,11 +191,18 @@ func (m *Manager) Adopt(ctx context.Context, name string) (string, error) {
 	if !filepath.IsAbs(configFile) || !filepath.IsAbs(workingDir) {
 		return "", errors.New("the project does not report absolute paths")
 	}
-	if info, err := os.Stat(configFile); err != nil || !info.Mode().IsRegular() {
-		return "", errors.New("the compose file of the project is not on this host")
+	// The agent runs these files as root from now on: they must be what they
+	// claim to be, and not writable by anyone but their owner.
+	configInfo, err := os.Lstat(configFile)
+	if err != nil || !configInfo.Mode().IsRegular() {
+		return "", errors.New("the compose file of the project is not a regular file on this host")
 	}
-	if info, err := os.Stat(workingDir); err != nil || !info.IsDir() {
+	dirInfo, err := os.Lstat(workingDir)
+	if err != nil || !dirInfo.IsDir() {
 		return "", errors.New("the directory of the project is not on this host")
+	}
+	if writableByOthers(configInfo) || writableByOthers(dirInfo) {
+		return "", errors.New("the compose file or the directory of the project can be changed by other users: fix their permissions first")
 	}
 
 	record, err := json.Marshal(adoption{WorkingDir: workingDir, ConfigFile: configFile})
@@ -281,11 +290,11 @@ func (m *Manager) Read(_ context.Context, name string) (string, error) {
 	if adopted {
 		composePath, envPath = record.ConfigFile, filepath.Join(record.WorkingDir, envFile)
 	}
-	compose, err := os.ReadFile(composePath)
+	compose, err := readRegular(composePath, maxComposeBytes)
 	if err != nil {
 		return "", err
 	}
-	env, err := os.ReadFile(envPath)
+	env, err := readRegular(envPath, maxEnvBytes)
 	if err != nil && !errors.Is(err, os.ErrNotExist) {
 		return "", err
 	}
@@ -377,26 +386,79 @@ func (m *Manager) adoption(name string) (adoption, bool, error) {
 	return record, true, nil
 }
 
-// fileMode keeps the mode of an existing file and falls back to def.
+// fileMode keeps the mode of an existing regular file and falls back to def.
 func fileMode(path string, def os.FileMode) os.FileMode {
-	if info, err := os.Stat(path); err == nil {
+	if info, err := os.Lstat(path); err == nil && info.Mode().IsRegular() {
 		return info.Mode().Perm()
 	}
 	return def
 }
 
 // replaceFile writes data next to path and renames it over it, so a reader never
-// sees a half-written file.
+// sees a half-written file. The directory of an adopted stack may belong to
+// another user: the temporary file gets a fresh name and is created exclusively,
+// so a link planted there can never make the agent write somewhere else, and the
+// rename replaces a link at path instead of following it.
 func replaceFile(path string, data []byte, mode os.FileMode) error {
-	temporary := path + ".new"
-	if err := os.WriteFile(temporary, data, mode); err != nil {
+	file, err := os.CreateTemp(filepath.Dir(path), "."+filepath.Base(path)+".talaia-*")
+	if err != nil {
 		return err
 	}
-	if err := os.Rename(temporary, path); err != nil {
+	temporary := file.Name()
+	_, err = file.Write(data)
+	if closeErr := file.Close(); err == nil {
+		err = closeErr
+	}
+	if err == nil {
+		err = os.Chmod(temporary, mode)
+	}
+	if err == nil {
+		err = os.Rename(temporary, path)
+	}
+	if err != nil {
 		_ = os.Remove(temporary)
 		return err
 	}
 	return nil
+}
+
+// readRegular reads a regular file of at most limit bytes. A symbolic link is
+// refused, also one swapped in between the check and the open, so the files of
+// an adopted stack cannot be pointed at other files of the host.
+func readRegular(path string, limit int64) ([]byte, error) {
+	before, err := os.Lstat(path)
+	if err != nil {
+		return nil, err
+	}
+	if !before.Mode().IsRegular() {
+		return nil, fmt.Errorf("%s is not a regular file", filepath.Base(path))
+	}
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = file.Close() }()
+	after, err := file.Stat()
+	if err != nil {
+		return nil, err
+	}
+	if !os.SameFile(before, after) {
+		return nil, fmt.Errorf("%s changed while it was read", filepath.Base(path))
+	}
+	data, err := io.ReadAll(io.LimitReader(file, limit+1))
+	if err != nil {
+		return nil, err
+	}
+	if int64(len(data)) > limit {
+		return nil, fmt.Errorf("%s is too large", filepath.Base(path))
+	}
+	return data, nil
+}
+
+// writableByOthers reports whether someone other than the owner may change the
+// file or directory. Windows has no such mode bits; the agent only runs on Linux.
+func writableByOthers(info os.FileInfo) bool {
+	return runtime.GOOS != "windows" && info.Mode().Perm()&0o022 != 0
 }
 
 // firstLines trims the output of a failed command to something a person can

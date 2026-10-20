@@ -6,6 +6,9 @@ import (
 	"fmt"
 	"sync"
 	"testing"
+	"unicode/utf8"
+
+	"google.golang.org/protobuf/proto"
 
 	agentv1 "github.com/catlinux/Talaia/proto/gen/go"
 )
@@ -99,6 +102,24 @@ func TestHandleRunsStackCommands(t *testing.T) {
 	for i := range want {
 		if got[i] != want[i] {
 			t.Errorf("call %d = %q, want %q", i, got[i], want[i])
+		}
+	}
+}
+
+func TestEventsAreValidUTF8(t *testing.T) {
+	// Output cut at a byte limit can end in half a character.
+	cut := "\xe2\x9c\x94 Container started\n\xe2\x9c"
+	for _, stacks := range []*fakeStacks{{output: cut}, {err: errors.New(cut)}} {
+		out := newCollector()
+		executor := New(&fakeActions{}).WithStacks(stacks)
+		executor.Handle(context.Background(), stackActionCommand("j1", agentv1.StackActionType_STACK_ACTION_TYPE_UP), out.emit)
+		out.next(t) // running
+		got := out.next(t)
+		if !utf8.ValidString(got.GetOutput()) || !utf8.ValidString(got.GetMessage()) {
+			t.Errorf("final event is not valid UTF-8: %q / %q", got.GetOutput(), got.GetMessage())
+		}
+		if _, err := proto.Marshal(jobMsg(got)); err != nil {
+			t.Errorf("the event cannot be sent: %v", err)
 		}
 	}
 }

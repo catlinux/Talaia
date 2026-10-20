@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"log/slog"
+	"strings"
 	"sync"
 	"time"
 
@@ -191,11 +192,13 @@ func (e *Executor) execute(ctx context.Context, jobID, what string, timeout time
 
 	output, err := work(ctx)
 
+	// A protobuf string must be valid UTF-8 or the event cannot be sent, and
+	// command output is cut at byte limits that can split a character.
 	final := event(jobID, agentv1.JobState_JOB_STATE_SUCCEEDED, "")
-	final.Output = output
+	final.Output = strings.ToValidUTF8(output, "�")
 	if err != nil {
 		slog.Warn("job failed", "job_id", jobID, "job", what, "error", err)
-		final = event(jobID, agentv1.JobState_JOB_STATE_FAILED, err.Error())
+		final = event(jobID, agentv1.JobState_JOB_STATE_FAILED, strings.ToValidUTF8(err.Error(), "�"))
 	} else {
 		slog.Info("job done", "job_id", jobID, "job", what)
 	}
