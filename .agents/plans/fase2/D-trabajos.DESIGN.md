@@ -1,6 +1,6 @@
 # Diseño de los trabajos y de la gestión de Docker (fase 2)
 
-Estado: **borrador escrito a posteriori por Sonnet, pendiente de revisión de seguridad con Opus.** Describe lo que ya está construido (commits locales de la fase 2) para que la revisión se haga sobre hechos, no sobre intenciones. Cada punto indica dónde mirar y qué se pide revisar.
+Estado: **revisado por Opus el 2026-10-20 (decisiones en §6).** Escrito a posteriori por Sonnet. Describe lo que ya está construido (commits locales de la fase 2) para que la revisión se haga sobre hechos, no sobre intenciones. Cada punto indica dónde mirar y qué se pide revisar.
 
 ## 1. Modelo
 
@@ -59,6 +59,19 @@ El agente corre como **root** y sin sandbox de systemd (necesita Docker, `/opt` 
 
 Listas (contenedores, stacks, recursos) salen del inventario que el agente informa; la salida de trabajos se muestra tal cual (los mensajes de error de Docker pueden contener texto del usuario). El panel renderiza todo como texto (React), sin `dangerouslySetInnerHTML`.
 
-## 6. Pendiente fuera de este diseño
+## 6. Revisión de seguridad (Opus, 2026-10-20) — decisiones
+
+Estado: **revisado.** Lo construido es sólido en lo esencial (órdenes tipadas, regex antes de construir rutas, sin shell, sin `force`, `serverID` tomado de la conexión mTLS y no del mensaje). Respuestas a los «Revisar»:
+
+- **§1 Aislamiento entre servidores:** correcto. El hub pasa el `serverID` de la conexión autenticada y `UpdateJobState` filtra por él; un agente comprometido solo puede mentir sobre sus propios trabajos. `output` acotado a 256 KiB en el core y 64 KiB / 256 KiB (compose / logs) en el agente.
+- **§3 `confirm` y listas cerradas:** correcto; no hay otra ruta que llegue a `remove`/`down`. La auditoría guarda nombres, ids y hashes, nunca contenido. `Cache-Control: no-store` lo pone el middleware a **todo** `/api/` (§4.4 resuelto).
+- **§4.1 Un compose es código con privilegios — DECIDIDO: se asume.** En la fase 2 hay un único rol (administrador con contraseña + 2FA) y ese rol **equivale a root en cada servidor gestionado** (también por la terminal y la adopción). No se filtra el compose: una lista de campos peligrosos daría falsa seguridad (hay demasiadas vías: `volumes`, `devices`, `cap_add`, `pid: host`, `network_mode: host`, `security_opt`, `build`…). Obligaciones: (a) decirlo en la documentación de seguridad (EN/ES) y con una nota fija en el editor de stacks (paso 9); (b) en la **fase 4**, los permisos «editar stacks», «adoptar» y «terminal» se marcan como *equivalentes a root* y no se conceden por defecto.
+- **§4.2 `adopted.json` y rutas:** el registro vive en un directorio de root y solo lo escribe el agente: aceptable. El riesgo real estaba en el **directorio del proyecto adoptado**, que puede ser de un usuario sin privilegios. **Corregido:** `replaceFile` usa un temporal exclusivo con nombre aleatorio (antes `ruta.new` con `WriteFile`, que seguía enlaces: un usuario local podía hacer que root machacara cualquier fichero); `Read` rechaza enlaces sin carrera (`Lstat` + `SameFile`) y acota el tamaño; `Adopt` rechaza un compose que sea enlace y ficheros o directorio escribibles por grupo/otros. Queda asumido: el **dueño** del directorio adoptado puede cambiar lo que root ejecuta en el siguiente `up` (igual que antes de Talaia).
+- **§4.3 `docker compose config`:** solo interpola; no ejecuta ni construye. Puede leer ficheros del host (`env_file`, `include`) y mostrar errores con su contenido, pero solo al administrador, que ya es root (§4.1). `--env-file` siempre apunta al directorio de preparación. **Corregido:** al validar un adoptado con `.env` vacío se usaba el `.env` antiguo.
+- **Fallos encontrados fuera de la lista (corregidos):** (1) el core cerraba como fallido **cualquier** trabajo a los 2 min, y un `pull`/`up` tiene 10 min en el agente → ahora la caducidad depende del tipo (`jobTimeout(kind)`, siempre mayor que la del agente). (2) Cortes por bytes que parten un carácter: protobuf no serializa cadenas UTF-8 inválidas y PostgreSQL las rechaza → el trabajo no terminaba nunca; ahora se sanea en el agente (`execute`) y en el core. (3) Un stack nuevo con el nombre de un proyecto en marcha no gestionado lo absorbía y `up --remove-orphans` borraba sus contenedores sin confirmación → `409 name_taken`; ese proyecto se adopta.
+
+Pendiente menor (no bloquea): copia del compose anterior al editar un adoptado (hoy se pierde la versión previa); retención de la tabla `job`; límite de trabajos simultáneos por agente (hoy lo acota la cola de 32 del core).
+
+## 7. Pendiente fuera de este diseño
 
 Terminal en contenedor (borrador en `D-terminal.DESIGN.md`), seguimiento de logs en directo (`-f`), permisos por usuario (fase 4), retención y limpieza de la tabla `job`.

@@ -17,7 +17,7 @@ Reglas que mandan en toda la fase (CLAUDE.md §3): comandos **tipados**, nunca t
 | D5 | Stacks | Directorio `/opt/talaia/stacks/<nombre>/` (compose.yaml + .env con permisos 0600), validación con `docker compose config`, secretos fuera del registro |
 | D6 | Adopción | Cómo pasar a Talaia un proyecto Compose existente sin recrearlo (copiar o enlazar archivos, conservar el nombre del proyecto) |
 
-Entregable: `.agents/plans/fase2/D-trabajos.DESIGN.md` (escrito a posteriori sobre lo construido) y, para la terminal, `D-terminal.DESIGN.md` (borrador). Ambos pendientes de revisión de seguridad con Opus.
+Entregable: `.agents/plans/fase2/D-trabajos.DESIGN.md` (escrito a posteriori sobre lo construido) y, para la terminal, `D-terminal.DESIGN.md`. **Ambos revisados por Opus el 2026-10-20**: decisiones en `D-trabajos.DESIGN.md` §6 (el administrador equivale a root; fallos corregidos) y `D-terminal.DESIGN.md` §3–§5 (aprobado, con contrato y pasos).
 
 ## Avance (2026-10-20, por petición «sigue con el desarrollo»)
 
@@ -34,9 +34,9 @@ Hecho como primer corte vertical, **sin pasar por la revisión de diseño D1–D
 | 5 | Stacks Compose: crear, editar compose/.env con validación, `up`/`down`/`pull`/`restart` | `agent/internal/stacks/**`, `core/**`, `web/**` | un stack de ejemplo se despliega y se actualiza desde el panel | alto |
 | 6 | Adoptar contenedores y proyectos existentes | `agent/internal/stacks/**`, `web/**` | los proyectos del Debian de casa aparecen como stacks de Talaia sin recrearlos | alto |
 | 7 | Imágenes, volúmenes, redes y limpieza (con vista previa de lo que se borra) | `agent/internal/docker/**`, `web/**` | limpieza con confirmación y resumen | medio |
-| 8 | Terminal en contenedor | `agent/internal/terminal/**`, `core/**`, `web/**` | terminal funcional, con permiso y registro; **revisión de seguridad con Opus** | alto + Opus |
-| 9 | Pantalla de stack (maqueta 3), documentación EN+ES y cierre de fase | `docs/**`, `web/**` | criterio de la fase cumplido en el Debian de casa; versión 0.3.0 si el mantenedor lo pide | medio |
+| 8 | Terminal en contenedor, en los 7 subpasos de `D-terminal.DESIGN.md` §5 | `proto/**`, `agent/internal/terminal/**`, `core/**`, `web/**` | terminal funcional, con permiso y grabación; **revisión de seguridad final con Opus** | Sonnet alto + Opus |
+| 9 | Pantalla de stack (maqueta 3), nota fija en el editor de stacks («un compose se ejecuta como root en el servidor»), sección de seguridad en la documentación EN+ES (el administrador equivale a root, D-trabajos §6) y cierre de fase | `docs/**`, `web/**` | criterio de la fase cumplido en el Debian de casa; versión 0.3.0 si el mantenedor lo pide | medio |
 
 ## Cómo retomarlo
 
-`/clear` → `/model opus` → «haz el diseño D1–D6 de `fase2.PLAN.md` y escribe `D-trabajos.DESIGN.md`». Después, con el diseño aprobado, `/model sonnet` y «ejecuta el paso 1». El ejecutor marca cada paso hecho aquí y, ante un imprevisto de diseño, para y lo anota en lugar de improvisar.
+`/clear` → `/model sonnet` → «ejecuta el subpaso 1 del paso 8 (`D-terminal.DESIGN.md` §5)». Se sigue en orden; el subpaso 7 vuelve a Opus. El ejecutor marca cada subpaso hecho en `D-terminal.DESIGN.md` y, ante un imprevisto de diseño, para y lo anota en lugar de improvisar. El paso 9 es independiente y puede hacerse antes.
