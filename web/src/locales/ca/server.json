@@ -129,5 +129,8 @@
     "resultOk": "Eliminat",
     "resultFailed": "No s’ha pogut eliminar: {{message}}",
     "summaryDone": "S’han eliminat {{ok}} de {{total}}."
+  },
+  "use": {
+    "title": "Ús del contenidor"
   }
 }

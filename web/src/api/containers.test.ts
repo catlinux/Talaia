@@ -25,6 +25,13 @@ describe('createContainersApi', () => {
               status: 'Up 2 hours',
               compose_project: 'shop',
               compose_service: 'web',
+              use: {
+                cpu_percent: 12.5,
+                mem_used_bytes: 1000,
+                mem_limit_bytes: 4000,
+                net_rx_bytes: 7,
+                net_tx_bytes: 9,
+              },
             },
           ],
         }),
@@ -45,6 +52,13 @@ describe('createContainersApi', () => {
           status: 'Up 2 hours',
           composeProject: 'shop',
           composeService: 'web',
+          use: {
+            cpuPercent: 12.5,
+            memUsedBytes: 1000,
+            memLimitBytes: 4000,
+            netRxBytes: 7,
+            netTxBytes: 9,
+          },
         },
       ],
     })

@@ -236,4 +236,35 @@ describe('ServerScreen', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Logs' }))
     expect((await screen.findByRole('alert')).textContent).toBe('Failed: docker: No such container')
   })
+
+  it('shows the CPU and the memory of the running containers that have a sample', async () => {
+    const withUse = container({
+      use: {
+        cpuPercent: 37.5,
+        memUsedBytes: 512 * 1024 ** 2,
+        memLimitBytes: 1024 ** 3,
+        netRxBytes: 1,
+        netTxBytes: 2,
+      },
+    })
+    const stopped = container({
+      id: 'bbbbbbbbbbbb',
+      name: 'db',
+      state: 'exited',
+      use: { cpuPercent: 99, memUsedBytes: 1, memLimitBytes: 0, netRxBytes: 0, netTxBytes: 0 },
+    })
+    renderScreen(apiWith(listOf(withUse, stopped)))
+
+    const row = (await screen.findByRole('heading', { level: 3, name: 'web' })).closest('li')!
+    expect(within(row).getByRole('meter', { name: /CPU: / })).toBeTruthy()
+    expect(within(row).getByRole('meter', { name: /RAM: / })).toBeTruthy()
+    // The memory shows what is used out of the limit.
+    expect(
+      within(row).getByRole('meter', { name: /RAM: / }).getAttribute('aria-valuetext'),
+    ).toContain(' / ')
+
+    // A stopped container never shows gauges, even with a leftover sample.
+    const stoppedRow = screen.getByRole('heading', { level: 3, name: 'db' }).closest('li')!
+    expect(within(stoppedRow).queryByRole('meter')).toBeNull()
+  })
 })

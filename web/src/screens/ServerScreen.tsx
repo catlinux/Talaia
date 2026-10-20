@@ -18,10 +18,12 @@ import {
   StopIcon,
   TrashIcon,
 } from '../components/icons'
+import { formatBytes, formatPercent } from './fleet/format'
 import { LogsPanel } from './server/LogsPanel'
 import { ResourcesSection } from './server/ResourcesSection'
 import { StacksSection } from './server/StacksSection'
 import { TimedOut, waitForJob } from './server/waitForJob'
+import { UseGauge } from './server/UseGauge'
 
 /** refreshEvery is how often the list reloads while the screen is open. */
 export const refreshEvery = 10_000
@@ -298,6 +300,7 @@ function ContainerRow({
           <span className="container__image">{container.image}</span>
           <span className="container__status">{container.status}</span>
         </p>
+        {isRunning && container.use ? <ContainerUseGauges container={container} /> : null}
         {outcome?.kind === 'working' ? (
           <p className="container__outcome" role="status">
             {t('progress.working')}
@@ -364,5 +367,30 @@ function ContainerRow({
       )}
       {logs}
     </li>
+  )
+}
+
+/** ContainerUseGauges shows the CPU and the memory of a running container. */
+function ContainerUseGauges({ container }: { container: Container }) {
+  const { t, i18n } = useTranslation(['server', 'fleet'])
+  const language = i18n.resolvedLanguage ?? i18n.language
+  const use = container.use
+  if (!use) return null
+
+  const memoryPercent = use.memLimitBytes > 0 ? (use.memUsedBytes / use.memLimitBytes) * 100 : 0
+  const memoryText =
+    use.memLimitBytes > 0
+      ? `${formatBytes(use.memUsedBytes, language)} / ${formatBytes(use.memLimitBytes, language)}`
+      : formatBytes(use.memUsedBytes, language)
+
+  return (
+    <div className="container__use" aria-label={t('server:use.title')}>
+      <UseGauge
+        label={t('fleet:metric.cpu')}
+        percent={use.cpuPercent}
+        value={formatPercent(use.cpuPercent, language)}
+      />
+      <UseGauge label={t('fleet:metric.ram')} percent={memoryPercent} value={memoryText} />
+    </div>
   )
 }

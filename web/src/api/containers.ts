@@ -11,6 +11,19 @@ export interface Container {
   status: string
   composeProject: string
   composeService: string
+  /** use is the last sample of a running container, when the agent has reported one. */
+  use?: ContainerUse
+}
+
+/** ContainerUse is the resource use of one running container. */
+export interface ContainerUse {
+  /** cpuPercent is of one core: 100 means one full core. */
+  cpuPercent: number
+  memUsedBytes: number
+  /** memLimitBytes is 0 when the container has no memory limit. */
+  memLimitBytes: number
+  netRxBytes: number
+  netTxBytes: number
 }
 
 /** ContainerList is the answer of the containers endpoint. */
@@ -122,6 +135,13 @@ interface apiContainer {
   status: string
   compose_project: string
   compose_service: string
+  use?: {
+    cpu_percent: number
+    mem_used_bytes: number
+    mem_limit_bytes: number
+    net_rx_bytes: number
+    net_tx_bytes: number
+  }
 }
 
 interface apiContainerList {
@@ -157,6 +177,17 @@ export function createContainersApi(fetchImpl?: typeof fetch): ContainersApi {
           status: container.status,
           composeProject: container.compose_project,
           composeService: container.compose_service,
+          ...(container.use
+            ? {
+                use: {
+                  cpuPercent: container.use.cpu_percent,
+                  memUsedBytes: container.use.mem_used_bytes,
+                  memLimitBytes: container.use.mem_limit_bytes,
+                  netRxBytes: container.use.net_rx_bytes,
+                  netTxBytes: container.use.net_tx_bytes,
+                },
+              }
+            : {}),
         })),
       }
     },

@@ -727,3 +727,17 @@
   padding: 0;
   list-style: none;
 }
+
+/* ---------- Use of a running container ---------- */
+
+.container__use {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-width: 340px;
+  margin-top: 6px;
+}
+
+.container__use .meter {
+  grid-template-columns: 34px minmax(0, 1fr) minmax(0, auto);
+}

@@ -129,5 +129,8 @@
     "resultOk": "Removed",
     "resultFailed": "Could not remove: {{message}}",
     "summaryDone": "{{ok}} of {{total}} removed."
+  },
+  "use": {
+    "title": "Container use"
   }
 }
