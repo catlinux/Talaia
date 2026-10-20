@@ -269,3 +269,99 @@ func (p *testPanel) get(t *testing.T, path string) *http.Response {
 	t.Helper()
 	return p.do(t, p.client, http.MethodGet, path, nil)
 }
+
+func logsPath(serverID, container string) string {
+	return "/api/v1/servers/" + serverID + "/containers/" + container + "/logs"
+}
+
+func TestContainerLogsCreateAJobWhoseOutputIsReadable(t *testing.T) {
+	panel := newTestPanel(t)
+	panel.createUser(t, "admin", testPassword)
+	panel.enableTOTP(t, "admin", testPassword)
+	serverID := enrollTestServer(t, panel)
+	panel.agents.set(agentWithContainers(serverID))
+
+	response := panel.post(t, logsPath(serverID, "web"), map[string]any{"tail": 50})
+	if response.StatusCode != http.StatusAccepted {
+		t.Fatalf("status = %d, want 202", response.StatusCode)
+	}
+	var created jobCreatedResponse
+	decodeBody(t, response, &created)
+
+	sent := panel.dispatcher.sent()
+	if len(sent) != 1 || sent[0].GetReadLogs().GetContainer() != "web" || sent[0].GetReadLogs().GetTail() != 50 ||
+		sent[0].GetJobId() != created.JobID {
+		t.Fatalf("sent = %v", sent)
+	}
+
+	// The agent answers with the lines; they come back in the job.
+	recorder := JobRecorder{Jobs: panel.store}
+	recorder.RecordJobEvent(context.Background(), serverID, &agentv1.JobEvent{JobId: created.JobID, State: agentv1.JobState_JOB_STATE_RUNNING})
+	recorder.RecordJobEvent(context.Background(), serverID, &agentv1.JobEvent{
+		JobId: created.JobID, State: agentv1.JobState_JOB_STATE_SUCCEEDED, Output: "2026-10-20T10:00:00Z hello\n",
+	})
+	var job jobResponse
+	decodeBody(t, panel.get(t, "/api/v1/jobs/"+created.JobID), &job)
+	if job.State != store.JobSucceeded || job.Output != "2026-10-20T10:00:00Z hello\n" {
+		t.Errorf("job = %+v", job)
+	}
+
+	// Only the fact is audited, never the text.
+	entries, err := panel.store.ListAudit(context.Background(), 20)
+	if err != nil {
+		t.Fatalf("list audit: %v", err)
+	}
+	found := false
+	for _, entry := range entries {
+		if entry.Action == "container_logs" && entry.Actor == "admin" {
+			found = true
+			if strings.Contains(strings.Join(stringValues(entry.Details), ""), "hello") {
+				t.Error("the audit log holds the log text")
+			}
+		}
+	}
+	if !found {
+		t.Error("the log read was not audited")
+	}
+}
+
+func TestContainerLogsValidation(t *testing.T) {
+	panel := newTestPanel(t)
+	panel.createUser(t, "admin", testPassword)
+	panel.enableTOTP(t, "admin", testPassword)
+	serverID := enrollTestServer(t, panel)
+
+	if got := panel.post(t, logsPath(serverID, "web"), map[string]any{}).StatusCode; got != http.StatusConflict {
+		t.Errorf("offline status = %d, want 409", got)
+	}
+
+	panel.agents.set(agentWithContainers(serverID))
+	tests := []struct {
+		name      string
+		container string
+		body      map[string]any
+		want      int
+	}{
+		{"default tail", "web", map[string]any{}, http.StatusAccepted},
+		{"tail too large", "web", map[string]any{"tail": 5000}, http.StatusBadRequest},
+		{"negative tail", "web", map[string]any{"tail": -1}, http.StatusBadRequest},
+		{"unknown container", "ghost", map[string]any{}, http.StatusNotFound},
+		{"bad reference", "web;rm", map[string]any{}, http.StatusBadRequest},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := panel.post(t, logsPath(serverID, tt.container), tt.body).StatusCode; got != tt.want {
+				t.Errorf("status = %d, want %d", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestContainerLogsNeedAFullSession(t *testing.T) {
+	panel := newTestPanel(t)
+	panel.createUser(t, "admin", testPassword)
+
+	if got := panel.post(t, logsPath("x", "web"), map[string]any{}).StatusCode; got != http.StatusUnauthorized {
+		t.Errorf("status = %d, want 401", got)
+	}
+}

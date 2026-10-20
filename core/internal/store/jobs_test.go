@@ -37,14 +37,14 @@ func TestJobLifecycle(t *testing.T) {
 		t.Fatalf("new job = %+v", job)
 	}
 
-	if changed, err := s.UpdateJobState(ctx, job.ID, serverID, JobRunning, ""); err != nil || !changed {
+	if changed, err := s.UpdateJobState(ctx, job.ID, serverID, JobRunning, "", ""); err != nil || !changed {
 		t.Fatalf("to running = %v, %v", changed, err)
 	}
 	// Running twice is not a change.
-	if changed, _ := s.UpdateJobState(ctx, job.ID, serverID, JobRunning, ""); changed {
+	if changed, _ := s.UpdateJobState(ctx, job.ID, serverID, JobRunning, "", ""); changed {
 		t.Error("a second running event changed the job")
 	}
-	if changed, err := s.UpdateJobState(ctx, job.ID, serverID, JobSucceeded, "done"); err != nil || !changed {
+	if changed, err := s.UpdateJobState(ctx, job.ID, serverID, JobSucceeded, "done", "log line\n"); err != nil || !changed {
 		t.Fatalf("to succeeded = %v, %v", changed, err)
 	}
 
@@ -52,12 +52,12 @@ func TestJobLifecycle(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GetJob: %v", err)
 	}
-	if got.State != JobSucceeded || got.Message != "done" || !got.Done() || got.FinishedAt.IsZero() {
+	if got.State != JobSucceeded || got.Message != "done" || got.Output != "log line\n" || !got.Done() || got.FinishedAt.IsZero() {
 		t.Errorf("finished job = %+v", got)
 	}
 
 	// A finished job never changes again.
-	if changed, _ := s.UpdateJobState(ctx, job.ID, serverID, JobFailed, "late"); changed {
+	if changed, _ := s.UpdateJobState(ctx, job.ID, serverID, JobFailed, "late", ""); changed {
 		t.Error("a finished job was rewritten")
 	}
 }
@@ -73,7 +73,7 @@ func TestJobStateOnlyChangesForItsOwnServer(t *testing.T) {
 		t.Fatalf("CreateJob: %v", err)
 	}
 
-	if changed, _ := s.UpdateJobState(ctx, job.ID, otherID, JobSucceeded, "forged"); changed {
+	if changed, _ := s.UpdateJobState(ctx, job.ID, otherID, JobSucceeded, "forged", ""); changed {
 		t.Error("another server finished the job")
 	}
 	got, _ := s.GetJob(ctx, job.ID)
@@ -90,7 +90,7 @@ func TestJobValidation(t *testing.T) {
 	if _, err := s.CreateJob(ctx, serverID, "", nil, "admin"); err == nil {
 		t.Error("expected an error without a kind")
 	}
-	if _, err := s.UpdateJobState(ctx, "x", serverID, "pending", ""); err == nil {
+	if _, err := s.UpdateJobState(ctx, "x", serverID, "pending", "", ""); err == nil {
 		t.Error("expected an error for an invalid state")
 	}
 	if _, err := s.GetJob(ctx, "00000000-0000-0000-0000-000000000000"); !errors.Is(err, ErrNotFound) {

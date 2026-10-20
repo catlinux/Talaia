@@ -56,6 +56,7 @@ func NewRouter(deps RouterDeps) http.Handler {
 			if deps.Containers != nil {
 				r.Get("/servers/{serverID}/containers", NewContainersHandler(*deps.Containers).ServeHTTP)
 				r.Post("/servers/{serverID}/containers/{container}/actions", NewContainerActionHandler(*deps.Containers).ServeHTTP)
+				r.Post("/servers/{serverID}/containers/{container}/logs", NewContainerLogsHandler(*deps.Containers).ServeHTTP)
 				r.Get("/jobs/{jobID}", NewJobHandler(*deps.Containers).ServeHTTP)
 			}
 			if deps.Enrollment != nil {

@@ -43,7 +43,7 @@ type CommandDispatcher interface {
 type JobStore interface {
 	CreateJob(ctx context.Context, serverID, kind string, params map[string]any, createdBy string) (store.Job, error)
 	GetJob(ctx context.Context, id string) (store.Job, error)
-	UpdateJobState(ctx context.Context, id, serverID, state, message string) (bool, error)
+	UpdateJobState(ctx context.Context, id, serverID, state, message, output string) (bool, error)
 	FailStaleJob(ctx context.Context, id string, maxAge time.Duration) (bool, error)
 }
 
@@ -146,55 +146,16 @@ func NewContainerActionHandler(deps ContainerDeps) http.Handler {
 			return
 		}
 
-		actor := ""
-		if session, ok := sessionFromContext(r.Context()); ok {
-			actor = session.User.Username
-		}
-		if actor == "" {
-			writeError(w, http.StatusUnauthorized, "session_required")
-			return
-		}
-
-		job, err := deps.Jobs.CreateJob(r.Context(), serverID, containerActionKind,
-			map[string]any{"container": reference, "action": request.Action}, actor)
-		if err != nil {
-			slog.Error("create job", "error", err)
-			writeError(w, http.StatusInternalServerError, "internal")
-			return
-		}
-
-		err = deps.Dispatcher.Dispatch(serverID, &agentv1.CoreMsg{
-			JobId: job.ID,
-			Cmd: &agentv1.CoreMsg_ContainerAction{
-				ContainerAction: &agentv1.ContainerAction{Container: reference, Action: action},
-			},
-		})
-		if err != nil {
-			// The command never left: close the job instead of leaving it pending.
-			_, _ = deps.Jobs.UpdateJobState(r.Context(), job.ID, serverID, store.JobFailed, err.Error())
-			status, code := http.StatusServiceUnavailable, "agent_busy"
-			if errors.Is(err, hub.ErrNotConnected) {
-				status, code = http.StatusConflict, "agent_offline"
-			}
-			writeError(w, status, code)
-			return
-		}
-
-		if err := deps.Audit.AppendAudit(r.Context(), store.AuditEvent{
-			Actor:  actor,
-			Action: "container_" + request.Action,
-			IP:     clientIP(r),
-			Result: "requested",
-			Details: map[string]any{
-				"server_id": serverID,
-				"container": reference,
-				"job_id":    job.ID,
-			},
-		}); err != nil {
-			slog.Error("append audit event", "action", "container_"+request.Action, "error", err)
-		}
-
-		writeJSON(w, http.StatusAccepted, jobCreatedResponse{JobID: job.ID})
+		submitContainerJob(w, r, deps, serverID, reference, "container_"+request.Action,
+			map[string]any{"container": reference, "action": request.Action},
+			func(jobID string) *agentv1.CoreMsg {
+				return &agentv1.CoreMsg{
+					JobId: jobID,
+					Cmd: &agentv1.CoreMsg_ContainerAction{
+						ContainerAction: &agentv1.ContainerAction{Container: reference, Action: action},
+					},
+				}
+			})
 	})
 }
 
@@ -205,6 +166,7 @@ type jobResponse struct {
 	Params     map[string]any `json:"params"`
 	State      string         `json:"state"`
 	Message    string         `json:"message"`
+	Output     string         `json:"output"`
 	CreatedBy  string         `json:"created_by"`
 	CreatedAt  time.Time      `json:"created_at"`
 	FinishedAt *time.Time     `json:"finished_at"`
@@ -234,7 +196,7 @@ func NewJobHandler(deps ContainerDeps) http.Handler {
 
 		response := jobResponse{
 			ID: job.ID, ServerID: job.ServerID, Kind: job.Kind, Params: job.Params,
-			State: job.State, Message: job.Message, CreatedBy: job.CreatedBy, CreatedAt: job.CreatedAt,
+			State: job.State, Message: job.Message, Output: job.Output, CreatedBy: job.CreatedBy, CreatedAt: job.CreatedAt,
 		}
 		if !job.FinishedAt.IsZero() {
 			finished := job.FinishedAt
@@ -272,7 +234,7 @@ func (j JobRecorder) RecordJobEvent(ctx context.Context, serverID string, event 
 	if len(message) > 500 {
 		message = message[:500]
 	}
-	if _, err := j.Jobs.UpdateJobState(ctx, event.GetJobId(), serverID, state, message); err != nil {
+	if _, err := j.Jobs.UpdateJobState(ctx, event.GetJobId(), serverID, state, message, event.GetOutput()); err != nil {
 		slog.Warn("record job event", "job_id", event.GetJobId(), "error", err)
 	}
 }
@@ -302,4 +264,99 @@ func hasContainer(agent hub.AgentInfo, reference string) bool {
 		}
 	}
 	return false
+}
+
+// submitContainerJob creates a job, sends its command to the agent and answers
+// 202 with the job id. The caller has already validated the request and checked
+// that the container is one the agent reported.
+func submitContainerJob(w http.ResponseWriter, r *http.Request, deps ContainerDeps, serverID, reference, auditAction string, params map[string]any, command func(jobID string) *agentv1.CoreMsg) {
+	actor := ""
+	if session, ok := sessionFromContext(r.Context()); ok {
+		actor = session.User.Username
+	}
+	if actor == "" {
+		writeError(w, http.StatusUnauthorized, "session_required")
+		return
+	}
+
+	job, err := deps.Jobs.CreateJob(r.Context(), serverID, containerActionKind, params, actor)
+	if err != nil {
+		slog.Error("create job", "error", err)
+		writeError(w, http.StatusInternalServerError, "internal")
+		return
+	}
+
+	if err := deps.Dispatcher.Dispatch(serverID, command(job.ID)); err != nil {
+		// The command never left: close the job instead of leaving it pending.
+		_, _ = deps.Jobs.UpdateJobState(r.Context(), job.ID, serverID, store.JobFailed, err.Error(), "")
+		status, code := http.StatusServiceUnavailable, "agent_busy"
+		if errors.Is(err, hub.ErrNotConnected) {
+			status, code = http.StatusConflict, "agent_offline"
+		}
+		writeError(w, status, code)
+		return
+	}
+
+	if err := deps.Audit.AppendAudit(r.Context(), store.AuditEvent{
+		Actor:  actor,
+		Action: auditAction,
+		IP:     clientIP(r),
+		Result: "requested",
+		Details: map[string]any{
+			"server_id": serverID,
+			"container": reference,
+			"job_id":    job.ID,
+		},
+	}); err != nil {
+		slog.Error("append audit event", "action", auditAction, "error", err)
+	}
+
+	writeJSON(w, http.StatusAccepted, jobCreatedResponse{JobID: job.ID})
+}
+
+type containerLogsRequest struct {
+	// Tail is how many lines from the end; 0 asks for the default.
+	Tail int `json:"tail"`
+}
+
+// maxLogTail is the most lines one request may ask for.
+const maxLogTail = 1000
+
+// NewContainerLogsHandler returns POST
+// /api/v1/servers/{serverID}/containers/{container}/logs. The lines come back
+// in the output of the job it creates. The log text is never written to the
+// audit log: only the fact that it was read.
+func NewContainerLogsHandler(deps ContainerDeps) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		serverID := chi.URLParam(r, "serverID")
+		reference := chi.URLParam(r, "container")
+
+		var request containerLogsRequest
+		if err := decodeJSON(w, r, &request); err != nil || request.Tail < 0 || request.Tail > maxLogTail ||
+			!containerRef.MatchString(reference) {
+			writeError(w, http.StatusBadRequest, "invalid_request")
+			return
+		}
+
+		agent, connected := connectedAgent(deps.Agents, serverID)
+		if !connected {
+			writeError(w, http.StatusConflict, "agent_offline")
+			return
+		}
+		if !hasContainer(agent, reference) {
+			writeError(w, http.StatusNotFound, "not_found")
+			return
+		}
+
+		submitContainerJob(w, r, deps, serverID, reference, "container_logs",
+			map[string]any{"container": reference, "tail": request.Tail},
+			func(jobID string) *agentv1.CoreMsg {
+				return &agentv1.CoreMsg{
+					JobId: jobID,
+					Cmd: &agentv1.CoreMsg_ReadLogs{
+						ReadLogs: &agentv1.ReadLogs{Container: reference, Tail: uint32(request.Tail)},
+					},
+				}
+			})
+	})
 }

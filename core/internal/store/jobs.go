@@ -20,12 +20,14 @@ const (
 
 // Job is one typed command sent to the agent of a server.
 type Job struct {
-	ID         string
-	ServerID   string
-	Kind       string
-	Params     map[string]any
-	State      string
-	Message    string
+	ID       string
+	ServerID string
+	Kind     string
+	Params   map[string]any
+	State    string
+	Message  string
+	// Output is the text the job produced, bounded to MaxJobOutput bytes.
+	Output     string
 	CreatedBy  string
 	CreatedAt  time.Time
 	UpdatedAt  time.Time
@@ -37,7 +39,10 @@ func (j Job) Done() bool {
 	return j.State == JobSucceeded || j.State == JobFailed
 }
 
-const jobColumns = `id, server_id, kind, params, state, message, created_by, created_at, updated_at, finished_at`
+// MaxJobOutput bounds the output stored for a job.
+const MaxJobOutput = 256 << 10
+
+const jobColumns = `id, server_id, kind, params, state, message, output, created_by, created_at, updated_at, finished_at`
 
 type jobScanner interface {
 	Scan(dest ...any) error
@@ -48,7 +53,7 @@ func scanJob(row jobScanner) (Job, error) {
 		job        Job
 		finishedAt *time.Time
 	)
-	if err := row.Scan(&job.ID, &job.ServerID, &job.Kind, &job.Params, &job.State, &job.Message,
+	if err := row.Scan(&job.ID, &job.ServerID, &job.Kind, &job.Params, &job.State, &job.Message, &job.Output,
 		&job.CreatedBy, &job.CreatedAt, &job.UpdatedAt, &finishedAt); err != nil {
 		return Job{}, err
 	}
@@ -81,23 +86,28 @@ func (s *Store) CreateJob(ctx context.Context, serverID, kind string, params map
 // UpdateJobState moves a job forward. It only changes a job of that server, and
 // a job that has finished never changes again, so a late or repeated event from
 // the agent cannot rewrite the outcome. It returns whether the row changed.
-func (s *Store) UpdateJobState(ctx context.Context, id, serverID, state, message string) (bool, error) {
+func (s *Store) UpdateJobState(ctx context.Context, id, serverID, state, message, output string) (bool, error) {
 	switch state {
 	case JobRunning, JobSucceeded, JobFailed:
 	default:
 		return false, fmt.Errorf("invalid job state %q", state)
 	}
 
+	if len(output) > MaxJobOutput {
+		output = output[len(output)-MaxJobOutput:]
+	}
+
 	tag, err := s.pool.Exec(ctx,
 		`UPDATE job
 		 SET state = $3,
 		     message = $4,
+		     output = $5,
 		     updated_at = now(),
 		     finished_at = CASE WHEN $3 IN ('succeeded', 'failed') THEN now() ELSE NULL END
 		 WHERE id = $1 AND server_id = $2
 		   AND state IN ('pending', 'running')
 		   AND NOT (state = 'running' AND $3 = 'running')`,
-		id, serverID, state, message)
+		id, serverID, state, message, output)
 	if err != nil {
 		return false, fmt.Errorf("update job state: %w", err)
 	}
