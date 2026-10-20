@@ -17,21 +17,53 @@ message CoreMsg {
   string job_id = 1;
   oneof cmd {
     HeartbeatAck heartbeat_ack = 2;
-    // Numbers 10 and above are reserved for typed commands
-    // (compose_up, exec_pty, apt_upgrade, read_logs…), added in later phases.
+    // Numbers 10 and above are for typed commands (compose_up, exec_pty,
+    // apt_upgrade, read_logs…), added phase by phase.
+    ContainerAction container_action = 10;
   }
 }
 
 // agent -> core
 message AgentMsg {
-  // Field 3 is reserved for JobEvent (progress, output, result), added with the first command.
-  reserved 3;
-  reserved "job_event";
   oneof msg {
     Heartbeat heartbeat = 1; // every 10 s
     Metrics metrics = 2;     // every 15 s
+    JobEvent job_event = 3;  // progress and result of a command
     Inventory inventory = 4; // on connect and on change
   }
+}
+
+// ContainerAction starts, stops, restarts or removes one container. The agent
+// runs exactly this and nothing else; it never builds a shell command.
+message ContainerAction {
+  // Container id (hex, 12 to 64 characters) or name.
+  string container = 1;
+  ContainerActionType action = 2;
+}
+
+enum ContainerActionType {
+  CONTAINER_ACTION_TYPE_UNSPECIFIED = 0;
+  CONTAINER_ACTION_TYPE_START = 1;
+  CONTAINER_ACTION_TYPE_STOP = 2;
+  CONTAINER_ACTION_TYPE_RESTART = 3;
+  // Removes the container; its volumes are kept.
+  CONTAINER_ACTION_TYPE_REMOVE = 4;
+}
+
+// JobEvent reports how a command (identified by CoreMsg.job_id) is going.
+message JobEvent {
+  string job_id = 1;
+  JobState state = 2;
+  // Short human-readable detail, for example the error of the Docker Engine.
+  string message = 3;
+  google.protobuf.Timestamp at = 4;
+}
+
+enum JobState {
+  JOB_STATE_UNSPECIFIED = 0;
+  JOB_STATE_RUNNING = 1;
+  JOB_STATE_SUCCEEDED = 2;
+  JOB_STATE_FAILED = 3;
 }
 
 message Heartbeat {
