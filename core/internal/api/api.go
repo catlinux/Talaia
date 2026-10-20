@@ -61,6 +61,7 @@ func NewRouter(deps RouterDeps) http.Handler {
 				r.Get("/servers/{serverID}/stacks", NewStacksHandler(*deps.Containers).ServeHTTP)
 				r.Put("/servers/{serverID}/stacks/{name}", NewStackWriteHandler(*deps.Containers).ServeHTTP)
 				r.Post("/servers/{serverID}/stacks/{name}/read", NewStackReadHandler(*deps.Containers).ServeHTTP)
+				r.Post("/servers/{serverID}/stacks/{name}/adopt", NewStackAdoptHandler(*deps.Containers).ServeHTTP)
 				r.Post("/servers/{serverID}/stacks/{name}/actions", NewStackActionHandler(*deps.Containers).ServeHTTP)
 			}
 			if deps.Enrollment != nil {

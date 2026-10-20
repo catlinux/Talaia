@@ -75,6 +75,8 @@ type AgentInfo struct {
 	ContainerList []*agentv1.Container
 	// ManagedStacks are the stacks Talaia manages on the server, sorted.
 	ManagedStacks []string
+	// AdoptedStacks are the managed stacks that were adopted, a subset of ManagedStacks.
+	AdoptedStacks []string
 
 	// key is the registry key: the server id with certificates, the hostname
 	// in insecure dev mode.
@@ -109,6 +111,7 @@ func (info *AgentInfo) applyInventory(inventory *agentv1.Inventory) {
 	info.Services = len(inventory.GetServices())
 	info.ContainerList = inventory.GetContainers()
 	info.ManagedStacks = inventory.GetManagedStacks()
+	info.AdoptedStacks = inventory.GetAdoptedStacks()
 }
 
 // agentStream is the part of the server stream the hub uses. Keeping it small

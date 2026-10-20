@@ -10,11 +10,13 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
+	"github.com/catlinux/Talaia/core/internal/hub"
 	agentv1 "github.com/catlinux/Talaia/proto/gen/go"
 )
 
 // Job kinds of the stack commands.
 const (
+	stackAdoptKind  = "stack_adopt"
 	stackWriteKind  = "stack_write"
 	stackReadKind   = "stack_read"
 	stackActionKind = "stack_action"
@@ -36,6 +38,7 @@ var stackActions = map[string]agentv1.StackActionType{
 	"pull":    agentv1.StackActionType_STACK_ACTION_TYPE_PULL,
 	"restart": agentv1.StackActionType_STACK_ACTION_TYPE_RESTART,
 	"remove":  agentv1.StackActionType_STACK_ACTION_TYPE_REMOVE,
+	"forget":  agentv1.StackActionType_STACK_ACTION_TYPE_FORGET,
 }
 
 // destructiveStackActions need an explicit confirmation: they stop a service or
@@ -45,6 +48,10 @@ var destructiveStackActions = map[string]bool{"down": true, "remove": true}
 type stacksResponse struct {
 	Connected bool     `json:"connected"`
 	Stacks    []string `json:"stacks"`
+	// Adopted lists the managed stacks that were adopted from a running project.
+	Adopted []string `json:"adopted"`
+	// Adoptable lists the running Compose projects Talaia does not manage yet.
+	Adoptable []string `json:"adoptable"`
 }
 
 // NewStacksHandler returns GET /api/v1/servers/{serverID}/stacks: the names of
@@ -53,9 +60,11 @@ func NewStacksHandler(deps ContainerDeps) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		agent, ok := connectedAgent(deps.Agents, chi.URLParam(r, "serverID"))
 
-		response := stacksResponse{Connected: ok, Stacks: []string{}}
+		response := stacksResponse{Connected: ok, Stacks: []string{}, Adopted: []string{}, Adoptable: []string{}}
 		if ok {
 			response.Stacks = append(response.Stacks, agent.ManagedStacks...)
+			response.Adopted = append(response.Adopted, agent.AdoptedStacks...)
+			response.Adoptable = append(response.Adoptable, adoptableProjects(agent)...)
 		}
 		w.Header().Set("Cache-Control", "no-store")
 		writeJSON(w, http.StatusOK, response)
@@ -157,6 +166,15 @@ func NewStackActionHandler(deps ContainerDeps) http.Handler {
 		if !managedStack(w, deps, serverID, name) {
 			return
 		}
+		// An adopted stack is forgotten, never removed; a stack of Talaia is
+		// removed, never forgotten.
+		if agent, ok := connectedAgent(deps.Agents, serverID); ok {
+			adopted := slices.Contains(agent.AdoptedStacks, name)
+			if (request.Action == "remove" && adopted) || (request.Action == "forget" && !adopted) {
+				writeError(w, http.StatusBadRequest, "invalid_request")
+				return
+			}
+		}
 
 		submitJob(w, r, deps, serverID, stackActionKind, "stack_"+request.Action,
 			map[string]any{"name": name, "action": request.Action},
@@ -194,4 +212,55 @@ func hashOf(text string) string {
 	}
 	sum := sha256.Sum256([]byte(text))
 	return hex.EncodeToString(sum[:])
+}
+
+// adoptableProjects returns the Compose projects the agent runs that Talaia does
+// not manage, sorted and without repeats, as the containers report them.
+func adoptableProjects(agent hub.AgentInfo) []string {
+	var names []string
+	for _, container := range agent.ContainerList {
+		name := container.GetComposeProject()
+		if name == "" || !stackName.MatchString(name) || slices.Contains(agent.ManagedStacks, name) || slices.Contains(names, name) {
+			continue
+		}
+		names = append(names, name)
+	}
+	slices.Sort(names)
+	return names
+}
+
+// NewStackAdoptHandler returns POST /api/v1/servers/{serverID}/stacks/{name}/adopt.
+// The agent records where the running project lives; the core sends only its
+// name, never a path, and only for a project the agent itself reported.
+func NewStackAdoptHandler(deps ContainerDeps) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		serverID, name := chi.URLParam(r, "serverID"), chi.URLParam(r, "name")
+		if !stackName.MatchString(name) {
+			writeError(w, http.StatusBadRequest, "invalid_request")
+			return
+		}
+		agent, connected := connectedAgent(deps.Agents, serverID)
+		if !connected {
+			writeError(w, http.StatusConflict, "agent_offline")
+			return
+		}
+		if slices.Contains(agent.ManagedStacks, name) {
+			writeError(w, http.StatusConflict, "name_taken")
+			return
+		}
+		if !slices.Contains(adoptableProjects(agent), name) {
+			writeError(w, http.StatusNotFound, "not_found")
+			return
+		}
+
+		submitJob(w, r, deps, serverID, stackAdoptKind, "stack_adopt",
+			map[string]any{"name": name},
+			map[string]any{"stack": name},
+			func(jobID string) *agentv1.CoreMsg {
+				return &agentv1.CoreMsg{
+					JobId: jobID,
+					Cmd:   &agentv1.CoreMsg_StackAdopt{StackAdopt: &agentv1.StackAdopt{Name: name}},
+				}
+			})
+	})
 }
