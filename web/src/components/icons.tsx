@@ -116,3 +116,19 @@ export function ArrowLeftIcon({ className }: IconProps) {
     </Icon>
   )
 }
+
+export function LogsIcon({ className }: IconProps) {
+  return (
+    <Icon className={className}>
+      <path d="M6 3h9l4 4v14H6zM14 3v5h5M9 13h7M9 17h7M9 9h2" />
+    </Icon>
+  )
+}
+
+export function CloseIcon({ className }: IconProps) {
+  return (
+    <Icon className={className}>
+      <path d="M6 6l12 12M18 6 6 18" />
+    </Icon>
+  )
+}

@@ -21,7 +21,8 @@
     "start": "Start",
     "stop": "Stop",
     "restart": "Restart",
-    "remove": "Remove"
+    "remove": "Remove",
+    "logs": "Logs"
   },
   "confirm": {
     "removeTitle": "Remove {{name}}?",
@@ -34,5 +35,13 @@
     "done": "Done",
     "failed": "Failed: {{message}}",
     "timeout": "The agent did not answer in time."
+  },
+  "logs": {
+    "title": "Logs of {{name}}",
+    "loading": "Reading the logs…",
+    "refresh": "Refresh",
+    "close": "Close",
+    "empty": "There are no log lines.",
+    "note": "Last 200 lines, each with its time."
   }
 }

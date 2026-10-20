@@ -31,6 +31,8 @@ export interface Job {
   state: JobState
   /** message carries the reason of a failure. */
   message: string
+  /** output is the text the job produced, for example the lines of a log. */
+  output: string
 }
 
 /** ContainersApi is the typed container API of the core. */
@@ -43,6 +45,8 @@ export interface ContainersApi {
     action: ContainerAction,
     confirm?: boolean,
   ): Promise<string>
+  /** logs asks for the last lines of a container and returns the id of the job. */
+  logs(serverId: string, container: string, tail?: number): Promise<string>
   job(id: string): Promise<Job>
 }
 
@@ -66,6 +70,7 @@ interface apiJob {
   id: string
   state: JobState
   message: string
+  output?: string
 }
 
 /** createContainersApi returns the container API, optionally over an injected fetch. */
@@ -100,7 +105,14 @@ export function createContainersApi(fetchImpl?: typeof fetch): ContainersApi {
     },
     job: async (id) => {
       const body = await http.get<apiJob>(`/api/v1/jobs/${encodeURIComponent(id)}`)
-      return { id: body.id, state: body.state, message: body.message }
+      return { id: body.id, state: body.state, message: body.message, output: body.output ?? '' }
+    },
+    logs: async (serverId, container, tail = 0) => {
+      const body = await http.post<{ job_id: string }>(
+        `/api/v1/servers/${encodeURIComponent(serverId)}/containers/${encodeURIComponent(container)}/logs`,
+        { tail },
+      )
+      return body.job_id
     },
   }
 }

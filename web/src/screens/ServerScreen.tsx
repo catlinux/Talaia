@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import {
@@ -10,16 +10,22 @@ import {
 } from '../api/containers'
 import { isSignedOut } from '../api/http'
 import { errorMessage } from '../auth/AuthGate'
-import { ArrowLeftIcon, PlayIcon, RestartIcon, StopIcon, TrashIcon } from '../components/icons'
+import {
+  ArrowLeftIcon,
+  LogsIcon,
+  PlayIcon,
+  RestartIcon,
+  StopIcon,
+  TrashIcon,
+} from '../components/icons'
+import { LogsPanel } from './server/LogsPanel'
+import { TimedOut, waitForJob } from './server/waitForJob'
 
 /** refreshEvery is how often the list reloads while the screen is open. */
 export const refreshEvery = 10_000
 
 /** pollEvery is how often a running job is asked for its progress. */
 const pollEvery = 800
-
-/** giveUpAfter is how long the screen waits for a job before it stops. */
-const giveUpAfter = 120_000
 
 const defaultApi = createContainersApi()
 
@@ -81,6 +87,8 @@ export function ServerScreen({
   const [refreshFailed, setRefreshFailed] = useState(false)
   const [outcomes, setOutcomes] = useState<Record<string, Outcome>>({})
   const [confirming, setConfirming] = useState<string | null>(null)
+  // The container whose logs are open, if any.
+  const [logsFor, setLogsFor] = useState<string | null>(null)
   const mounted = useRef(true)
 
   const load = useCallback(async () => {
@@ -125,27 +133,19 @@ export function ServerScreen({
       setOutcome(container.id, { kind: 'working', action })
       try {
         const jobId = await api.run(server.id, container.name, action, action === 'remove')
-        const deadline = Date.now() + giveUpAfter
-        for (;;) {
-          await new Promise((resolve) => setTimeout(resolve, pollMs))
-          if (!mounted.current) return
-          const job = await api.job(jobId)
-          if (job.state === 'succeeded') {
-            setOutcome(container.id, { kind: 'done', action })
-            break
-          }
-          if (job.state === 'failed') {
-            setOutcome(container.id, { kind: 'failed', message: job.message })
-            break
-          }
-          if (Date.now() > deadline) {
-            setOutcome(container.id, { kind: 'failed', message: t('server:progress.timeout') })
-            break
-          }
-        }
+        const job = await waitForJob(api, jobId, pollMs, () => mounted.current)
+        if (job === null) return
+        setOutcome(
+          container.id,
+          job.state === 'succeeded'
+            ? { kind: 'done', action }
+            : { kind: 'failed', message: job.message },
+        )
       } catch (error) {
         if (!mounted.current || isSignedOut(error)) return
-        setOutcome(container.id, { kind: 'failed', message: errorMessage(t, error) })
+        const message =
+          error instanceof TimedOut ? t('server:progress.timeout') : errorMessage(t, error)
+        setOutcome(container.id, { kind: 'failed', message })
       }
       await load()
     },
@@ -216,6 +216,20 @@ export function ServerScreen({
               }}
               onConfirm={() => void run(container, 'remove')}
               onCancel={() => setConfirming(null)}
+              onToggleLogs={() =>
+                setLogsFor((current) => (current === container.id ? null : container.id))
+              }
+              logs={
+                logsFor === container.id ? (
+                  <LogsPanel
+                    api={api}
+                    serverId={server.id}
+                    container={container.name}
+                    pollMs={pollMs}
+                    onClose={() => setLogsFor(null)}
+                  />
+                ) : null
+              }
             />
           ))}
         </ul>
@@ -231,6 +245,9 @@ interface ContainerRowProps {
   onAction: (action: ContainerAction) => void
   onConfirm: () => void
   onCancel: () => void
+  onToggleLogs: () => void
+  /** logs is the open log viewer of this container, if any. */
+  logs: ReactNode
 }
 
 function ContainerRow({
@@ -240,6 +257,8 @@ function ContainerRow({
   onAction,
   onConfirm,
   onCancel,
+  onToggleLogs,
+  logs,
 }: ContainerRowProps) {
   const { t } = useTranslation('server')
   const busy = outcome?.kind === 'working'
@@ -301,6 +320,15 @@ function ContainerRow({
         </div>
       ) : (
         <div className="container__actions">
+          <button
+            type="button"
+            className="cbtn"
+            aria-expanded={logs !== null}
+            onClick={onToggleLogs}
+          >
+            <LogsIcon />
+            {t('action.logs')}
+          </button>
           {actions.map((action) => {
             const ActionIcon = actionIcons[action]
             return (
@@ -318,6 +346,7 @@ function ContainerRow({
           })}
         </div>
       )}
+      {logs}
     </li>
   )
 }

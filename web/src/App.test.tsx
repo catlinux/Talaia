@@ -113,6 +113,7 @@ describe('App', () => {
           ],
         }),
       run: () => Promise.reject(new Error('unexpected')),
+      logs: () => Promise.reject(new Error('unexpected')),
       job: () => Promise.reject(new Error('unexpected')),
     }
     render(

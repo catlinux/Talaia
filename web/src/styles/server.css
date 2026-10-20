@@ -265,3 +265,70 @@
 .server__open:hover {
   color: var(--accent);
 }
+
+/* ---------- Log viewer ---------- */
+
+.logs {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 14px;
+  border-top: 1px dashed var(--line);
+  animation: rise 320ms var(--ease) both;
+}
+
+.logs__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+}
+
+.logs__title {
+  margin: 0;
+  font-family: var(--f-mono);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+.logs__actions {
+  display: flex;
+  gap: 8px;
+}
+
+.logs__text {
+  max-height: 360px;
+  margin: 0;
+  padding: 14px 16px;
+  overflow: auto;
+  border: 1px solid color-mix(in srgb, var(--code-key) 18%, transparent);
+  border-radius: 10px;
+  background: var(--code-bg);
+  color: var(--code-ink);
+  font-family: var(--f-mono);
+  font-size: 0.78rem;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.logs__message {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+.logs__message--error {
+  color: var(--crit);
+}
+
+.logs__note {
+  margin: 0;
+  color: var(--muted);
+  font-family: var(--f-mono);
+  font-size: 0.6875rem;
+}

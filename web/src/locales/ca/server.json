@@ -21,7 +21,8 @@
     "start": "Inicia",
     "stop": "Atura",
     "restart": "Reinicia",
-    "remove": "Elimina"
+    "remove": "Elimina",
+    "logs": "Registres"
   },
   "confirm": {
     "removeTitle": "Eliminar {{name}}?",
@@ -34,5 +35,13 @@
     "done": "Fet",
     "failed": "Ha fallat: {{message}}",
     "timeout": "L'agent no ha respost a temps."
+  },
+  "logs": {
+    "title": "Registres de {{name}}",
+    "loading": "Llegint els registres…",
+    "refresh": "Actualitza",
+    "close": "Tanca",
+    "empty": "No hi ha línies de registre.",
+    "note": "Últimes 200 línies, amb l’hora de cadascuna."
   }
 }

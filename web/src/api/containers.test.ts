@@ -68,13 +68,27 @@ describe('createContainersApi', () => {
 
   it('reads a job', async () => {
     const fetchImpl = vi.fn(() =>
-      Promise.resolve(jsonResponse({ id: 'job-9', state: 'failed', message: 'boom', extra: 1 })),
+      Promise.resolve(
+        jsonResponse({ id: 'job-9', state: 'failed', message: 'boom', output: 'tail', extra: 1 }),
+      ),
     )
 
     await expect(createContainersApi(fetchImpl).job('job-9')).resolves.toEqual({
       id: 'job-9',
       state: 'failed',
       message: 'boom',
+      output: 'tail',
     })
+  })
+
+  it('asks for the logs of a container', async () => {
+    const fetchImpl = vi.fn(() => Promise.resolve(jsonResponse({ job_id: 'job-3' }, 202)))
+
+    const jobId = await createContainersApi(fetchImpl).logs('srv-1', 'web', 50)
+
+    expect(jobId).toBe('job-3')
+    const [path, init] = fetchImpl.mock.calls[0] as unknown as [string, RequestInit]
+    expect(path).toBe('/api/v1/servers/srv-1/containers/web/logs')
+    expect(init.body).toBe(JSON.stringify({ tail: 50 }))
   })
 })

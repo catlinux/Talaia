@@ -30,12 +30,17 @@ const listOf = (...containers: Container[]): ContainerList => ({
 /** apiWith builds a fake API; the job answers each poll in order. */
 function apiWith(
   list: ContainerList | (() => Promise<ContainerList>),
-  jobs: Job[] = [{ id: 'job-1', state: 'succeeded', message: '' }],
-): ContainersApi & { run: ReturnType<typeof vi.fn>; list: ReturnType<typeof vi.fn> } {
+  jobs: Job[] = [{ id: 'job-1', state: 'succeeded', message: '', output: '' }],
+): ContainersApi & {
+  run: ReturnType<typeof vi.fn>
+  list: ReturnType<typeof vi.fn>
+  logs: ReturnType<typeof vi.fn>
+} {
   const queue = [...jobs]
   return {
     list: vi.fn(typeof list === 'function' ? list : () => Promise.resolve(list)),
     run: vi.fn(() => Promise.resolve('job-1')),
+    logs: vi.fn(() => Promise.resolve('job-1')),
     job: vi.fn(() => Promise.resolve(queue.length > 1 ? (queue.shift() as Job) : queue[0]!)),
   }
 }
@@ -99,18 +104,18 @@ describe('ServerScreen', () => {
       within(rows[0]!)
         .getAllByRole('button')
         .map((b) => b.textContent),
-    ).toEqual(['Restart', 'Stop', 'Remove'])
+    ).toEqual(['Logs', 'Restart', 'Stop', 'Remove'])
     expect(
       within(rows[1]!)
         .getAllByRole('button')
         .map((b) => b.textContent),
-    ).toEqual(['Start', 'Remove'])
+    ).toEqual(['Logs', 'Start', 'Remove'])
   })
 
   it('runs an action as a job, follows it and reloads the list', async () => {
     const api = apiWith(listOf(container()), [
-      { id: 'job-1', state: 'running', message: '' },
-      { id: 'job-1', state: 'succeeded', message: '' },
+      { id: 'job-1', state: 'running', message: '', output: '' },
+      { id: 'job-1', state: 'succeeded', message: '', output: '' },
     ])
     renderScreen(api)
 
@@ -123,7 +128,7 @@ describe('ServerScreen', () => {
 
   it('shows why an action failed', async () => {
     const api = apiWith(listOf(container()), [
-      { id: 'job-1', state: 'failed', message: 'docker: cannot stop the container' },
+      { id: 'job-1', state: 'failed', message: 'docker: cannot stop the container', output: '' },
     ])
     renderScreen(api)
 
@@ -180,5 +185,46 @@ describe('ServerScreen', () => {
     renderScreen(apiWith(() => Promise.reject(new ApiError('internal', 500))))
 
     expect(await screen.findByRole('alert')).toBeTruthy()
+  })
+
+  it('shows the logs of a container and refreshes them', async () => {
+    const api = apiWith(listOf(container()), [
+      {
+        id: 'job-1',
+        state: 'succeeded',
+        message: '',
+        output: '2026-10-20T10:00:00Z hello world\n',
+      },
+    ])
+    renderScreen(api)
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Logs' }))
+
+    expect(await screen.findByText(/hello world/)).toBeTruthy()
+    expect(api.logs).toHaveBeenCalledWith('srv-1', 'web')
+    expect(screen.getByRole('region', { name: 'Logs of web' })).toBeTruthy()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Refresh' }))
+    await waitFor(() => expect(api.logs).toHaveBeenCalledTimes(2))
+
+    fireEvent.click(screen.getByRole('button', { name: 'Close' }))
+    expect(screen.queryByRole('region', { name: 'Logs of web' })).toBeNull()
+  })
+
+  it('says when there are no log lines and why a read failed', async () => {
+    const empty = apiWith(listOf(container()), [
+      { id: 'job-1', state: 'succeeded', message: '', output: '' },
+    ])
+    renderScreen(empty)
+    fireEvent.click(await screen.findByRole('button', { name: 'Logs' }))
+    expect(await screen.findByText('There are no log lines.')).toBeTruthy()
+    cleanup()
+
+    const failing = apiWith(listOf(container()), [
+      { id: 'job-1', state: 'failed', message: 'docker: No such container', output: '' },
+    ])
+    renderScreen(failing)
+    fireEvent.click(await screen.findByRole('button', { name: 'Logs' }))
+    expect((await screen.findByRole('alert')).textContent).toBe('Failed: docker: No such container')
   })
 })

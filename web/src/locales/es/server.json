@@ -21,7 +21,8 @@
     "start": "Iniciar",
     "stop": "Parar",
     "restart": "Reiniciar",
-    "remove": "Eliminar"
+    "remove": "Eliminar",
+    "logs": "Registros"
   },
   "confirm": {
     "removeTitle": "¿Eliminar {{name}}?",
@@ -34,5 +35,13 @@
     "done": "Hecho",
     "failed": "Ha fallado: {{message}}",
     "timeout": "El agente no ha respondido a tiempo."
+  },
+  "logs": {
+    "title": "Registros de {{name}}",
+    "loading": "Leyendo los registros…",
+    "refresh": "Actualizar",
+    "close": "Cerrar",
+    "empty": "No hay líneas de registro.",
+    "note": "Últimas 200 líneas, con la hora de cada una."
   }
 }
