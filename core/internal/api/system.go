@@ -1,11 +1,13 @@
 package api
 
 import (
+	"context"
 	"errors"
 	"log/slog"
 	"net/http"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/catlinux/Talaia/core/internal/store"
 	"github.com/catlinux/Talaia/core/internal/updates"
@@ -15,10 +17,12 @@ import (
 // SHA. Nothing else from the request reaches the host helper.
 var updateTarget = regexp.MustCompile(`^[0-9a-fA-F]{40}$`)
 
-// UpdateChecker exposes the cached state of the update checks.
+// UpdateChecker exposes the cached state of the update checks and can force a
+// check now.
 type UpdateChecker interface {
 	State() (updates.State, bool)
 	LatestGreen() (string, bool)
+	Refresh(ctx context.Context) error
 }
 
 // UpdateRequester queues an update for the host helper and reads its status.
@@ -44,27 +48,56 @@ type systemVersionResponse struct {
 	Status  updates.Status `json:"status"`
 }
 
+// systemVersionBody builds the answer shared by GET /system/version and
+// POST /system/check. The bool is false until the first check finishes.
+func systemVersionBody(deps SystemDeps) (systemVersionResponse, bool) {
+	state, ok := deps.Checker.State()
+	if !ok {
+		return systemVersionResponse{}, false
+	}
+	// Without the host helper the core cannot apply anything, but it still
+	// reports what it knows about newer commits.
+	if !deps.Requester.Available() {
+		state.UpdateAvailable = false
+		state.Error = "host_helper_missing"
+	}
+	return systemVersionResponse{
+		Version: deps.Version,
+		Commit:  deps.Commit,
+		Update:  state,
+		Status:  deps.Requester.Status(),
+	}, true
+}
+
+// writeSystemVersion writes the version body, or 503 until there is a state.
+func writeSystemVersion(w http.ResponseWriter, deps SystemDeps) {
+	body, ok := systemVersionBody(deps)
+	if !ok {
+		writeError(w, http.StatusServiceUnavailable, "update_check_pending")
+		return
+	}
+	writeJSON(w, http.StatusOK, body)
+}
+
 // NewSystemVersionHandler returns GET /api/v1/system/version.
 func NewSystemVersionHandler(deps SystemDeps) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		writeSystemVersion(w, deps)
+	})
+}
+
+// NewSystemCheckHandler returns POST /api/v1/system/check. It asks GitHub now
+// and then answers exactly like GET /system/version: a failed check is already
+// recorded in update.error, so only the rate limit is answered directly.
+func NewSystemCheckHandler(deps SystemDeps) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		state, ok := deps.Checker.State()
-		if !ok {
-			writeError(w, http.StatusServiceUnavailable, "update_check_pending")
+		ctx, cancel := context.WithTimeout(r.Context(), 25*time.Second)
+		defer cancel()
+		if err := deps.Checker.Refresh(ctx); errors.Is(err, updates.ErrRateLimited) {
+			writeError(w, http.StatusTooManyRequests, "rate_limited")
 			return
 		}
-		// Without the host helper the core cannot apply anything, but it still
-		// reports what it knows about newer commits.
-		if !deps.Requester.Available() {
-			state.UpdateAvailable = false
-			state.Error = "host_helper_missing"
-		}
-
-		writeJSON(w, http.StatusOK, systemVersionResponse{
-			Version: deps.Version,
-			Commit:  deps.Commit,
-			Update:  state,
-			Status:  deps.Requester.Status(),
-		})
+		writeSystemVersion(w, deps)
 	})
 }
 

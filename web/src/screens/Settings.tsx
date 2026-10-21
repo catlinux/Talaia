@@ -89,6 +89,8 @@ export function Settings({ api = defaultApi, pollMs = pollEvery }: SettingsProps
   const [requested, setRequested] = useState(false)
   const [waiting, setWaiting] = useState(false)
   const [actionError, setActionError] = useState<string | null>(null)
+  const [checkingNow, setCheckingNow] = useState(false)
+  const [checkNotice, setCheckNotice] = useState<string | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -165,6 +167,7 @@ export function Settings({ api = defaultApi, pollMs = pollEvery }: SettingsProps
     const target = view.system.update.latest
     setConfirming(false)
     setActionError(null)
+    setCheckNotice(null)
     setRequesting(true)
     setRequested(true)
 
@@ -202,6 +205,34 @@ export function Settings({ api = defaultApi, pollMs = pollEvery }: SettingsProps
   const busy = requesting || requested || status?.state === 'running'
   const canUpdate =
     update !== null && update.updateAvailable && update.latest !== '' && !helperMissing && !busy
+
+  const checkNow = () => {
+    if (view.status !== 'ready' || checkingNow || busy) {
+      return
+    }
+    setCheckingNow(true)
+    setCheckNotice(null)
+    setActionError(null)
+    api.check().then(
+      (system) => {
+        setCheckingNow(false)
+        setView({ status: 'ready', system })
+        setWaiting(false)
+        if (isFinal(system.status.state) || system.update.error === 'host_helper_missing') {
+          setRequested(false)
+        }
+      },
+      (error: unknown) => {
+        setCheckingNow(false)
+        if (isSignedOut(error)) return
+        if (error instanceof ApiError && error.code === 'rate_limited') {
+          setCheckNotice(t('settings:check.rateLimited'))
+          return
+        }
+        setActionError(errorMessage(t, error))
+      },
+    )
+  }
 
   let stateText: string | null = null
   if (update !== null) {
@@ -335,6 +366,14 @@ export function Settings({ api = defaultApi, pollMs = pollEvery }: SettingsProps
             <div className="settings__actions">
               <button
                 type="button"
+                className="settings__button"
+                disabled={checkingNow || busy}
+                onClick={checkNow}
+              >
+                {checkingNow ? t('settings:check.checking') : t('settings:check.button')}
+              </button>
+              <button
+                type="button"
                 className="settings__button settings__button--primary"
                 disabled={!canUpdate}
                 onClick={() => setConfirming(true)}
@@ -342,6 +381,12 @@ export function Settings({ api = defaultApi, pollMs = pollEvery }: SettingsProps
                 {buttonText}
               </button>
             </div>
+
+            {checkNotice !== null ? (
+              <p className="settings__notice" role="status">
+                {checkNotice}
+              </p>
+            ) : null}
 
             {actionError !== null ? (
               <p className="settings__message settings__message--error" role="alert">

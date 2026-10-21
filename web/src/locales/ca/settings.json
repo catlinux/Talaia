@@ -10,6 +10,11 @@
     "checked": "Darrera comprovació",
     "never": "encara no s'ha comprovat"
   },
+  "check": {
+    "button": "Comprova ara",
+    "checking": "Comprovant.",
+    "rateLimited": "Acabes de comprovar. Torna-ho a provar d'aquí a un minut."
+  },
   "state": {
     "checking": "S'estan comprovant les actualitzacions…",
     "upToDate": "Al dia",

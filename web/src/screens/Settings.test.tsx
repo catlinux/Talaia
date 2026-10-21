@@ -45,9 +45,14 @@ function makeSystem(overrides: SystemOverrides = {}): SystemVersion {
   }
 }
 
-function apiWith(version: () => Promise<SystemVersion>, update?: SystemApi['update']): SystemApi {
+function apiWith(
+  version: () => Promise<SystemVersion>,
+  update?: SystemApi['update'],
+  check?: SystemApi['check'],
+): SystemApi {
   return {
     version,
+    check: check ?? vi.fn(() => Promise.reject(new Error('unexpected check'))),
     update: update ?? vi.fn(() => Promise.reject(new Error('unexpected update'))),
   }
 }
@@ -157,6 +162,97 @@ describe('Settings', () => {
       expect(await screen.findByText(message)).toBeTruthy()
     })
   }
+
+  it('checks now and replaces the version card with the new answer', async () => {
+    const refreshed = makeSystem({
+      update: {
+        latest: 'd'.repeat(40),
+        pending: [{ sha: 'ddddddd', subject: 'New commit', author: 'Bea' }],
+        checkedAt: '2026-10-21T09:00:00Z',
+        updateAvailable: true,
+      },
+    })
+    const check = vi.fn(() => Promise.resolve(refreshed))
+    renderSettings(apiWith(() => Promise.resolve(makeSystem()), undefined, check))
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Check now' }))
+
+    expect(check).toHaveBeenCalledTimes(1)
+    expect(await screen.findByText('New commit')).toBeTruthy()
+    expect(screen.getByText('Latest green commit ddddddd')).toBeTruthy()
+    const checked = new Intl.DateTimeFormat('en', {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+    }).format(new Date('2026-10-21T09:00:00Z'))
+    expect(screen.getByText(checked)).toBeTruthy()
+  })
+
+  it('disables Check now while the check runs', async () => {
+    let resolveCheck: (system: SystemVersion) => void = () => {}
+    const check = vi.fn(
+      () =>
+        new Promise<SystemVersion>((resolve) => {
+          resolveCheck = resolve
+        }),
+    )
+    renderSettings(apiWith(() => Promise.resolve(makeSystem()), undefined, check))
+
+    const button = (await screen.findByRole('button', { name: 'Check now' })) as HTMLButtonElement
+    fireEvent.click(button)
+    expect(button.disabled).toBe(true)
+    expect(screen.getByRole('button', { name: 'Checking.' })).toBeTruthy()
+
+    await act(async () => {
+      resolveCheck(makeSystem())
+    })
+    expect(await screen.findByRole('button', { name: 'Check now' })).toBeTruthy()
+  })
+
+  it('shows the short notice when the check is rate limited', async () => {
+    const check = vi.fn(() => Promise.reject(new ApiError('rate_limited', 429)))
+    renderSettings(apiWith(() => Promise.resolve(makeSystem()), undefined, check))
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Check now' }))
+
+    expect(await screen.findByText('Checked a moment ago. Try again in a minute.')).toBeTruthy()
+    expect(
+      screen.queryByText(
+        'GitHub has rate-limited the update checks. The panel will try again later.',
+      ),
+    ).toBeNull()
+  })
+
+  it('shows the usual error for another failed check', async () => {
+    const check = vi.fn(() => Promise.reject(new ApiError('internal', 500)))
+    renderSettings(apiWith(() => Promise.resolve(makeSystem()), undefined, check))
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Check now' }))
+
+    expect(await screen.findByRole('alert')).toBeTruthy()
+    expect(screen.getByText('Something went wrong. Try again.')).toBeTruthy()
+  })
+
+  it('disables Check now while an update is running', async () => {
+    renderSettings(
+      apiWith(() =>
+        Promise.resolve(makeSystem({ status: { state: 'running', log: ['building'] } })),
+      ),
+    )
+
+    expect(await screen.findByText('The update is running.')).toBeTruthy()
+    const button = screen.getByRole('button', { name: 'Check now' }) as HTMLButtonElement
+    expect(button.disabled).toBe(true)
+  })
+
+  it('disables Check now while an update is queued', async () => {
+    const update = vi.fn(() => new Promise<{ target: string }>(() => {}))
+    renderSettings(apiWith(() => Promise.resolve(makeSystem()), update))
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Update to bbbbbbb' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Update now' }))
+    const button = screen.getByRole('button', { name: 'Check now' }) as HTMLButtonElement
+    expect(button.disabled).toBe(true)
+  })
 
   it('asks for confirmation before queuing the update', async () => {
     const update = vi.fn(() => Promise.resolve({ target: latest }))

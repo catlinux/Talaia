@@ -98,6 +98,28 @@ describe('App', () => {
             log: [],
           },
         }),
+      check: () =>
+        Promise.resolve({
+          version: '1.2.3',
+          commit: 'a'.repeat(40),
+          update: {
+            current: 'a'.repeat(40),
+            latest: 'a'.repeat(40),
+            pending: [],
+            ci: 'green',
+            checkedAt: '2026-10-21T08:00:00Z',
+            error: '',
+            updateAvailable: false,
+          },
+          status: {
+            state: 'idle',
+            from: '',
+            to: '',
+            startedAt: '',
+            finishedAt: '',
+            log: [],
+          },
+        }),
       update: () => Promise.reject(new Error('unexpected update')),
     }
     renderApp(systemApi)

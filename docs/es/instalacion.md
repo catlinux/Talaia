@@ -177,7 +177,8 @@ pantalla **Flota** del panel con su CPU, memoria, disco y contenedores.
 
 - **Actualizar el núcleo desde el panel:** la pantalla **Ajustes** muestra la versión en marcha y el commit más
   reciente de `main` con el CI en verde, con los commits que recibirías. **Actualizar** pide confirmación y pasa el
-  trabajo al ayudante del host (más abajo); el panel deja de responder unos minutos y sigue el progreso solo.
+  trabajo al ayudante del host (más abajo); el panel deja de responder unos minutos y sigue el progreso solo. El
+  botón **Comprobar ahora** pregunta a GitHub al momento; si no, el núcleo comprueba cada 30 minutos.
 - **Actualizar el núcleo a mano:** `git pull` y, en `packaging/core`,
   `sudo TALAIA_GIT_COMMIT=$(git rev-parse HEAD) docker compose up -d --build` (sin la variable, el panel muestra la
   versión como desconocida).

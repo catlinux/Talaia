@@ -48,6 +48,8 @@ export interface SystemVersion {
 /** SystemApi is the version and update API of the core. */
 export interface SystemApi {
   version(): Promise<SystemVersion>
+  /** check asks GitHub now and returns the refreshed version. */
+  check(): Promise<SystemVersion>
   /** update queues target for the host helper; it must be the offered commit. */
   update(target: string): Promise<{ target: string }>
 }
@@ -98,39 +100,42 @@ function updateState(value: string): UpdateState {
   return (updateStates as readonly string[]).includes(value) ? (value as UpdateState) : 'unknown'
 }
 
+/** mapSystem converts the wire answer to the panel types. */
+function mapSystem(body: apiSystemVersion): SystemVersion {
+  return {
+    version: body.version,
+    commit: body.commit,
+    update: {
+      current: body.update.current,
+      latest: body.update.latest,
+      pending: (body.update.pending ?? []).map((commit) => ({
+        sha: commit.sha,
+        subject: commit.subject,
+        author: commit.author,
+      })),
+      ci: body.update.ci === 'green' ? 'green' : 'red',
+      checkedAt: body.update.checked_at,
+      error: body.update.error ?? '',
+      updateAvailable: body.update.update_available,
+    },
+    status: {
+      state: updateState(body.status.state),
+      from: body.status.from ?? '',
+      to: body.status.to ?? '',
+      startedAt: body.status.started_at ?? '',
+      finishedAt: body.status.finished_at ?? '',
+      log: body.status.log ?? [],
+    },
+  }
+}
+
 /** createSystemApi returns the update API, optionally over an injected fetch. */
 export function createSystemApi(fetchImpl?: typeof fetch): SystemApi {
   const http = createHttpClient(fetchImpl)
 
   return {
-    version: async () => {
-      const body = await http.get<apiSystemVersion>('/api/v1/system/version')
-      return {
-        version: body.version,
-        commit: body.commit,
-        update: {
-          current: body.update.current,
-          latest: body.update.latest,
-          pending: (body.update.pending ?? []).map((commit) => ({
-            sha: commit.sha,
-            subject: commit.subject,
-            author: commit.author,
-          })),
-          ci: body.update.ci === 'green' ? 'green' : 'red',
-          checkedAt: body.update.checked_at,
-          error: body.update.error ?? '',
-          updateAvailable: body.update.update_available,
-        },
-        status: {
-          state: updateState(body.status.state),
-          from: body.status.from ?? '',
-          to: body.status.to ?? '',
-          startedAt: body.status.started_at ?? '',
-          finishedAt: body.status.finished_at ?? '',
-          log: body.status.log ?? [],
-        },
-      }
-    },
+    version: async () => mapSystem(await http.get<apiSystemVersion>('/api/v1/system/version')),
+    check: async () => mapSystem(await http.post<apiSystemVersion>('/api/v1/system/check', {})),
     update: async (target) => {
       const body = await http.post<{ target: string }>('/api/v1/system/update', {
         confirm: true,

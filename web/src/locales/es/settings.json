@@ -10,6 +10,11 @@
     "checked": "Última comprobación",
     "never": "aún no se ha comprobado"
   },
+  "check": {
+    "button": "Comprobar ahora",
+    "checking": "Comprobando.",
+    "rateLimited": "Se acaba de comprobar. Vuelve a intentarlo en un minuto."
+  },
   "state": {
     "checking": "Comprobando actualizaciones…",
     "upToDate": "Al día",

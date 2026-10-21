@@ -173,7 +173,8 @@ The log must say `enrolled with the core` and `connected to core`. The server th
 
 - **Update the core from the panel:** the **Settings** screen shows the running version and the newest commit of
   `main` whose CI is green, with the commits you would get. **Update** asks for confirmation and hands the work to
-  the host helper (below); the panel is unavailable for a few minutes and follows the progress on its own.
+  the host helper (below); the panel is unavailable for a few minutes and follows the progress on its own. The
+  **Check now** button asks GitHub at once; otherwise the core checks every 30 minutes.
 - **Update the core by hand:** `git pull`, then in `packaging/core` run
   `sudo TALAIA_GIT_COMMIT=$(git rev-parse HEAD) docker compose up -d --build` (without the variable the panel shows
   the version as unknown).

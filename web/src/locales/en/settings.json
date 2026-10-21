@@ -10,6 +10,11 @@
     "checked": "Last checked",
     "never": "not checked yet"
   },
+  "check": {
+    "button": "Check now",
+    "checking": "Checking.",
+    "rateLimited": "Checked a moment ago. Try again in a minute."
+  },
   "state": {
     "checking": "Checking for updates…",
     "upToDate": "Up to date",

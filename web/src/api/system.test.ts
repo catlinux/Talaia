@@ -95,6 +95,30 @@ describe('createSystemApi', () => {
     })
   })
 
+  it('asks for a check now and maps the refreshed version', async () => {
+    const fetchImpl = vi.fn(() => Promise.resolve(jsonResponse(versionPayload)))
+
+    const system = await createSystemApi(fetchImpl).check()
+
+    expect(system.update.latest).toBe('b'.repeat(40))
+    const [path, init] = fetchImpl.mock.calls[0] as unknown as [string, RequestInit]
+    expect(path).toBe('/api/v1/system/check')
+    expect(init.method).toBe('POST')
+    expect(init.body).toBe('{}')
+  })
+
+  it('keeps a rate-limited check typed', async () => {
+    const fetchImpl = vi.fn(() =>
+      Promise.resolve(jsonResponse({ error: { code: 'rate_limited' } }, 429)),
+    )
+
+    await expect(createSystemApi(fetchImpl).check()).rejects.toMatchObject({
+      name: 'ApiError',
+      code: 'rate_limited',
+      status: 429,
+    })
+  })
+
   it('queues an update with the confirmation the API needs', async () => {
     const target = 'b'.repeat(40)
     const fetchImpl = vi.fn(() => Promise.resolve(jsonResponse({ target }, 202)))

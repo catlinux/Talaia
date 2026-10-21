@@ -80,6 +80,7 @@ func NewRouter(deps RouterDeps) http.Handler {
 			}
 			if deps.System != nil {
 				r.Get("/system/version", NewSystemVersionHandler(*deps.System).ServeHTTP)
+				r.Post("/system/check", NewSystemCheckHandler(*deps.System).ServeHTTP)
 				r.Post("/system/update", NewSystemUpdateHandler(*deps.System).ServeHTTP)
 			}
 		})

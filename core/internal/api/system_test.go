@@ -23,15 +23,30 @@ const (
 )
 
 type fakeUpdateChecker struct {
-	state   updates.State
-	ok      bool
-	offered string
+	state        updates.State
+	ok           bool
+	offered      string
+	refreshErr   error
+	refreshCalls int
+	onRefresh    func(*fakeUpdateChecker)
+	deadline     time.Duration
 }
 
 func (f *fakeUpdateChecker) State() (updates.State, bool) { return f.state, f.ok }
 
 func (f *fakeUpdateChecker) LatestGreen() (string, bool) {
 	return f.offered, f.offered != ""
+}
+
+func (f *fakeUpdateChecker) Refresh(ctx context.Context) error {
+	f.refreshCalls++
+	if deadline, ok := ctx.Deadline(); ok {
+		f.deadline = time.Until(deadline)
+	}
+	if f.onRefresh != nil {
+		f.onRefresh(f)
+	}
+	return f.refreshErr
 }
 
 type fakeUpdateRequester struct {
@@ -143,6 +158,10 @@ func TestSystemVersionNeedsAFullSession(t *testing.T) {
 	if response := panel.do(t, panel.rawClient(), http.MethodGet, "/api/v1/system/version", nil); response.StatusCode != http.StatusUnauthorized {
 		t.Errorf("unauthenticated status = %d, want 401", response.StatusCode)
 	}
+	if response := panel.do(t, panel.rawClient(), http.MethodPost, "/api/v1/system/check",
+		map[string]any{}); response.StatusCode != http.StatusUnauthorized {
+		t.Errorf("unauthenticated check status = %d, want 401", response.StatusCode)
+	}
 	if response := panel.do(t, panel.rawClient(), http.MethodPost, "/api/v1/system/update",
 		map[string]any{"confirm": true, "target": offeredSHA}); response.StatusCode != http.StatusUnauthorized {
 		t.Errorf("unauthenticated update status = %d, want 401", response.StatusCode)
@@ -189,8 +208,126 @@ func TestSystemVersion(t *testing.T) {
 	}
 }
 
+func TestSystemCheckRefreshesAndReturnsTheVersion(t *testing.T) {
+	checker, _, deps := systemDeps()
+	panel := newSystemPanel(t, deps)
+	panel.createUser(t, "admin", testPassword)
+	panel.enableTOTP(t, "admin", testPassword)
+
+	checked := time.Date(2026, 10, 21, 12, 5, 0, 0, time.UTC)
+	checker.onRefresh = func(f *fakeUpdateChecker) {
+		f.state.CheckedAt = checked
+		f.state.Latest = pendingSHA
+		f.state.Pending = []updates.Pending{{SHA: pendingSHA[:7], Subject: "A new commit", Author: "Bea"}}
+		f.state.UpdateAvailable = true
+	}
+
+	response := panel.post(t, "/api/v1/system/check", map[string]any{})
+	if response.StatusCode != http.StatusOK {
+		t.Fatalf("status = %d", response.StatusCode)
+	}
+	var body systemVersionResponse
+	decodeBody(t, response, &body)
+	if body.Update.Latest != pendingSHA {
+		t.Errorf("latest = %q", body.Update.Latest)
+	}
+	if len(body.Update.Pending) != 1 || body.Update.Pending[0].Subject != "A new commit" {
+		t.Errorf("pending = %+v", body.Update.Pending)
+	}
+	if !body.Update.CheckedAt.Equal(checked) {
+		t.Errorf("checked at = %s", body.Update.CheckedAt)
+	}
+	if checker.refreshCalls != 1 {
+		t.Errorf("refresh calls = %d", checker.refreshCalls)
+	}
+	if checker.deadline <= 20*time.Second || checker.deadline > 25*time.Second {
+		t.Errorf("refresh deadline = %s, want about 25s", checker.deadline)
+	}
+
+	// The check answers with the same body as the version endpoint.
+	var version systemVersionResponse
+	decodeBody(t, panel.get(t, "/api/v1/system/version"), &version)
+	if version.Update.Latest != body.Update.Latest || len(version.Update.Pending) != len(body.Update.Pending) {
+		t.Errorf("version = %+v, check = %+v", version.Update, body.Update)
+	}
+
+	// It is a read: no update request is audited.
+	entries, err := panel.store.ListAudit(context.Background(), 20)
+	if err != nil {
+		t.Fatalf("list audit: %v", err)
+	}
+	for _, entry := range entries {
+		if entry.Action == "system_update_requested" {
+			t.Errorf("the check audited an update request: %+v", entry)
+		}
+	}
+}
+
+func TestSystemCheckRateLimited(t *testing.T) {
+	checker, _, deps := systemDeps()
+	checker.refreshErr = updates.ErrRateLimited
+	panel := newSystemPanel(t, deps)
+	panel.createUser(t, "admin", testPassword)
+	panel.enableTOTP(t, "admin", testPassword)
+
+	response := panel.post(t, "/api/v1/system/check", map[string]any{})
+	if response.StatusCode != http.StatusTooManyRequests {
+		t.Fatalf("status = %d", response.StatusCode)
+	}
+	if code := errorCode(t, response); code != "rate_limited" {
+		t.Errorf("code = %q", code)
+	}
+	if checker.refreshCalls != 1 {
+		t.Errorf("refresh calls = %d", checker.refreshCalls)
+	}
+}
+
+func TestSystemCheckFailureIsInTheState(t *testing.T) {
+	checker, _, deps := systemDeps()
+	checker.refreshErr = errors.New("boom")
+	checker.onRefresh = func(f *fakeUpdateChecker) {
+		f.state.CheckedAt = time.Date(2026, 10, 21, 12, 10, 0, 0, time.UTC)
+		f.state.Error = "unreachable"
+	}
+	panel := newSystemPanel(t, deps)
+	panel.createUser(t, "admin", testPassword)
+	panel.enableTOTP(t, "admin", testPassword)
+
+	response := panel.post(t, "/api/v1/system/check", map[string]any{})
+	if response.StatusCode != http.StatusOK {
+		t.Fatalf("status = %d", response.StatusCode)
+	}
+	var body systemVersionResponse
+	decodeBody(t, response, &body)
+	if body.Update.Error != "unreachable" {
+		t.Errorf("update error = %q", body.Update.Error)
+	}
+	if checker.refreshCalls != 1 {
+		t.Errorf("refresh calls = %d", checker.refreshCalls)
+	}
+}
+
+func TestSystemCheckWaitsForTheFirstState(t *testing.T) {
+	checker, _, deps := systemDeps()
+	checker.ok = false
+	panel := newSystemPanel(t, deps)
+	panel.createUser(t, "admin", testPassword)
+	panel.enableTOTP(t, "admin", testPassword)
+
+	response := panel.post(t, "/api/v1/system/check", map[string]any{})
+	if response.StatusCode != http.StatusServiceUnavailable {
+		t.Fatalf("status = %d", response.StatusCode)
+	}
+	if code := errorCode(t, response); code != "update_check_pending" {
+		t.Errorf("code = %q", code)
+	}
+	if checker.refreshCalls != 1 {
+		t.Errorf("refresh calls = %d", checker.refreshCalls)
+	}
+}
+
 func TestSystemUpdateNeedsTheOriginAndSessionForWrites(t *testing.T) {
-	_, requester, deps := systemDeps()
+	checker, requester, deps := systemDeps()
 	panel := newSystemPanel(t, deps)
 	panel.createUser(t, "admin", testPassword)
 	panel.enableTOTP(t, "admin", testPassword)
@@ -207,6 +344,19 @@ func TestSystemUpdateNeedsTheOriginAndSessionForWrites(t *testing.T) {
 	}
 	if requester.calls != 0 {
 		t.Errorf("the requester was called %d times", requester.calls)
+	}
+
+	request, err = http.NewRequest(http.MethodPost, panel.server.URL+"/api/v1/system/check",
+		strings.NewReader(`{}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	response = panel.doRequest(t, request)
+	if code := errorCode(t, response); response.StatusCode != http.StatusForbidden || code != "forbidden_origin" {
+		t.Errorf("check status = %d, code = %s", response.StatusCode, code)
+	}
+	if checker.refreshCalls != 0 {
+		t.Errorf("the checker was refreshed %d times", checker.refreshCalls)
 	}
 }
 
