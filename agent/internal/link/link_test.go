@@ -568,7 +568,9 @@ func (r *recordingActions) Do(_ context.Context, container string, action agentv
 	return r.err
 }
 
-func (r *recordingActions) Logs(context.Context, string, int) (string, error) { return "", r.err }
+func (r *recordingActions) Logs(context.Context, string, int, time.Time, bool) (string, error) {
+	return "", r.err
+}
 
 func TestLinkRunsACommandAndReportsTheJob(t *testing.T) {
 	hub := &testHub{command: &agentv1.CoreMsg{
@@ -626,7 +628,9 @@ func (c changingActions) Do(context.Context, string, agentv1.ContainerActionType
 	return nil
 }
 
-func (c changingActions) Logs(context.Context, string, int) (string, error) { return "", nil }
+func (c changingActions) Logs(context.Context, string, int, time.Time, bool) (string, error) {
+	return "", nil
+}
 
 func TestLinkResendsTheInventoryRightAfterAJob(t *testing.T) {
 	hub := &testHub{command: &agentv1.CoreMsg{

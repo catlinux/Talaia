@@ -4,11 +4,14 @@ import (
 	"bytes"
 	"context"
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
+	"time"
 	"unicode/utf8"
 )
 
@@ -35,14 +38,27 @@ func clampTail(tail int) int {
 	}
 }
 
-// Logs returns the last lines of a container's stdout and stderr, with
-// timestamps, as text.
-func (d *DockerActions) Logs(ctx context.Context, container string, tail int) (string, error) {
+// Logs returns the last lines of a container's stdout and stderr after since,
+// as text. since zero means no lower limit; timestamps asks Docker for the
+// timestamp prefix of each line.
+func (d *DockerActions) Logs(ctx context.Context, container string, tail int, since time.Time, timestamps bool) (string, error) {
 	if !ValidContainerRef(container) {
 		return "", fmt.Errorf("invalid container reference")
 	}
 
-	path := fmt.Sprintf("/containers/%s/logs?stdout=1&stderr=1&timestamps=1&tail=%d", url.PathEscape(container), clampTail(tail))
+	query := url.Values{}
+	query.Set("stdout", "1")
+	query.Set("stderr", "1")
+	query.Set("tail", strconv.Itoa(clampTail(tail)))
+	// A core that predates the timestamps flag sends no since either: it still
+	// gets the prefixes the agent has always added.
+	if timestamps || since.IsZero() {
+		query.Set("timestamps", "1")
+	}
+	if !since.IsZero() {
+		query.Set("since", dockerSince(since))
+	}
+	path := fmt.Sprintf("/containers/%s/logs?%s", url.PathEscape(container), query.Encode())
 	request, err := http.NewRequestWithContext(ctx, http.MethodGet, d.baseURL+path, nil)
 	if err != nil {
 		return "", err
@@ -62,6 +78,25 @@ func (d *DockerActions) Logs(ctx context.Context, container string, tail int) (s
 		return "", fmt.Errorf("read the logs: %w", err)
 	}
 	return lastBytes(demultiplex(raw), maxLogBytes), nil
+}
+
+// parseSince validates the optional RFC 3339 timestamp of a ReadLogs command.
+// Nothing from the command reaches Docker without passing through here.
+func parseSince(value string) (time.Time, error) {
+	if value == "" {
+		return time.Time{}, nil
+	}
+	parsed, err := time.Parse(time.RFC3339Nano, value)
+	if err != nil {
+		return time.Time{}, errors.New("invalid since timestamp")
+	}
+	return parsed, nil
+}
+
+// dockerSince formats t as the Unix seconds and nanoseconds Docker accepts in
+// its since parameter.
+func dockerSince(t time.Time) string {
+	return strconv.FormatInt(t.Unix(), 10) + "." + fmt.Sprintf("%09d", t.Nanosecond())
 }
 
 // demultiplex removes the 8-byte frame headers Docker puts on the output of a

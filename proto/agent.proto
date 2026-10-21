@@ -73,6 +73,11 @@ message ReadLogs {
   string container = 1;
   // How many lines from the end; the agent clamps it to 1..1000.
   uint32 tail = 2;
+  // Optional RFC 3339 timestamp: only lines after it are returned. Empty means
+  // no lower limit.
+  string since = 3;
+  // Prefix each line with its timestamp (docker logs --timestamps).
+  bool timestamps = 4;
 }
 
 // StackWrite validates a Compose project and stores it as the managed stack

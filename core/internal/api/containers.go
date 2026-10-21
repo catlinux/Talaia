@@ -19,6 +19,11 @@ import (
 // containerActionKind is the kind of the jobs created by container actions.
 const containerActionKind = "container_action"
 
+// containerLogsKind is the kind of the jobs that read container logs. They get
+// their own kind because live logs create one every few seconds and the core
+// purges them once they have finished (internal/jobs).
+const containerLogsKind = "container_logs"
+
 // jobTimeout is how long an unfinished job of a kind may live before it is
 // reported as failed, for example because the agent disconnected without
 // answering. It must outlast the timeout the agent gives the same work, or a
@@ -368,6 +373,10 @@ func submitJob(w http.ResponseWriter, r *http.Request, deps ContainerDeps, serve
 type containerLogsRequest struct {
 	// Tail is how many lines from the end; 0 asks for the default.
 	Tail int `json:"tail"`
+	// Since is an optional RFC 3339 timestamp: only lines after it are returned.
+	Since string `json:"since"`
+	// Timestamps asks for the timestamp prefix of each line, for live logs.
+	Timestamps bool `json:"timestamps"`
 }
 
 // maxLogTail is the most lines one request may ask for.
@@ -383,8 +392,22 @@ func NewContainerLogsHandler(deps ContainerDeps) http.Handler {
 		reference := chi.URLParam(r, "container")
 
 		var request containerLogsRequest
-		if err := decodeJSON(w, r, &request); err != nil || request.Tail < 0 || request.Tail > maxLogTail ||
-			!containerRef.MatchString(reference) {
+		since := ""
+		valid := decodeJSON(w, r, &request) == nil && request.Tail >= 0 && request.Tail <= maxLogTail &&
+			containerRef.MatchString(reference)
+		if valid {
+			since = strings.TrimSpace(request.Since)
+			// The timestamp is optional, but an unparsable one is a bad request
+			// and never reaches the agent.
+			if len(request.Since) > 40 {
+				valid = false
+			} else if since != "" {
+				if _, err := time.Parse(time.RFC3339, since); err != nil {
+					valid = false
+				}
+			}
+		}
+		if !valid {
 			writeError(w, http.StatusBadRequest, "invalid_request")
 			return
 		}
@@ -399,14 +422,19 @@ func NewContainerLogsHandler(deps ContainerDeps) http.Handler {
 			return
 		}
 
-		submitJob(w, r, deps, serverID, containerActionKind, "container_logs",
+		submitJob(w, r, deps, serverID, containerLogsKind, "container_logs",
 			map[string]any{"container": reference, "tail": request.Tail},
 			map[string]any{"container": reference},
 			func(jobID string) *agentv1.CoreMsg {
 				return &agentv1.CoreMsg{
 					JobId: jobID,
 					Cmd: &agentv1.CoreMsg_ReadLogs{
-						ReadLogs: &agentv1.ReadLogs{Container: reference, Tail: uint32(request.Tail)},
+						ReadLogs: &agentv1.ReadLogs{
+							Container:  reference,
+							Tail:       uint32(request.Tail),
+							Since:      since,
+							Timestamps: request.Timestamps,
+						},
 					},
 				}
 			})

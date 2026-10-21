@@ -145,3 +145,25 @@ func (s *Store) FailStaleJob(ctx context.Context, id string, maxAge time.Duratio
 	}
 	return tag.RowsAffected() > 0, nil
 }
+
+// PurgeFinishedJobs deletes finished jobs of one kind that ended more than
+// olderThan ago. Unfinished jobs and other kinds are never touched.
+func (s *Store) PurgeFinishedJobs(ctx context.Context, kind string, olderThan time.Duration) (int64, error) {
+	if strings.TrimSpace(kind) == "" {
+		return 0, errors.New("a job kind is required")
+	}
+	if olderThan < 0 {
+		return 0, errors.New("the retention cannot be negative")
+	}
+	tag, err := s.pool.Exec(ctx,
+		`DELETE FROM job
+		 WHERE kind = $1
+		   AND state IN ('succeeded', 'failed')
+		   AND finished_at IS NOT NULL
+		   AND finished_at < now() - make_interval(secs => $2)`,
+		kind, olderThan.Seconds())
+	if err != nil {
+		return 0, fmt.Errorf("purge finished jobs: %w", err)
+	}
+	return tag.RowsAffected(), nil
+}

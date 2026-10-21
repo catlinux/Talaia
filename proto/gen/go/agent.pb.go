@@ -815,7 +815,12 @@ type ReadLogs struct {
 	// Container id (hex, 12 to 64 characters) or name.
 	Container string `protobuf:"bytes,1,opt,name=container,proto3" json:"container,omitempty"`
 	// How many lines from the end; the agent clamps it to 1..1000.
-	Tail          uint32 `protobuf:"varint,2,opt,name=tail,proto3" json:"tail,omitempty"`
+	Tail uint32 `protobuf:"varint,2,opt,name=tail,proto3" json:"tail,omitempty"`
+	// Optional RFC 3339 timestamp: only lines after it are returned. Empty means
+	// no lower limit.
+	Since string `protobuf:"bytes,3,opt,name=since,proto3" json:"since,omitempty"`
+	// Prefix each line with its timestamp (docker logs --timestamps).
+	Timestamps    bool `protobuf:"varint,4,opt,name=timestamps,proto3" json:"timestamps,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -862,6 +867,20 @@ func (x *ReadLogs) GetTail() uint32 {
 		return x.Tail
 	}
 	return 0
+}
+
+func (x *ReadLogs) GetSince() string {
+	if x != nil {
+		return x.Since
+	}
+	return ""
+}
+
+func (x *ReadLogs) GetTimestamps() bool {
+	if x != nil {
+		return x.Timestamps
+	}
+	return false
 }
 
 // StackWrite validates a Compose project and stores it as the managed stack
@@ -2496,10 +2515,14 @@ const file_agent_proto_rawDesc = "" +
 	"\x03msg\"m\n" +
 	"\x0fContainerAction\x12\x1c\n" +
 	"\tcontainer\x18\x01 \x01(\tR\tcontainer\x12<\n" +
-	"\x06action\x18\x02 \x01(\x0e2$.talaia.agent.v1.ContainerActionTypeR\x06action\"<\n" +
+	"\x06action\x18\x02 \x01(\x0e2$.talaia.agent.v1.ContainerActionTypeR\x06action\"r\n" +
 	"\bReadLogs\x12\x1c\n" +
 	"\tcontainer\x18\x01 \x01(\tR\tcontainer\x12\x12\n" +
-	"\x04tail\x18\x02 \x01(\rR\x04tail\"U\n" +
+	"\x04tail\x18\x02 \x01(\rR\x04tail\x12\x14\n" +
+	"\x05since\x18\x03 \x01(\tR\x05since\x12\x1e\n" +
+	"\n" +
+	"timestamps\x18\x04 \x01(\bR\n" +
+	"timestamps\"U\n" +
 	"\n" +
 	"StackWrite\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12!\n" +

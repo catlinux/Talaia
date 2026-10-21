@@ -311,6 +311,9 @@ func TestContainerLogsCreateAJobWhoseOutputIsReadable(t *testing.T) {
 		sent[0].GetJobId() != created.JobID {
 		t.Fatalf("sent = %v", sent)
 	}
+	if sent[0].GetReadLogs().GetSince() != "" || sent[0].GetReadLogs().GetTimestamps() {
+		t.Errorf("an old request changed: %v", sent[0].GetReadLogs())
+	}
 
 	// The agent answers with the lines; they come back in the job.
 	recorder := JobRecorder{Jobs: panel.store}
@@ -343,6 +346,30 @@ func TestContainerLogsCreateAJobWhoseOutputIsReadable(t *testing.T) {
 	}
 }
 
+func TestContainerLogsPassSinceAndTimestamps(t *testing.T) {
+	panel := newTestPanel(t)
+	panel.createUser(t, "admin", testPassword)
+	panel.enableTOTP(t, "admin", testPassword)
+	serverID := enrollTestServer(t, panel)
+	panel.agents.set(agentWithContainers(serverID))
+
+	response := panel.post(t, logsPath(serverID, "web"), map[string]any{
+		"tail": 20, "since": " 2026-10-20T10:00:00.500Z ", "timestamps": true,
+	})
+	if response.StatusCode != http.StatusAccepted {
+		t.Fatalf("status = %d, want 202", response.StatusCode)
+	}
+
+	sent := panel.dispatcher.sent()
+	if len(sent) != 1 {
+		t.Fatalf("sent = %v", sent)
+	}
+	logs := sent[0].GetReadLogs()
+	if logs.GetTail() != 20 || logs.GetSince() != "2026-10-20T10:00:00.500Z" || !logs.GetTimestamps() {
+		t.Errorf("read logs = %v", logs)
+	}
+}
+
 func TestContainerLogsValidation(t *testing.T) {
 	panel := newTestPanel(t)
 	panel.createUser(t, "admin", testPassword)
@@ -363,6 +390,10 @@ func TestContainerLogsValidation(t *testing.T) {
 		{"default tail", "web", map[string]any{}, http.StatusAccepted},
 		{"tail too large", "web", map[string]any{"tail": 5000}, http.StatusBadRequest},
 		{"negative tail", "web", map[string]any{"tail": -1}, http.StatusBadRequest},
+		{"invalid since", "web", map[string]any{"since": "yesterday"}, http.StatusBadRequest},
+		{"since without time", "web", map[string]any{"since": "2026-10-20"}, http.StatusBadRequest},
+		{"since too long", "web", map[string]any{"since": strings.Repeat("2", 41)}, http.StatusBadRequest},
+		{"valid since", "web", map[string]any{"since": "2026-10-20T10:00:00Z"}, http.StatusAccepted},
 		{"unknown container", "ghost", map[string]any{}, http.StatusNotFound},
 		{"bad reference", "web;rm", map[string]any{}, http.StatusBadRequest},
 	}

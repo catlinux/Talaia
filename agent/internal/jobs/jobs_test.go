@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -19,10 +20,14 @@ type fakeActions struct {
 	logs  string
 }
 
-func (f *fakeActions) Logs(_ context.Context, container string, tail int) (string, error) {
+func (f *fakeActions) Logs(_ context.Context, container string, tail int, since time.Time, timestamps bool) (string, error) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
-	f.calls = append(f.calls, fmt.Sprintf("logs:%s:%d", container, tail))
+	sinceText := ""
+	if !since.IsZero() {
+		sinceText = since.UTC().Format(time.RFC3339Nano)
+	}
+	f.calls = append(f.calls, fmt.Sprintf("logs:%s:%d:%s:%t", container, tail, sinceText, timestamps))
 	return f.logs, f.err
 }
 
@@ -175,8 +180,58 @@ func TestHandleReadsLogsAndReturnsTheOutput(t *testing.T) {
 	if got.GetState() != agentv1.JobState_JOB_STATE_SUCCEEDED || got.GetOutput() != actions.logs {
 		t.Errorf("final event = %v", got)
 	}
-	if want := "logs:web:50"; actions.count() != 1 || actions.calls[0] != want {
+	if want := "logs:web:50::false"; actions.count() != 1 || actions.calls[0] != want {
 		t.Errorf("calls = %v, want [%s]", actions.calls, want)
+	}
+}
+
+func TestHandleReadsLogsSinceWithTimestamps(t *testing.T) {
+	actions := &fakeActions{logs: "2026-10-20T10:00:01Z line\n"}
+	out := newCollector()
+	msg := &agentv1.CoreMsg{
+		JobId: "job-l4",
+		Cmd: &agentv1.CoreMsg_ReadLogs{ReadLogs: &agentv1.ReadLogs{
+			Container:  "web",
+			Tail:       10,
+			Since:      "2026-10-20T10:00:00.123456789Z",
+			Timestamps: true,
+		}},
+	}
+
+	if !New(actions).Handle(context.Background(), msg, out.emit) {
+		t.Fatal("the logs command was not handled")
+	}
+
+	out.next(t) // running
+	if got := out.next(t); got.GetState() != agentv1.JobState_JOB_STATE_SUCCEEDED {
+		t.Errorf("state = %v, want succeeded", got.GetState())
+	}
+	if want := "logs:web:10:2026-10-20T10:00:00.123456789Z:true"; actions.count() != 1 || actions.calls[0] != want {
+		t.Errorf("calls = %v, want [%s]", actions.calls, want)
+	}
+}
+
+func TestHandleRejectsAnInvalidSince(t *testing.T) {
+	actions := &fakeActions{}
+	out := newCollector()
+	msg := &agentv1.CoreMsg{
+		JobId: "job-l5",
+		Cmd: &agentv1.CoreMsg_ReadLogs{ReadLogs: &agentv1.ReadLogs{
+			Container: "web",
+			Tail:      10,
+			Since:     "yesterday",
+		}},
+	}
+
+	New(actions).Handle(context.Background(), msg, out.emit)
+
+	out.next(t) // running
+	got := out.next(t)
+	if got.GetState() != agentv1.JobState_JOB_STATE_FAILED || !strings.Contains(got.GetMessage(), "invalid since timestamp") {
+		t.Errorf("final event = %v", got)
+	}
+	if actions.count() != 0 {
+		t.Error("an invalid since reached the actions")
 	}
 }
 

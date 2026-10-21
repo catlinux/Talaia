@@ -27,6 +27,7 @@ import (
 	"github.com/catlinux/Talaia/core/internal/config"
 	"github.com/catlinux/Talaia/core/internal/hub"
 	"github.com/catlinux/Talaia/core/internal/install"
+	"github.com/catlinux/Talaia/core/internal/jobs"
 	"github.com/catlinux/Talaia/core/internal/store"
 	"github.com/catlinux/Talaia/core/internal/terminal"
 	"github.com/catlinux/Talaia/core/internal/updates"
@@ -332,6 +333,7 @@ func serve() error {
 		purgeCtx, stopPurge := context.WithCancel(context.Background())
 		defer stopPurge()
 		go terminal.PurgeLoop(purgeCtx, st, cfg.TerminalRecordingDays, 24*time.Hour)
+		go jobs.PurgeLoop(purgeCtx, st, jobs.LogRetention, jobs.PurgeInterval)
 		srv.Handler = newPanelRouter(st, agentHub, panel)
 		srv.Protocols = newTLSProtocols()
 		// Browsers are never asked for a client certificate. Until ACME has a

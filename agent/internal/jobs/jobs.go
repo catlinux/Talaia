@@ -38,8 +38,9 @@ var errNoResources = errors.New("resources are not available on this agent")
 // Actions are the container operations the executor can run.
 type Actions interface {
 	Do(ctx context.Context, container string, action agentv1.ContainerActionType) error
-	// Logs returns the last lines of the output of a container.
-	Logs(ctx context.Context, container string, tail int) (string, error)
+	// Logs returns the last lines of the output of a container after since (zero
+	// means no limit), with timestamps when asked.
+	Logs(ctx context.Context, container string, tail int, since time.Time, timestamps bool) (string, error)
 }
 
 // StackManager runs the managed Compose stacks of the server.
@@ -134,7 +135,11 @@ func (e *Executor) Handle(ctx context.Context, msg *agentv1.CoreMsg, emit func(*
 			if !ValidContainerRef(logs.GetContainer()) {
 				return "", errors.New("invalid container reference")
 			}
-			return e.actions.Logs(ctx, logs.GetContainer(), int(logs.GetTail()))
+			since, err := parseSince(logs.GetSince())
+			if err != nil {
+				return "", err
+			}
+			return e.actions.Logs(ctx, logs.GetContainer(), int(logs.GetTail()), since, logs.GetTimestamps())
 		})
 	case write != nil:
 		go e.execute(ctx, jobID, "stack write", stackWriteTimeout, emit, func(ctx context.Context) (string, error) {

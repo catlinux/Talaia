@@ -142,3 +142,78 @@ func TestFailStaleJob(t *testing.T) {
 		t.Errorf("stale job = %+v", got)
 	}
 }
+
+func TestPurgeFinishedJobs(t *testing.T) {
+	s := newTestStore(t)
+	ctx := context.Background()
+	serverID := newTestServerID(t, s)
+
+	// create makes a job in the given state and backdates it. A zero finishedAgo
+	// leaves finished_at NULL, as an unfinished job has it.
+	create := func(kind, state string, finishedAgo time.Duration) string {
+		t.Helper()
+		job, err := s.CreateJob(ctx, serverID, kind, nil, "admin")
+		if err != nil {
+			t.Fatalf("CreateJob: %v", err)
+		}
+		if state != JobPending {
+			if _, err := s.UpdateJobState(ctx, job.ID, serverID, JobRunning, "", ""); err != nil {
+				t.Fatalf("to running: %v", err)
+			}
+		}
+		if state == JobSucceeded || state == JobFailed {
+			if _, err := s.UpdateJobState(ctx, job.ID, serverID, state, "", ""); err != nil {
+				t.Fatalf("to %s: %v", state, err)
+			}
+		}
+		var finished any
+		if finishedAgo > 0 {
+			finished = time.Now().Add(-finishedAgo)
+		}
+		if _, err := s.pool.Exec(ctx,
+			`UPDATE job SET created_at = $2, finished_at = $3 WHERE id = $1`,
+			job.ID, time.Now().Add(-time.Hour), finished); err != nil {
+			t.Fatalf("backdate the job: %v", err)
+		}
+		return job.ID
+	}
+
+	oldSucceeded := create("container_logs", JobSucceeded, 20*time.Minute)
+	oldFailed := create("container_logs", JobFailed, 20*time.Minute)
+	fresh := create("container_logs", JobSucceeded, 5*time.Minute)
+	otherKind := create("container_action", JobSucceeded, 20*time.Minute)
+	running := create("container_logs", JobRunning, 0)
+	pending := create("container_logs", JobPending, 0)
+
+	deleted, err := s.PurgeFinishedJobs(ctx, "container_logs", 15*time.Minute)
+	if err != nil {
+		t.Fatalf("purge: %v", err)
+	}
+	if deleted != 2 {
+		t.Errorf("deleted = %d, want 2", deleted)
+	}
+
+	for id, wantGone := range map[string]bool{
+		oldSucceeded: true,
+		oldFailed:    true,
+		fresh:        false,
+		otherKind:    false,
+		running:      false,
+		pending:      false,
+	} {
+		_, err := s.GetJob(ctx, id)
+		if wantGone && !errors.Is(err, ErrNotFound) {
+			t.Errorf("job %s was not purged: %v", id, err)
+		}
+		if !wantGone && err != nil {
+			t.Errorf("job %s was purged: %v", id, err)
+		}
+	}
+
+	if _, err := s.PurgeFinishedJobs(ctx, " ", time.Minute); err == nil {
+		t.Error("an empty kind was accepted")
+	}
+	if _, err := s.PurgeFinishedJobs(ctx, "container_logs", -time.Minute); err == nil {
+		t.Error("a negative retention was accepted")
+	}
+}
