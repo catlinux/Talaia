@@ -13,6 +13,12 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+## [0.2.10] - 2026-10-22
+
+### Corregido
+
+- Panel: los diálogos de confirmación (actualizar, quitar un servidor, actualizar un agente) se abrían al final de las páginas largas, porque la animación de entrada de la página la dejaba como referencia de los elementos fijos; ahora se abren centrados en la ventana. En Ajustes, la tarjeta de progreso de la actualización aparece justo debajo de la tarjeta de versión, no al final de la página. Las pruebas del panel esperan hasta cinco segundos a un elemento, así que un equipo cargado ya no las hace fallar al azar.
+
 ## [0.2.9] - 2026-10-22
 
 ### Corregido
@@ -175,7 +181,8 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
   `.gitattributes` y `.gitignore`.
 - Licencia WNCL-1.0 aplicada: archivo `LICENSE` y sección de créditos en los README.
 
-[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.2.9...HEAD
+[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.2.10...HEAD
+[0.2.10]: https://github.com/catlinux/Talaia/releases/tag/v0.2.10
 [0.2.9]: https://github.com/catlinux/Talaia/releases/tag/v0.2.9
 [0.2.8]: https://github.com/catlinux/Talaia/releases/tag/v0.2.8
 [0.2.7]: https://github.com/catlinux/Talaia/releases/tag/v0.2.7

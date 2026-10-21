@@ -18,6 +18,12 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.2.10] - 2026-10-22
+
+### Fixed
+
+- Panel: the confirmation dialogs (update, remove a server, update an agent) opened at the bottom of long pages, because the entrance animation of the page kept it as the reference of fixed elements; they now open centred on the window. In Settings, the update progress card now appears right under the version card instead of at the end of the page. The panel tests wait up to five seconds for an element, so a busy machine no longer fails them at random.
+
 ## [0.2.9] - 2026-10-22
 
 ### Fixed
@@ -175,7 +181,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.2.9...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.2.10...HEAD
+[0.2.10]: https://github.com/catlinux/Talaia/releases/tag/v0.2.10
 [0.2.9]: https://github.com/catlinux/Talaia/releases/tag/v0.2.9
 [0.2.8]: https://github.com/catlinux/Talaia/releases/tag/v0.2.8
 [0.2.7]: https://github.com/catlinux/Talaia/releases/tag/v0.2.7

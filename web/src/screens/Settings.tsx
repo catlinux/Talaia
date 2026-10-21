@@ -627,6 +627,27 @@ export function Settings({ api = defaultApi, accessApi, pollMs = pollEvery }: Se
             ) : null}
           </section>
 
+          {showProgress && status !== null ? (
+            <section
+              className={`settings__card settings__progress${progressTone}`}
+              aria-labelledby="settings-progress-title"
+            >
+              <h2 className="settings__card-title" id="settings-progress-title">
+                {t('settings:progress.title')}
+              </h2>
+              <p className="settings__progress-state" role="status">
+                {progressText}
+              </p>
+              {status.log.length > 0 ? (
+                <ul className="settings__log" aria-label={t('settings:progress.log')}>
+                  {status.log.slice(-logShown).map((line, index) => (
+                    <li key={`${index}-${line}`}>{line}</li>
+                  ))}
+                </ul>
+              ) : null}
+            </section>
+          ) : null}
+
           {access !== undefined ? <AccessCard api={access} /> : null}
 
           {showServers ? (
@@ -757,27 +778,6 @@ export function Settings({ api = defaultApi, accessApi, pollMs = pollEvery }: Se
                     <p className="settings__more">{t('settings:pending.more', { count: more })}</p>
                   ) : null}
                 </>
-              ) : null}
-            </section>
-          ) : null}
-
-          {showProgress && status !== null ? (
-            <section
-              className={`settings__card settings__progress${progressTone}`}
-              aria-labelledby="settings-progress-title"
-            >
-              <h2 className="settings__card-title" id="settings-progress-title">
-                {t('settings:progress.title')}
-              </h2>
-              <p className="settings__progress-state" role="status">
-                {progressText}
-              </p>
-              {status.log.length > 0 ? (
-                <ul className="settings__log" aria-label={t('settings:progress.log')}>
-                  {status.log.slice(-logShown).map((line, index) => (
-                    <li key={`${index}-${line}`}>{line}</li>
-                  ))}
-                </ul>
               ) : null}
             </section>
           ) : null}

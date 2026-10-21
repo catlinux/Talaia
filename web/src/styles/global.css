@@ -260,7 +260,9 @@ code {
 .shell__page {
   max-width: 1280px;
   margin: 0 auto;
-  animation: rise 420ms var(--ease) both;
+  /* backwards, not both: a filling transform animation keeps the page as the
+     containing block of position: fixed, which pushed the dialogs to the bottom. */
+  animation: rise 420ms var(--ease) backwards;
 }
 
 /* ---------- Language and theme selectors ---------- */
