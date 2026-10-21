@@ -96,6 +96,7 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ### Corregido
 
+- Un agente que ya tenía una identidad de otro núcleo ignoraba el nuevo token de enrolamiento y seguía sin poder conectar. Cuando `install.sh` deja un token y la CA guardada no coincide con la huella configurada, el agente descarta la identidad antigua y se enrola de nuevo.
 - Instalador: al relanzarlo ya no toma su propio contenedor `acme-dns`, que una ejecución anterior dejó en marcha, por un proceso que ocupa el puerto 53.
 - `docker compose up --build` con el perfil `acme-dns` fallaba en una máquina limpia con «pull access denied for talaia-core»: el servicio DNS de ACME usa la imagen del núcleo pero no decía cómo construirla. Ahora los dos servicios comparten la construcción y el CI arranca la pila con ese perfil desde cero.
 - ACME: la cuenta y el certificado se guardan por directorio ACME (`<data_dir>/acme/<host>/`), así que staging y producción nunca se mezclan y una cuenta registrada en uno no se reutiliza en el otro.

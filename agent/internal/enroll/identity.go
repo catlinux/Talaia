@@ -4,8 +4,10 @@ package enroll
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"crypto/tls"
 	"crypto/x509"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"os"
@@ -308,5 +310,29 @@ func writeFileAtomic(path string, data []byte, mode os.FileMode) error {
 		return fmt.Errorf("replace %s: %w", path, err)
 	}
 
+	return nil
+}
+
+// CAFingerprint returns the SHA-256 of the stored CA certificate, as lower-case
+// hexadecimal, or "" when the CA cannot be read.
+func (i *Identity) CAFingerprint() string {
+	i.mu.RLock()
+	defer i.mu.RUnlock()
+	ca, err := i.caCertificate()
+	if err != nil {
+		return ""
+	}
+	sum := sha256.Sum256(ca.Raw)
+	return hex.EncodeToString(sum[:])
+}
+
+// Forget deletes the stored identity files in dir, so the next start enrolls
+// again. It is for an agent that is pointed at another core with a new token.
+func Forget(dir string) error {
+	for _, name := range []string{identityFileName, caFileName, legacyKeyFileName, legacyCertFileName} {
+		if err := os.Remove(filepath.Join(dir, name)); err != nil && !errors.Is(err, os.ErrNotExist) {
+			return fmt.Errorf("remove %s: %w", name, err)
+		}
+	}
 	return nil
 }

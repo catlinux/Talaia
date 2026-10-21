@@ -96,6 +96,7 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ### Fixed
 
+- An agent that already had an identity from another core ignored the new enrollment token and kept failing to connect. When `install.sh` leaves a token and the stored CA does not match the configured fingerprint, the agent discards the old identity and enrolls again.
 - Installer: rerunning it no longer takes its own `acme-dns` container, left running by an earlier run, for a process that holds port 53.
 - `docker compose up --build` with the `acme-dns` profile failed on a clean machine with "pull access denied for talaia-core": the ACME DNS service uses the core image but did not say how to build it. Both services now share the build, and the CI starts the stack with that profile from nothing.
 - ACME: the account and the certificate are stored per ACME directory (`<data_dir>/acme/<host>/`), so staging and production never mix and an account registered in one is not reused in the other.

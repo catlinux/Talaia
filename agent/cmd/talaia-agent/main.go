@@ -92,10 +92,31 @@ func run() error {
 	return nil
 }
 
+// staleIdentity reports whether a pending enrollment token and a configured CA
+// fingerprint show that the stored identity was issued by a different core.
+func staleIdentity(identity *enroll.Identity, cfg config.Config) bool {
+	if cfg.CAFingerprint == "" {
+		return false
+	}
+	if _, err := os.Stat(cfg.EnrollTokenFile); err != nil {
+		return false
+	}
+	return !strings.EqualFold(identity.CAFingerprint(), strings.TrimSpace(cfg.CAFingerprint))
+}
+
 // loadOrEnroll loads the stored identity or, when there is none, enrols the
 // agent with the one-time token. It never logs the token.
 func loadOrEnroll(ctx context.Context, cfg config.Config, logger *slog.Logger) (*enroll.Identity, error) {
 	identity, err := enroll.LoadIdentity(cfg.CertDir)
+	if err == nil && staleIdentity(identity, cfg) {
+		// install.sh left a new token for another core: the old identity cannot
+		// work there and would otherwise hide the new enrollment for ever.
+		logger.Warn("the stored identity belongs to another core; enrolling again", "server_id", identity.ServerID())
+		if err := enroll.Forget(cfg.CertDir); err != nil {
+			return nil, fmt.Errorf("discard the old identity: %w", err)
+		}
+		err = enroll.ErrNotEnrolled
+	}
 	if err == nil {
 		logger.Info("loaded the agent identity", "server_id", identity.ServerID(), "not_after", identity.NotAfter())
 		return identity, nil
