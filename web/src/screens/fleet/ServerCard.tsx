@@ -48,13 +48,16 @@ export function ServerCard({ server, onOpen }: ServerCardProps) {
               })}
         </p>
       ) : null}
-      {server.agentVersion !== '' || server.agentUpdateAvailable ? (
+      {server.agentVersion !== '' || server.agentUpdateAvailable || server.agentUpdateManual ? (
         <p className="server__agent">
           {server.agentVersion !== '' ? (
             <span>{t('server.agentVersion', { version: server.agentVersion })}</span>
           ) : null}
           {server.agentUpdateAvailable ? (
             <span className="server__update">{t('server.updateAvailable')}</span>
+          ) : null}
+          {server.agentUpdateManual ? (
+            <span className="server__manual">{t('server.manualUpdate')}</span>
           ) : null}
         </p>
       ) : null}

@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import type { FleetClient } from './api/client'
 import type { ContainersApi } from './api/containers'
 import type { SystemApi } from './api/system'
+import type { Server } from './api/types'
 import { About } from './screens/About'
 import { Fleet } from './screens/Fleet'
 import { ServerScreen } from './screens/ServerScreen'
@@ -35,7 +36,7 @@ export function App({ client, containersApi, systemApi }: AppProps) {
   const auth = useAuth()
   const [screen, setScreen] = useState<Screen>('fleet')
   // The server whose containers are open, if any; it replaces the fleet screen.
-  const [openServer, setOpenServer] = useState<{ id: string; name: string } | null>(null)
+  const [openServer, setOpenServer] = useState<Server | null>(null)
 
   return (
     <div className="shell">
@@ -120,10 +121,7 @@ export function App({ client, containersApi, systemApi }: AppProps) {
               onBack={() => setOpenServer(null)}
             />
           ) : (
-            <Fleet
-              client={client}
-              onOpenServer={(server) => setOpenServer({ id: server.id, name: server.name })}
-            />
+            <Fleet client={client} onOpenServer={setOpenServer} />
           )}
         </div>
       </main>

@@ -17,7 +17,10 @@ function serverSummary(overrides: Partial<ServerSummary> = {}): ServerSummary {
     connected: true,
     revoked: false,
     agentVersion: '0.2.0',
+    agentLatestVersion: '0.2.8',
     agentUpdateAvailable: false,
+    agentUpdateManual: false,
+    agentUpgradeCommand: '',
     ...overrides,
   }
 }
@@ -242,6 +245,35 @@ describe('ServerScreen', () => {
 
     expect(await screen.findByText('Agent 0.2.0')).toBeTruthy()
     expect(screen.queryByRole('button', { name: 'Update agent' })).toBeNull()
+  })
+
+  it('shows the manual upgrade explanation and copies the command', async () => {
+    const writeText = vi.fn(() => Promise.resolve())
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true })
+    const serversApi = serversApiWith([
+      serverSummary({
+        agentUpdateManual: true,
+        agentUpgradeCommand: 'sudo bash install.sh --upgrade',
+      }),
+    ])
+    renderScreen(apiWith(listOf(container())), undefined, serversApi)
+
+    expect(await screen.findByText(/This agent is too old to update itself/)).toBeTruthy()
+    expect(screen.getByText('sudo bash install.sh --upgrade')).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'Update agent' })).toBeNull()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Copy the command' }))
+    await waitFor(() => expect(writeText).toHaveBeenCalledWith('sudo bash install.sh --upgrade'))
+    expect(await screen.findByText('Copied')).toBeTruthy()
+  })
+
+  it('points to the docs when the manual upgrade command is empty', async () => {
+    const serversApi = serversApiWith([serverSummary({ agentUpdateManual: true })])
+    renderScreen(apiWith(listOf(container())), undefined, serversApi)
+
+    expect(await screen.findByText(/This agent is too old to update itself/)).toBeTruthy()
+    expect(screen.getByText('See the installation guide for the manual steps.')).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'Copy the command' })).toBeNull()
   })
 
   const refusedUpdates = [

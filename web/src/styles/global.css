@@ -1114,3 +1114,78 @@ code {
     width: 100%;
   }
 }
+
+.server__manual {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.manualupdate {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+}
+
+.manualupdate__text,
+.manualupdate__docs {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.8125rem;
+}
+
+.manualupdate__label {
+  margin: 0;
+  color: var(--muted);
+  font-family: var(--f-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.manualupdate__command {
+  display: block;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--code-bg);
+  color: var(--code-ink);
+  font-family: var(--f-mono);
+  font-size: 0.75rem;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.manualupdate__actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.manualupdate__copy {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--accent);
+  font: inherit;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.manualupdate__copy:hover {
+  background: var(--surface-2);
+}
+
+.settings__server .manualupdate {
+  flex-basis: 100%;
+}

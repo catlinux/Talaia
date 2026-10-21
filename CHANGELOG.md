@@ -18,6 +18,12 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.2.9] - 2026-10-22
+
+### Fixed
+
+- Agents older than 0.2.8 ignore the update order, so the panel left the update "in progress" for ever. The core now marks them `agent_update_manual`, sends the upgrade command in `agent_upgrade_command`, and the panel shows a **Manual update** badge with the command to copy instead of an Update button; once on 0.2.8 they update from the panel. A stuck update job stops blocking new attempts after 15 minutes.
+
 ## [0.2.8] - 2026-10-21
 
 ### Added
@@ -169,7 +175,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.2.8...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.2.9...HEAD
+[0.2.9]: https://github.com/catlinux/Talaia/releases/tag/v0.2.9
 [0.2.8]: https://github.com/catlinux/Talaia/releases/tag/v0.2.8
 [0.2.7]: https://github.com/catlinux/Talaia/releases/tag/v0.2.7
 [0.2.6]: https://github.com/catlinux/Talaia/releases/tag/v0.2.6

@@ -53,21 +53,26 @@ function serverEntry(overrides: Record<string, unknown> = {}) {
     cert_not_after: '2027-01-01T10:00:00Z',
     connected: true,
     agent_update_available: false,
+    agent_update_manual: false,
     live: live(),
     ...overrides,
   }
 }
 
 /** clientFor answers GET /api/v1/servers with the given entries. */
-function clientFor(entries: unknown[]) {
+function clientFor(entries: unknown[], upgradeCommand = '', latestVersion = '') {
   const calls: string[] = []
   const fetchImpl = vi.fn((input: RequestInfo | URL) => {
     calls.push(String(input))
     return Promise.resolve(
-      new Response(JSON.stringify({ servers: entries }), {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' },
-      }),
+      new Response(
+        JSON.stringify({
+          servers: entries,
+          agent_latest_version: latestVersion,
+          agent_upgrade_command: upgradeCommand,
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } },
+      ),
     )
   })
   return { client: createApiFleetClient(fetchImpl as unknown as typeof fetch), calls }
@@ -98,8 +103,25 @@ describe('api fleet client', () => {
       tags: [],
       lastSeen: '2026-10-19T12:00:00Z',
       agentVersion: '0.2.0',
+      agentLatestVersion: '',
       agentUpdateAvailable: false,
+      agentUpdateManual: false,
+      agentUpgradeCommand: '',
     })
+  })
+
+  it('maps the manual upgrade flag and the command', async () => {
+    const { client } = clientFor(
+      [serverEntry({ agent_update_available: false, agent_update_manual: true })],
+      'sudo bash install.sh --upgrade',
+      '0.2.8',
+    )
+
+    const [server] = await client.listServers()
+
+    expect(server?.agentUpdateManual).toBe(true)
+    expect(server?.agentUpgradeCommand).toBe('sudo bash install.sh --upgrade')
+    expect(server?.agentLatestVersion).toBe('0.2.8')
   })
 
   it('maps the agent version and the update flag', async () => {

@@ -8,8 +8,14 @@ export interface ServerSummary {
   revoked: boolean
   /** agentVersion is the version the connected agent reports; empty when offline. */
   agentVersion: string
+  /** agentLatestVersion is the newest agent package the core can offer. */
+  agentLatestVersion: string
   /** agentUpdateAvailable is true when the core offers a newer agent package. */
   agentUpdateAvailable: boolean
+  /** agentUpdateManual is true when the agent is too old to update itself. */
+  agentUpdateManual: boolean
+  /** agentUpgradeCommand upgrades such an old agent once, by hand. */
+  agentUpgradeCommand: string
 }
 
 /** AgentUpdateSkip is one server the bulk update could not queue. */
@@ -64,6 +70,7 @@ interface apiServerSummary {
   connected: boolean
   revoked: boolean
   agent_update_available: boolean
+  agent_update_manual: boolean
   live?: {
     agent_version: string
   }
@@ -76,6 +83,8 @@ interface apiAgentUpdateAll {
 
 interface serversResponse {
   servers: apiServerSummary[]
+  agent_latest_version: string
+  agent_upgrade_command: string
 }
 
 /** defaultFetch keeps the browser's fetch bound to the window. */
@@ -130,13 +139,18 @@ export function createServersApi(fetchImpl: typeof fetch = defaultFetch): Server
   return {
     listServers: async () => {
       const body = await http.get<serversResponse>('/api/v1/servers')
+      const latestVersion = body.agent_latest_version ?? ''
+      const upgradeCommand = body.agent_upgrade_command ?? ''
       return body.servers.map((server) => ({
         id: server.id,
         name: server.name,
         connected: server.connected,
         revoked: server.revoked,
         agentVersion: server.live?.agent_version ?? '',
+        agentLatestVersion: latestVersion,
         agentUpdateAvailable: server.agent_update_available ?? false,
+        agentUpdateManual: server.agent_update_manual ?? false,
+        agentUpgradeCommand: upgradeCommand,
       }))
     },
     updateAgent: async (id) => {

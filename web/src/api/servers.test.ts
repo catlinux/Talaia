@@ -15,6 +15,8 @@ describe('api servers client', () => {
     const fetchImpl = vi.fn(() =>
       Promise.resolve(
         jsonResponse(200, {
+          agent_latest_version: '0.2.8',
+          agent_upgrade_command: '',
           servers: [
             {
               id: 'srv-1',
@@ -22,6 +24,7 @@ describe('api servers client', () => {
               connected: true,
               revoked: false,
               agent_update_available: true,
+              agent_update_manual: false,
               live: { agent_version: '0.2.0' },
             },
           ],
@@ -37,9 +40,40 @@ describe('api servers client', () => {
         connected: true,
         revoked: false,
         agentVersion: '0.2.0',
+        agentLatestVersion: '0.2.8',
         agentUpdateAvailable: true,
+        agentUpdateManual: false,
+        agentUpgradeCommand: '',
       },
     ])
+  })
+
+  it('carries the manual upgrade flag and command', async () => {
+    const fetchImpl = vi.fn(() =>
+      Promise.resolve(
+        jsonResponse(200, {
+          agent_latest_version: '0.2.8',
+          agent_upgrade_command: 'sudo bash install.sh --upgrade',
+          servers: [
+            {
+              id: 'srv-3',
+              name: 'vps-old-01',
+              connected: true,
+              revoked: false,
+              agent_update_available: false,
+              agent_update_manual: true,
+              live: { agent_version: '0.2.7' },
+            },
+          ],
+        }),
+      ),
+    )
+    const api = createServersApi(fetchImpl as unknown as typeof fetch)
+
+    const [server] = await api.listServers()
+    expect(server?.agentUpdateManual).toBe(true)
+    expect(server?.agentUpgradeCommand).toBe('sudo bash install.sh --upgrade')
+    expect(server?.agentLatestVersion).toBe('0.2.8')
   })
 
   it('leaves the agent version empty when the server is offline', async () => {

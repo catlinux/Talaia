@@ -206,7 +206,8 @@ servidor (`sudo apt purge talaia-agent`) antes de ejecutar de nuevo la orden de 
   factor). Sin `core-data`, todos los agentes tendrían que darse de alta de nuevo.
 - **Has perdido la aplicación o los códigos:** `sudo docker compose run --rm core user reset-2fa` borra el
   segundo factor y cierra todas las sesiones; en el siguiente acceso se vuelve a configurar.
-- **Actualizar los agentes:** tras actualizar el núcleo, su imagen trae el paquete nuevo del agente. El panel muestra
+- **Actualizar los agentes:** los agentes anteriores a la 0.2.8 no pueden actualizarse solos: el panel los marca
+  **Actualización manual** y muestra el comando que hay que ejecutar una vez en el servidor. Tras actualizar el núcleo, su imagen trae el paquete nuevo del agente. El panel muestra
   la versión del agente de cada servidor y una etiqueta **Actualización disponible**; usa **Actualizar agente** en la
   pantalla del servidor o **Actualizar todos los agentes** en **Ajustes > Servidores**. El agente descarga el paquete
   del núcleo, comprueba su SHA-256, lo instala y se reinicia (los contenedores no se tocan). Sin el panel, en la máquina

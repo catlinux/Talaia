@@ -64,6 +64,7 @@ interface apiServer {
   cert_not_after: string | null
   connected: boolean
   agent_update_available: boolean
+  agent_update_manual: boolean
   live?: apiLiveAgent
 }
 
@@ -77,6 +78,10 @@ interface apiEnrollment {
 
 interface serversResponse {
   servers: apiServer[]
+  /** agent_latest_version is the newest agent package the core can offer. */
+  agent_latest_version: string
+  /** agent_upgrade_command upgrades an agent that is too old to update itself. */
+  agent_upgrade_command: string
 }
 
 /** Status thresholds, in percent of memory or disk in use. */
@@ -121,7 +126,7 @@ function statusOf(server: apiServer): { status: ServerStatus; statusDetailKey?: 
 }
 
 /** toServer maps one API entry to the model of the fleet screen. */
-function toServer(server: apiServer): Server {
+function toServer(server: apiServer, latestVersion: string, upgradeCommand: string): Server {
   const live = server.connected ? server.live : undefined
 
   return {
@@ -142,7 +147,10 @@ function toServer(server: apiServer): Server {
     tags: [],
     lastSeen: live?.seen_at ?? server.last_seen,
     agentVersion: live?.agent_version ?? '',
+    agentLatestVersion: latestVersion,
     agentUpdateAvailable: server.agent_update_available ?? false,
+    agentUpdateManual: server.agent_update_manual ?? false,
+    agentUpgradeCommand: upgradeCommand,
   }
 }
 
@@ -153,7 +161,9 @@ export function createApiFleetClient(fetchImpl?: typeof fetch): FleetClient {
   return {
     listServers: async () => {
       const body = await http.get<serversResponse>('/api/v1/servers')
-      return body.servers.map(toServer)
+      const latestVersion = body.agent_latest_version ?? ''
+      const upgradeCommand = body.agent_upgrade_command ?? ''
+      return body.servers.map((server) => toServer(server, latestVersion, upgradeCommand))
     },
     // There is no activity API yet: the screen shows placeholders instead of
     // inventing numbers.

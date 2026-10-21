@@ -28,6 +28,7 @@ import {
 } from '../components/icons'
 import { formatBytes, formatPercent } from './fleet/format'
 import { LogsPanel } from './server/LogsPanel'
+import { ManualUpgrade } from './server/ManualUpgrade'
 import { ResourcesSection } from './server/ResourcesSection'
 import { StackScreen } from './server/StackScreen'
 import { StacksSection } from './server/StacksSection'
@@ -53,7 +54,12 @@ const defaultTerminalApi = createTerminalApi()
 const defaultServersApi = createServersApi()
 
 interface ServerScreenProps {
-  server: { id: string; name: string }
+  server: {
+    id: string
+    name: string
+    agentUpdateManual?: boolean
+    agentUpgradeCommand?: string
+  }
   onBack: () => void
   /** Tests inject their own API; the panel uses the real one. */
   api?: ContainersApi
@@ -272,6 +278,8 @@ export function ServerScreen({
   const containers = list ? sortContainers(list.containers) : []
   const running = containers.filter((container) => container.state === 'running').length
   const agentVersion = serverInfo?.agentVersion ?? ''
+  const agentUpdateManual = server.agentUpdateManual || serverInfo?.agentUpdateManual || false
+  const agentUpgradeCommand = server.agentUpgradeCommand || serverInfo?.agentUpgradeCommand || ''
   const canUpdateAgent =
     serverInfo !== null && serverInfo.connected && serverInfo.agentUpdateAvailable && !updatingAgent
 
@@ -329,6 +337,7 @@ export function ServerScreen({
             ) : null}
           </div>
         ) : null}
+        {agentUpdateManual ? <ManualUpgrade command={agentUpgradeCommand} /> : null}
       </header>
 
       {state.status === 'loading' ? (

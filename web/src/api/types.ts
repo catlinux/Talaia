@@ -21,8 +21,14 @@ export interface Server {
   lastSeen: string | null
   /** agentVersion is the version the connected agent reports; empty when offline. */
   agentVersion: string
+  /** agentLatestVersion is the newest agent package the core can offer. */
+  agentLatestVersion: string
   /** agentUpdateAvailable is true when the core offers a newer agent package. */
   agentUpdateAvailable: boolean
+  /** agentUpdateManual is true when the agent is too old to update itself. */
+  agentUpdateManual: boolean
+  /** agentUpgradeCommand upgrades such an old agent once, by hand. */
+  agentUpgradeCommand: string
 }
 
 /**

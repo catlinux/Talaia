@@ -188,6 +188,13 @@
       "generic": "No s'ha pogut iniciar l'actualització."
     }
   },
+  "manualUpdate": {
+    "explanation": "Aquest agent és massa antic per actualitzar-se sol. Executa aquesta ordre una vegada al servidor; les versions posteriors s'actualitzen des del tauler.",
+    "command": "Ordre",
+    "copy": "Copia l'ordre",
+    "copied": "Copiada",
+    "docs": "Consulta la guia d'instal·lació per als passos manuals."
+  },
   "stack": {
     "back": "Torna al servidor",
     "breadcrumb": "Ruta de navegació",

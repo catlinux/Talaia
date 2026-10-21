@@ -2,6 +2,7 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-li
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { Container, ContainersApi, Job } from '../../api/containers'
+import type { ServersApi } from '../../api/servers'
 import i18n from '../../i18n'
 import { ServerScreen } from '../ServerScreen'
 
@@ -52,8 +53,23 @@ function fakeApi(
   return api satisfies ContainersApi
 }
 
+const serversApi: ServersApi = {
+  listServers: () => Promise.resolve([]),
+  updateAgent: () => Promise.resolve(),
+  updateAllAgents: () => Promise.resolve({ queued: [], skipped: [] }),
+  removeServer: () => Promise.resolve(),
+}
+
 function renderScreen(api: ContainersApi) {
-  render(<ServerScreen server={server} api={api} onBack={() => undefined} pollMs={1} />)
+  render(
+    <ServerScreen
+      server={server}
+      api={api}
+      serversApi={serversApi}
+      onBack={() => undefined}
+      pollMs={1}
+    />,
+  )
 }
 
 describe('stacks of a server', () => {

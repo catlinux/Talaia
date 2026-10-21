@@ -29,7 +29,10 @@ function server(overrides: Partial<Server> = {}): Server {
     tags: [],
     lastSeen: '2026-10-19T12:00:00Z',
     agentVersion: '0.2.0',
+    agentLatestVersion: '0.2.8',
     agentUpdateAvailable: false,
+    agentUpdateManual: false,
+    agentUpgradeCommand: '',
     ...overrides,
   }
 }
@@ -128,6 +131,20 @@ describe('Fleet', () => {
     expect(await screen.findByText('vps-web-01')).toBeTruthy()
     expect(screen.getByText('Agent 0.2.0')).toBeTruthy()
     expect(screen.getByText('Update available')).toBeTruthy()
+  })
+
+  it('shows a manual update badge for an agent that is too old', async () => {
+    render(
+      <Fleet
+        client={clientReturning(() =>
+          Promise.resolve([server({ agentUpdateManual: true, agentUpdateAvailable: false })]),
+        )}
+      />,
+    )
+
+    expect(await screen.findByText('vps-web-01')).toBeTruthy()
+    expect(screen.getByText('Manual update')).toBeTruthy()
+    expect(screen.queryByText('Update available')).toBeNull()
   })
 
   it('explains how to add a server when the fleet is empty', async () => {

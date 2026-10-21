@@ -188,6 +188,13 @@
       "generic": "No se ha podido iniciar la actualización."
     }
   },
+  "manualUpdate": {
+    "explanation": "Este agente es demasiado antiguo para actualizarse solo. Ejecuta este comando una vez en el servidor; las versiones posteriores se actualizan desde el panel.",
+    "command": "Comando",
+    "copy": "Copiar el comando",
+    "copied": "Copiado",
+    "docs": "Consulta la guía de instalación para los pasos manuales."
+  },
   "stack": {
     "back": "Volver al servidor",
     "breadcrumb": "Ruta de navegación",

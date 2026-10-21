@@ -2,6 +2,7 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-li
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ContainersApi, Job, ResourceItem, ResourceKind } from '../../api/containers'
+import type { ServersApi } from '../../api/servers'
 import i18n from '../../i18n'
 import { ServerScreen } from '../ServerScreen'
 
@@ -63,8 +64,23 @@ function fakeApi(removalOutput = '{"results":[]}') {
   return api satisfies ContainersApi
 }
 
+const serversApi: ServersApi = {
+  listServers: () => Promise.resolve([]),
+  updateAgent: () => Promise.resolve(),
+  updateAllAgents: () => Promise.resolve({ queued: [], skipped: [] }),
+  removeServer: () => Promise.resolve(),
+}
+
 function renderScreen(api: ContainersApi) {
-  render(<ServerScreen server={server} api={api} onBack={() => undefined} pollMs={1} />)
+  render(
+    <ServerScreen
+      server={server}
+      api={api}
+      serversApi={serversApi}
+      onBack={() => undefined}
+      pollMs={1}
+    />,
+  )
 }
 
 async function openResources() {

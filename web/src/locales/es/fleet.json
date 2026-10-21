@@ -57,7 +57,8 @@
     "facts": "{{containers}} · {{stacks}}",
     "lastSeen": "Visto por última vez {{time}}",
     "agentVersion": "Agente {{version}}",
-    "updateAvailable": "Actualización disponible"
+    "updateAvailable": "Actualización disponible",
+    "manualUpdate": "Actualización manual"
   },
   "activity": {
     "title": "Actividad",

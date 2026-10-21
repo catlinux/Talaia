@@ -16,6 +16,7 @@ import {
   type UpdateStatus,
 } from '../api/system'
 import { errorMessage } from '../auth/AuthGate'
+import { ManualUpgrade } from './server/ManualUpgrade'
 import { AccessCard } from './settings/AccessCard'
 
 /** pollEvery is how often the progress of a running update is asked for. */
@@ -691,6 +692,9 @@ export function Settings({ api = defaultApi, accessApi, pollMs = pollEvery }: Se
                       >
                         {t('settings:servers.remove')}
                       </button>
+                      {server.agentUpdateManual ? (
+                        <ManualUpgrade command={server.agentUpgradeCommand} />
+                      ) : null}
                     </li>
                   ))}
                 </ul>

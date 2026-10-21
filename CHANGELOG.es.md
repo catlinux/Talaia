@@ -13,6 +13,12 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+## [0.2.9] - 2026-10-22
+
+### Corregido
+
+- Los agentes anteriores a la 0.2.8 ignoran la orden de actualización, así que el panel dejaba la actualización «en curso» para siempre. El núcleo los marca ahora como `agent_update_manual`, envía el comando de actualización en `agent_upgrade_command`, y el panel muestra una etiqueta **Actualización manual** con el comando para copiar en lugar de un botón; a partir de la 0.2.8 se actualizan desde el panel. Un trabajo de actualización atascado deja de bloquear nuevos intentos pasados 15 minutos.
+
 ## [0.2.8] - 2026-10-21
 
 ### Añadido
@@ -169,7 +175,8 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
   `.gitattributes` y `.gitignore`.
 - Licencia WNCL-1.0 aplicada: archivo `LICENSE` y sección de créditos en los README.
 
-[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.2.8...HEAD
+[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.2.9...HEAD
+[0.2.9]: https://github.com/catlinux/Talaia/releases/tag/v0.2.9
 [0.2.8]: https://github.com/catlinux/Talaia/releases/tag/v0.2.8
 [0.2.7]: https://github.com/catlinux/Talaia/releases/tag/v0.2.7
 [0.2.6]: https://github.com/catlinux/Talaia/releases/tag/v0.2.6

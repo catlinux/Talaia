@@ -141,7 +141,10 @@ describe('Settings', () => {
         connected: true,
         revoked: false,
         agentVersion: '0.2.0',
+        agentLatestVersion: '0.2.8',
         agentUpdateAvailable: false,
+        agentUpdateManual: false,
+        agentUpgradeCommand: '',
       },
       {
         id: 'srv-2',
@@ -149,7 +152,10 @@ describe('Settings', () => {
         connected: false,
         revoked: false,
         agentVersion: '',
+        agentLatestVersion: '0.2.8',
         agentUpdateAvailable: false,
+        agentUpdateManual: false,
+        agentUpgradeCommand: '',
       },
     ]
     renderSettings(
@@ -173,7 +179,10 @@ describe('Settings', () => {
         connected: true,
         revoked: false,
         agentVersion: '0.2.0',
+        agentLatestVersion: '0.2.8',
         agentUpdateAvailable: true,
+        agentUpdateManual: false,
+        agentUpgradeCommand: '',
       },
     ]
     const listServers = vi.fn<() => Promise<ServerSummary[]>>().mockResolvedValue(servers)
@@ -206,7 +215,10 @@ describe('Settings', () => {
         connected: true,
         revoked: false,
         agentVersion: '0.2.0',
+        agentLatestVersion: '0.2.8',
         agentUpdateAvailable: true,
+        agentUpdateManual: false,
+        agentUpgradeCommand: '',
       },
       {
         id: 'srv-2',
@@ -214,7 +226,10 @@ describe('Settings', () => {
         connected: true,
         revoked: false,
         agentVersion: '0.2.0',
+        agentLatestVersion: '0.2.8',
         agentUpdateAvailable: false,
+        agentUpdateManual: false,
+        agentUpgradeCommand: '',
       },
     ]
     const updateAllAgents = vi.fn(() =>
@@ -247,7 +262,10 @@ describe('Settings', () => {
         connected: true,
         revoked: false,
         agentVersion: '0.2.0',
+        agentLatestVersion: '0.2.8',
         agentUpdateAvailable: true,
+        agentUpdateManual: false,
+        agentUpgradeCommand: '',
       },
     ]
     const updateAgent = vi.fn(() => Promise.reject(new AgentUpdateError('update_in_progress', 409)))
@@ -268,6 +286,62 @@ describe('Settings', () => {
     )
   })
 
+  it('shows the manual upgrade command for an agent that is too old', async () => {
+    const writeText = vi.fn(() => Promise.resolve())
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true })
+    const servers: ServerSummary[] = [
+      {
+        id: 'srv-1',
+        name: 'vps-old-01',
+        connected: true,
+        revoked: false,
+        agentVersion: '0.2.7',
+        agentLatestVersion: '0.2.8',
+        agentUpdateAvailable: false,
+        agentUpdateManual: true,
+        agentUpgradeCommand: 'sudo bash install.sh --upgrade',
+      },
+    ]
+    renderSettings(
+      apiWith(() => Promise.resolve(makeSystem()), undefined, undefined, {
+        listServers: () => Promise.resolve(servers),
+      }),
+    )
+
+    expect(await screen.findByText(/This agent is too old to update itself/)).toBeTruthy()
+    expect(screen.getByText('sudo bash install.sh --upgrade')).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'Update' })).toBeNull()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Copy the command' }))
+    await waitFor(() => expect(writeText).toHaveBeenCalledWith('sudo bash install.sh --upgrade'))
+    expect(await screen.findByText('Copied')).toBeTruthy()
+  })
+
+  it('points to the docs when the manual upgrade command is empty', async () => {
+    const servers: ServerSummary[] = [
+      {
+        id: 'srv-1',
+        name: 'vps-old-01',
+        connected: true,
+        revoked: false,
+        agentVersion: '0.2.7',
+        agentLatestVersion: '0.2.8',
+        agentUpdateAvailable: false,
+        agentUpdateManual: true,
+        agentUpgradeCommand: '',
+      },
+    ]
+    renderSettings(
+      apiWith(() => Promise.resolve(makeSystem()), undefined, undefined, {
+        listServers: () => Promise.resolve(servers),
+      }),
+    )
+
+    expect(await screen.findByText(/This agent is too old to update itself/)).toBeTruthy()
+    expect(screen.getByText('See the installation guide for the manual steps.')).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'Copy the command' })).toBeNull()
+  })
+
   it('requires the exact server name and refreshes the list after removal', async () => {
     const servers: ServerSummary[] = [
       {
@@ -276,7 +350,10 @@ describe('Settings', () => {
         connected: true,
         revoked: false,
         agentVersion: '0.2.0',
+        agentLatestVersion: '0.2.8',
         agentUpdateAvailable: false,
+        agentUpdateManual: false,
+        agentUpgradeCommand: '',
       },
     ]
     const listServers = vi
@@ -324,7 +401,10 @@ describe('Settings', () => {
         connected: true,
         revoked: false,
         agentVersion: '0.2.0',
+        agentLatestVersion: '0.2.8',
         agentUpdateAvailable: false,
+        agentUpdateManual: false,
+        agentUpgradeCommand: '',
       },
     ]
     const removeServer = vi.fn<(id: string) => Promise<void>>(() => Promise.resolve())

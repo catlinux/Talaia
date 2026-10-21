@@ -188,6 +188,13 @@
       "generic": "The update could not be started."
     }
   },
+  "manualUpdate": {
+    "explanation": "This agent is too old to update itself. Run this command once on the server; later versions update from the panel.",
+    "command": "Command",
+    "copy": "Copy the command",
+    "copied": "Copied",
+    "docs": "See the installation guide for the manual steps."
+  },
   "stack": {
     "back": "Back to the server",
     "breadcrumb": "Breadcrumb",

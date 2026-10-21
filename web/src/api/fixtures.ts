@@ -29,7 +29,10 @@ export const sampleServers: Server[] = [
     tags: ['prod', 'web'],
     lastSeen: minutesAgo(1),
     agentVersion: '0.2.0',
+    agentLatestVersion: '0.2.8',
     agentUpdateAvailable: true,
+    agentUpdateManual: false,
+    agentUpgradeCommand: '',
   },
   {
     id: 'vps-db-01',
@@ -48,7 +51,10 @@ export const sampleServers: Server[] = [
     tags: ['prod', 'db'],
     lastSeen: minutesAgo(1),
     agentVersion: '0.2.0',
+    agentLatestVersion: '0.2.8',
     agentUpdateAvailable: false,
+    agentUpdateManual: false,
+    agentUpgradeCommand: '',
   },
   {
     id: 'vps-mail',
@@ -67,7 +73,10 @@ export const sampleServers: Server[] = [
     tags: ['prod', 'mail'],
     lastSeen: minutesAgo(2),
     agentVersion: '0.2.0',
+    agentLatestVersion: '0.2.8',
     agentUpdateAvailable: false,
+    agentUpdateManual: false,
+    agentUpgradeCommand: '',
   },
   {
     id: 'vps-dev',
@@ -85,7 +94,10 @@ export const sampleServers: Server[] = [
     tags: ['dev'],
     lastSeen: minutesAgo(1),
     agentVersion: '0.2.0',
+    agentLatestVersion: '0.2.8',
     agentUpdateAvailable: false,
+    agentUpdateManual: false,
+    agentUpgradeCommand: '',
   },
   {
     id: 'vps-backup',
@@ -103,7 +115,10 @@ export const sampleServers: Server[] = [
     tags: ['infra'],
     lastSeen: minutesAgo(1),
     agentVersion: '0.2.0',
+    agentLatestVersion: '0.2.8',
     agentUpdateAvailable: false,
+    agentUpdateManual: false,
+    agentUpgradeCommand: '',
   },
   {
     id: 'rpi-casa',
@@ -121,7 +136,10 @@ export const sampleServers: Server[] = [
     tags: ['home'],
     lastSeen: hoursAgo(2),
     agentVersion: '',
+    agentLatestVersion: '0.2.8',
     agentUpdateAvailable: false,
+    agentUpdateManual: false,
+    agentUpgradeCommand: '',
   },
 ]
 
