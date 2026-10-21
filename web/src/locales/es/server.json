@@ -29,6 +29,9 @@
     "removeTitle": "¿Eliminar {{name}}?",
     "removeBody": "Se borra el contenedor. Sus volúmenes se conservan.",
     "yes": "Eliminar el contenedor",
+    "stopTitle": "¿Parar {{name}}?",
+    "stopBody": "El contenedor se para; los servicios que dependen de él dejarán de responder. Puedes volver a arrancarlo.",
+    "stopYes": "Parar el contenedor",
     "no": "Cancelar"
   },
   "progress": {

@@ -29,6 +29,9 @@
     "removeTitle": "Remove {{name}}?",
     "removeBody": "The container is deleted. Its volumes are kept.",
     "yes": "Remove the container",
+    "stopTitle": "Stop {{name}}?",
+    "stopBody": "The container stops; services that depend on it will stop answering. You can start it again.",
+    "stopYes": "Stop the container",
     "no": "Cancel"
   },
   "progress": {

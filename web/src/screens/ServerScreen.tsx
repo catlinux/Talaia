@@ -142,7 +142,11 @@ export function ServerScreen({
   const [serverInfo, setServerInfo] = useState<ServerSummary | null>(null)
   const [refreshFailed, setRefreshFailed] = useState(false)
   const [outcomes, setOutcomes] = useState<Record<string, Outcome>>({})
-  const [confirming, setConfirming] = useState<string | null>(null)
+  // The container action that is waiting for confirmation, if any.
+  const [confirming, setConfirming] = useState<{
+    id: string
+    action: 'stop' | 'remove'
+  } | null>(null)
   const [confirmingAgentUpdate, setConfirmingAgentUpdate] = useState(false)
   const [updatingAgent, setUpdatingAgent] = useState(false)
   const [updateError, setUpdateError] = useState<string | null>(null)
@@ -398,12 +402,21 @@ export function ServerScreen({
               key={container.id}
               container={container}
               outcome={outcomes[container.id]}
-              confirming={confirming === container.id}
+              confirming={
+                confirming !== null && confirming.id === container.id ? confirming.action : null
+              }
               onAction={(action) => {
-                if (action === 'remove') setConfirming(container.id)
-                else void run(container, action)
+                if (action === 'stop' || action === 'remove') {
+                  setConfirming({ id: container.id, action })
+                } else {
+                  void run(container, action)
+                }
               }}
-              onConfirm={() => void run(container, 'remove')}
+              onConfirm={() => {
+                if (confirming !== null) {
+                  void run(container, confirming.action)
+                }
+              }}
               onCancel={() => setConfirming(null)}
               onToggleLogs={() =>
                 setLogsFor((current) => (current === container.id ? null : container.id))
@@ -487,7 +500,8 @@ export function ServerScreen({
 interface ContainerRowProps {
   container: Container
   outcome: Outcome | undefined
-  confirming: boolean
+  /** confirming is the action waiting for confirmation, or null. */
+  confirming: 'stop' | 'remove' | null
   onAction: (action: ContainerAction) => void
   onConfirm: () => void
   onCancel: () => void
@@ -555,15 +569,25 @@ function ContainerRow({
         <div
           className="container__confirm"
           role="group"
-          aria-label={t('confirm.removeTitle', { name: container.name })}
+          aria-label={t(confirming === 'remove' ? 'confirm.removeTitle' : 'confirm.stopTitle', {
+            name: container.name,
+          })}
         >
           <p className="container__confirm-title">
-            {t('confirm.removeTitle', { name: container.name })}
+            {t(confirming === 'remove' ? 'confirm.removeTitle' : 'confirm.stopTitle', {
+              name: container.name,
+            })}
           </p>
-          <p className="container__confirm-body">{t('confirm.removeBody')}</p>
+          <p className="container__confirm-body">
+            {t(confirming === 'remove' ? 'confirm.removeBody' : 'confirm.stopBody')}
+          </p>
           <div className="container__actions">
-            <button type="button" className="cbtn cbtn--danger" onClick={onConfirm}>
-              {t('confirm.yes')}
+            <button
+              type="button"
+              className={confirming === 'remove' ? 'cbtn cbtn--danger' : 'cbtn'}
+              onClick={onConfirm}
+            >
+              {t(confirming === 'remove' ? 'confirm.yes' : 'confirm.stopYes')}
             </button>
             <button type="button" className="cbtn" onClick={onCancel}>
               {t('confirm.no')}

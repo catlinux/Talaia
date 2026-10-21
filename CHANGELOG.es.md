@@ -13,6 +13,12 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+## [0.2.12] - 2026-10-22
+
+### Cambiado
+
+- Parar un contenedor desde la pantalla del servidor pide ahora confirmación antes, igual que eliminarlo (iniciar y reiniciar siguen siendo inmediatos), porque parar una base de datos o un servidor web por error deja servicios caídos.
+
 ## [0.2.11] - 2026-10-22
 
 ### Cambiado
@@ -187,7 +193,8 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
   `.gitattributes` y `.gitignore`.
 - Licencia WNCL-1.0 aplicada: archivo `LICENSE` y sección de créditos en los README.
 
-[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.2.11...HEAD
+[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.2.12...HEAD
+[0.2.12]: https://github.com/catlinux/Talaia/releases/tag/v0.2.12
 [0.2.11]: https://github.com/catlinux/Talaia/releases/tag/v0.2.11
 [0.2.10]: https://github.com/catlinux/Talaia/releases/tag/v0.2.10
 [0.2.9]: https://github.com/catlinux/Talaia/releases/tag/v0.2.9

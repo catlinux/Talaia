@@ -18,6 +18,12 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.2.12] - 2026-10-22
+
+### Changed
+
+- Stopping a container from the server screen now asks for confirmation first, like removing it (start and restart stay immediate), since stopping a database or a web server by mistake takes services down.
+
 ## [0.2.11] - 2026-10-22
 
 ### Changed
@@ -187,7 +193,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.2.11...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.2.12...HEAD
+[0.2.12]: https://github.com/catlinux/Talaia/releases/tag/v0.2.12
 [0.2.11]: https://github.com/catlinux/Talaia/releases/tag/v0.2.11
 [0.2.10]: https://github.com/catlinux/Talaia/releases/tag/v0.2.10
 [0.2.9]: https://github.com/catlinux/Talaia/releases/tag/v0.2.9

@@ -29,6 +29,9 @@
     "removeTitle": "Eliminar {{name}}?",
     "removeBody": "Se suprimeix el contenidor. Els seus volums es conserven.",
     "yes": "Elimina el contenidor",
+    "stopTitle": "Vols aturar {{name}}?",
+    "stopBody": "El contenidor s'atura; els serveis que en depenen deixaran de respondre. El pots tornar a engegar.",
+    "stopYes": "Atura el contenidor",
     "no": "Cancel·la"
   },
   "progress": {

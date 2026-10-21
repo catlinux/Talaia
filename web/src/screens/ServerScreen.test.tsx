@@ -166,11 +166,45 @@ describe('ServerScreen', () => {
     ])
     renderScreen(api)
 
+    fireEvent.click(await screen.findByRole('button', { name: 'Restart' }))
+
+    expect(api.run).toHaveBeenCalledWith('srv-1', 'web', 'restart', false)
+    expect(await screen.findByText('Done')).toBeTruthy()
+    await waitFor(() => expect(api.list).toHaveBeenCalledTimes(2))
+  })
+
+  it('starts and restarts without confirmation', async () => {
+    const api = apiWith(
+      listOf(container(), container({ id: 'bbbbbbbbbbbb', name: 'db', state: 'exited' })),
+    )
+    renderScreen(api)
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Restart' }))
+    expect(api.run).toHaveBeenCalledWith('srv-1', 'web', 'restart', false)
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Start' }))
+    expect(api.run).toHaveBeenCalledWith('srv-1', 'db', 'start', false)
+    expect(screen.queryByText(/^Stop /)).toBeNull()
+  })
+
+  it('asks before stopping and only then sends the stop', async () => {
+    const api = apiWith(listOf(container()))
+    renderScreen(api)
+
     fireEvent.click(await screen.findByRole('button', { name: 'Stop' }))
+    expect(api.run).not.toHaveBeenCalled()
+    expect(screen.getByText('Stop web?')).toBeTruthy()
+    expect(screen.getByText(/services that depend on it will stop answering/)).toBeTruthy()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+    expect(api.run).not.toHaveBeenCalled()
+    expect(screen.queryByText('Stop web?')).toBeNull()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Stop' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Stop the container' }))
 
     expect(api.run).toHaveBeenCalledWith('srv-1', 'web', 'stop', false)
     expect(await screen.findByText('Done')).toBeTruthy()
-    await waitFor(() => expect(api.list).toHaveBeenCalledTimes(2))
   })
 
   it('shows why an action failed', async () => {
@@ -191,7 +225,7 @@ describe('ServerScreen', () => {
     api.run.mockRejectedValueOnce(new ApiError('agent_offline', 409))
     renderScreen(api)
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Stop' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Restart' }))
 
     expect((await screen.findByRole('alert')).textContent).toContain(
       'The agent of this server is not connected.',
