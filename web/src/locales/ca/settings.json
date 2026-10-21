@@ -29,6 +29,10 @@
     "red": "no està en verd"
   },
   "pending": {
+    "whatsNew": "Novetats",
+    "commits": "Commits",
+    "showAll": "Mostra-ho tot",
+    "showLess": "Mostra'n menys",
     "title": "Commits pendents",
     "more_one": "i {{count}} més",
     "more_other": "i {{count}} més"

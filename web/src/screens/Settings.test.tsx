@@ -13,6 +13,7 @@ const baseUpdate: UpdateInfo = {
   current,
   latest,
   pending: [{ sha: 'bbbbbbb', subject: 'Fix the panel', author: 'Ana' }],
+  notes: { en: [], es: [] },
   ci: 'green',
   checkedAt: '2026-10-21T08:00:00Z',
   error: '',
@@ -86,6 +87,73 @@ describe('Settings', () => {
 
     const button = screen.getByRole('button', { name: 'Update to bbbbbbb' }) as HTMLButtonElement
     expect(button.disabled).toBe(false)
+  })
+
+  const noteLanguages = [
+    ['en', "What's new", 'English note'],
+    ['es', 'Novedades', 'Nota en español'],
+    ['ca', 'Novetats', 'Nota en español'],
+  ] as const
+
+  for (const [language, heading, note] of noteLanguages) {
+    it(`shows the release notes in ${language}`, async () => {
+      await i18n.changeLanguage(language)
+      renderSettings(
+        apiWith(() =>
+          Promise.resolve(
+            makeSystem({ update: { notes: { en: ['English note'], es: ['Nota en español'] } } }),
+          ),
+        ),
+      )
+
+      expect(await screen.findByText(heading)).toBeTruthy()
+      expect(screen.getByText(note)).toBeTruthy()
+      expect(screen.getByText('Commits')).toBeTruthy()
+    })
+  }
+
+  it('renders code spans in notes without HTML', async () => {
+    const { container } = render(
+      <Settings
+        api={apiWith(() =>
+          Promise.resolve(
+            makeSystem({
+              update: {
+                notes: { en: ['Use `talaia-core` and <b>not HTML</b>'], es: [] },
+              },
+            }),
+          ),
+        )}
+      />,
+    )
+
+    expect(await screen.findByText('talaia-core')).toBeTruthy()
+    expect(container.querySelector('code')?.textContent).toBe('talaia-core')
+    expect(container.querySelector('b')).toBeNull()
+    expect(screen.getByText(/not HTML/)).toBeTruthy()
+  })
+
+  it('collapses notes after eight and expands them with Show all', async () => {
+    const notes = Array.from({ length: 10 }, (_, index) => `Note ${index + 1}`)
+    renderSettings(
+      apiWith(() => Promise.resolve(makeSystem({ update: { notes: { en: notes, es: [] } } }))),
+    )
+
+    expect(await screen.findByText('Note 8')).toBeTruthy()
+    expect(screen.queryByText('Note 9')).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Show all' }))
+    expect(await screen.findByText('Note 9')).toBeTruthy()
+    expect(screen.getByText('Note 10')).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Show less' }))
+    expect(screen.queryByText('Note 9')).toBeNull()
+  })
+
+  it('keeps the commit-only card when there are no notes', async () => {
+    renderSettings(apiWith(() => Promise.resolve(makeSystem())))
+
+    expect(await screen.findByText('Fix the panel')).toBeTruthy()
+    expect(screen.queryByText("What's new")).toBeNull()
+    expect(screen.getByText('Commits')).toBeTruthy()
   })
 
   it('says the version is unknown when the build has no commit', async () => {

@@ -660,6 +660,41 @@ code {
   list-style: none;
 }
 
+.settings__section-title {
+  margin: 16px 0 6px;
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+
+.settings__section-title:first-of-type {
+  margin-top: 0;
+}
+
+.settings__notes {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding-left: 18px;
+  color: color-mix(in srgb, var(--ink) 82%, transparent);
+  font-size: 0.9375rem;
+}
+
+.settings__notes code {
+  padding: 1px 4px;
+  border-radius: 4px;
+  background: var(--surface-2);
+  font-family: var(--f-mono);
+  font-size: 0.875em;
+}
+
+.settings__notes-toggle {
+  align-self: flex-start;
+  margin-top: 8px;
+  padding: 5px 10px;
+  font-size: 0.875rem;
+}
+
 .settings__commit {
   display: grid;
   grid-template-columns: 5.5rem minmax(0, 1fr) auto;

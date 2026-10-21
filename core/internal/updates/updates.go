@@ -26,11 +26,15 @@ const (
 	DefaultRepo = "catlinux/Talaia"
 	// DefaultAPIURL is the public GitHub API.
 	DefaultAPIURL = "https://api.github.com"
+	// DefaultRawURL serves the repository files at a commit.
+	DefaultRawURL = "https://raw.githubusercontent.com"
 	// DefaultInterval is how often the checker asks GitHub.
 	DefaultInterval = 30 * time.Minute
 
 	maxCommits            = 20
 	maxPending            = 50
+	maxNotes              = 40
+	maxNoteBytes          = 600
 	maxBodyBytes          = 1 << 20
 	maxStatusBytes        = 1 << 20
 	requestTimeout        = 10 * time.Second
@@ -90,6 +94,9 @@ type State struct {
 	// Pending are the commits between Current and Latest, in the order GitHub
 	// returns them.
 	Pending []Pending `json:"pending"`
+	// Notes are the CHANGELOG bullets added between Current and Latest, by
+	// language (en, es). They are empty when the changelogs could not be read.
+	Notes map[string][]string `json:"notes,omitempty"`
 	// CI is "green" for the offered commit and "red" when no commit has a green
 	// CI yet.
 	CI string `json:"ci"`
@@ -119,6 +126,9 @@ type Options struct {
 	Repo string
 	// APIURL is the GitHub API base; empty means DefaultAPIURL.
 	APIURL string
+	// RawURL is the base that serves repository files at a commit; empty means
+	// DefaultRawURL. Tests point it at a local server.
+	RawURL string
 	// CurrentCommit is the commit stamped into the binary; empty means unknown.
 	CurrentCommit string
 	// Version feeds the User-Agent.
@@ -138,6 +148,7 @@ type Options struct {
 type Checker struct {
 	repo      string
 	apiURL    string
+	rawURL    string
 	current   string
 	userAgent string
 	interval  time.Duration
@@ -174,6 +185,15 @@ func New(opts Options) (*Checker, error) {
 		return nil, fmt.Errorf("invalid update API URL %q", opts.APIURL)
 	}
 
+	rawURL := strings.TrimRight(strings.TrimSpace(opts.RawURL), "/")
+	if rawURL == "" {
+		rawURL = DefaultRawURL
+	}
+	rawParsed, err := url.Parse(rawURL)
+	if err != nil || rawParsed.Scheme == "" || rawParsed.Host == "" {
+		return nil, fmt.Errorf("invalid update raw URL %q", opts.RawURL)
+	}
+
 	interval := opts.Interval
 	if interval <= 0 {
 		interval = DefaultInterval
@@ -205,6 +225,7 @@ func New(opts Options) (*Checker, error) {
 	return &Checker{
 		repo:      repo,
 		apiURL:    apiURL,
+		rawURL:    rawURL,
 		current:   current,
 		userAgent: userAgentPrefix + version,
 		interval:  interval,
@@ -261,6 +282,12 @@ func (c *Checker) State() (State, bool) {
 	}
 	state := c.state
 	state.Pending = append([]Pending{}, c.state.Pending...)
+	if c.state.Notes != nil {
+		state.Notes = make(map[string][]string, len(c.state.Notes))
+		for language, notes := range c.state.Notes {
+			state.Notes[language] = append([]string{}, notes...)
+		}
+	}
 	return state, true
 }
 
@@ -346,6 +373,12 @@ func (c *Checker) check(ctx context.Context, etag string) error {
 				state.UpdateAvailable = false
 			default:
 				state.Pending = pending
+				notes, err := c.releaseNotes(ctx, c.current, latest)
+				if err != nil {
+					c.logger.Warn("could not fetch the release notes", "error", err)
+				} else {
+					state.Notes = notes
+				}
 			}
 		}
 	}
@@ -519,6 +552,105 @@ func (c *Checker) pending(ctx context.Context, current, latest string) ([]Pendin
 		})
 	}
 	return pending, true, nil
+}
+
+// releaseNotes downloads the changelogs at both commits and returns the bullets
+// added in latest, per language. A failure leaves the notes empty; it never
+// fails the update check.
+func (c *Checker) releaseNotes(ctx context.Context, current, latest string) (map[string][]string, error) {
+	files := []struct {
+		language string
+		name     string
+	}{
+		{language: "en", name: "CHANGELOG.md"},
+		{language: "es", name: "CHANGELOG.es.md"},
+	}
+	notes := make(map[string][]string, len(files))
+	for _, file := range files {
+		oldText, err := c.fetchRaw(ctx, current, file.name)
+		if err != nil {
+			return nil, err
+		}
+		newText, err := c.fetchRaw(ctx, latest, file.name)
+		if err != nil {
+			return nil, err
+		}
+		notes[file.language] = addedBullets(oldText, newText)
+	}
+	return notes, nil
+}
+
+// fetchRaw reads one repository file at a commit with the same limits and
+// timeout as the API calls.
+func (c *Checker) fetchRaw(ctx context.Context, sha, name string) (string, error) {
+	endpoint := c.rawURL + "/" + c.repo + "/" + strings.ToLower(sha) + "/" + name
+	request, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
+	if err != nil {
+		return "", fmt.Errorf("%w: %w", errUnreachable, err)
+	}
+	request.Header.Set("User-Agent", c.userAgent)
+
+	response, err := c.client.Do(request)
+	if err != nil {
+		return "", fmt.Errorf("%w: %w", errUnreachable, err)
+	}
+	defer func() { _ = response.Body.Close() }()
+
+	if err := c.observeRateLimit(response); err != nil {
+		return "", err
+	}
+	if response.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("%w: status %d", errUnreachable, response.StatusCode)
+	}
+	data, err := io.ReadAll(io.LimitReader(response.Body, maxBodyBytes+1))
+	if err != nil {
+		return "", fmt.Errorf("%w: %w", errInvalidResponse, err)
+	}
+	if len(data) > maxBodyBytes {
+		return "", fmt.Errorf("%w: the file is larger than %d bytes", errInvalidResponse, maxBodyBytes)
+	}
+	return string(data), nil
+}
+
+// changelogBullets returns the trimmed "- " lines of a changelog.
+func changelogBullets(text string) []string {
+	var bullets []string
+	for _, line := range strings.Split(text, "\n") {
+		line = strings.TrimSpace(line)
+		if !strings.HasPrefix(line, "- ") {
+			continue
+		}
+		bullet := strings.TrimSpace(strings.TrimPrefix(line, "- "))
+		if bullet != "" {
+			bullets = append(bullets, bullet)
+		}
+	}
+	return bullets
+}
+
+// addedBullets returns the new bullets not present in old, in order, without
+// duplicates, limited by count and length.
+func addedBullets(oldText, newText string) []string {
+	old := make(map[string]struct{})
+	for _, bullet := range changelogBullets(oldText) {
+		old[bullet] = struct{}{}
+	}
+	seen := make(map[string]struct{})
+	notes := make([]string, 0, maxNotes)
+	for _, bullet := range changelogBullets(newText) {
+		if _, exists := old[bullet]; exists {
+			continue
+		}
+		if _, exists := seen[bullet]; exists {
+			continue
+		}
+		seen[bullet] = struct{}{}
+		notes = append(notes, truncateBytes(bullet, maxNoteBytes))
+		if len(notes) >= maxNotes {
+			break
+		}
+	}
+	return notes
 }
 
 func (c *Checker) get(ctx context.Context, endpoint string, target any) error {

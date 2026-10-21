@@ -17,6 +17,7 @@ const versionPayload = {
     current: 'a'.repeat(40),
     latest: 'b'.repeat(40),
     pending: [{ sha: 'bbbbbbb', subject: 'Fix the panel', author: 'Ana' }],
+    notes: { en: ['A feature'], es: ['Una función'] },
     ci: 'green',
     checked_at: '2026-10-21T08:00:00Z',
     error: '',
@@ -45,6 +46,7 @@ describe('createSystemApi', () => {
         current: 'a'.repeat(40),
         latest: 'b'.repeat(40),
         pending: [{ sha: 'bbbbbbb', subject: 'Fix the panel', author: 'Ana' }],
+        notes: { en: ['A feature'], es: ['Una función'] },
         ci: 'green',
         checkedAt: '2026-10-21T08:00:00Z',
         error: '',
@@ -83,6 +85,7 @@ describe('createSystemApi', () => {
     const system = await createSystemApi(fetchImpl).version()
 
     expect(system.update.pending).toEqual([])
+    expect(system.update.notes).toEqual({ en: [], es: [] })
     expect(system.update.error).toBe('')
     expect(system.update.ci).toBe('red')
     expect(system.status).toEqual({

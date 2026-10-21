@@ -125,6 +125,7 @@ func systemDeps() (*fakeUpdateChecker, *fakeUpdateRequester, SystemDeps) {
 			Current:         currentSHA,
 			Latest:          offeredSHA,
 			Pending:         []updates.Pending{{SHA: pendingSHA[:7], Subject: "Fix the panel", Author: "Ana"}},
+			Notes:           map[string][]string{"en": {"A new feature"}, "es": {"Una función nueva"}},
 			CI:              "green",
 			CheckedAt:       time.Date(2026, 10, 21, 12, 0, 0, 0, time.UTC),
 			Error:           "",
@@ -188,6 +189,12 @@ func TestSystemVersion(t *testing.T) {
 	}
 	if len(body.Update.Pending) != 1 || body.Update.Pending[0].Subject != "Fix the panel" {
 		t.Errorf("pending = %+v", body.Update.Pending)
+	}
+	if len(body.Update.Notes["en"]) != 1 || body.Update.Notes["en"][0] != "A new feature" {
+		t.Errorf("English notes = %+v", body.Update.Notes)
+	}
+	if len(body.Update.Notes["es"]) != 1 || body.Update.Notes["es"][0] != "Una función nueva" {
+		t.Errorf("Spanish notes = %+v", body.Update.Notes)
 	}
 	if body.Status.State != "succeeded" {
 		t.Errorf("status = %+v", body.Status)

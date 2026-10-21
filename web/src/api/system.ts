@@ -8,6 +8,12 @@ export interface PendingCommit {
   author: string
 }
 
+/** UpdateNotes are the changelog bullets added in the offered version. */
+export interface UpdateNotes {
+  en: string[]
+  es: string[]
+}
+
 /** UpdateInfo is what the core knows about newer commits. */
 export interface UpdateInfo {
   /** current is the commit of the running binary; empty when it is unknown. */
@@ -15,6 +21,8 @@ export interface UpdateInfo {
   /** latest is the newest commit whose CI is green; empty when there is none. */
   latest: string
   pending: PendingCommit[]
+  /** notes are the changelog bullets added since the running commit. */
+  notes: UpdateNotes
   /** ci is "green" when the offered commit passed its CI checks. */
   ci: 'green' | 'red'
   /** checkedAt is the RFC 3339 time of the last check, successful or not. */
@@ -64,6 +72,10 @@ interface apiUpdateInfo {
   current: string
   latest: string
   pending?: apiPendingCommit[]
+  notes?: {
+    en?: string[]
+    es?: string[]
+  }
   ci: string
   checked_at: string
   error?: string
@@ -113,6 +125,10 @@ function mapSystem(body: apiSystemVersion): SystemVersion {
         subject: commit.subject,
         author: commit.author,
       })),
+      notes: {
+        en: body.update.notes?.en ?? [],
+        es: body.update.notes?.es ?? [],
+      },
       ci: body.update.ci === 'green' ? 'green' : 'red',
       checkedAt: body.update.checked_at,
       error: body.update.error ?? '',

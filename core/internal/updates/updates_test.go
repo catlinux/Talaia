@@ -63,6 +63,7 @@ func newChecker(t *testing.T, server *httptest.Server, current string, clock *fa
 	checker, err := New(Options{
 		Repo:          "o/r",
 		APIURL:        server.URL,
+		RawURL:        server.URL,
 		CurrentCommit: current,
 		Version:       "test",
 		Client:        server.Client(),
@@ -78,6 +79,42 @@ func newChecker(t *testing.T, server *httptest.Server, current string, clock *fa
 func writeJSON(w http.ResponseWriter, body any) {
 	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(body)
+}
+
+// newNotesChecker serves a green commit ahead of current and delegates the raw
+// changelog requests to raw.
+func newNotesChecker(t *testing.T, clock *fakeClock, raw http.HandlerFunc) *Checker {
+	t.Helper()
+	server := newServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.URL.Path == "/repos/o/r/commits/main":
+			if r.Header.Get("If-None-Match") == `"notes"` {
+				w.WriteHeader(http.StatusNotModified)
+				return
+			}
+			w.Header().Set("ETag", `"notes"`)
+			writeJSON(w, map[string]string{"sha": shaGreen})
+		case r.URL.Path == "/repos/o/r/commits":
+			writeJSON(w, []map[string]string{{"sha": shaGreen}})
+		case r.URL.Path == "/repos/o/r/actions/runs":
+			writeJSON(w, map[string]any{"workflow_runs": []map[string]string{
+				{"name": "CI", "status": "completed", "conclusion": "success"},
+			}})
+		case strings.HasPrefix(r.URL.Path, "/repos/o/r/compare/"):
+			writeJSON(w, map[string]any{"status": "ahead", "commits": []map[string]any{{
+				"sha": shaPending,
+				"commit": map[string]any{
+					"message": "Fix the panel",
+					"author":  map[string]string{"name": "Ana"},
+				},
+			}}})
+		case strings.HasPrefix(r.URL.Path, "/o/r/"):
+			raw(w, r)
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	return newChecker(t, server, shaCurrent, clock)
 }
 
 func TestCheckOffersTheNewestGreenCommit(t *testing.T) {
@@ -182,6 +219,94 @@ func TestCheckOffersTheNewestGreenCommit(t *testing.T) {
 	}
 	if compareQueries != 1 {
 		t.Errorf("compare requests = %d, want 1", compareQueries)
+	}
+}
+
+func TestReleaseNotesAreTheNewChangelogBullets(t *testing.T) {
+	raw := func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/o/r/" + shaCurrent + "/CHANGELOG.md":
+			_, _ = io.WriteString(w, "- Old note\n- Shared note\n")
+		case "/o/r/" + shaGreen + "/CHANGELOG.md":
+			_, _ = io.WriteString(w, "- Old note\n- Shared note\n- New `code` note\n- New `code` note\n- Another note\n")
+		case "/o/r/" + shaCurrent + "/CHANGELOG.es.md":
+			_, _ = io.WriteString(w, "- Nota vieja\n")
+		case "/o/r/" + shaGreen + "/CHANGELOG.es.md":
+			_, _ = io.WriteString(w, "- Nota vieja\n- Nota nueva\n")
+		default:
+			http.NotFound(w, r)
+		}
+	}
+	checker := newNotesChecker(t, newFakeClock(), raw)
+	if err := checker.Refresh(context.Background()); err != nil {
+		t.Fatalf("refresh: %v", err)
+	}
+	state, ok := checker.State()
+	if !ok {
+		t.Fatal("no state")
+	}
+	en := state.Notes["en"]
+	if len(en) != 2 || en[0] != "New `code` note" || en[1] != "Another note" {
+		t.Errorf("English notes = %q", en)
+	}
+	es := state.Notes["es"]
+	if len(es) != 1 || es[0] != "Nota nueva" {
+		t.Errorf("Spanish notes = %q", es)
+	}
+}
+
+func TestReleaseNotesFetchFailureLeavesThemEmpty(t *testing.T) {
+	raw := func(w http.ResponseWriter, _ *http.Request) {
+		http.Error(w, "no", http.StatusInternalServerError)
+	}
+	checker := newNotesChecker(t, newFakeClock(), raw)
+	if err := checker.Refresh(context.Background()); err != nil {
+		t.Fatalf("a notes failure must not fail the check: %v", err)
+	}
+	state, ok := checker.State()
+	if !ok {
+		t.Fatal("no state")
+	}
+	if len(state.Pending) != 1 {
+		t.Errorf("pending = %+v", state.Pending)
+	}
+	if len(state.Notes) != 0 {
+		t.Errorf("notes = %+v, want empty", state.Notes)
+	}
+}
+
+func TestNotModifiedKeepsTheReleaseNotes(t *testing.T) {
+	clock := newFakeClock()
+	raw := func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/o/r/" + shaCurrent + "/CHANGELOG.md":
+			_, _ = io.WriteString(w, "- Old\n")
+		case "/o/r/" + shaGreen + "/CHANGELOG.md":
+			_, _ = io.WriteString(w, "- Old\n- New\n")
+		case "/o/r/" + shaCurrent + "/CHANGELOG.es.md":
+			_, _ = io.WriteString(w, "- Viejo\n")
+		case "/o/r/" + shaGreen + "/CHANGELOG.es.md":
+			_, _ = io.WriteString(w, "- Viejo\n- Nuevo\n")
+		default:
+			http.NotFound(w, r)
+		}
+	}
+	checker := newNotesChecker(t, clock, raw)
+	if err := checker.Refresh(context.Background()); err != nil {
+		t.Fatalf("first refresh: %v", err)
+	}
+	before, _ := checker.State()
+	if len(before.Notes["en"]) != 1 || before.Notes["en"][0] != "New" {
+		t.Fatalf("notes before the 304 = %+v", before.Notes)
+	}
+
+	clock.Advance(2 * time.Minute)
+	if err := checker.Refresh(context.Background()); err != nil {
+		t.Fatalf("second refresh: %v", err)
+	}
+	after, _ := checker.State()
+	if len(after.Notes["en"]) != 1 || after.Notes["en"][0] != "New" || len(after.Notes["es"]) != 1 {
+		t.Errorf("notes after the 304 = %+v", after.Notes)
 	}
 }
 

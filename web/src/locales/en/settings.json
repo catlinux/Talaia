@@ -29,6 +29,10 @@
     "red": "not green"
   },
   "pending": {
+    "whatsNew": "What's new",
+    "commits": "Commits",
+    "showAll": "Show all",
+    "showLess": "Show less",
     "title": "Pending commits",
     "more_one": "and {{count}} more",
     "more_other": "and {{count}} more"

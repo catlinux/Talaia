@@ -75,6 +75,19 @@ function formatChecked(value: string, language: string, never: string): string {
   return new Intl.DateTimeFormat(language, { dateStyle: 'medium', timeStyle: 'short' }).format(date)
 }
 
+/** NoteText renders a changelog bullet with only `code` spans, never HTML. */
+function NoteText({ note }: { note: string }) {
+  return (
+    <>
+      {note
+        .split('`')
+        .map((part, index) =>
+          index % 2 === 1 ? <code key={index}>{part}</code> : <span key={index}>{part}</span>,
+        )}
+    </>
+  )
+}
+
 /**
  * Settings shows the version of the panel and the available update. The update
  * button only queues the request: the host helper does the work, and the screen
@@ -91,6 +104,7 @@ export function Settings({ api = defaultApi, pollMs = pollEvery }: SettingsProps
   const [actionError, setActionError] = useState<string | null>(null)
   const [checkingNow, setCheckingNow] = useState(false)
   const [checkNotice, setCheckNotice] = useState<string | null>(null)
+  const [notesExpanded, setNotesExpanded] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -200,6 +214,13 @@ export function Settings({ api = defaultApi, pollMs = pollEvery }: SettingsProps
 
   const system = view.status === 'ready' ? view.system : null
   const update = system?.update ?? null
+  const notes =
+    update === null
+      ? []
+      : language.startsWith('es') || language.startsWith('ca')
+        ? update.notes.es
+        : update.notes.en
+  const visibleNotes = notesExpanded ? notes : notes.slice(0, 8)
 
   const helperMissing = update?.error === 'host_helper_missing'
   const busy = requesting || requested || status?.state === 'running'
@@ -395,22 +416,51 @@ export function Settings({ api = defaultApi, pollMs = pollEvery }: SettingsProps
             ) : null}
           </section>
 
-          {update.pending.length > 0 ? (
+          {update.pending.length > 0 || notes.length > 0 ? (
             <section className="settings__card" aria-labelledby="settings-pending-title">
               <h2 className="settings__card-title" id="settings-pending-title">
                 {t('settings:pending.title')}
               </h2>
-              <ul className="settings__pending">
-                {shown.map((commit) => (
-                  <li className="settings__commit" key={commit.sha}>
-                    <code>{shortSHA(commit.sha)}</code>
-                    <span className="settings__commit-subject">{commit.subject}</span>
-                    <span className="settings__commit-author">{commit.author}</span>
-                  </li>
-                ))}
-              </ul>
-              {more > 0 ? (
-                <p className="settings__more">{t('settings:pending.more', { count: more })}</p>
+              {notes.length > 0 ? (
+                <>
+                  <h3 className="settings__section-title">{t('settings:pending.whatsNew')}</h3>
+                  <ul className="settings__notes">
+                    {visibleNotes.map((note, index) => (
+                      <li key={`${index}-${note}`}>
+                        <NoteText note={note} />
+                      </li>
+                    ))}
+                  </ul>
+                  {notes.length > 8 ? (
+                    <button
+                      type="button"
+                      className="settings__button settings__notes-toggle"
+                      aria-expanded={notesExpanded}
+                      onClick={() => setNotesExpanded((value) => !value)}
+                    >
+                      {notesExpanded
+                        ? t('settings:pending.showLess')
+                        : t('settings:pending.showAll')}
+                    </button>
+                  ) : null}
+                </>
+              ) : null}
+              {update.pending.length > 0 ? (
+                <>
+                  <h3 className="settings__section-title">{t('settings:pending.commits')}</h3>
+                  <ul className="settings__pending">
+                    {shown.map((commit) => (
+                      <li className="settings__commit" key={commit.sha}>
+                        <code>{shortSHA(commit.sha)}</code>
+                        <span className="settings__commit-subject">{commit.subject}</span>
+                        <span className="settings__commit-author">{commit.author}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  {more > 0 ? (
+                    <p className="settings__more">{t('settings:pending.more', { count: more })}</p>
+                  ) : null}
+                </>
               ) : null}
             </section>
           ) : null}
