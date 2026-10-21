@@ -13,6 +13,12 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+## [0.2.4] - 2026-10-21
+
+### Añadido
+
+- Entrada con PIN o huella en el panel: la pantalla de acceso ofrece primero el PIN de un dispositivo de confianza (con un enlace al formulario de contraseña y el paso de TOTP cuando toca el segundo factor) y un botón **huella o PIN de este dispositivo** para las passkeys. Ajustes tiene una tarjeta **Acceso** nueva para confiar en dispositivos o quitarlos (PIN dos veces y la contraseña) y para añadir o quitar passkeys, con un aviso cuando no están disponibles. En ca, es y en.
+
 ## [0.2.3] - 2026-10-21
 
 ### Añadido
@@ -139,7 +145,8 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
   `.gitattributes` y `.gitignore`.
 - Licencia WNCL-1.0 aplicada: archivo `LICENSE` y sección de créditos en los README.
 
-[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.2.3...HEAD
+[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.2.4...HEAD
+[0.2.4]: https://github.com/catlinux/Talaia/releases/tag/v0.2.4
 [0.2.3]: https://github.com/catlinux/Talaia/releases/tag/v0.2.3
 [0.2.2]: https://github.com/catlinux/Talaia/releases/tag/v0.2.2
 [0.2.1]: https://github.com/catlinux/Talaia/releases/tag/v0.2.1

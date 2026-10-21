@@ -1,27 +1,43 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 
+import { PasskeysUnavailableError } from '../api/auth'
 import { errorMessage } from './AuthGate'
 import { AuthFrame } from './AuthFrame'
+import { PinLogin, readTrustedDevice } from './PinLogin'
+import { isPasskeyCancellation, passkeysSupported } from './webauthn'
 
 export interface LoginProps {
   onSubmit: (username: string, password: string) => Promise<void>
+  /** onPin signs in with the PIN of the remembered trusted device. */
+  onPin?: (pin: string) => Promise<void>
+  /** onPasskey starts the discoverable passkey flow. */
+  onPasskey?: () => Promise<void>
   /** expired tells the user the previous session ended on its own. */
   expired?: boolean
 }
 
-/** Login is the first screen: username and password only. */
-export function Login({ onSubmit, expired = false }: LoginProps) {
+/** Login is the first screen: PIN for a trusted browser, password and passkeys. */
+export function Login({ onSubmit, onPin, onPasskey, expired = false }: LoginProps) {
   const { t } = useTranslation(['auth', 'errors'])
+  const [trustedDevice] = useState(() => readTrustedDevice())
+  const [mode, setMode] = useState<'pin' | 'password'>(() =>
+    trustedDevice !== null && onPin !== undefined ? 'pin' : 'password',
+  )
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [passkeyPending, setPasskeyPending] = useState(false)
+  const [passkeyError, setPasskeyError] = useState<string | null>(null)
+  const [passkeyAvailable, setPasskeyAvailable] = useState(true)
   const usernameField = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
-    usernameField.current?.focus()
-  }, [])
+    if (mode === 'password') {
+      usernameField.current?.focus()
+    }
+  }, [mode])
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -35,56 +51,110 @@ export function Login({ onSubmit, expired = false }: LoginProps) {
       setError(errorMessage(t, cause))
     } finally {
       setPending(false)
+      setPassword('')
     }
   }
 
+  async function startPasskey() {
+    if (!onPasskey) {
+      return
+    }
+    setPasskeyPending(true)
+    setPasskeyError(null)
+    try {
+      await onPasskey()
+    } catch (cause) {
+      if (cause instanceof PasskeysUnavailableError) {
+        setPasskeyAvailable(false)
+        return
+      }
+      if (isPasskeyCancellation(cause)) {
+        return
+      }
+      setPasskeyError(t('auth:passkey.failed'))
+    } finally {
+      setPasskeyPending(false)
+    }
+  }
+
+  const showPasskey = onPasskey !== undefined && passkeysSupported() && passkeyAvailable
+
   return (
     <AuthFrame>
-      <form className="auth__card" aria-labelledby="login-title" onSubmit={submit}>
+      <div className="auth__card" aria-labelledby="login-title">
         <h1 className="auth__title" id="login-title">
           {t('auth:login.title')}
         </h1>
-        <p className="auth__intro">{t('auth:login.intro')}</p>
         {error === null && expired && (
           <p className="auth__status" role="status">
             {t('errors:sessionRequired')}
           </p>
         )}
-        {error !== null && (
-          <p className="auth__error" role="alert">
-            {error}
-          </p>
+
+        {mode === 'pin' && trustedDevice !== null && onPin !== undefined ? (
+          <PinLogin
+            deviceName={trustedDevice.name}
+            onPin={onPin}
+            onUsePassword={() => setMode('password')}
+          />
+        ) : (
+          <form className="auth__form" aria-labelledby="login-title" onSubmit={submit}>
+            <p className="auth__intro">{t('auth:login.intro')}</p>
+            {error !== null && (
+              <p className="auth__error" role="alert">
+                {error}
+              </p>
+            )}
+            <label className="auth__field">
+              <span className="auth__label">{t('auth:login.username')}</span>
+              <input
+                ref={usernameField}
+                className="auth__input"
+                name="username"
+                autoComplete="username"
+                value={username}
+                disabled={pending}
+                required
+                onChange={(event) => setUsername(event.target.value)}
+              />
+            </label>
+            <label className="auth__field">
+              <span className="auth__label">{t('auth:login.password')}</span>
+              <input
+                className="auth__input"
+                name="password"
+                type="password"
+                autoComplete="current-password"
+                value={password}
+                disabled={pending}
+                required
+                onChange={(event) => setPassword(event.target.value)}
+              />
+            </label>
+            <button className="auth__submit" type="submit" disabled={pending}>
+              {pending ? t('auth:login.submitting') : t('auth:login.submit')}
+            </button>
+          </form>
         )}
-        <label className="auth__field">
-          <span className="auth__label">{t('auth:login.username')}</span>
-          <input
-            ref={usernameField}
-            className="auth__input"
-            name="username"
-            autoComplete="username"
-            value={username}
-            disabled={pending}
-            required
-            onChange={(event) => setUsername(event.target.value)}
-          />
-        </label>
-        <label className="auth__field">
-          <span className="auth__label">{t('auth:login.password')}</span>
-          <input
-            className="auth__input"
-            name="password"
-            type="password"
-            autoComplete="current-password"
-            value={password}
-            disabled={pending}
-            required
-            onChange={(event) => setPassword(event.target.value)}
-          />
-        </label>
-        <button className="auth__submit" type="submit" disabled={pending}>
-          {pending ? t('auth:login.submitting') : t('auth:login.submit')}
-        </button>
-      </form>
+
+        {showPasskey ? (
+          <button
+            className="auth__button auth__passkey"
+            type="button"
+            disabled={passkeyPending}
+            onClick={() => {
+              void startPasskey()
+            }}
+          >
+            {passkeyPending ? t('auth:passkey.pending') : t('auth:passkey.button')}
+          </button>
+        ) : null}
+        {passkeyError !== null ? (
+          <p className="auth__error" role="alert">
+            {passkeyError}
+          </p>
+        ) : null}
+      </div>
     </AuthFrame>
   )
 }

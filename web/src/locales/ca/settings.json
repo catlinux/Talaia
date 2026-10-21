@@ -55,6 +55,61 @@
       "cancel": "Cancel·la"
     }
   },
+  "access": {
+    "title": "Accés",
+    "intro": "El segon factor es torna a demanar quan es tanca el navegador o després de 12 hores.",
+    "loading": "S'està carregant l'accés…",
+    "created": "Creat {{date}}",
+    "lastUsed": "Darrer ús: {{date}}",
+    "neverUsed": "mai usat",
+    "devices": {
+      "title": "Dispositius de confiança",
+      "empty": "Encara no hi ha cap dispositiu de confiança.",
+      "thisDevice": "Aquest dispositiu",
+      "remove": "Elimina",
+      "removeLabel": "Elimina {{name}}",
+      "removeBody": "Aquest navegador ja no podrà entrar amb un PIN.",
+      "trust": "Confia en aquest dispositiu",
+      "name": "Nom del dispositiu",
+      "password": "Contrasenya actual",
+      "pin": "PIN",
+      "pinConfirm": "Confirma el PIN",
+      "pinHint": "Fes servir de 6 a 12 xifres, que no siguin totes iguals ni una seqüència seguida.",
+      "nameRequired": "Posa un nom al dispositiu.",
+      "pinFormat": "El PIN ha de tenir de 6 a 12 xifres.",
+      "pinMismatch": "Els PIN no coincideixen.",
+      "passwordRequired": "Escriu la contrasenya actual.",
+      "invalidPassword": "La contrasenya actual no és correcta.",
+      "submit": "Confia en aquest dispositiu",
+      "submitting": "S'està confiant…",
+      "added": "Aquest navegador ja és un dispositiu de confiança."
+    },
+    "passkeys": {
+      "title": "Claus d'accés",
+      "empty": "Encara no hi ha cap clau d'accés.",
+      "unavailable": "Les claus d'accés necessiten HTTPS amb un nom de domini.",
+      "unsupported": "Aquest navegador no admet claus d'accés.",
+      "add": "Afegeix una clau d'accés",
+      "name": "Nom de la clau d'accés",
+      "password": "Contrasenya actual",
+      "nameRequired": "Posa un nom a la clau d'accés.",
+      "passwordRequired": "Escriu la contrasenya actual.",
+      "invalidPassword": "La contrasenya actual no és correcta.",
+      "submit": "Afegeix la clau d'accés",
+      "submitting": "S'està afegint…",
+      "added": "La clau d'accés s'ha afegit.",
+      "failed": "No s'ha pogut afegir la clau d'accés.",
+      "remove": "Elimina",
+      "removeLabel": "Elimina {{name}}",
+      "removeBody": "Aquesta clau d'accés ja no podrà entrar."
+    },
+    "remove": {
+      "title": "Vols eliminar {{name}}?",
+      "confirm": "Elimina",
+      "removing": "S'està eliminant…",
+      "cancel": "Cancel·la"
+    }
+  },
   "update": {
     "to": "Actualitza a {{sha}}",
     "none": "No hi ha cap actualització disponible",

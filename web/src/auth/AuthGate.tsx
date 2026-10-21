@@ -16,6 +16,7 @@ import { Login } from './Login'
 import { RecoveryCodes } from './RecoveryCodes'
 import { TotpSetup } from './TotpSetup'
 import { TotpVerify } from './TotpVerify'
+import { serializeAssertionCredential, toRequestOptions } from './webauthn'
 
 /** errorKeys maps the stable code of the core to the errors namespace. */
 const errorKeys: Record<ApiErrorCode, string> = {
@@ -126,6 +127,48 @@ export function AuthGate({ api, children }: AuthGateProps) {
     [client],
   )
 
+  const loginPin = useCallback(
+    async (pin: string) => {
+      const pinLogin = client.pinLogin
+      if (!pinLogin) {
+        return
+      }
+      const result = await pinLogin(pin)
+      const session = await client.session()
+      setState(
+        result === 'full' && session.stage === 'full'
+          ? { kind: 'ready', username: session.username }
+          : { kind: 'verify', username: session.username },
+      )
+    },
+    [client],
+  )
+
+  const loginPasskey = useCallback(async () => {
+    const begin = client.beginPasskeyLogin
+    const finish = client.finishPasskeyLogin
+    if (!begin || !finish) {
+      return
+    }
+    const started = await begin()
+    const credential = await navigator.credentials.get({
+      publicKey: toRequestOptions(started.options),
+    })
+    if (credential === null) {
+      return
+    }
+    await finish(
+      started.ceremonyID,
+      serializeAssertionCredential(credential as PublicKeyCredential),
+    )
+    const session = await client.session()
+    setState(
+      session.stage === 'full'
+        ? { kind: 'ready', username: session.username }
+        : { kind: 'verify', username: session.username },
+    )
+  }, [client])
+
   const startSetup = useCallback(() => client.startTotpSetup(), [client])
 
   const confirmSetup = useCallback(
@@ -168,7 +211,14 @@ export function AuthGate({ api, children }: AuthGateProps) {
   }
 
   if (state.kind === 'login') {
-    return <Login onSubmit={login} expired={state.expired === true} />
+    return (
+      <Login
+        onSubmit={login}
+        onPin={client.pinLogin ? loginPin : undefined}
+        onPasskey={client.beginPasskeyLogin && client.finishPasskeyLogin ? loginPasskey : undefined}
+        expired={state.expired === true}
+      />
+    )
   }
 
   if (state.kind === 'setup') {

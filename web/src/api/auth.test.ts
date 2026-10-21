@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { createAuthApi } from './auth'
+import { createAuthApi, PasskeysUnavailableError } from './auth'
+import type { AssertionCredentialJSON, RegistrationCredentialJSON } from '../auth/webauthn'
 import { ApiError, isSignedOut, onSignedOut } from './http'
 
 function jsonResponse(status: number, body: unknown): Response {
@@ -160,5 +161,184 @@ describe('auth api', () => {
     } finally {
       stop()
     }
+  })
+
+  it('signs in with a PIN without treating mfa_required as a lost session', async () => {
+    const { fetchImpl, calls } = fetchSequence(
+      noContent(),
+      jsonResponse(401, { error: { code: 'mfa_required' } }),
+      jsonResponse(401, { error: { code: 'invalid_credentials' } }),
+    )
+    const api = createAuthApi(fetchImpl)
+    const listener = vi.fn()
+    const stop = onSignedOut(listener)
+
+    try {
+      await expect(api.pinLogin('123456')).resolves.toBe('full')
+      expect(calls[0]?.input).toBe('/api/v1/auth/pin/login')
+      expect(calls[0]?.init?.method).toBe('POST')
+      expect(calls[0]?.init?.headers).toMatchObject({ 'Content-Type': 'application/json' })
+      expect(calls[0]?.init?.body).toBe(JSON.stringify({ pin: '123456' }))
+
+      await expect(api.pinLogin('123456')).resolves.toBe('totp')
+      expect(listener).not.toHaveBeenCalled()
+
+      const wrong = await api.pinLogin('000000').catch((cause: unknown) => cause)
+      expect(wrong).toBeInstanceOf(ApiError)
+      expect((wrong as ApiError).code).toBe('invalid_credentials')
+    } finally {
+      stop()
+    }
+  })
+
+  it('lists, creates and removes trusted devices', async () => {
+    const { fetchImpl, calls } = fetchSequence(
+      jsonResponse(200, {
+        devices: [
+          {
+            id: 'device-1',
+            name: 'laptop',
+            created_at: '2026-10-21T08:00:00Z',
+            last_used_at: null,
+            current: true,
+          },
+        ],
+      }),
+      jsonResponse(201, {
+        id: 'device-2',
+        name: 'desktop',
+        created_at: '2026-10-21T09:00:00Z',
+        last_used_at: null,
+        current: true,
+      }),
+      noContent(),
+    )
+    const api = createAuthApi(fetchImpl)
+
+    await expect(api.listDevices()).resolves.toEqual([
+      {
+        id: 'device-1',
+        name: 'laptop',
+        createdAt: '2026-10-21T08:00:00Z',
+        lastUsedAt: null,
+        current: true,
+      },
+    ])
+    await expect(api.createDevice('password', '123456', 'desktop')).resolves.toMatchObject({
+      id: 'device-2',
+      name: 'desktop',
+      current: true,
+    })
+    expect(calls[1]?.init?.body).toBe(
+      JSON.stringify({ password: 'password', pin: '123456', name: 'desktop' }),
+    )
+
+    await api.removeDevice('device 2')
+    expect(calls[2]?.input).toBe('/api/v1/auth/devices/device%202')
+    expect(calls[2]?.init?.method).toBe('DELETE')
+  })
+
+  it('lists, begins and removes passkeys', async () => {
+    const { fetchImpl, calls } = fetchSequence(
+      jsonResponse(200, {
+        available: true,
+        passkeys: [
+          {
+            id: 'passkey-1',
+            name: 'laptop',
+            created_at: '2026-10-21T08:00:00Z',
+            last_used_at: '2026-10-21T09:00:00Z',
+            backup_state: true,
+          },
+        ],
+      }),
+      jsonResponse(200, {
+        publicKey: {
+          challenge: 'AQID',
+          rp: { id: 'panel.example.com', name: 'Talaia' },
+          user: { id: 'BAUG', name: 'admin', displayName: 'admin' },
+          pubKeyCredParams: [{ type: 'public-key', alg: -7 }],
+        },
+      }),
+      jsonResponse(201, {
+        id: 'passkey-2',
+        name: 'desktop',
+        created_at: '2026-10-21T10:00:00Z',
+        last_used_at: null,
+        backup_state: false,
+      }),
+      noContent(),
+    )
+    const api = createAuthApi(fetchImpl)
+
+    await expect(api.listPasskeys()).resolves.toEqual({
+      available: true,
+      passkeys: [
+        {
+          id: 'passkey-1',
+          name: 'laptop',
+          createdAt: '2026-10-21T08:00:00Z',
+          lastUsedAt: '2026-10-21T09:00:00Z',
+          backupState: true,
+        },
+      ],
+    })
+    const options = await api.beginPasskeyRegistration('password')
+    expect(options.publicKey.challenge).toBe('AQID')
+    expect(calls[1]?.init?.body).toBe(JSON.stringify({ password: 'password' }))
+
+    const credential: RegistrationCredentialJSON = {
+      id: 'credential',
+      rawId: 'credential',
+      type: 'public-key',
+      response: {
+        clientDataJSON: 'client-data',
+        attestationObject: 'attestation',
+        transports: ['internal'],
+      },
+      clientExtensionResults: {},
+    }
+    await expect(api.finishPasskeyRegistration('desktop', credential)).resolves.toMatchObject({
+      id: 'passkey-2',
+      name: 'desktop',
+      backupState: false,
+    })
+    await api.removePasskey('passkey 2')
+    expect(calls[3]?.input).toBe('/api/v1/auth/passkeys/passkey%202')
+    expect(calls[3]?.init?.method).toBe('DELETE')
+  })
+
+  it('begins and finishes a passkey login, hiding an unavailable deployment', async () => {
+    const { fetchImpl, calls } = fetchSequence(
+      jsonResponse(200, {
+        ceremony_id: 'ceremony-1',
+        options: { publicKey: { challenge: 'AQID', rpId: 'panel.example.com' } },
+      }),
+      noContent(),
+      jsonResponse(503, { error: { code: 'passkeys_unavailable' } }),
+    )
+    const api = createAuthApi(fetchImpl)
+
+    await expect(api.beginPasskeyLogin()).resolves.toEqual({
+      ceremonyID: 'ceremony-1',
+      options: { publicKey: { challenge: 'AQID', rpId: 'panel.example.com' } },
+    })
+    const assertion: AssertionCredentialJSON = {
+      id: 'credential',
+      rawId: 'credential',
+      type: 'public-key',
+      response: {
+        clientDataJSON: 'client-data',
+        authenticatorData: 'authenticator-data',
+        signature: 'signature',
+      },
+      clientExtensionResults: {},
+    }
+    await api.finishPasskeyLogin('ceremony-1', assertion)
+    expect(calls[1]?.init?.body).toBe(
+      JSON.stringify({ ceremony_id: 'ceremony-1', credential: assertion }),
+    )
+
+    await expect(api.beginPasskeyLogin()).rejects.toBeInstanceOf(PasskeysUnavailableError)
   })
 })

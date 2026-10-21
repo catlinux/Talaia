@@ -1,6 +1,7 @@
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { AccessApi } from '../api/auth'
 import { ApiError } from '../api/http'
 import type { ServerSummary } from '../api/servers'
 import type { SystemApi, SystemVersion, UpdateInfo, UpdateStatus } from '../api/system'
@@ -61,8 +62,34 @@ function apiWith(
   }
 }
 
-function renderSettings(api: SystemApi) {
-  render(<Settings api={api} />)
+function renderSettings(api: SystemApi, access?: AccessApi) {
+  render(<Settings api={api} accessApi={access} />)
+}
+
+/** fakeAccess answers the access lists; the unused calls reject. */
+function fakeAccess(): AccessApi {
+  const unexpected = () => Promise.reject(new Error('unexpected access call'))
+  return {
+    listDevices: () =>
+      Promise.resolve([
+        {
+          id: 'dev-1',
+          name: 'laptop',
+          createdAt: '2026-10-20T10:00:00Z',
+          lastUsedAt: null,
+          current: true,
+        },
+      ]),
+    createDevice: unexpected,
+    removeDevice: unexpected,
+    listPasskeys: () => Promise.resolve({ available: false, passkeys: [] }),
+    removePasskey: unexpected,
+    beginPasskeyRegistration: unexpected,
+    finishPasskeyRegistration: unexpected,
+    beginPasskeyLogin: unexpected,
+    finishPasskeyLogin: unexpected,
+    pinLogin: unexpected,
+  }
 }
 
 describe('Settings', () => {
@@ -90,6 +117,18 @@ describe('Settings', () => {
 
     const button = screen.getByRole('button', { name: 'Update to bbbbbbb' }) as HTMLButtonElement
     expect(button.disabled).toBe(false)
+  })
+
+  it('shows the access settings with the trusted devices and passkeys', async () => {
+    renderSettings(
+      apiWith(() => Promise.resolve(makeSystem())),
+      fakeAccess(),
+    )
+
+    expect(await screen.findByText('Access')).toBeTruthy()
+    expect(await screen.findByText('laptop')).toBeTruthy()
+    expect(await screen.findByText('Passkeys need HTTPS with a domain name.')).toBeTruthy()
+    expect(screen.getByRole('heading', { name: 'Trust this device' })).toBeTruthy()
   })
 
   it('lists the servers with their connection state', async () => {

@@ -18,6 +18,12 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.2.4] - 2026-10-21
+
+### Added
+
+- Sign in with a PIN or a fingerprint in the panel: the login screen offers the PIN of a trusted device first (with a link to the password form and the existing TOTP step when the second factor is due) and a **fingerprint or PIN of this device** button for passkeys. Settings has a new **Access** card to trust or forget devices (PIN twice and the password) and to add or remove passkeys, with a notice when passkeys are not available. In ca, es and en.
+
 ## [0.2.3] - 2026-10-21
 
 ### Added
@@ -139,7 +145,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.2.3...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.2.4...HEAD
+[0.2.4]: https://github.com/catlinux/Talaia/releases/tag/v0.2.4
 [0.2.3]: https://github.com/catlinux/Talaia/releases/tag/v0.2.3
 [0.2.2]: https://github.com/catlinux/Talaia/releases/tag/v0.2.2
 [0.2.1]: https://github.com/catlinux/Talaia/releases/tag/v0.2.1

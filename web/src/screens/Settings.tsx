@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
+import { createAuthApi, type AccessApi } from '../api/auth'
 import { ApiError, isSignedOut } from '../api/http'
 import type { ServerSummary } from '../api/servers'
 import {
@@ -10,6 +11,7 @@ import {
   type UpdateStatus,
 } from '../api/system'
 import { errorMessage } from '../auth/AuthGate'
+import { AccessCard } from './settings/AccessCard'
 
 /** pollEvery is how often the progress of a running update is asked for. */
 export const pollEvery = 3000
@@ -21,6 +23,8 @@ const logShown = 8
 interface SettingsProps {
   /** api is injected by the tests; the panel builds its own otherwise. */
   api?: SystemApi
+  /** accessApi manages trusted devices and passkeys; the panel builds its own otherwise. */
+  accessApi?: AccessApi
   /** pollMs overrides the polling interval, for the tests. */
   pollMs?: number
 }
@@ -32,6 +36,7 @@ type View =
   | { status: 'error'; message: string }
 
 const defaultApi = createSystemApi()
+const defaultAccessApi = createAuthApi()
 
 /** shortSHA returns the seven characters the panel shows of a commit. */
 function shortSHA(sha: string): string {
@@ -94,9 +99,13 @@ function NoteText({ note }: { note: string }) {
  * button only queues the request: the host helper does the work, and the screen
  * follows its progress through the status of the API, so a reload resumes it.
  */
-export function Settings({ api = defaultApi, pollMs = pollEvery }: SettingsProps) {
+export function Settings({ api = defaultApi, accessApi, pollMs = pollEvery }: SettingsProps) {
   const { t, i18n } = useTranslation(['settings', 'errors'])
   const language = i18n.resolvedLanguage ?? i18n.language
+  // A test or an embedding may pass a system-only API. In production the
+  // default system API means the panel also manages trusted devices and
+  // passkeys.
+  const access = accessApi ?? (api === defaultApi ? defaultAccessApi : undefined)
   const [view, setView] = useState<View>({ status: 'loading' })
   const [confirming, setConfirming] = useState(false)
   const [requesting, setRequesting] = useState(false)
@@ -499,6 +508,8 @@ export function Settings({ api = defaultApi, pollMs = pollEvery }: SettingsProps
               </p>
             ) : null}
           </section>
+
+          {access !== undefined ? <AccessCard api={access} /> : null}
 
           {showServers ? (
             <section className="settings__card" aria-labelledby="settings-servers-title">

@@ -55,6 +55,61 @@
       "cancel": "Cancel"
     }
   },
+  "access": {
+    "title": "Access",
+    "intro": "The second factor is asked again when the browser is closed or after 12 hours.",
+    "loading": "Loading access settings…",
+    "created": "Created {{date}}",
+    "lastUsed": "Last used {{date}}",
+    "neverUsed": "never used",
+    "devices": {
+      "title": "Trusted devices",
+      "empty": "No trusted devices yet.",
+      "thisDevice": "This device",
+      "remove": "Remove",
+      "removeLabel": "Remove {{name}}",
+      "removeBody": "This browser will no longer sign in with a PIN.",
+      "trust": "Trust this device",
+      "name": "Device name",
+      "password": "Current password",
+      "pin": "PIN",
+      "pinConfirm": "Confirm PIN",
+      "pinHint": "Use 6 to 12 digits, not all the same and not a straight sequence.",
+      "nameRequired": "Give the device a name.",
+      "pinFormat": "The PIN must have 6 to 12 digits.",
+      "pinMismatch": "The PINs do not match.",
+      "passwordRequired": "Type your current password.",
+      "invalidPassword": "The current password is not right.",
+      "submit": "Trust this device",
+      "submitting": "Trusting…",
+      "added": "This browser is now a trusted device."
+    },
+    "passkeys": {
+      "title": "Passkeys",
+      "empty": "No passkeys yet.",
+      "unavailable": "Passkeys need HTTPS with a domain name.",
+      "unsupported": "This browser does not support passkeys.",
+      "add": "Add a passkey",
+      "name": "Passkey name",
+      "password": "Current password",
+      "nameRequired": "Give the passkey a name.",
+      "passwordRequired": "Type your current password.",
+      "invalidPassword": "The current password is not right.",
+      "submit": "Add a passkey",
+      "submitting": "Adding…",
+      "added": "The passkey was added.",
+      "failed": "The passkey could not be added.",
+      "remove": "Remove",
+      "removeLabel": "Remove {{name}}",
+      "removeBody": "This passkey will no longer sign in."
+    },
+    "remove": {
+      "title": "Remove {{name}}?",
+      "confirm": "Remove",
+      "removing": "Removing…",
+      "cancel": "Cancel"
+    }
+  },
   "update": {
     "to": "Update to {{sha}}",
     "none": "No update available",

@@ -7,6 +7,7 @@ import { createAuthApi, type AuthApi } from '../api/auth'
 import { ApiError } from '../api/http'
 import i18n from '../i18n'
 import { AuthGate } from './AuthGate'
+import { DEVICE_STORAGE_KEY } from './PinLogin'
 
 const signedOut = new ApiError('session_required', 401)
 
@@ -142,6 +143,23 @@ describe('panel authentication', () => {
     expect(await screen.findByRole('heading', { name: 'Sign in' })).toBeTruthy()
     expect(logout).toHaveBeenCalledTimes(1)
     expect(screen.queryByText('vps-web-01')).toBeNull()
+  })
+
+  it('signs in with the PIN of a remembered device', async () => {
+    localStorage.setItem(DEVICE_STORAGE_KEY, JSON.stringify({ name: 'laptop' }))
+    const session = vi
+      .fn<() => Promise<{ username: string; stage: 'mfa_pending' | 'full' }>>()
+      .mockRejectedValueOnce(signedOut)
+      .mockResolvedValue({ username: 'admin', stage: 'full' })
+    const pinLogin = vi.fn(() => Promise.resolve('full' as const))
+
+    renderPanel(fakeApi({ session, pinLogin }))
+
+    fireEvent.change(await screen.findByLabelText('PIN'), { target: { value: '123456' } })
+    fireEvent.submit(screen.getByRole('form'))
+
+    expect(await screen.findByText('vps-web-01')).toBeTruthy()
+    expect(pinLogin).toHaveBeenCalledWith('123456')
   })
 
   it('returns to the login when a later call finds no session', async () => {

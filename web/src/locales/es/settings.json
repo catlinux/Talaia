@@ -55,6 +55,61 @@
       "cancel": "Cancelar"
     }
   },
+  "access": {
+    "title": "Acceso",
+    "intro": "El segundo factor se vuelve a pedir al cerrar el navegador o después de 12 horas.",
+    "loading": "Cargando el acceso…",
+    "created": "Creado {{date}}",
+    "lastUsed": "Último uso: {{date}}",
+    "neverUsed": "nunca usado",
+    "devices": {
+      "title": "Dispositivos de confianza",
+      "empty": "Todavía no hay dispositivos de confianza.",
+      "thisDevice": "Este dispositivo",
+      "remove": "Eliminar",
+      "removeLabel": "Eliminar {{name}}",
+      "removeBody": "Este navegador ya no podrá entrar con un PIN.",
+      "trust": "Confiar en este dispositivo",
+      "name": "Nombre del dispositivo",
+      "password": "Contraseña actual",
+      "pin": "PIN",
+      "pinConfirm": "Confirma el PIN",
+      "pinHint": "Usa de 6 a 12 dígitos, que no sean todos iguales ni una secuencia seguida.",
+      "nameRequired": "Pon un nombre al dispositivo.",
+      "pinFormat": "El PIN debe tener de 6 a 12 dígitos.",
+      "pinMismatch": "Los PIN no coinciden.",
+      "passwordRequired": "Escribe tu contraseña actual.",
+      "invalidPassword": "La contraseña actual no es correcta.",
+      "submit": "Confiar en este dispositivo",
+      "submitting": "Confiando…",
+      "added": "Este navegador ya es un dispositivo de confianza."
+    },
+    "passkeys": {
+      "title": "Claves de acceso",
+      "empty": "Todavía no hay claves de acceso.",
+      "unavailable": "Las claves de acceso necesitan HTTPS con un nombre de dominio.",
+      "unsupported": "Este navegador no admite claves de acceso.",
+      "add": "Añadir una clave de acceso",
+      "name": "Nombre de la clave de acceso",
+      "password": "Contraseña actual",
+      "nameRequired": "Pon un nombre a la clave de acceso.",
+      "passwordRequired": "Escribe tu contraseña actual.",
+      "invalidPassword": "La contraseña actual no es correcta.",
+      "submit": "Añadir la clave de acceso",
+      "submitting": "Añadiendo…",
+      "added": "La clave de acceso se ha añadido.",
+      "failed": "No se ha podido añadir la clave de acceso.",
+      "remove": "Eliminar",
+      "removeLabel": "Eliminar {{name}}",
+      "removeBody": "Esta clave de acceso ya no podrá entrar."
+    },
+    "remove": {
+      "title": "¿Eliminar {{name}}?",
+      "confirm": "Eliminar",
+      "removing": "Eliminando…",
+      "cancel": "Cancelar"
+    }
+  },
   "update": {
     "to": "Actualizar a {{sha}}",
     "none": "No hay ninguna actualización disponible",

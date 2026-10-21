@@ -475,6 +475,18 @@ code {
   }
 }
 
+/* ---------- Sign-in additions ---------- */
+
+.auth__input.auth__input--pin {
+  font-family: var(--f-mono);
+  letter-spacing: 0.28em;
+  text-align: center;
+}
+
+.auth__passkey {
+  width: 100%;
+}
+
 /* ---------- Settings ---------- */
 
 .settings {
@@ -805,6 +817,101 @@ code {
   background: color-mix(in srgb, var(--crit) 82%, var(--ink));
 }
 
+.settings__access-intro {
+  margin: 0;
+  color: var(--muted);
+}
+
+.settings__access-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.settings__access-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 0;
+  border-top: 1px dashed var(--line);
+}
+
+.settings__access-item:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.settings__access-main {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.settings__access-name {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.settings__access-badge {
+  padding: 1px 7px;
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--line));
+  border-radius: 999px;
+  color: var(--accent);
+  font-family: var(--f-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.settings__access-meta {
+  color: var(--muted);
+  font-size: 0.8125rem;
+  overflow-wrap: anywhere;
+}
+
+.settings__access-empty {
+  margin: 0;
+  color: var(--muted);
+}
+
+.settings__access-hint {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.8125rem;
+}
+
+.settings__access-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.settings__form-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.settings__form-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.settings__access-remove {
+  flex: 0 0 auto;
+  padding: 5px 10px;
+  font-size: 0.875rem;
+}
+
 .settings__progress {
   border-left: 3px solid var(--accent);
 }
@@ -909,5 +1016,18 @@ code {
 
   .settings__dialog-actions .settings__button {
     width: 100%;
+  }
+
+  .settings__access-item {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .settings__access-remove {
+    align-self: flex-start;
+  }
+
+  .settings__form-row {
+    grid-template-columns: 1fr;
   }
 }
