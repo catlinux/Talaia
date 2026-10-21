@@ -13,6 +13,12 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+## [0.2.3] - 2026-10-21
+
+### Añadido
+
+- Passkeys (WebAuthn, huella o el PIN del dispositivo) en la API del núcleo; las pantallas del panel vienen después. Necesitan un nombre DNS en `public_hostnames` y HTTPS (si no, `passkeys_unavailable`). Una passkey exige siempre verificación del usuario y vale como contraseña más segundo factor. El alta pide sesión completa y la contraseña otra vez (hasta 10 por usuario); `POST /api/v1/auth/passkey/login/begin` y `/finish` inician sesión; `GET` y `DELETE /api/v1/auth/passkeys` las listan y quitan. Los desafíos duran 5 minutos y valen una vez; un contador de firmas que retrocede desactiva la passkey (`passkey_clone_suspected`). Nueva migración `0010`.
+
 ## [0.2.2] - 2026-10-21
 
 ### Añadido
@@ -133,7 +139,8 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
   `.gitattributes` y `.gitignore`.
 - Licencia WNCL-1.0 aplicada: archivo `LICENSE` y sección de créditos en los README.
 
-[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.2.2...HEAD
+[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.2.3...HEAD
+[0.2.3]: https://github.com/catlinux/Talaia/releases/tag/v0.2.3
 [0.2.2]: https://github.com/catlinux/Talaia/releases/tag/v0.2.2
 [0.2.1]: https://github.com/catlinux/Talaia/releases/tag/v0.2.1
 [0.0.1]: https://github.com/catlinux/Talaia/releases/tag/v0.0.1

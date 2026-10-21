@@ -111,6 +111,8 @@ type panelOptions struct {
 	Now            func() time.Time
 	LockDuration   time.Duration
 	DeviceMFAHours int
+	PasskeyRPID    string
+	PasskeyOrigins []string
 }
 
 // newCoreRouter returns the handler of the health endpoint, the authentication
@@ -139,6 +141,8 @@ func newCoreRouter(st *store.Store, agents api.LiveAgents, options panelOptions)
 			Now:            options.Now,
 			LockDuration:   options.LockDuration,
 			DeviceMFAHours: options.DeviceMFAHours,
+			PasskeyRPID:    options.PasskeyRPID,
+			PasskeyOrigins: options.PasskeyOrigins,
 		},
 	})
 }
@@ -284,6 +288,8 @@ func serve() error {
 		TLS:            !cfg.InsecureDev,
 		Limiter:        api.NewAuthRateLimiter(),
 		DeviceMFAHours: cfg.DeviceMFAHours,
+		PasskeyRPID:    cfg.PasskeyRPID(),
+		PasskeyOrigins: cfg.PasskeyOrigins(),
 	}
 
 	var terminals *terminal.Manager

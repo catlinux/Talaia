@@ -580,6 +580,37 @@ func (c Config) ACMEDomains() []string {
 	return acme.DNSNames(c.PublicHostnames)
 }
 
+// PasskeyRPID returns the first public hostname that is a DNS name, which is
+// the WebAuthn relying-party ID. IP addresses cannot be relying-party IDs, so a
+// deployment with only IPs has no passkeys.
+func (c Config) PasskeyRPID() string {
+	for _, host := range c.PublicHostnames {
+		host = strings.TrimSpace(host)
+		if host == "" {
+			continue
+		}
+		if parsedHost, _, err := net.SplitHostPort(host); err == nil {
+			host = parsedHost
+		}
+		host = strings.Trim(host, "[]")
+		if net.ParseIP(host) != nil {
+			continue
+		}
+		return strings.ToLower(host)
+	}
+	return ""
+}
+
+// PasskeyOrigins returns the browser origins the panel is served from. It uses
+// the allowed origins when they were configured and otherwise derives them
+// like the rest of the configuration, including the panel port.
+func (c Config) PasskeyOrigins() []string {
+	if len(c.AllowedOrigins) > 0 {
+		return append([]string(nil), c.AllowedOrigins...)
+	}
+	return defaultOrigins(c.PublicHostnames, c.panelPort(), c.InsecureDev)
+}
+
 // AgentURL returns the https address agents reach the core at, built from the
 // first public hostname, or "" when there is none.
 func (c Config) AgentURL() string {

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/go-webauthn/webauthn/webauthn"
 
 	"github.com/catlinux/Talaia/core/internal/auth"
 	"github.com/catlinux/Talaia/core/internal/store"
@@ -43,6 +44,10 @@ type AuthDeps struct {
 	// DeviceMFAHours is how long a trusted device avoids the second factor.
 	// Zero means the default of 12 hours.
 	DeviceMFAHours int
+	// PasskeyRPID is the WebAuthn relying-party ID. Empty disables passkeys.
+	PasskeyRPID string
+	// PasskeyOrigins are the browser origins allowed for WebAuthn ceremonies.
+	PasskeyOrigins []string
 }
 
 // NewAuthRateLimiter returns the limiter shared by the login and TOTP
@@ -57,7 +62,7 @@ func NewAuthHandler(deps AuthDeps) http.Handler {
 	if deps.Limiter == nil {
 		deps.Limiter = NewAuthRateLimiter()
 	}
-	h := &authHandler{deps: deps}
+	h := &authHandler{deps: deps, passkeys: newPasskeyWebAuthn(deps)}
 
 	r := chi.NewRouter()
 	r.Post("/login", h.login)
@@ -68,17 +73,24 @@ func NewAuthHandler(deps AuthDeps) http.Handler {
 	r.Post("/logout", h.logout)
 	r.Post("/password", h.password)
 	r.Post("/pin/login", h.pinLogin)
+	r.Post("/passkey/login/begin", h.passkeyLoginBegin)
+	r.Post("/passkey/login/finish", h.passkeyLoginFinish)
 	r.Group(func(r chi.Router) {
 		r.Use(RequireFull)
 		r.Post("/devices", h.createDevice)
 		r.Get("/devices", h.listDevices)
 		r.Delete("/devices/{id}", h.deleteDevice)
+		r.Post("/passkeys/register/begin", h.passkeyRegisterBegin)
+		r.Post("/passkeys/register/finish", h.passkeyRegisterFinish)
+		r.Get("/passkeys", h.listPasskeys)
+		r.Delete("/passkeys/{id}", h.deletePasskey)
 	})
 	return r
 }
 
 type authHandler struct {
-	deps AuthDeps
+	deps     AuthDeps
+	passkeys *webauthn.WebAuthn
 }
 
 // now returns the clock of the handler.

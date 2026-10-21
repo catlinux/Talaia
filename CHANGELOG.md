@@ -18,6 +18,12 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.2.3] - 2026-10-21
+
+### Added
+
+- Passkeys (WebAuthn, fingerprint or the PIN of the device) in the core API; panel screens follow. They need a DNS name in `public_hostnames` and HTTPS (otherwise `passkeys_unavailable`). A passkey always requires user verification and counts as password plus second factor. Registration needs a full session and the password again (up to 10 per user); `POST /api/v1/auth/passkey/login/begin` and `/finish` sign in; `GET` and `DELETE /api/v1/auth/passkeys` list and remove them. Challenges live 5 minutes and work once; a signature counter that goes back disables the passkey (`passkey_clone_suspected`). New migration `0010`.
+
 ## [0.2.2] - 2026-10-21
 
 ### Added
@@ -133,7 +139,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.2.2...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.2.3...HEAD
+[0.2.3]: https://github.com/catlinux/Talaia/releases/tag/v0.2.3
 [0.2.2]: https://github.com/catlinux/Talaia/releases/tag/v0.2.2
 [0.2.1]: https://github.com/catlinux/Talaia/releases/tag/v0.2.1
 [0.0.1]: https://github.com/catlinux/Talaia/releases/tag/v0.0.1
