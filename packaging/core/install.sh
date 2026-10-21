@@ -263,6 +263,18 @@ else
         write_acme_credentials
     fi
 
+    # Both go into .env unquoted and through sed: only plain characters.
+    hostname_pattern='^[][A-Za-z0-9.:,-]+$'
+    if [[ ! "$hostname_arg" =~ $hostname_pattern ]]; then
+        echo "error: the host name may only contain letters, digits, dots, colons, hyphens, commas and brackets" >&2
+        exit 1
+    fi
+    email_pattern='^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+$'
+    if [ -n "$acme_email" ] && [[ ! "$acme_email" =~ $email_pattern ]]; then
+        echo "error: --acme-email is not a valid address" >&2
+        exit 1
+    fi
+
     password="$(od -An -tx1 -N32 /dev/urandom | tr -d ' \n')"
     (
         umask 077

@@ -5,6 +5,7 @@ import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
+	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
@@ -612,4 +613,38 @@ func mustRead(t *testing.T, path string) []byte {
 		t.Fatalf("read %s: %v", path, err)
 	}
 	return data
+}
+
+func TestGetCertificateMatchesTheServerName(t *testing.T) {
+	now := time.Date(2026, 10, 20, 12, 0, 0, 0, time.UTC)
+	certPEM, keyPEM := testCertificate(t, 7, now.Add(60*24*time.Hour))
+	fallbackPEM, fallbackKey := testCertificate(t, 1, now.Add(365*24*time.Hour))
+	fallback, err := parseCertificate(fallbackPEM, fallbackKey)
+	if err != nil {
+		t.Fatal(err)
+	}
+	opts := testOptions(t, &fakeIssuer{})
+	opts.now = func() time.Time { return now }
+	writeStoredCertificate(t, opts.DataDir, certPEM, keyPEM)
+	manager, err := New(opts, *fallback)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, tt := range []struct {
+		serverName string
+		want       int64
+	}{
+		{serverName: "panel.example.com", want: 7},
+		{serverName: "", want: 1},
+		{serverName: "other.example.com", want: 1},
+	} {
+		current, err := manager.GetCertificate(&tls.ClientHelloInfo{ServerName: tt.serverName})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got := current.Leaf.SerialNumber.Int64(); got != tt.want {
+			t.Errorf("server name %q: serial = %d, want %d", tt.serverName, got, tt.want)
+		}
+	}
 }

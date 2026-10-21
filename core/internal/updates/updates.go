@@ -298,7 +298,7 @@ func (c *Checker) refresh(ctx context.Context, forced bool) error {
 
 func (c *Checker) check(ctx context.Context, etag string) error {
 	at := c.now()
-	_, nextETag, notModified, err := c.head(ctx, etag)
+	head, nextETag, notModified, err := c.head(ctx, etag)
 	if err != nil {
 		c.fail(at, err)
 		return err
@@ -315,10 +315,6 @@ func (c *Checker) check(ctx context.Context, etag string) error {
 		c.mu.Unlock()
 		return nil
 	}
-
-	c.mu.Lock()
-	c.etag = nextETag
-	c.mu.Unlock()
 
 	latest, green, err := c.findGreen(ctx)
 	if err != nil {
@@ -337,11 +333,17 @@ func (c *Checker) check(ctx context.Context, etag string) error {
 		state.CI = "green"
 		state.UpdateAvailable = latest != c.current
 		if c.current != "" && c.current != latest {
-			pending, err := c.pending(ctx, c.current, latest)
-			if err != nil {
-				// The offer is still useful without the list of commits.
+			pending, ahead, err := c.pending(ctx, c.current, latest)
+			switch {
+			case err != nil:
+				// The offer is still useful without the list of commits; the host
+				// helper refuses anything that is not newer anyway.
 				c.logger.Warn("could not list the pending commits", "error", err)
-			} else {
+			case !ahead:
+				// The running build is newer than, or off, the newest green commit:
+				// going there would be a downgrade.
+				state.UpdateAvailable = false
+			default:
 				state.Pending = pending
 			}
 		}
@@ -350,6 +352,13 @@ func (c *Checker) check(ctx context.Context, etag string) error {
 	c.mu.Lock()
 	c.state = state
 	c.haveState = true
+	// A 304 later reuses this answer, so the ETag is only kept when the head
+	// itself is the green commit. While its CI is still running, every check
+	// looks again, or the head would never be offered until the next push.
+	c.etag = ""
+	if green && latest == head {
+		c.etag = nextETag
+	}
 	c.mu.Unlock()
 	return nil
 }
@@ -469,14 +478,17 @@ func (c *Checker) green(ctx context.Context, sha string) (bool, error) {
 	return found, nil
 }
 
-func (c *Checker) pending(ctx context.Context, current, latest string) ([]Pending, error) {
+// pending lists the commits from current to latest and reports whether latest
+// is ahead of current, as GitHub's comparison says.
+func (c *Checker) pending(ctx context.Context, current, latest string) ([]Pending, bool, error) {
 	if !shaPattern.MatchString(current) || !shaPattern.MatchString(latest) {
-		return nil, fmt.Errorf("%w: invalid comparison", errInvalidResponse)
+		return nil, false, fmt.Errorf("%w: invalid comparison", errInvalidResponse)
 	}
 	endpoint := c.apiURL + "/repos/" + c.repo + "/compare/" +
 		strings.ToLower(current) + "..." + strings.ToLower(latest)
 
 	var body struct {
+		Status  string `json:"status"`
 		Commits []struct {
 			SHA    string `json:"sha"`
 			Commit struct {
@@ -488,7 +500,10 @@ func (c *Checker) pending(ctx context.Context, current, latest string) ([]Pendin
 		} `json:"commits"`
 	}
 	if err := c.get(ctx, endpoint, &body); err != nil {
-		return nil, err
+		return nil, false, err
+	}
+	if body.Status != "ahead" {
+		return nil, false, nil
 	}
 
 	pending := make([]Pending, 0, min(len(body.Commits), maxPending))
@@ -502,7 +517,7 @@ func (c *Checker) pending(ctx context.Context, current, latest string) ([]Pendin
 			Author:  commit.Commit.Author.Name,
 		})
 	}
-	return pending, nil
+	return pending, true, nil
 }
 
 func (c *Checker) get(ctx context.Context, endpoint string, target any) error {

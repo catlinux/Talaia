@@ -54,6 +54,7 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ### Security
 
+- The OVH credential documented for ACME is limited to the three calls lego makes on one zone, instead of every zone of the account. The installer refuses host names and ACME emails with characters that would break `.env`.
 - The Content-Security-Policy now allows `<style>` elements from the page (`style-src-elem 'self' 'unsafe-inline'`), because xterm.js writes the colours of the terminal that way and, without it, the terminal shows dark text on a dark background. Scripts, inline style attributes, third-party origins and `data:` URLs stay blocked, and a test guards that nothing else is loosened.
 - Security review of the enrollment: revocation now closes live agent streams, the agent identity is bound to the current or previous certificate serial, enrollment is a single transaction, the agent key and certificate are stored in one atomic file, `insecure_dev` only listens on loopback, permanent agent errors stop systemd restarts (exit 78), and the CA and certificate directories are forced to mode 0700.
 - Panel authentication (ahead of phase 3): single administrator created from the console, argon2id password, mandatory TOTP with single-use recovery codes, secure session cookie, CSRF protection, brute-force limits, audit log, and the sign-in screens in ca/es/en.
@@ -83,6 +84,7 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ### Fixed
 
+- Update check: a commit whose CI was still running at the first check was never offered afterwards (the ETag of the head made every later check a 304), and a build newer than the newest green commit was offered a downgrade. The panel opened by IP address with ACME enabled now gets the certificate of the own CA, which covers it, instead of the public one.
 - A stack action that takes more than two minutes (a slow `pull` or `up`) is no longer reported as timed out while it is still running: each kind of job now waits a little longer than the agent gives it.
 - A job whose output or message was cut in the middle of a character is no longer lost: the agent and the core keep the text valid UTF-8.
 - Validating an edited adopted stack with an empty `.env` no longer uses the old `.env` of its directory, which saving deletes.

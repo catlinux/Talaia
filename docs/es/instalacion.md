@@ -162,7 +162,8 @@ El núcleo corre en un contenedor de solo lectura sin el socket de Docker, así 
   `/healthz`.
 - Si el núcleo nuevo no responde, vuelve al commit anterior, restaura la copia en una sola transacción y reconstruye
   esa versión. El panel muestra el resultado y las últimas líneas del registro; el registro completo está en
-  `sudo journalctl -u talaia-update`.
+  `sudo journalctl -u talaia-update`. Lo que el panel registró entre la copia y la vuelta atrás (auditoría,
+  métricas) se pierde.
 
 Su configuración está en `/etc/talaia/hostd.conf` (`REPO_DIR`, `REPO_USER`). El clon debe seguir en `main` sin
 cambios locales. Quien sea dueño del clon puede cambiar lo que se construye como root, así que déjalo en una cuenta
@@ -190,13 +191,16 @@ funciona en cualquier puerto y no necesita servidor web. Hace falta un nombre DN
 no puede tenerlo).
 
 1. Crea una aplicación de la API de OVH y una clave de consumidor siguiendo la
-   [guía de OVH](https://docs.ovh.com/gb/en/customer/first-steps-with-ovh-api/). Da a la clave de consumidor los
-   derechos mínimos, tal como los documenta lego (la biblioteca ACME que usa el núcleo):
+   [guía de OVH](https://docs.ovh.com/gb/en/customer/first-steps-with-ovh-api/). Da a la clave de consumidor
+   derechos solo sobre tu zona (sustituye `example.com` por ella): son las tres llamadas que hace lego, la
+   biblioteca ACME que usa el núcleo. La documentación de lego propone `/domain/zone/*`, que dejaría a la clave
+   cambiar todas las zonas de la cuenta si alguien llegara a controlar el núcleo.
 
    ```json
    { "accessRules": [
-       { "method": "POST", "path": "/domain/zone/*" },
-       { "method": "DELETE", "path": "/domain/zone/*" }
+       { "method": "POST", "path": "/domain/zone/example.com/record" },
+       { "method": "POST", "path": "/domain/zone/example.com/refresh" },
+       { "method": "DELETE", "path": "/domain/zone/example.com/record/*" }
    ] }
    ```
 
@@ -205,7 +209,8 @@ no puede tenerlo).
    `OVH_ENDPOINT`, `OVH_APPLICATION_KEY`, `OVH_APPLICATION_SECRET` y `OVH_CONSUMER_KEY`.
 3. Hasta que el certificado esté listo, el panel responde con el de la CA interna; después pasa al de confianza sin
    reiniciar. El núcleo registra `ACME certificate ready`. La cuenta y el certificado se guardan en el volumen
-   `core-data` (`/var/lib/talaia/acme`) y se renuevan 30 días antes de caducar.
+   `core-data` (`/var/lib/talaia/acme`) y se renuevan 30 días antes de caducar. Si
+   se abre por dirección IP, el panel sigue respondiendo con el certificado de la CA interna.
 
 El **puerto de los agentes usa siempre la CA interna**, nunca el certificado público: los agentes fijan la huella de
 la CA, así que quien se haga con tu DNS no puede hacerse pasar por el núcleo y mandar órdenes a tus servidores.

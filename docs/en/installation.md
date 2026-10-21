@@ -159,7 +159,8 @@ a small root helper on the host, **`talaia-hostd`** (skip it with `--no-hostd`):
   the clone (git runs as the owner of the clone, not as root), rebuilds and waits up to three minutes for `/healthz`.
 - If the new core does not answer, it goes back to the previous commit, restores the backup in one transaction and
   rebuilds that version. The panel shows the result and the last log lines; the full log is in
-  `sudo journalctl -u talaia-update`.
+  `sudo journalctl -u talaia-update`. What the panel recorded between the backup and the rollback (audit entries,
+  metrics) is lost.
 
 Its settings are in `/etc/talaia/hostd.conf` (`REPO_DIR`, `REPO_USER`). The clone must stay on `main` without local
 changes. Whoever owns the clone can change what gets built as root, so keep it under an administrator account.
@@ -184,13 +185,16 @@ the core can obtain a certificate from Let's Encrypt on its own. DNS-01 proves t
 it works on any port and needs no web server. It needs a DNS name in `--hostname` (an IP address cannot get one).
 
 1. Create an OVH API application and a consumer key following the
-   [OVH guide](https://docs.ovh.com/gb/en/customer/first-steps-with-ovh-api/). Give the consumer key the minimum
-   rights, as lego (the ACME library the core uses) documents:
+   [OVH guide](https://docs.ovh.com/gb/en/customer/first-steps-with-ovh-api/). Give the consumer key rights over
+   your zone only (replace `example.com` with it): these are the three calls lego, the ACME library the core uses,
+   makes. lego's own documentation suggests `/domain/zone/*`, which would let the key change every zone of the
+   account if the core were ever compromised.
 
    ```json
    { "accessRules": [
-       { "method": "POST", "path": "/domain/zone/*" },
-       { "method": "DELETE", "path": "/domain/zone/*" }
+       { "method": "POST", "path": "/domain/zone/example.com/record" },
+       { "method": "POST", "path": "/domain/zone/example.com/refresh" },
+       { "method": "DELETE", "path": "/domain/zone/example.com/record/*" }
    ] }
    ```
 
@@ -199,7 +203,8 @@ it works on any port and needs no web server. It needs a DNS name in `--hostname
    `OVH_ENDPOINT`, `OVH_APPLICATION_KEY`, `OVH_APPLICATION_SECRET` and `OVH_CONSUMER_KEY`.
 3. Until the certificate is ready the panel answers with the certificate of the internal CA; then it swaps to the
    trusted one without a restart. The core logs `ACME certificate ready`. The account and the certificate are kept
-   in the `core-data` volume (`/var/lib/talaia/acme`) and renewed 30 days before they expire.
+   in the `core-data` volume (`/var/lib/talaia/acme`) and renewed 30 days before they expire. Opened
+   by IP address, the panel keeps answering with the certificate of the internal CA.
 
 The **agents port always uses the internal CA**, never the public certificate: agents pin the CA fingerprint, so
 nobody who gets control of your DNS can impersonate the core and send commands to your servers.

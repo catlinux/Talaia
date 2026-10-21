@@ -94,8 +94,10 @@ tareas concretas de la fase actual y de la siguiente.
 - [x] Detección de actualizaciones (último commit de `main` con el CI en verde) y API
 - [x] Ayudante del host `talaia-hostd` (systemd) que trae los cambios, reconstruye, comprueba `/healthz` y vuelve atrás con una copia de la base de datos; el core nunca recibe el socket de Docker
 - [x] Pantalla de Ajustes con la versión y el botón de actualizar; ca/es/en
-- [ ] Documentación EN/ES (VPS con otros servicios, credencial de OVH con derechos mínimos, actualizaciones)
-- [ ] Revisión de seguridad (Opus)
+- [x] Documentación EN/ES (VPS con otros servicios, credencial de OVH con derechos mínimos, actualizaciones)
+- [x] Revisión de seguridad (Opus)
+- [ ] Una petición que el ayudante nunca recoge (ayudante parado o no instalado) deja el panel en «actualización en curso»: avisar de una petición de hace más de unos minutos como atascada
+- [ ] El ayudante no se actualiza solo: una actualización que cambie `packaging/core/hostd/` necesita volver a ejecutar `install.sh`; hacerlo desde el ayudante o avisar en el panel
 - [ ] Instalación real en `talaia.invierteconcriterio.es` con el mantenedor (desde cero; el Debian de casa pasa a ser un servidor más)
 - [ ] Más adelante: cambiar la dirección del core en los agentes con una orden tipada (para mudarse al dominio y VPS nuevos) y actualizar los agentes desde el core
 

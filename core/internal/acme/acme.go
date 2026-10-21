@@ -224,12 +224,19 @@ func (m *Manager) Start(ctx context.Context) {
 }
 
 // GetCertificate is the tls.Config callback of the panel. It never returns
-// nil: while ACME has no certificate it returns the one of the own CA.
-func (m *Manager) GetCertificate(*tls.ClientHelloInfo) (*tls.Certificate, error) {
-	if current := m.current.Load(); current != nil {
-		return current, nil
+// nil: while ACME has no certificate it returns the one of the own CA, and so
+// it does for a name the ACME certificate does not cover. Browsers send no
+// server name when the panel is opened by IP address, which only the own CA
+// certificate is valid for.
+func (m *Manager) GetCertificate(hello *tls.ClientHelloInfo) (*tls.Certificate, error) {
+	current := m.current.Load()
+	if current == nil {
+		return &m.fallback, nil
 	}
-	return &m.fallback, nil
+	if hello != nil && (hello.ServerName == "" || current.Leaf.VerifyHostname(hello.ServerName) != nil) {
+		return &m.fallback, nil
+	}
+	return current, nil
 }
 
 func (m *Manager) run(ctx context.Context) {

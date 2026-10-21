@@ -94,8 +94,10 @@ of the current phase and the next one.
 - [x] Update detection (latest commit of `main` with green CI) and API
 - [x] Host helper `talaia-hostd` (systemd) that pulls, rebuilds, checks `/healthz` and rolls back with a database copy; the core never gets the Docker socket
 - [x] Settings screen with the version and the update button; ca/es/en
-- [ ] Documentation EN/ES (VPS with other services, OVH credential with minimal rights, updates)
-- [ ] Security review (Opus)
+- [x] Documentation EN/ES (VPS with other services, OVH credential with minimal rights, updates)
+- [x] Security review (Opus)
+- [ ] A request the helper never takes (helper stopped or not installed by hand) leaves the panel showing "update in progress": report a request older than a few minutes as stuck
+- [ ] The helper does not update itself: an update that changes `packaging/core/hostd/` needs `install.sh` run again; do it from the helper or warn in the panel
 - [ ] Real install at `talaia.invierteconcriterio.es` with the maintainer (fresh install; the Debian at home becomes one more server)
 - [ ] Later: change the core address of the agents with a typed command (to move to the new domain and VPS) and update the agents from the core
 

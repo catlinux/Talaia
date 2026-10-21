@@ -54,6 +54,7 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ### Seguridad
 
+- La credencial de OVH documentada para ACME queda limitada a las tres llamadas que hace lego sobre una zona, en vez de a todas las zonas de la cuenta. El instalador rechaza nombres de host y correos de ACME con caracteres que romperían `.env`.
 - La Content-Security-Policy permite ahora elementos `<style>` de la propia página (`style-src-elem 'self' 'unsafe-inline'`), porque xterm.js escribe así los colores de la terminal y, sin ello, la terminal muestra texto oscuro sobre fondo oscuro. Los scripts, los atributos de estilo en línea, los orígenes de terceros y las URL `data:` siguen bloqueados, y una prueba vigila que no se afloje nada más.
 - Revisión de seguridad del enrolamiento: la revocación cierra los streams abiertos, la identidad del agente queda ligada al número de serie del certificado actual o anterior, el enrolamiento es una sola transacción, la clave y el certificado del agente se guardan en un único archivo atómico, `insecure_dev` solo escucha en loopback, los errores permanentes del agente detienen los reinicios de systemd (salida 78) y los directorios de la CA y de los certificados se fuerzan a modo 0700.
 - Autenticación del panel (adelantada de la fase 3): administrador único creado desde la consola, contraseña con argon2id, TOTP obligatorio con códigos de recuperación de un solo uso, cookie de sesión segura, protección CSRF, límites contra fuerza bruta, registro de auditoría y pantallas de acceso en ca/es/en.
@@ -83,6 +84,7 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ### Corregido
 
+- Comprobación de actualizaciones: un commit cuyo CI seguía en marcha en la primera comprobación ya no se ofrecía nunca (el ETag de la cabeza convertía las siguientes en un 304), y a una versión más nueva que el último commit en verde se le ofrecía volver atrás. Con ACME, el panel abierto por dirección IP recibe ahora el certificado de la CA propia, que la cubre, en vez del público.
 - Una acción de stack que tarda más de dos minutos (un `pull` o un `up` lentos) ya no aparece como caducada mientras sigue en marcha: cada tipo de trabajo espera ahora algo más de lo que le da el agente.
 - Un trabajo cuya salida o mensaje se cortaba a mitad de un carácter ya no se pierde: el agente y el core mantienen el texto en UTF-8 válido.
 - Validar un stack adoptado editado con el `.env` vacío ya no usa el `.env` antiguo de su directorio, que al guardar se borra.

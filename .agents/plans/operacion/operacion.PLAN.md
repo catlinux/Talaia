@@ -42,9 +42,33 @@ Cada paso: un commit (o pocos), pruebas y entrada en *Unreleased* de `CHANGELOG.
 | 5 ✅ | Ayudante del host: `talaia-hostd`, unidades `.path`/`.service`, `hostd.conf`, instalación desde `install.sh` | `packaging/core/hostd/` (nuevo), `packaging/core/install.sh` | prueba en el CI: petición válida actualiza, petición con otra rama o JSON roto se rechaza, un core que no arranca vuelve atrás | **Opus**, alto (código root delicado) |
 | 6 ✅ | Pantalla de **Ajustes** en el panel: tarjeta de versión (actual, pendientes, mensajes de los commits, CI), botón con confirmación, progreso que sobrevive al reinicio del core; ca/es/en; capturas claro/oscuro/móvil | `web/src/screens/Settings*`, `web/src/api/system.ts`, locales | tests de vitest y capturas | Sonnet, medio |
 | 7 ✅ | Documentación EN/ES: instalar en un VPS con otros servicios, crear la credencial de OVH con derechos mínimos, actualizar desde el panel, qué hace el ayudante; sustituir la sección 6 de la guía | `docs/en/installation.md`, `docs/es/instalacion.md`, `README*` | revisada contra lo construido | Sonnet, bajo |
-| 8 | Revisión de seguridad de 1–6 | — | hallazgos corregidos | **Opus**, alto |
+| 8 ✅ | Revisión de seguridad de 1–6 | — | hallazgos corregidos | **Opus**, alto |
 | 9 | Instalación real en `talaia.invierteconcriterio.es` con el mantenedor (necesita push aprobado, `sudo` en el VPS y la credencial de OVH); el Debian de casa como servidor; prueba de una actualización de punta a punta | — | panel con candado desde fuera de casa, agente del Debian conectado, una actualización aplicada desde el panel | sesión con el mantenedor |
 | 10 | Más adelante: orden tipada para cambiar la URL del core en los agentes (mudanza) y actualización de agentes desde el core | — | — | por diseñar |
+
+## Revisión de seguridad (paso 8, 2026-10-21, Opus)
+
+Revisado: dos escuchas, instalador, ACME, detección y API de actualizaciones, `talaia-hostd`, pantalla de Ajustes.
+
+**Corregido**
+- Detección: con el ETag guardado, un commit cuyo CI aún corría en la primera comprobación no se ofrecía nunca (304 hasta el siguiente push). Ahora el ETag solo se guarda cuando la cabeza es el commit verde.
+- Detección: se ofrecía «actualizar» a un commit verde más viejo que el que corre. Ahora se usa el `status` de `compare` (solo `ahead`).
+- ACME: el panel abierto por IP (sin SNI) recibía el certificado público, que no la cubre. Ahora usa la CA propia para nombres que el certificado ACME no cubre.
+- Instalador: el nombre y el correo de ACME iban sin validar a `sed` y a `.env`. Ahora solo se admiten caracteres seguros.
+- Documentación: la credencial de OVH queda limitada a una zona (`POST …/record`, `POST …/refresh`, `DELETE …/record/*`), no a `/domain/zone/*`.
+
+**Comprobado sin cambios**
+- Puerto de agentes: `VerifyClientCertIfGiven` con la CA propia; el stream y `/renew` exigen certificado verificado. El panel no tiene rutas de agentes ni al revés (pruebas y CI).
+- API: `system/version` y `system/update` están en el grupo `RequireFull` con la protección de origen de las demás escrituras; solo se acepta el commit ofrecido; queda auditado.
+- `talaia-hostd`: la petición se aparta a un directorio solo de root antes de leerla (sin enlaces, sin enlaces duros, ≤256 bytes, formato exacto); `status.json` se escribe por renombrado en un directorio de root; la configuración no se ejecuta y debe ser de root; `.env` se lee sin `source`; git corre como el dueño del clon; restauración en una transacción. 38 comprobaciones en `hostd/test.sh`.
+- Panel: los textos de GitHub (asunto, autor) se pintan como texto, sin HTML.
+
+**Riesgos aceptados**
+- El dueño del clon decide lo que se construye como root (documentado). Un core comprometido puede pedir cualquier commit de `main` más nuevo (aunque su CI esté en rojo), no otra rama ni una ruta.
+- En una vuelta atrás se pierde lo registrado entre la copia y la restauración (documentado).
+- Las credenciales de OVH llegan al contenedor como variables de entorno (visibles con `docker inspect`, es decir, para root).
+
+**Pendiente (en TODO)**: petición nunca recogida deja el panel en «en curso»; el ayudante no se actualiza solo.
 
 ## Cómo retomarlo
 

@@ -130,7 +130,7 @@ func TestCheckOffersTheNewestGreenCommit(t *testing.T) {
 				http.Error(w, "unexpected comparison", http.StatusBadRequest)
 				return
 			}
-			writeJSON(w, map[string]any{"commits": []map[string]any{
+			writeJSON(w, map[string]any{"status": "ahead", "commits": []map[string]any{
 				{
 					"sha": shaPending,
 					"commit": map[string]any{
@@ -679,5 +679,97 @@ func TestRequesterNeedsTheRequestsDirectory(t *testing.T) {
 	}
 	if err := requester.Request(shaCurrent); !errors.Is(err, ErrHostHelperMissing) {
 		t.Fatalf("request = %v, want ErrHostHelperMissing", err)
+	}
+}
+
+func TestOlderGreenCommitIsNotOffered(t *testing.T) {
+	// The running build is ahead of the newest green commit (its own CI has not
+	// finished): offering the green one would be a downgrade.
+	clock := newFakeClock()
+	server := newServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.URL.Path == "/repos/o/r/commits/main":
+			writeJSON(w, map[string]string{"sha": shaCurrent})
+		case r.URL.Path == "/repos/o/r/commits":
+			writeJSON(w, []map[string]string{{"sha": shaCurrent}, {"sha": shaGreen}})
+		case r.URL.Path == "/repos/o/r/actions/runs":
+			if r.URL.Query().Get("head_sha") == shaGreen {
+				writeJSON(w, map[string]any{"workflow_runs": []map[string]string{
+					{"name": "CI", "status": "completed", "conclusion": "success"},
+				}})
+				return
+			}
+			writeJSON(w, map[string]any{"workflow_runs": []map[string]string{}})
+		case strings.HasPrefix(r.URL.Path, "/repos/o/r/compare/"):
+			writeJSON(w, map[string]any{"status": "behind", "commits": []map[string]any{}})
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+
+	checker := newChecker(t, server, shaCurrent, clock)
+	if err := checker.Refresh(context.Background()); err != nil {
+		t.Fatalf("refresh: %v", err)
+	}
+	state, _ := checker.State()
+	if state.UpdateAvailable || len(state.Pending) != 0 {
+		t.Fatalf("an older commit was offered: %+v", state)
+	}
+}
+
+func TestHeadIsOfferedOnceItsCIFinishes(t *testing.T) {
+	// The first check runs while the CI of the head is still running. The ETag
+	// must not be kept then: a 304 would hide the head once its CI is green.
+	clock := newFakeClock()
+	var (
+		mu       sync.Mutex
+		headDone bool
+	)
+	server := newServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mu.Lock()
+		done := headDone
+		mu.Unlock()
+		switch {
+		case r.URL.Path == "/repos/o/r/commits/main":
+			if r.Header.Get("If-None-Match") == `"head-1"` {
+				w.WriteHeader(http.StatusNotModified)
+				return
+			}
+			w.Header().Set("ETag", `"head-1"`)
+			writeJSON(w, map[string]string{"sha": shaHead})
+		case r.URL.Path == "/repos/o/r/commits":
+			writeJSON(w, []map[string]string{{"sha": shaHead}, {"sha": shaGreen}})
+		case r.URL.Path == "/repos/o/r/actions/runs":
+			if r.URL.Query().Get("head_sha") == shaGreen || done {
+				writeJSON(w, map[string]any{"workflow_runs": []map[string]string{
+					{"name": "CI", "status": "completed", "conclusion": "success"},
+				}})
+				return
+			}
+			writeJSON(w, map[string]any{"workflow_runs": []map[string]string{}})
+		case strings.HasPrefix(r.URL.Path, "/repos/o/r/compare/"):
+			writeJSON(w, map[string]any{"status": "ahead", "commits": []map[string]any{}})
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+
+	checker := newChecker(t, server, shaCurrent, clock)
+	if err := checker.Refresh(context.Background()); err != nil {
+		t.Fatalf("first refresh: %v", err)
+	}
+	if state, _ := checker.State(); state.Latest != shaGreen {
+		t.Fatalf("first check offered %q, want the older green commit", state.Latest)
+	}
+
+	mu.Lock()
+	headDone = true
+	mu.Unlock()
+	clock.Advance(2 * time.Minute)
+	if err := checker.Refresh(context.Background()); err != nil {
+		t.Fatalf("second refresh: %v", err)
+	}
+	if state, _ := checker.State(); state.Latest != shaHead {
+		t.Fatalf("second check offered %q, want the head once its CI is green", state.Latest)
 	}
 }
