@@ -13,6 +13,12 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+## [0.2.7] - 2026-10-21
+
+### Corregido
+
+- Pedir el comando de enrolamiento de un nombre de servidor que aún tenía un token sin usar (hasta 15 minutos) fallaba con «nombre en uso». El token nuevo sustituye ahora al pendiente, así que se puede volver a pedir un comando perdido al momento.
+
 ## [0.2.6] - 2026-10-21
 
 ### Corregido
@@ -157,7 +163,8 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
   `.gitattributes` y `.gitignore`.
 - Licencia WNCL-1.0 aplicada: archivo `LICENSE` y sección de créditos en los README.
 
-[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.2.6...HEAD
+[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.2.7...HEAD
+[0.2.7]: https://github.com/catlinux/Talaia/releases/tag/v0.2.7
 [0.2.6]: https://github.com/catlinux/Talaia/releases/tag/v0.2.6
 [0.2.5]: https://github.com/catlinux/Talaia/releases/tag/v0.2.5
 [0.2.4]: https://github.com/catlinux/Talaia/releases/tag/v0.2.4

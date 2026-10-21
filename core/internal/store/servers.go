@@ -75,20 +75,21 @@ func (s *Store) CreateEnrollmentToken(ctx context.Context, serverName string, tt
 	token := tokenPrefix + base64.RawURLEncoding.EncodeToString(raw)
 
 	// A name can only have one enrollment in flight: reject it when the server
-	// is already enrolled or when it still has a pending token.
-	var enrolled, pending bool
+	// is already enrolled. A token still pending for the name is replaced, so a
+	// lost command can be asked for again without waiting for it to expire.
+	var enrolled bool
 	if err := s.pool.QueryRow(ctx,
-		`SELECT
-		   EXISTS (SELECT 1 FROM server WHERE name = $1 AND removed_at IS NULL),
-		   EXISTS (SELECT 1 FROM enrollment_token WHERE server_name = $1 AND used_at IS NULL AND expires_at > now())`,
-		serverName).Scan(&enrolled, &pending); err != nil {
+		`SELECT EXISTS (SELECT 1 FROM server WHERE name = $1 AND removed_at IS NULL)`,
+		serverName).Scan(&enrolled); err != nil {
 		return "", fmt.Errorf("check server name: %w", err)
 	}
 	if enrolled {
 		return "", fmt.Errorf("server %q is already enrolled: %w", serverName, ErrNameTaken)
 	}
-	if pending {
-		return "", fmt.Errorf("server %q already has a pending enrollment token: %w", serverName, ErrNameTaken)
+	if _, err := s.pool.Exec(ctx,
+		`UPDATE enrollment_token SET expires_at = now()
+		 WHERE server_name = $1 AND used_at IS NULL AND expires_at > now()`, serverName); err != nil {
+		return "", fmt.Errorf("replace the pending token: %w", err)
 	}
 
 	hash := sha256.Sum256([]byte(token))

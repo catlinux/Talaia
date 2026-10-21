@@ -184,13 +184,21 @@ func TestEnrollmentTokenRules(t *testing.T) {
 		t.Error("expected an error for an already enrolled server")
 	}
 
-	// A name with a pending token cannot have a second one either.
+	// A new token for a name with a pending one replaces it.
 	pending := testName(t, s)
-	if _, err := s.CreateEnrollmentToken(ctx, pending, time.Minute); err != nil {
+	first, err := s.CreateEnrollmentToken(ctx, pending, time.Minute)
+	if err != nil {
 		t.Fatalf("create pending token: %v", err)
 	}
-	if _, err := s.CreateEnrollmentToken(ctx, pending, time.Minute); err == nil {
-		t.Error("expected an error for a server name with a pending token")
+	second, err := s.CreateEnrollmentToken(ctx, pending, time.Minute)
+	if err != nil {
+		t.Fatalf("replace the pending token: %v", err)
+	}
+	if _, err := s.ConsumeEnrollmentToken(ctx, first); err == nil {
+		t.Error("the replaced token still works")
+	}
+	if got, err := s.ConsumeEnrollmentToken(ctx, second); err != nil || got != pending {
+		t.Errorf("ConsumeEnrollmentToken(second) = %q, %v; want %q", got, err, pending)
 	}
 }
 

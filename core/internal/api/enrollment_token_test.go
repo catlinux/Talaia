@@ -86,10 +86,10 @@ func TestEnrollmentTokenCreation(t *testing.T) {
 		t.Error("the token creation was not audited")
 	}
 
-	// The same name cannot have two tokens in flight.
+	// Asking again for the same name replaces the pending token.
 	again := panel.post(t, "/api/v1/servers/enrollment-tokens", map[string]string{"name": "vps-web-01"})
-	if again.StatusCode != http.StatusConflict {
-		t.Errorf("second token status = %d, want 409", again.StatusCode)
+	if again.StatusCode != http.StatusCreated {
+		t.Errorf("second token status = %d, want 201", again.StatusCode)
 	}
 }
 

@@ -18,6 +18,12 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.2.7] - 2026-10-21
+
+### Fixed
+
+- Asking for an enrollment command for a server name that still had an unused token (up to 15 minutes) failed with "name taken". The new token now replaces the pending one, so a lost command can be asked for again at once.
+
 ## [0.2.6] - 2026-10-21
 
 ### Fixed
@@ -157,7 +163,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.2.6...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.2.7...HEAD
+[0.2.7]: https://github.com/catlinux/Talaia/releases/tag/v0.2.7
 [0.2.6]: https://github.com/catlinux/Talaia/releases/tag/v0.2.6
 [0.2.5]: https://github.com/catlinux/Talaia/releases/tag/v0.2.5
 [0.2.4]: https://github.com/catlinux/Talaia/releases/tag/v0.2.4
