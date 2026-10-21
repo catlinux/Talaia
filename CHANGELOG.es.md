@@ -13,6 +13,12 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+## [0.2.6] - 2026-10-21
+
+### Corregido
+
+- Reinstalar un agente tras quitar su servidor del panel conservaba la identidad revocada (el núcleo contestaba 403 sin parar) e ignoraba el token nuevo. Un token de enrolamiento junto a una identidad guardada hace ahora que el agente se enrole una vez con él, sea cual sea el núcleo que emitió la identidad antigua; si falla, conserva la identidad guardada. Sustituye a la comprobación anterior, que solo comparaba la huella de la CA.
+
 ## [0.2.5] - 2026-10-21
 
 ### Añadido
@@ -151,7 +157,8 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
   `.gitattributes` y `.gitignore`.
 - Licencia WNCL-1.0 aplicada: archivo `LICENSE` y sección de créditos en los README.
 
-[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.2.5...HEAD
+[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.2.6...HEAD
+[0.2.6]: https://github.com/catlinux/Talaia/releases/tag/v0.2.6
 [0.2.5]: https://github.com/catlinux/Talaia/releases/tag/v0.2.5
 [0.2.4]: https://github.com/catlinux/Talaia/releases/tag/v0.2.4
 [0.2.3]: https://github.com/catlinux/Talaia/releases/tag/v0.2.3

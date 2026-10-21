@@ -92,30 +92,24 @@ func run() error {
 	return nil
 }
 
-// staleIdentity reports whether a pending enrollment token and a configured CA
-// fingerprint show that the stored identity was issued by a different core.
-func staleIdentity(identity *enroll.Identity, cfg config.Config) bool {
-	if cfg.CAFingerprint == "" {
-		return false
-	}
-	if _, err := os.Stat(cfg.EnrollTokenFile); err != nil {
-		return false
-	}
-	return !strings.EqualFold(identity.CAFingerprint(), strings.TrimSpace(cfg.CAFingerprint))
-}
-
 // loadOrEnroll loads the stored identity or, when there is none, enrols the
-// agent with the one-time token. It never logs the token.
+// agent with the one-time token. A token left next to an identity means a new
+// enrollment was requested (the token is deleted once it is used), for example
+// because the server was removed from the panel or the core changed: the agent
+// then enrols once with it and keeps the old identity only if that fails. It
+// never logs the token.
 func loadOrEnroll(ctx context.Context, cfg config.Config, logger *slog.Logger) (*enroll.Identity, error) {
 	identity, err := enroll.LoadIdentity(cfg.CertDir)
-	if err == nil && staleIdentity(identity, cfg) {
-		// install.sh left a new token for another core: the old identity cannot
-		// work there and would otherwise hide the new enrollment for ever.
-		logger.Warn("the stored identity belongs to another core; enrolling again", "server_id", identity.ServerID())
-		if err := enroll.Forget(cfg.CertDir); err != nil {
-			return nil, fmt.Errorf("discard the old identity: %w", err)
+	if err == nil {
+		if _, statErr := os.Stat(cfg.EnrollTokenFile); statErr == nil {
+			logger.Info("a new enrollment token is waiting; enrolling again", "server_id", identity.ServerID())
+			renewed, enrollErr := enrollOnce(ctx, cfg)
+			if enrollErr == nil {
+				logger.Info("enrolled with the core", "server_id", renewed.ServerID(), "not_after", renewed.NotAfter())
+				return renewed, nil
+			}
+			logger.Warn("could not enroll again; keeping the stored identity", "error", enrollErr)
 		}
-		err = enroll.ErrNotEnrolled
 	}
 	if err == nil {
 		logger.Info("loaded the agent identity", "server_id", identity.ServerID(), "not_after", identity.NotAfter())
@@ -167,4 +161,24 @@ func loadOrEnroll(ctx context.Context, cfg config.Config, logger *slog.Logger) (
 
 		backoff = min(backoff*2, enrollBackoffMax)
 	}
+}
+
+// enrollOnce makes a single enrollment attempt with the token file.
+func enrollOnce(ctx context.Context, cfg config.Config) (*enroll.Identity, error) {
+	token, err := os.ReadFile(cfg.EnrollTokenFile)
+	if err != nil {
+		return nil, fmt.Errorf("read the enrollment token: %w", err)
+	}
+	hostname, err := os.Hostname()
+	if err != nil {
+		return nil, fmt.Errorf("read the hostname: %w", err)
+	}
+	return enroll.Enroll(ctx, enroll.Options{
+		CoreURL:       cfg.CoreURL,
+		CAFingerprint: cfg.CAFingerprint,
+		Token:         strings.TrimSpace(string(token)),
+		Hostname:      hostname,
+		CertDir:       cfg.CertDir,
+		TokenFile:     cfg.EnrollTokenFile,
+	})
 }

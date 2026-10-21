@@ -5,11 +5,9 @@ import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
-	"crypto/sha256"
 	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
-	"encoding/hex"
 	"encoding/pem"
 	"errors"
 	"math/big"
@@ -391,27 +389,5 @@ func TestNeedsRenewal(t *testing.T) {
 	}
 	if !identity.NeedsRenewal(now.Add(100 * 24 * time.Hour)) {
 		t.Error("an expired certificate must need renewal")
-	}
-}
-
-func TestForgetAndCAFingerprint(t *testing.T) {
-	dir := t.TempDir()
-	issuer := newTestIssuer(t)
-	now := time.Now()
-	identity := writeTestIdentity(t, dir, issuer, "srv-1", now.Add(-time.Hour), now.Add(time.Hour))
-
-	sum := sha256.Sum256(issuer.cert.Raw)
-	if got, want := identity.CAFingerprint(), hex.EncodeToString(sum[:]); got != want {
-		t.Errorf("CAFingerprint() = %q, want %q", got, want)
-	}
-
-	if err := Forget(dir); err != nil {
-		t.Fatalf("Forget: %v", err)
-	}
-	if _, err := LoadIdentity(dir); !errors.Is(err, ErrNotEnrolled) {
-		t.Errorf("LoadIdentity after Forget = %v, want ErrNotEnrolled", err)
-	}
-	if err := Forget(dir); err != nil {
-		t.Errorf("Forget on an empty directory: %v", err)
 	}
 }

@@ -18,6 +18,12 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.2.6] - 2026-10-21
+
+### Fixed
+
+- Re-installing an agent after removing its server from the panel kept the revoked identity (the core answered 403 for ever) and ignored the new token. An enrollment token left next to a stored identity now makes the agent enroll once with it, whatever core issued the old identity; if that fails it keeps the stored identity. This replaces the earlier check that only compared the CA fingerprint.
+
 ## [0.2.5] - 2026-10-21
 
 ### Added
@@ -151,7 +157,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.2.5...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.2.6...HEAD
+[0.2.6]: https://github.com/catlinux/Talaia/releases/tag/v0.2.6
 [0.2.5]: https://github.com/catlinux/Talaia/releases/tag/v0.2.5
 [0.2.4]: https://github.com/catlinux/Talaia/releases/tag/v0.2.4
 [0.2.3]: https://github.com/catlinux/Talaia/releases/tag/v0.2.3
