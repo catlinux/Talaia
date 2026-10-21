@@ -102,14 +102,15 @@ type panelOptions struct {
 	// Enrollment enables creating enrollment tokens from the panel.
 	Enrollment *api.EnrollmentTokenDeps
 	// Containers enables the container and job API.
-	Containers   *api.ContainerDeps
-	Terminal     *api.TerminalDeps
-	System       *api.SystemDeps
-	Origins      []string
-	TLS          bool
-	Limiter      *api.RateLimiter
-	Now          func() time.Time
-	LockDuration time.Duration
+	Containers     *api.ContainerDeps
+	Terminal       *api.TerminalDeps
+	System         *api.SystemDeps
+	Origins        []string
+	TLS            bool
+	Limiter        *api.RateLimiter
+	Now            func() time.Time
+	LockDuration   time.Duration
+	DeviceMFAHours int
 }
 
 // newCoreRouter returns the handler of the health endpoint, the authentication
@@ -132,11 +133,12 @@ func newCoreRouter(st *store.Store, agents api.LiveAgents, options panelOptions)
 		Terminal:           options.Terminal,
 		System:             options.System,
 		Auth: api.AuthDeps{
-			Store:        st,
-			Box:          options.Box,
-			Limiter:      options.Limiter,
-			Now:          options.Now,
-			LockDuration: options.LockDuration,
+			Store:          st,
+			Box:            options.Box,
+			Limiter:        options.Limiter,
+			Now:            options.Now,
+			LockDuration:   options.LockDuration,
+			DeviceMFAHours: options.DeviceMFAHours,
 		},
 	})
 }
@@ -275,12 +277,13 @@ func serve() error {
 	}
 
 	panel := panelOptions{
-		Box:     box,
-		WebDir:  cfg.WebDir,
-		DistDir: cfg.DistDir,
-		Origins: cfg.AllowedOrigins,
-		TLS:     !cfg.InsecureDev,
-		Limiter: api.NewAuthRateLimiter(),
+		Box:            box,
+		WebDir:         cfg.WebDir,
+		DistDir:        cfg.DistDir,
+		Origins:        cfg.AllowedOrigins,
+		TLS:            !cfg.InsecureDev,
+		Limiter:        api.NewAuthRateLimiter(),
+		DeviceMFAHours: cfg.DeviceMFAHours,
 	}
 
 	var terminals *terminal.Manager

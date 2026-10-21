@@ -460,6 +460,38 @@ func TestTerminalRecordingDays(t *testing.T) {
 	}
 }
 
+func TestDeviceMFAHours(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "core.toml")
+	base := map[string]string{"TALAIA_DATABASE_URL": testDatabaseURL}
+	with := func(key, value string) map[string]string {
+		env := map[string]string{key: value}
+		for k, v := range base {
+			env[k] = v
+		}
+		return env
+	}
+
+	cfg, err := load(lookupFrom(base), path)
+	if err != nil || cfg.DeviceMFAHours != DefaultDeviceMFAHours {
+		t.Fatalf("default = %d, %v", cfg.DeviceMFAHours, err)
+	}
+	cfg, err = load(lookupFrom(with("TALAIA_DEVICE_MFA_HOURS", " 24 ")), path)
+	if err != nil || cfg.DeviceMFAHours != 24 {
+		t.Errorf("from the environment = %d, %v", cfg.DeviceMFAHours, err)
+	}
+	if err := os.WriteFile(path, []byte("database_url = \"postgres://file@example.com/talaia\"\ndevice_mfa_hours = 6\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if cfg, err := load(lookupFrom(map[string]string{"TALAIA_CONFIG": path}), path); err != nil || cfg.DeviceMFAHours != 6 {
+		t.Errorf("from the file = %d, %v", cfg.DeviceMFAHours, err)
+	}
+	for _, bad := range []string{"0", "169", "many"} {
+		if _, err := load(lookupFrom(with("TALAIA_DEVICE_MFA_HOURS", bad)), path); err == nil {
+			t.Errorf("device_mfa_hours %q was accepted", bad)
+		}
+	}
+}
+
 func TestAgentAndPanelPorts(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "core.toml")
 	env := func(extra map[string]string) func(string) (string, bool) {

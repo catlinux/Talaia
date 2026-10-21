@@ -18,6 +18,12 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.2.2] - 2026-10-21
+
+### Added
+
+- Trusted devices with a PIN (core API, panel screens follow): from a full session and with the password confirmed again, a browser can be registered as a trusted device with a PIN of 6 to 12 digits (no repeated digits or straight runs). `POST /api/v1/auth/pin/login` then signs in with the PIN plus the device cookie. The second factor is asked again when the browser was closed or after `device_mfa_hours` (`TALAIA_DEVICE_MFA_HOURS`, default 12, 1 to 168). Five wrong PINs disable the device; unknown device, wrong PIN and disabled device answer the same. At most 10 devices per user; `GET /api/v1/auth/devices` and `DELETE /api/v1/auth/devices/{id}` list and remove them, and changing the password removes them all. Audited as `device_trusted`, `login_pin`, `login_pin_failed` and `device_removed`. New migration `0009`.
+
 ## [0.2.1] - 2026-10-21
 
 ### Added
@@ -127,6 +133,7 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.2.1...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.2.2...HEAD
+[0.2.2]: https://github.com/catlinux/Talaia/releases/tag/v0.2.2
 [0.2.1]: https://github.com/catlinux/Talaia/releases/tag/v0.2.1
 [0.0.1]: https://github.com/catlinux/Talaia/releases/tag/v0.0.1

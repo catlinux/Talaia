@@ -40,6 +40,9 @@ type AuthDeps struct {
 	Now     func() time.Time
 	// LockDuration is how long a user stays locked after the last failure.
 	LockDuration time.Duration
+	// DeviceMFAHours is how long a trusted device avoids the second factor.
+	// Zero means the default of 12 hours.
+	DeviceMFAHours int
 }
 
 // NewAuthRateLimiter returns the limiter shared by the login and TOTP
@@ -64,6 +67,13 @@ func NewAuthHandler(deps AuthDeps) http.Handler {
 	r.Get("/session", h.session)
 	r.Post("/logout", h.logout)
 	r.Post("/password", h.password)
+	r.Post("/pin/login", h.pinLogin)
+	r.Group(func(r chi.Router) {
+		r.Use(RequireFull)
+		r.Post("/devices", h.createDevice)
+		r.Get("/devices", h.listDevices)
+		r.Delete("/devices/{id}", h.deleteDevice)
+	})
 	return r
 }
 
@@ -359,6 +369,7 @@ func (h *authHandler) totpConfirm(w http.ResponseWriter, r *http.Request) {
 
 	h.audit(r, user.Username, "mfa_enabled", "success", nil)
 	h.audit(r, user.Username, "login_success", "success", map[string]any{"via": "totp_setup"})
+	h.setBrowserMarker(r, w, user.ID)
 	http.SetCookie(w, sessionCookie(token, store.StageFull))
 	writeJSON(w, http.StatusOK, recoveryCodesResponse{RecoveryCodes: codes})
 }
@@ -432,6 +443,7 @@ func (h *authHandler) completeMFA(w http.ResponseWriter, r *http.Request, sessio
 	}
 
 	h.audit(r, user.Username, "login_success", "success", map[string]any{"via": via})
+	h.setBrowserMarker(r, w, user.ID)
 	http.SetCookie(w, sessionCookie(token, store.StageFull))
 	w.WriteHeader(http.StatusNoContent)
 }
@@ -543,6 +555,10 @@ func (h *authHandler) password(w http.ResponseWriter, r *http.Request) {
 
 	if err := h.deps.Store.SetPassword(r.Context(), user.ID, auth.HashPassword(request.NewPassword)); err != nil {
 		internal(w, "set password", err)
+		return
+	}
+	if _, err := h.deps.Store.RevokeUserDevices(r.Context(), user.ID); err != nil {
+		internal(w, "revoke trusted devices", err)
 		return
 	}
 	revoked, err := h.deps.Store.RevokeUserSessions(r.Context(), user.ID, session.ID)

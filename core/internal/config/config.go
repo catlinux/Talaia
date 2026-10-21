@@ -41,6 +41,8 @@ const (
 	DefaultWebDir = "/usr/share/talaia/web"
 	// DefaultTerminalRecordingDays is how long the recordings of terminal sessions are kept.
 	DefaultTerminalRecordingDays = 90
+	// DefaultDeviceMFAHours is how long a trusted device avoids the second factor.
+	DefaultDeviceMFAHours = 12
 )
 
 // Config is the runtime configuration of talaia-core.
@@ -73,6 +75,8 @@ type Config struct {
 	// TerminalRecordingDays is how many days the recording of a terminal session
 	// is kept; 0 keeps them for ever.
 	TerminalRecordingDays int
+	// DeviceMFAHours is how long a trusted device avoids the second factor.
+	DeviceMFAHours int
 	// InsecureDev disables TLS. It must never be used in production.
 	InsecureDev bool
 	// ACMEProvider is the DNS provider that obtains the panel certificate over
@@ -116,6 +120,7 @@ type fileConfig struct {
 	AllowedOrigins        *[]string `toml:"allowed_origins"`
 	InsecureDev           *bool     `toml:"insecure_dev"`
 	TerminalRecordingDays *int      `toml:"terminal_recording_days"`
+	DeviceMFAHours        *int      `toml:"device_mfa_hours"`
 	ACMEProvider          *string   `toml:"acme_provider"`
 	ACMEEmail             *string   `toml:"acme_email"`
 	ACMEDirectoryURL      *string   `toml:"acme_directory_url"`
@@ -159,6 +164,7 @@ func load(lookup func(string) (string, bool), defaultPath string) (Config, error
 		DataDir:               DefaultDataDir,
 		WebDir:                DefaultWebDir,
 		TerminalRecordingDays: DefaultTerminalRecordingDays,
+		DeviceMFAHours:        DefaultDeviceMFAHours,
 		ACMEDirectoryURL:      acme.DefaultDirectoryURL,
 		ACMEChallengeDir:      DefaultACMEChallengeDir,
 		ACMEDNSCheck:          DefaultACMEDNSCheck,
@@ -217,6 +223,13 @@ func load(lookup func(string) (string, bool), defaultPath string) (Config, error
 			return Config{}, fmt.Errorf("invalid terminal_recording_days value %q (expected a number of days)", value)
 		}
 		cfg.TerminalRecordingDays = days
+	}
+	if value, ok := lookup("TALAIA_DEVICE_MFA_HOURS"); ok {
+		hours, err := strconv.Atoi(strings.TrimSpace(value))
+		if err != nil {
+			return Config{}, fmt.Errorf("invalid device_mfa_hours value %q (expected a number of hours)", value)
+		}
+		cfg.DeviceMFAHours = hours
 	}
 	if value, ok := lookup("TALAIA_INSECURE_DEV"); ok {
 		insecure, err := parseInsecureDev(value)
@@ -332,6 +345,9 @@ func applyFile(cfg *Config, path string, explicit bool) error {
 	if file.TerminalRecordingDays != nil {
 		cfg.TerminalRecordingDays = *file.TerminalRecordingDays
 	}
+	if file.DeviceMFAHours != nil {
+		cfg.DeviceMFAHours = *file.DeviceMFAHours
+	}
 	if file.ACMEProvider != nil {
 		cfg.ACMEProvider = strings.TrimSpace(*file.ACMEProvider)
 	}
@@ -411,6 +427,9 @@ func (c *Config) validate() error {
 	}
 	if c.TerminalRecordingDays < 0 {
 		return errors.New("terminal_recording_days cannot be negative")
+	}
+	if c.DeviceMFAHours < 1 || c.DeviceMFAHours > 168 {
+		return errors.New("device_mfa_hours must be between 1 and 168")
 	}
 	if strings.TrimSpace(c.WebDir) == "" {
 		return errors.New("web_dir is required")
