@@ -154,7 +154,7 @@ Key decisions:
 - **Graceful degradation.** If the core goes down, containers and services keep running. The agent keeps
   24 h of metrics and events locally and sends them when it reconnects.
 
-Full detail: [docs/en/architecture.md](docs/en/architecture.md).
+Full detail: [docs/en/architecture.md](docs/en/architecture.md). What the panel can do to your servers, and what is recorded: [docs/en/security.md](docs/en/security.md).
 
 ## Supported systems
 

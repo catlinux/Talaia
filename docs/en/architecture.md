@@ -190,7 +190,7 @@ Permissions are always checked in the core. The web panel only hides what the us
 - mTLS with per-agent certificates; certificates can be revoked from the panel.
 - Mandatory 2FA; passkeys and OIDC supported.
 - Secrets encrypted with `age`; never logged.
-- Audit log for every action; terminal sessions recorded.
+- Audit log for every action; terminal sessions recorded. The administrator is root on the managed servers: see [security.md](security.md).
 - Signed packages and images (cosign); the agent verifies signatures before self-updating.
 - Recommended deployment: panel reachable only through WireGuard or Tailscale.
 

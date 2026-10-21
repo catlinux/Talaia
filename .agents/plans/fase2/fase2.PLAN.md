@@ -35,7 +35,7 @@ Hecho como primer corte vertical, **sin pasar por la revisión de diseño D1–D
 | 6 | Adoptar contenedores y proyectos existentes | `agent/internal/stacks/**`, `web/**` | los proyectos del Debian de casa aparecen como stacks de Talaia sin recrearlos | alto |
 | 7 | Imágenes, volúmenes, redes y limpieza (con vista previa de lo que se borra) | `agent/internal/docker/**`, `web/**` | limpieza con confirmación y resumen | medio |
 | 8 | Terminal en contenedor, en los 7 subpasos de `D-terminal.DESIGN.md` §5 | `proto/**`, `agent/internal/terminal/**`, `core/**`, `web/**` | terminal funcional, con permiso y grabación; **revisión de seguridad final con Opus** | Sonnet alto + Opus |
-| 9 | Pantalla de stack (maqueta 3), nota fija en el editor de stacks («un compose se ejecuta como root en el servidor»), sección de seguridad en la documentación EN+ES (el administrador equivale a root, D-trabajos §6) y cierre de fase | `docs/**`, `web/**` | criterio de la fase cumplido en el Debian de casa; versión 0.3.0 si el mantenedor lo pide | medio |
+| 9 ✅ parcial | Pantalla de stack (maqueta 3), nota fija en el editor de stacks («un compose se ejecuta como root en el servidor»), sección de seguridad en la documentación EN+ES (el administrador equivale a root, D-trabajos §6) y cierre de fase | `docs/**`, `web/**` | criterio de la fase cumplido en el Debian de casa; versión 0.3.0 si el mantenedor lo pide | medio. Hecho: pantalla, nota, logs -f, seguridad EN+ES. Falta: criterio en el Debian y cierre de fase |
 
 ## Cómo retomarlo
 

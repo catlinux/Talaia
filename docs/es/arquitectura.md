@@ -196,7 +196,7 @@ Los permisos se comprueban siempre en el núcleo. El panel web solo oculta lo qu
 - mTLS con certificados por agente; los certificados se pueden revocar desde el panel.
 - 2FA obligatorio; se admiten passkeys y OIDC.
 - Secretos cifrados con `age`; nunca aparecen en los logs.
-- Registro de auditoría de cada acción; sesiones de terminal grabadas.
+- Registro de auditoría de cada acción; sesiones de terminal grabadas. El administrador es root en los servidores gestionados: véase [seguridad.md](seguridad.md).
 - Paquetes e imágenes firmados (cosign); el agente verifica las firmas antes de autoactualizarse.
 - Despliegue recomendado: panel accesible solo a través de WireGuard o Tailscale.
 

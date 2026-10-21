@@ -155,7 +155,7 @@ Decisiones clave:
 - **Degradación controlada.** Si cae el núcleo, contenedores y servicios siguen funcionando. El agente
   guarda 24 h de métricas y eventos y los envía al reconectar.
 
-Detalle completo: [docs/es/arquitectura.md](docs/es/arquitectura.md).
+Detalle completo: [docs/es/arquitectura.md](docs/es/arquitectura.md). Qué puede hacer el panel con tus servidores y qué se graba: [docs/es/seguridad.md](docs/es/seguridad.md).
 
 ## Sistemas soportados
 

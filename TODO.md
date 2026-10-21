@@ -77,7 +77,7 @@ of the current phase and the next one.
 
 ## Phase 2 · What is left (see `.agents/plans/fase2/`)
 
-- [ ] Terminal in a container, step 6: documentation EN/ES (security: the administrator is root on the servers; recording and retention; `terminal export`) and a test with a real Docker on the Debian
+- [ ] Terminal in a container, step 6 (what is left): a test with a real Docker on the Debian (the documentation is in `docs/en/security.md`)
 - [ ] Terminal in a container, step 7: final security review of the whole diff (Opus)
 - [x] Stack screen (mockup 3), live logs (`-f`) and a fixed note in the stack editor: a compose file runs as root on the server
 - [ ] Close the phase against its criterion; version 0.3.0 only if the maintainer asks
