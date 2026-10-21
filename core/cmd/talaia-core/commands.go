@@ -42,6 +42,9 @@ Commands:
   session revoke-all                  revoke every panel session
   terminal list                       list the terminal sessions and their recordings
   terminal export <id>                print the recording of a session (asciicast v2)
+  dns                                 serve the DNS-01 challenges delegated to this server
+  acme check-delegation --hostname <name> [--address <ip>]
+                                      check the A and NS records the delegation needs
 `)
 }
 

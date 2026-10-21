@@ -20,6 +20,7 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ### Added
 
+- Trusted certificate without DNS provider keys: with `acme_provider = delegation` the zone delegates `_acme-challenge.<host>` to the panel server with an NS record, and the new `acme-dns` service (`talaia-core dns`, compose profile `acme-dns`) answers the DNS-01 challenge on port 53. It runs apart from the core, read only, without the database or the secrets, answers only that name, never recurses and limits each source network. `talaia-core acme check-delegation` tells which record is missing or wrong and whether port 53 answers from the internet.
 - OVH guide for the trusted certificate (`docs/en/ovh-dns.md`, also in Spanish and Catalan): how to create the API key allowed to change only your DNS zone, with the exact rights, what to copy and what to do when something fails; linked from the installation guide.
 - Security guide (`docs/en/security.md`): the administrator is root on every managed server (Compose files, adoption, the container terminal, updates), what protects the panel and the agents, and how terminal sessions are recorded, kept and exported (`terminal list`, `terminal export`).
 - New `install-core.sh` bootstrap: the one-line `curl … | bash` clones the current `main` into `/opt/talaia` (`TALAIA_DIR`, `TALAIA_REPO_URL`, `TALAIA_BRANCH`), reuses an existing clone of the same repository without pulling, asks before installing git, and passes every installer flag through `bash -s --`; stdin reconnects to `/dev/tty` when it runs through a pipe. The ACME/OVH step now asks for the zone and region, prints the prepared key link and guide, checks the key with OVH (the signature travels in a mode 0600 config file, never on the command line) before writing `.env.acme` or building, names missing rights, offers to re-enter the keys or continue with the own CA, validates an existing `.env.acme`, and adds `--acme-zone` and `--no-acme-check`. README and installation docs updated; `test-install.sh` covers the signature, the failure cases, the zone guess and the bootstrap.
@@ -91,6 +92,7 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ### Fixed
 
+- ACME: the account and the certificate are stored per ACME directory (`<data_dir>/acme/<host>/`), so staging and production never mix and an account registered in one is not reused in the other.
 - Update check: a commit whose CI was still running at the first check was never offered afterwards (the ETag of the head made every later check a 304), and a build newer than the newest green commit was offered a downgrade. The panel opened by IP address with ACME enabled now gets the certificate of the own CA, which covers it, instead of the public one.
 - A stack action that takes more than two minutes (a slow `pull` or `up`) is no longer reported as timed out while it is still running: each kind of job now waits a little longer than the agent gives it.
 - A job whose output or message was cut in the middle of a character is no longer lost: the agent and the core keep the text valid UTF-8.

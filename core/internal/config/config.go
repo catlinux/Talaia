@@ -31,6 +31,12 @@ const (
 	DefaultLogLevel = "info"
 	// DefaultDataDir holds the CA, the certificates and the state of the core.
 	DefaultDataDir = "/var/lib/talaia"
+	// DefaultACMEChallengeDir is the volume shared with talaia-core dns. It is
+	// not under the data directory: that one holds secrets the DNS server must
+	// never see.
+	DefaultACMEChallengeDir = "/var/lib/talaia-challenge"
+	// DefaultACMEDNSCheck is the DNS server on the internal compose network.
+	DefaultACMEDNSCheck = "acme-dns:5353"
 	// DefaultWebDir holds the compiled web panel.
 	DefaultWebDir = "/usr/share/talaia/web"
 	// DefaultTerminalRecordingDays is how long the recordings of terminal sessions are kept.
@@ -77,6 +83,12 @@ type Config struct {
 	// ACMEDirectoryURL is the ACME directory, to use the staging endpoint or a
 	// test server. It defaults to Let's Encrypt production.
 	ACMEDirectoryURL string
+	// ACMEChallengeDir is where the delegation provider publishes the DNS-01
+	// values that talaia-core dns serves.
+	ACMEChallengeDir string
+	// ACMEDNSCheck is the address (host:port) of that DNS server on the
+	// internal network, asked before telling the ACME server to validate.
+	ACMEDNSCheck string
 	// UpdateRepo is the GitHub repository updates are checked against, as
 	// owner/name.
 	UpdateRepo string
@@ -107,6 +119,8 @@ type fileConfig struct {
 	ACMEProvider          *string   `toml:"acme_provider"`
 	ACMEEmail             *string   `toml:"acme_email"`
 	ACMEDirectoryURL      *string   `toml:"acme_directory_url"`
+	ACMEChallengeDir      *string   `toml:"acme_challenge_dir"`
+	ACMEDNSCheck          *string   `toml:"acme_dns_check"`
 	UpdateRepo            *string   `toml:"update_repo"`
 	UpdateCheckInterval   *string   `toml:"update_check_interval"`
 	UpdateAPIURL          *string   `toml:"update_api_url"`
@@ -146,6 +160,8 @@ func load(lookup func(string) (string, bool), defaultPath string) (Config, error
 		WebDir:                DefaultWebDir,
 		TerminalRecordingDays: DefaultTerminalRecordingDays,
 		ACMEDirectoryURL:      acme.DefaultDirectoryURL,
+		ACMEChallengeDir:      DefaultACMEChallengeDir,
+		ACMEDNSCheck:          DefaultACMEDNSCheck,
 		UpdateRepo:            updates.DefaultRepo,
 		UpdateCheckInterval:   updates.DefaultInterval,
 		UpdateAPIURL:          updates.DefaultAPIURL,
@@ -217,6 +233,12 @@ func load(lookup func(string) (string, bool), defaultPath string) (Config, error
 	}
 	if value, ok := lookup("TALAIA_ACME_DIRECTORY_URL"); ok {
 		cfg.ACMEDirectoryURL = strings.TrimSpace(value)
+	}
+	if value, ok := lookup("TALAIA_ACME_CHALLENGE_DIR"); ok {
+		cfg.ACMEChallengeDir = strings.TrimSpace(value)
+	}
+	if value, ok := lookup("TALAIA_ACME_DNS_CHECK"); ok {
+		cfg.ACMEDNSCheck = strings.TrimSpace(value)
 	}
 	if value, ok := lookup("TALAIA_UPDATE_REPO"); ok {
 		cfg.UpdateRepo = strings.TrimSpace(value)
@@ -318,6 +340,12 @@ func applyFile(cfg *Config, path string, explicit bool) error {
 	}
 	if file.ACMEDirectoryURL != nil {
 		cfg.ACMEDirectoryURL = strings.TrimSpace(*file.ACMEDirectoryURL)
+	}
+	if file.ACMEChallengeDir != nil {
+		cfg.ACMEChallengeDir = strings.TrimSpace(*file.ACMEChallengeDir)
+	}
+	if file.ACMEDNSCheck != nil {
+		cfg.ACMEDNSCheck = strings.TrimSpace(*file.ACMEDNSCheck)
 	}
 	if file.UpdateRepo != nil {
 		cfg.UpdateRepo = strings.TrimSpace(*file.UpdateRepo)
@@ -445,6 +473,14 @@ func (c *Config) validate() error {
 		}
 		if len(c.ACMEDomains()) == 0 {
 			return errors.New("acme_provider requires at least one DNS name in public_hostnames: IP addresses cannot get an ACME certificate")
+		}
+		if provider == acme.ProviderDelegation {
+			if strings.TrimSpace(c.ACMEChallengeDir) == "" {
+				return errors.New("acme_challenge_dir is required with the delegation provider")
+			}
+			if _, _, err := net.SplitHostPort(strings.TrimSpace(c.ACMEDNSCheck)); err != nil {
+				return fmt.Errorf("invalid acme_dns_check %q (expected host:port)", c.ACMEDNSCheck)
+			}
 		}
 	}
 	if strings.TrimSpace(c.ACMEDirectoryURL) == "" {

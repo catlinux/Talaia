@@ -73,6 +73,10 @@ func run(args []string, stdout, stderr io.Writer) int {
 		return runSession(rest, stdout, stderr)
 	case "terminal":
 		return runTerminal(rest, stdout, stderr)
+	case "dns":
+		return runDNS(rest, stderr)
+	case "acme":
+		return runACME(rest, stdout, stderr)
 	default:
 		fmt.Fprintf(stderr, "unknown command %q\n\n", command)
 		printUsage(stderr)
@@ -343,12 +347,14 @@ func serve() error {
 		}
 		if cfg.ACMEProvider != "" {
 			manager, err := acme.New(acme.Options{
-				Provider:     cfg.ACMEProvider,
-				Email:        cfg.ACMEEmail,
-				DirectoryURL: cfg.ACMEDirectoryURL,
-				Domains:      cfg.ACMEDomains(),
-				DataDir:      cfg.DataDir,
-				Logger:       logger,
+				Provider:        cfg.ACMEProvider,
+				Email:           cfg.ACMEEmail,
+				DirectoryURL:    cfg.ACMEDirectoryURL,
+				Domains:         cfg.ACMEDomains(),
+				DataDir:         cfg.DataDir,
+				ChallengeDir:    cfg.ACMEChallengeDir,
+				DNSCheckAddress: cfg.ACMEDNSCheck,
+				Logger:          logger,
 			}, certificate)
 			if err != nil {
 				return fmt.Errorf("configure ACME: %w", err)

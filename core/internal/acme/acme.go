@@ -53,10 +53,19 @@ const (
 	privateFileMode = 0o600
 )
 
-// providerConstructors maps a configured provider name to its lego
-// constructor. Adding a provider is one line here plus its lego import.
-var providerConstructors = map[string]func() (challenge.Provider, error){
-	"ovh": func() (challenge.Provider, error) { return ovh.NewDNSProvider() },
+// ProviderDelegation answers the challenge with Talaia's own DNS server, to
+// which the zone delegates _acme-challenge.<host>: no provider credentials.
+const ProviderDelegation = "delegation"
+
+// providerConstructors maps a configured provider name to its lego provider
+// and the challenge options it needs. Adding a provider is one line here plus
+// its lego import.
+var providerConstructors = map[string]func(Options) (challenge.Provider, []dns01.ChallengeOption, error){
+	"ovh": func(Options) (challenge.Provider, []dns01.ChallengeOption, error) {
+		provider, err := ovh.NewDNSProvider()
+		return provider, nil, err
+	},
+	ProviderDelegation: newDelegationProvider,
 }
 
 // Providers returns the supported DNS provider names, sorted.
@@ -107,8 +116,14 @@ type Options struct {
 	// Domains are the DNS names of the certificate. IP addresses are ignored.
 	Domains []string
 	// DataDir is the directory of the core; the account and the certificate
-	// live under its acme/ subdirectory.
+	// live under acme/<host of the directory>/ in it.
 	DataDir string
+	// ChallengeDir is where the delegation provider publishes the challenge
+	// values for the DNS server.
+	ChallengeDir string
+	// DNSCheckAddress is the address (host:port) the delegation provider asks
+	// to see a value published before telling the ACME server.
+	DNSCheckAddress string
 	// Logger defaults to slog.Default().
 	Logger *slog.Logger
 
@@ -173,6 +188,9 @@ func New(opts Options, fallback tls.Certificate) (*Manager, error) {
 	if err != nil || parsed.Scheme == "" || parsed.Host == "" {
 		return nil, fmt.Errorf("invalid ACME directory URL %q", directoryURL)
 	}
+	if provider == ProviderDelegation && (strings.TrimSpace(opts.ChallengeDir) == "" || strings.TrimSpace(opts.DNSCheckAddress) == "") {
+		return nil, errors.New("the delegation provider needs a challenge directory and the address of the DNS server")
+	}
 
 	logger := opts.Logger
 	if logger == nil {
@@ -188,7 +206,7 @@ func New(opts Options, fallback tls.Certificate) (*Manager, error) {
 		logger:        logger,
 		now:           now,
 		domains:       domains,
-		dataDir:       filepath.Join(opts.DataDir, directoryName),
+		dataDir:       storageDir(opts.DataDir, parsed),
 		checkInterval: CheckInterval,
 		retryAfter:    defaultRetry,
 		maxRetry:      maxRetry,
@@ -198,6 +216,7 @@ func New(opts Options, fallback tls.Certificate) (*Manager, error) {
 	} else {
 		manager.issuer = &legoIssuer{
 			provider:         provider,
+			settings:         opts,
 			email:            opts.Email,
 			directoryURL:     directoryURL,
 			dataDir:          manager.dataDir,
@@ -385,6 +404,7 @@ func writeFile(path string, data []byte) error {
 // memory, so the key and the registration are read and written once.
 type legoIssuer struct {
 	provider         string
+	settings         Options
 	email            string
 	directoryURL     string
 	dataDir          string
@@ -414,11 +434,12 @@ func (i *legoIssuer) Obtain(ctx context.Context, domains []string) (Certificate,
 	if err != nil {
 		return Certificate{}, err
 	}
-	provider, err := i.dnsProvider()
+	provider, providerOptions, err := i.dnsProvider()
 	if err != nil {
 		return Certificate{}, err
 	}
-	options := append([]dns01.ChallengeOption{dns01.AddDNSTimeout(dnsTimeout)}, i.challengeOptions...)
+	options := append([]dns01.ChallengeOption{dns01.AddDNSTimeout(dnsTimeout)}, providerOptions...)
+	options = append(options, i.challengeOptions...)
 	if err := client.Challenge.SetDNS01Provider(provider, options...); err != nil {
 		return Certificate{}, fmt.Errorf("set the DNS-01 provider: %w", err)
 	}
@@ -451,19 +472,20 @@ func newClient(user registration.User, directoryURL string) (*lego.Client, error
 	return client, nil
 }
 
-func (i *legoIssuer) dnsProvider() (challenge.Provider, error) {
+func (i *legoIssuer) dnsProvider() (challenge.Provider, []dns01.ChallengeOption, error) {
 	if i.newProvider != nil {
-		return i.newProvider()
+		provider, err := i.newProvider()
+		return provider, nil, err
 	}
 	constructor, ok := providerConstructors[i.provider]
 	if !ok {
-		return nil, fmt.Errorf("unsupported ACME DNS provider %q", i.provider)
+		return nil, nil, fmt.Errorf("unsupported ACME DNS provider %q", i.provider)
 	}
-	provider, err := constructor()
+	provider, options, err := constructor(i.settings)
 	if err != nil {
-		return nil, fmt.Errorf("create the %s DNS provider: %w", i.provider, err)
+		return nil, nil, fmt.Errorf("create the %s DNS provider: %w", i.provider, err)
 	}
-	return provider, nil
+	return provider, options, nil
 }
 
 func (i *legoIssuer) loadAccount() (*account, error) {

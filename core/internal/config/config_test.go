@@ -534,6 +534,14 @@ func TestACME(t *testing.T) {
 		t.Errorf("ACMEDomains() = %v, want only the DNS name", got)
 	}
 
+	cfg, err = load(lookupFrom(env(map[string]string{"TALAIA_ACME_PROVIDER": "delegation"})), path)
+	if err != nil {
+		t.Fatalf("with delegation: %v", err)
+	}
+	if cfg.ACMEChallengeDir != DefaultACMEChallengeDir || cfg.ACMEDNSCheck != DefaultACMEDNSCheck {
+		t.Errorf("delegation defaults = %q, %q", cfg.ACMEChallengeDir, cfg.ACMEDNSCheck)
+	}
+
 	errors := []struct {
 		name    string
 		extra   map[string]string
@@ -543,6 +551,22 @@ func TestACME(t *testing.T) {
 			name:    "unsupported provider",
 			extra:   map[string]string{"TALAIA_ACME_PROVIDER": "cloudflare", "TALAIA_ACME_EMAIL": "ops@example.com"},
 			wantErr: "invalid acme_provider",
+		},
+		{
+			name: "delegation without the DNS server address",
+			extra: map[string]string{
+				"TALAIA_ACME_PROVIDER":  "delegation",
+				"TALAIA_ACME_DNS_CHECK": "acme-dns",
+			},
+			wantErr: "invalid acme_dns_check",
+		},
+		{
+			name: "delegation without a challenge directory",
+			extra: map[string]string{
+				"TALAIA_ACME_PROVIDER":      "delegation",
+				"TALAIA_ACME_CHALLENGE_DIR": " ",
+			},
+			wantErr: "acme_challenge_dir is required",
 		},
 		{
 			name: "only IP addresses",

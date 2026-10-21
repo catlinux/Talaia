@@ -12,6 +12,7 @@ import (
 	"io"
 	"log/slog"
 	"math/big"
+	"net/url"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -63,11 +64,11 @@ func testCertificateFor(t *testing.T, serial int64, notAfter time.Time, names ..
 		pem.EncodeToMemory(&pem.Block{Type: "EC PRIVATE KEY", Bytes: keyDER})
 }
 
-// writeStoredCertificate writes a certificate under <dir>/acme, where the
-// manager looks for it.
+// writeStoredCertificate writes a certificate where the manager looks for it
+// with the default directory.
 func writeStoredCertificate(t *testing.T, dir string, certPEM, keyPEM []byte) {
 	t.Helper()
-	acmeDir := filepath.Join(dir, directoryName)
+	acmeDir := defaultStorage(t, dir)
 	if err := os.MkdirAll(acmeDir, directoryMode); err != nil {
 		t.Fatalf("create the ACME directory: %v", err)
 	}
@@ -310,7 +311,7 @@ func TestRenewObtainsAndStores(t *testing.T) {
 		t.Fatalf("serial = %d, want the new certificate", current.Leaf.SerialNumber)
 	}
 
-	acmeDir := filepath.Join(opts.DataDir, directoryName)
+	acmeDir := defaultStorage(t, opts.DataDir)
 	checkMode(t, acmeDir, directoryMode)
 	checkMode(t, filepath.Join(acmeDir, certificateName), privateFileMode)
 	checkMode(t, filepath.Join(acmeDir, privateKeyName), privateFileMode)
@@ -483,8 +484,8 @@ func TestProviders(t *testing.T) {
 	if SupportedProvider("cloudflare") {
 		t.Fatal("cloudflare is not implemented yet")
 	}
-	if got := Providers(); len(got) != 1 || got[0] != "ovh" {
-		t.Fatalf("Providers() = %v, want [ovh]", got)
+	if got := Providers(); len(got) != 2 || got[0] != ProviderDelegation || got[1] != "ovh" {
+		t.Fatalf("Providers() = %v, want [delegation ovh]", got)
 	}
 }
 
@@ -647,4 +648,14 @@ func TestGetCertificateMatchesTheServerName(t *testing.T) {
 			t.Errorf("server name %q: serial = %d, want %d", tt.serverName, got, tt.want)
 		}
 	}
+}
+
+// defaultStorage is the storage directory of the default ACME directory.
+func defaultStorage(t *testing.T, dataDir string) string {
+	t.Helper()
+	directory, err := url.Parse(DefaultDirectoryURL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return storageDir(dataDir, directory)
 }

@@ -234,6 +234,30 @@ jobs:
           done
           grep -q "already at ${sha:0:12}" /var/lib/talaia-host/status.json
           test ! -e /var/lib/talaia-host/requests/update.json
+      - name: The ACME DNS server answers its challenge name and nothing else
+        working-directory: packaging/core
+        env:
+          COMPOSE_PROFILES: acme-dns
+          TALAIA_DNS_ADDRESS: 127.0.0.1
+          TALAIA_PUBLIC_HOSTNAMES: talaia.example.com
+        run: |
+          set -eu
+          command -v dig >/dev/null || sudo apt-get install -y dnsutils
+          docker compose up -d acme-dns
+          for _ in $(seq 1 15); do
+            if dig +short +time=1 +tries=1 @127.0.0.1 _acme-challenge.talaia.example.com SOA | grep -q hostmaster; then
+              break
+            fi
+            sleep 2
+          done
+          dig +norec @127.0.0.1 _acme-challenge.talaia.example.com SOA | tee "$RUNNER_TEMP/soa.txt"
+          grep -q 'status: NOERROR' "$RUNNER_TEMP/soa.txt"
+          grep -q 'flags: qr aa' "$RUNNER_TEMP/soa.txt"
+          dig +norec @127.0.0.1 example.org A | grep -q 'status: REFUSED'
+          dig +tcp +norec @127.0.0.1 _acme-challenge.talaia.example.com NS | grep -q 'NS[[:space:]]*talaia.example.com.'
+          # It gets only the challenge volume: no data volume, no secrets.
+          mounts="$(docker inspect "$(docker compose ps -q acme-dns)" --format '{{range .Mounts}}{{.Destination}}:{{.RW}} {{end}}')"
+          test "$mounts" = "/var/lib/talaia-challenge:false "
       - name: Logs on failure
         if: failure()
         working-directory: packaging/core
@@ -241,3 +265,4 @@ jobs:
           docker compose logs --no-color
           sudo journalctl -u talaia-agent --no-pager || true
           sudo journalctl -u talaia-update --no-pager || true
+          COMPOSE_PROFILES=acme-dns docker compose logs --no-color acme-dns || true

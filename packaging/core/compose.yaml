@@ -31,10 +31,11 @@ services:
   # else, and it runs once.
   volume-init:
     image: busybox:1.37
-    command: ["sh", "-c", "chown -R 65532:65532 /var/lib/talaia"]
+    command: ["sh", "-c", "chown -R 65532:65532 /var/lib/talaia /var/lib/talaia-challenge"]
     user: "0:0"
     volumes:
       - core-data:/var/lib/talaia
+      - acme-challenge:/var/lib/talaia-challenge
     cap_drop:
       - ALL
     cap_add:
@@ -75,6 +76,9 @@ services:
       TALAIA_ALLOWED_ORIGINS: ${TALAIA_ALLOWED_ORIGINS:-}
       TALAIA_ACME_PROVIDER: ${TALAIA_ACME_PROVIDER:-}
       TALAIA_ACME_EMAIL: ${TALAIA_ACME_EMAIL:-}
+      # Empty means Let's Encrypt production; the installer uses staging first.
+      TALAIA_ACME_DIRECTORY_URL: ${TALAIA_ACME_DIRECTORY_URL:-}
+      TALAIA_ACME_CHALLENGE_DIR: /var/lib/talaia-challenge
       TALAIA_LOG_LEVEL: ${TALAIA_LOG_LEVEL:-info}
     # DNS provider credentials for ACME, written by install.sh when asked for.
     env_file:
@@ -85,6 +89,8 @@ services:
       # Shared with the host helper (talaia-hostd): the core may only write
       # requests/ in it. Docker creates it empty when the helper is not installed.
       - /var/lib/talaia-host:/var/lib/talaia/host
+      # Pending DNS-01 values for acme-dns, which only reads them.
+      - acme-challenge:/var/lib/talaia-challenge
     ports:
       - "${TALAIA_PANEL_PORT:-8443}:8443"
       - "${TALAIA_AGENT_PORT:-8444}:8444"
@@ -96,6 +102,40 @@ services:
       - ALL
     restart: unless-stopped
 
+  # Answers the DNS-01 challenges the zone delegates to this server
+  # (_acme-challenge.<host> NS <host>), so no DNS provider key is needed. It
+  # is exposed to the internet on port 53: it gets no database, no secrets and
+  # no data volume, only the challenge values, read only. Enabled by the
+  # acme-dns profile (COMPOSE_PROFILES in .env).
+  acme-dns:
+    image: talaia-core:local
+    command: ["dns"]
+    profiles: ["acme-dns"]
+    depends_on:
+      volume-init:
+        condition: service_completed_successfully
+    environment:
+      TALAIA_PUBLIC_HOSTNAMES: ${TALAIA_PUBLIC_HOSTNAMES:-}
+      TALAIA_ACME_CHALLENGE_DIR: /var/lib/talaia-challenge
+      TALAIA_DNS_LISTEN: ":5353"
+      TALAIA_LOG_LEVEL: ${TALAIA_LOG_LEVEL:-info}
+    volumes:
+      - acme-challenge:/var/lib/talaia-challenge:ro
+    # Published on the public address only: systemd-resolved holds
+    # 127.0.0.53:53, which rules out 0.0.0.0:53.
+    ports:
+      - "${TALAIA_DNS_ADDRESS:-127.0.0.1}:53:5353/udp"
+      - "${TALAIA_DNS_ADDRESS:-127.0.0.1}:53:5353/tcp"
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    mem_limit: 64m
+    pids_limit: 64
+    restart: unless-stopped
+
 volumes:
   db-data:
   core-data:
+  acme-challenge:
