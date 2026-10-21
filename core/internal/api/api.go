@@ -35,6 +35,11 @@ type RouterDeps struct {
 	ServerDisconnector ServerDisconnector
 	// ServerAudit records server administration events; nil skips them.
 	ServerAudit Auditor
+	// AgentPackages describes the agent packages the core can offer in GET
+	// /api/v1/servers and in the update endpoints.
+	AgentPackages AgentPackages
+	// AgentUpdates enables the agent update endpoints; nil leaves them out.
+	AgentUpdates *AgentUpdateDeps
 	// Enrollment enables POST /api/v1/servers/enrollment-tokens; nil leaves it
 	// out (the insecure development mode has no CA to enroll against).
 	Enrollment *EnrollmentTokenDeps
@@ -69,8 +74,13 @@ func NewRouter(deps RouterDeps) http.Handler {
 				Remover:    deps.ServerRemover,
 				Disconnect: deps.ServerDisconnector,
 				Audit:      deps.ServerAudit,
+				Packages:   deps.AgentPackages,
 			}
 			r.Get("/servers", NewServersHandler(serverDeps).ServeHTTP)
+			if deps.AgentUpdates != nil {
+				r.Post("/servers/{serverID}/agent/update", NewAgentUpdateHandler(*deps.AgentUpdates).ServeHTTP)
+				r.Post("/agents/update-all", NewAgentUpdateAllHandler(*deps.AgentUpdates).ServeHTTP)
+			}
 			if deps.ServerRemover != nil {
 				r.Delete("/servers/{serverID}", NewServerRemoveHandler(serverDeps).ServeHTTP)
 			}

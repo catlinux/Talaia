@@ -118,6 +118,23 @@ func (s *Store) UpdateJobState(ctx context.Context, id, serverID, state, message
 	return tag.RowsAffected() > 0, nil
 }
 
+// HasActiveJob reports whether the server has a pending or running job of the
+// given kind. A caller can use it to refuse a duplicate operation.
+func (s *Store) HasActiveJob(ctx context.Context, serverID, kind string) (bool, error) {
+	if strings.TrimSpace(serverID) == "" || strings.TrimSpace(kind) == "" {
+		return false, errors.New("server id and kind are required")
+	}
+	var active bool
+	if err := s.pool.QueryRow(ctx,
+		`SELECT EXISTS (
+			SELECT 1 FROM job
+			 WHERE server_id = $1 AND kind = $2 AND state IN ('pending', 'running')
+		 )`, serverID, kind).Scan(&active); err != nil {
+		return false, fmt.Errorf("check active job: %w", err)
+	}
+	return active, nil
+}
+
 // GetJob returns one job.
 func (s *Store) GetJob(ctx context.Context, id string) (Job, error) {
 	job, err := scanJob(s.pool.QueryRow(ctx, `SELECT `+jobColumns+` FROM job WHERE id = $1`, id))

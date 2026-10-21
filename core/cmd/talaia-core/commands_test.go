@@ -244,14 +244,11 @@ func TestCommandsAgainstDatabase(t *testing.T) {
 		t.Errorf("ca.crt: %v", err)
 	}
 
-	// The same name cannot be enrolled twice.
+	// Asking again for the same name replaces the pending token.
 	stdout.Reset()
 	stderr.Reset()
-	if code := run([]string{"token", "create", "--name", name}, &stdout, &stderr); code != 1 {
-		t.Fatalf("second token create exit code = %d, want 1", code)
-	}
-	if !strings.Contains(stderr.String(), "already") {
-		t.Errorf("stderr = %q, want a clear message", stderr.String())
+	if code := run([]string{"token", "create", "--name", name}, &stdout, &stderr); code != 0 {
+		t.Fatalf("second token create exit code = %d, want 0 (stderr %q)", code, stderr.String())
 	}
 
 	// server revoke.

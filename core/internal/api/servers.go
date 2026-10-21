@@ -41,6 +41,7 @@ type ServerDeps struct {
 	Remover    ServerRemover
 	Disconnect ServerDisconnector
 	Audit      Auditor
+	Packages   AgentPackages
 }
 
 // devServerPrefix marks the entries that only exist in insecure dev mode.
@@ -49,6 +50,9 @@ const devServerPrefix = "dev:"
 // serversResponse is the body of GET /api/v1/servers.
 type serversResponse struct {
 	Servers []serverEntry `json:"servers"`
+	// AgentLatestVersion is the core version of the agent packages, or empty
+	// when the core runs a build without a comparable version.
+	AgentLatestVersion string `json:"agent_latest_version"`
 }
 
 // serverEntry is one server: the enrolled row and, when its agent is connected,
@@ -63,6 +67,9 @@ type serverEntry struct {
 	CertNotAfter *time.Time `json:"cert_not_after"`
 	Connected    bool       `json:"connected"`
 	Live         *liveAgent `json:"live,omitempty"`
+	// AgentUpdateAvailable is true when the core can offer a newer agent
+	// package to this connected server.
+	AgentUpdateAvailable bool `json:"agent_update_available"`
 }
 
 // liveAgent is the state a connected agent reports.
@@ -130,6 +137,7 @@ func NewServersHandler(deps ServerDeps) http.Handler {
 			if agent, ok := byServerID[server.ID]; ok {
 				entry.Connected = true
 				entry.Live = liveOf(agent)
+				_, entry.AgentUpdateAvailable = deps.Packages.ForAgent(agent)
 			}
 			entries = append(entries, entry)
 		}
@@ -140,15 +148,20 @@ func NewServersHandler(deps ServerDeps) http.Handler {
 			if agent.ServerID != "" {
 				continue
 			}
+			_, available := deps.Packages.ForAgent(agent)
 			entries = append(entries, serverEntry{
-				ID:        devServerPrefix + agent.Hostname,
-				Name:      agent.Hostname,
-				Connected: true,
-				Live:      liveOf(agent),
+				ID:                   devServerPrefix + agent.Hostname,
+				Name:                 agent.Hostname,
+				Connected:            true,
+				Live:                 liveOf(agent),
+				AgentUpdateAvailable: available,
 			})
 		}
 
-		writeJSON(w, http.StatusOK, serversResponse{Servers: entries})
+		writeJSON(w, http.StatusOK, serversResponse{
+			Servers:            entries,
+			AgentLatestVersion: deps.Packages.LatestVersion(),
+		})
 	})
 }
 

@@ -120,6 +120,18 @@ type panelOptions struct {
 // so the API sees their live data.
 func newCoreRouter(st *store.Store, agents api.LiveAgents, options panelOptions) http.Handler {
 	disconnector, _ := agents.(api.ServerDisconnector)
+	packages := api.AgentPackages{Version: version, DistDir: options.DistDir}
+	var agentUpdates *api.AgentUpdateDeps
+	if options.Containers != nil {
+		agentUpdates = &api.AgentUpdateDeps{
+			Agents:     options.Containers.Agents,
+			Dispatcher: options.Containers.Dispatcher,
+			Jobs:       st,
+			Audit:      st,
+			Servers:    st,
+			Packages:   packages,
+		}
+	}
 	return api.NewRouter(api.RouterDeps{
 		DB:                 st,
 		WebDir:             options.WebDir,
@@ -130,6 +142,8 @@ func newCoreRouter(st *store.Store, agents api.LiveAgents, options panelOptions)
 		ServerRemover:      st,
 		ServerDisconnector: disconnector,
 		ServerAudit:        st,
+		AgentPackages:      packages,
+		AgentUpdates:       agentUpdates,
 		Enrollment:         options.Enrollment,
 		Containers:         options.Containers,
 		Terminal:           options.Terminal,
