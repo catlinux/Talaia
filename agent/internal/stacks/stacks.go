@@ -202,7 +202,8 @@ func (m *Manager) Adopt(ctx context.Context, name string) (string, error) {
 		return "", errors.New("the directory of the project is not on this host")
 	}
 	if writableByOthers(configInfo) || writableByOthers(dirInfo) {
-		return "", errors.New("the compose file or the directory of the project can be changed by other users: fix their permissions first")
+		return "", fmt.Errorf("the compose file or the directory of the project can be changed by other users; "+
+			"run `chmod go-w %s %s` on the server and try again", shellQuote(workingDir), shellQuote(configFile))
 	}
 
 	record, err := json.Marshal(adoption{WorkingDir: workingDir, ConfigFile: configFile})
@@ -453,6 +454,12 @@ func readRegular(path string, limit int64) ([]byte, error) {
 		return nil, fmt.Errorf("%s is too large", filepath.Base(path))
 	}
 	return data, nil
+}
+
+// shellQuote wraps a path in single quotes so the command shown to the
+// administrator can be pasted as it is.
+func shellQuote(path string) string {
+	return "'" + strings.ReplaceAll(path, "'", `'''`) + "'"
 }
 
 // writableByOthers reports whether someone other than the owner may change the

@@ -13,6 +13,12 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+## [0.2.11] - 2026-10-22
+
+### Cambiado
+
+- Adoptar un proyecto Compose cuya carpeta o archivo pueden escribir otros ahora falla indicando la orden exacta para arreglarlo (`chmod go-w '<carpeta>' '<archivo>'`) en vez de una frase genérica.
+
 ## [0.2.10] - 2026-10-22
 
 ### Corregido
@@ -181,7 +187,8 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
   `.gitattributes` y `.gitignore`.
 - Licencia WNCL-1.0 aplicada: archivo `LICENSE` y sección de créditos en los README.
 
-[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.2.10...HEAD
+[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.2.11...HEAD
+[0.2.11]: https://github.com/catlinux/Talaia/releases/tag/v0.2.11
 [0.2.10]: https://github.com/catlinux/Talaia/releases/tag/v0.2.10
 [0.2.9]: https://github.com/catlinux/Talaia/releases/tag/v0.2.9
 [0.2.8]: https://github.com/catlinux/Talaia/releases/tag/v0.2.8

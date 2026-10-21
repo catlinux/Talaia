@@ -258,3 +258,29 @@ func TestADamagedRecordIsNotTrusted(t *testing.T) {
 		t.Error("a record with relative paths was accepted")
 	}
 }
+
+func TestAdoptRefusesAWritableProjectAndSaysHowToFixIt(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("permission bits are not meaningful on Windows")
+	}
+	workingDir, configFile := existingProject(t)
+	if err := os.Chmod(workingDir, 0o775); err != nil {
+		t.Fatal(err)
+	}
+	m, _, _ := adoptingManager(t, fakeProjects{"wiki": {WorkingDir: workingDir, ConfigFiles: []string{configFile}}})
+
+	_, err := m.Adopt(context.Background(), "wiki")
+	if err == nil {
+		t.Fatal("Adopt accepted a directory writable by its group")
+	}
+	want := "chmod go-w '" + workingDir + "' '" + configFile + "'"
+	if !strings.Contains(err.Error(), want) {
+		t.Errorf("error = %q, want it to suggest %q", err, want)
+	}
+}
+
+func TestShellQuote(t *testing.T) {
+	if got, want := shellQuote("/srv/it's here"), `'/srv/it'''s here'`; got != want {
+		t.Errorf("shellQuote = %s, want %s", got, want)
+	}
+}

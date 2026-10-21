@@ -18,6 +18,12 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.2.11] - 2026-10-22
+
+### Changed
+
+- Adopting a Compose project whose directory or file others can write now fails with the exact command to fix it (`chmod go-w '<directory>' '<file>'`) instead of a generic sentence.
+
 ## [0.2.10] - 2026-10-22
 
 ### Fixed
@@ -181,7 +187,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.2.10...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.2.11...HEAD
+[0.2.11]: https://github.com/catlinux/Talaia/releases/tag/v0.2.11
 [0.2.10]: https://github.com/catlinux/Talaia/releases/tag/v0.2.10
 [0.2.9]: https://github.com/catlinux/Talaia/releases/tag/v0.2.9
 [0.2.8]: https://github.com/catlinux/Talaia/releases/tag/v0.2.8
