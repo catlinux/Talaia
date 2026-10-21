@@ -35,7 +35,8 @@ Cambia `192.0.2.10` por la dirección desde la que se llegará al panel (en un t
    el script se detiene;
 2. escribe `packaging/core/.env` con una contraseña aleatoria de base de datos y esos puertos (un `.env`
    existente nunca se sustituye, puertos incluidos);
-3. construye la imagen y arranca la pila con `docker compose up -d --build`. La primera construcción tarda
+3. instala el ayudante de actualizaciones `talaia-hostd` con `sudo` (véase la sección 5) y luego construye la
+   imagen y arranca la pila con `docker compose up -d --build`. La primera construcción tarda
    unos minutos;
 4. espera a que el núcleo responda;
 5. crea el administrador y te pide la contraseña dos veces (mínimo 12 caracteres).
@@ -126,8 +127,12 @@ pantalla **Flota** del panel con su CPU, memoria, disco y contenedores.
 
 ## 5. Día a día
 
-- **Actualizar el núcleo:** `git pull` y, en `packaging/core`, `sudo docker compose up -d --build`.
-- **Ver si hay una actualización:** la pantalla **Ajustes** del panel muestra la versión en marcha y el commit más reciente de `main` con el CI en verde, con los commits que recibirías. Aplicarla desde el panel necesita el ayudante del host, que todavía no está hecho: por ahora, actualiza como en el primer punto.
+- **Actualizar el núcleo desde el panel:** la pantalla **Ajustes** muestra la versión en marcha y el commit más
+  reciente de `main` con el CI en verde, con los commits que recibirías. **Actualizar** pide confirmación y pasa el
+  trabajo al ayudante del host (más abajo); el panel deja de responder unos minutos y sigue el progreso solo.
+- **Actualizar el núcleo a mano:** `git pull` y, en `packaging/core`,
+  `sudo TALAIA_GIT_COMMIT=$(git rev-parse HEAD) docker compose up -d --build` (sin la variable, el panel muestra la
+  versión como desconocida).
 - **Conserva los volúmenes:** `db-data` (base de datos) y `core-data` (la CA y la clave que cifra el segundo
   factor). Sin `core-data`, todos los agentes tendrían que darse de alta de nuevo.
 - **Has perdido la aplicación o los códigos:** `sudo docker compose run --rm core user reset-2fa` borra el
@@ -140,6 +145,28 @@ pantalla **Flota** del panel con su CPU, memoria, disco y contenedores.
   id, el nombre y el estado de cada servidor, y `sudo docker compose run --rm -T core server revoke <id>` lo revoca:
   el núcleo deja de aceptar su certificado. Después, en el propio servidor, `sudo apt purge talaia-agent` quita el
   agente y su configuración.
+
+### Cómo funcionan las actualizaciones desde el panel
+
+El núcleo corre en un contenedor de solo lectura sin el socket de Docker, así que no puede actualizarse solo.
+`install.sh` instala en el host un pequeño ayudante que corre como root, **`talaia-hostd`** (se omite con
+`--no-hostd`):
+
+- El núcleo solo escribe una petición, `{"target":"<commit>"}`, en `/var/lib/talaia-host/requests/` (el único
+  directorio donde puede escribir ahí) y lee `/var/lib/talaia-host/status.json`.
+- `talaia-update.path` ve la petición y arranca `talaia-update.service`, que ejecuta
+  `/usr/local/sbin/talaia-hostd update`. Saca la petición del alcance del núcleo y solo acepta un commit de 40
+  caracteres que esté en `origin/main` y sea más nuevo que el que corre; cualquier otra rama, ruta o campo se rechaza.
+- Hace una copia de la base de datos en `/var/lib/talaia-hostd/backups` (las tres últimas, legibles solo por root),
+  avanza el clon (git corre como el dueño del clon, no como root), reconstruye y espera hasta tres minutos a
+  `/healthz`.
+- Si el núcleo nuevo no responde, vuelve al commit anterior, restaura la copia en una sola transacción y reconstruye
+  esa versión. El panel muestra el resultado y las últimas líneas del registro; el registro completo está en
+  `sudo journalctl -u talaia-update`.
+
+Su configuración está en `/etc/talaia/hostd.conf` (`REPO_DIR`, `REPO_USER`). El clon debe seguir en `main` sin
+cambios locales. Quien sea dueño del clon puede cambiar lo que se construye como root, así que déjalo en una cuenta
+de administración.
 
 ## 6. El núcleo en un servidor público
 

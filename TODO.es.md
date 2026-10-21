@@ -92,7 +92,7 @@ tareas concretas de la fase actual y de la siguiente.
 - [x] Instalador que comprueba los puertos, pregunta el nombre público y escribe `.env`
 - [x] Certificado de confianza para el panel por ACME DNS-01 dentro del core (lego; primero OVH), en cualquier puerto; los agentes siguen fijando la CA propia de Talaia
 - [x] Detección de actualizaciones (último commit de `main` con el CI en verde) y API
-- [ ] Ayudante del host `talaia-hostd` (systemd) que trae los cambios, reconstruye, comprueba `/healthz` y vuelve atrás con una copia de la base de datos; el core nunca recibe el socket de Docker
+- [x] Ayudante del host `talaia-hostd` (systemd) que trae los cambios, reconstruye, comprueba `/healthz` y vuelve atrás con una copia de la base de datos; el core nunca recibe el socket de Docker
 - [x] Pantalla de Ajustes con la versión y el botón de actualizar; ca/es/en
 - [ ] Documentación EN/ES (VPS con otros servicios, credencial de OVH con derechos mínimos, actualizaciones)
 - [ ] Revisión de seguridad (Opus)

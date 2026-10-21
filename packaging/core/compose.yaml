@@ -50,6 +50,10 @@ services:
     build:
       context: ../..
       dockerfile: packaging/core/Dockerfile
+      args:
+        # The commit the core reports in Settings; install.sh and the host helper
+        # pass it. Empty leaves the version unknown.
+        GIT_COMMIT: ${TALAIA_GIT_COMMIT:-}
     depends_on:
       db:
         condition: service_healthy
@@ -78,6 +82,9 @@ services:
         required: false
     volumes:
       - core-data:/var/lib/talaia
+      # Shared with the host helper (talaia-hostd): the core may only write
+      # requests/ in it. Docker creates it empty when the helper is not installed.
+      - /var/lib/talaia-host:/var/lib/talaia/host
     ports:
       - "${TALAIA_PANEL_PORT:-8443}:8443"
       - "${TALAIA_AGENT_PORT:-8444}:8444"

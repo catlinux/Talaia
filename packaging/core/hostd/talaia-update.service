@@ -1,0 +1,18 @@
+[Unit]
+Description=Apply a Talaia update requested from the panel
+Documentation=https://github.com/catlinux/Talaia
+After=docker.service network-online.target
+Wants=network-online.target
+Requires=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/talaia-hostd update
+# Building the image takes minutes on a small server.
+TimeoutStartSec=45min
+NoNewPrivileges=yes
+PrivateTmp=yes
+
+# Also run once at boot, so an update cut short by a reboot is reported.
+[Install]
+WantedBy=multi-user.target

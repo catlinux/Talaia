@@ -16,6 +16,7 @@
 #   --acme-email  contact address for the certificate authority
 #   --username    name of the administrator (default: admin)
 #   --no-user     do not create the administrator
+#   --no-hostd    do not install talaia-hostd, the root helper that applies updates requested from the panel
 set -eu
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -28,6 +29,7 @@ acme_provider=""
 acme_email=""
 username="admin"
 create_user=1
+install_helper=1
 
 while [ "$#" -gt 0 ]; do
     case "$1" in
@@ -65,8 +67,12 @@ while [ "$#" -gt 0 ]; do
             create_user=0
             shift
             ;;
+        --no-hostd)
+            install_helper=0
+            shift
+            ;;
         -h | --help)
-            sed -n '2,16p' "$SCRIPT_DIR/$(basename "${BASH_SOURCE[0]}")" | sed 's/^# \{0,1\}//'
+            sed -n '2,19p' "$SCRIPT_DIR/$(basename "${BASH_SOURCE[0]}")" | sed 's/^# \{0,1\}//'
             exit 0
             ;;
         *)
@@ -105,11 +111,14 @@ if ! docker compose version >/dev/null 2>&1 && ! sudo docker compose version >/d
     exit 1
 fi
 
+# The commit is stamped into the core so the panel can tell which updates are new.
+git_commit="$(git -C "$SCRIPT_DIR" rev-parse HEAD 2>/dev/null || true)"
+
 # Use sudo only when the current user cannot talk to the Docker daemon.
 if docker info >/dev/null 2>&1; then
-    compose=(docker compose)
+    compose=(env "TALAIA_GIT_COMMIT=${git_commit}" docker compose)
 else
-    compose=(sudo docker compose)
+    compose=(sudo env "TALAIA_GIT_COMMIT=${git_commit}" docker compose)
 fi
 
 # port_in_use reports whether something already listens on a TCP port.
@@ -174,6 +183,43 @@ write_acme_credentials() {
             "$endpoint" "$key" "$secret" "$consumer" > .env.acme
     )
     echo "wrote .env.acme"
+}
+
+# install_hostd sets up talaia-hostd, the root helper that applies the updates
+# requested from the panel: the core only gets a directory to drop requests in,
+# never the Docker socket. It runs before the stack starts, so Docker finds the
+# shared directory with the right owners instead of creating it.
+install_hostd() {
+    local repo_dir repo_user as_root=()
+    repo_dir="$(cd "$SCRIPT_DIR/../.." && pwd)"
+    if ! command -v systemctl >/dev/null 2>&1 || [ ! -d /run/systemd/system ]; then
+        echo "warning: no systemd here; updates from the panel stay off" >&2
+        return 0
+    fi
+    if [ ! -d "$repo_dir/.git" ]; then
+        echo "warning: $repo_dir is not a git clone; updates from the panel stay off" >&2
+        return 0
+    fi
+    if [[ ! "$repo_dir" =~ ^/[A-Za-z0-9._/-]+$ ]]; then
+        echo "warning: the path $repo_dir has characters the helper refuses; updates from the panel stay off" >&2
+        return 0
+    fi
+    repo_user="$(stat -c %U "$repo_dir")"
+    [ "$(id -u)" -eq 0 ] || as_root=(sudo)
+
+    echo "installing the update helper (talaia-hostd) for the clone in $repo_dir"
+    "${as_root[@]}" install -d -m 0755 -o root -g root /var/lib/talaia-host
+    # The core runs as uid 65532 and may only write here.
+    "${as_root[@]}" install -d -m 0750 -o 65532 -g 65532 /var/lib/talaia-host/requests
+    "${as_root[@]}" install -d -m 0700 -o root -g root /var/lib/talaia-hostd
+    "${as_root[@]}" mkdir -p /etc/talaia
+    "${as_root[@]}" install -m 0755 -o root -g root hostd/talaia-hostd /usr/local/sbin/talaia-hostd
+    "${as_root[@]}" install -m 0644 -o root -g root hostd/talaia-update.path hostd/talaia-update.service /etc/systemd/system/
+    printf 'REPO_DIR=%s\nREPO_USER=%s\n' "$repo_dir" "$repo_user" |
+        "${as_root[@]}" install -m 0644 -o root -g root /dev/stdin /etc/talaia/hostd.conf
+    "${as_root[@]}" systemctl daemon-reload
+    "${as_root[@]}" systemctl enable --now talaia-update.path
+    "${as_root[@]}" systemctl enable talaia-update.service
 }
 
 # .env holds the database password: an existing one is never replaced, because
@@ -246,6 +292,10 @@ else
 fi
 
 agent_url="https://${TALAIA_PUBLIC_HOSTNAMES%%,*}:${agent_port}"
+
+if [ "$install_helper" -eq 1 ]; then
+    install_hostd
+fi
 
 echo "building and starting talaia-core (the first build takes a few minutes)"
 "${compose[@]}" up -d --build

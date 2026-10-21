@@ -33,7 +33,8 @@ Replace `192.0.2.10` with the address the panel will be reached at (in a termina
    `ss`), never 80 or 443 on its own. `--port` and `--agent-port` force a port; if it is busy the script stops;
 2. writes `packaging/core/.env` with a random database password and those ports (an existing `.env` is never
    replaced, ports included);
-3. builds the image and starts the stack with `docker compose up -d --build`. The first build takes a few
+3. installs the update helper `talaia-hostd` with `sudo` (see section 5), then builds the image and starts the
+   stack with `docker compose up -d --build`. The first build takes a few
    minutes;
 4. waits for the core to answer;
 5. creates the administrator, asking for the password twice (at least 12 characters).
@@ -124,8 +125,12 @@ The log must say `enrolled with the core` and `connected to core`. The server th
 
 ## 5. Day to day
 
-- **Update the core:** `git pull`, then in `packaging/core` run `sudo docker compose up -d --build`.
-- **See if there is an update:** the **Settings** screen of the panel shows the running version and the newest commit of `main` whose CI is green, with the commits you would get. Applying it from the panel needs the host helper, which is not built yet: for now, update as in the first bullet.
+- **Update the core from the panel:** the **Settings** screen shows the running version and the newest commit of
+  `main` whose CI is green, with the commits you would get. **Update** asks for confirmation and hands the work to
+  the host helper (below); the panel is unavailable for a few minutes and follows the progress on its own.
+- **Update the core by hand:** `git pull`, then in `packaging/core` run
+  `sudo TALAIA_GIT_COMMIT=$(git rev-parse HEAD) docker compose up -d --build` (without the variable the panel shows
+  the version as unknown).
 - **Keep the volumes:** `db-data` (database) and `core-data` (the CA and the key that encrypts the second
   factor). Without `core-data` every agent would have to enroll again.
 - **Lost the authenticator or the codes:** `sudo docker compose run --rm core user reset-2fa` clears the second
@@ -139,6 +144,25 @@ The log must say `enrolled with the core` and `connected to core`. The server th
   id, name and state, and `sudo docker compose run --rm -T core server revoke <id>` revokes it: the core stops
   accepting its certificate. Then, on the server itself, `sudo apt purge talaia-agent` removes the agent and its
   configuration.
+
+### How updates from the panel work
+
+The core runs in a read-only container without the Docker socket, so it cannot update itself. `install.sh` installs
+a small root helper on the host, **`talaia-hostd`** (skip it with `--no-hostd`):
+
+- The core only writes a request, `{"target":"<commit>"}`, in `/var/lib/talaia-host/requests/` (the one directory
+  it may write there) and reads `/var/lib/talaia-host/status.json`.
+- `talaia-update.path` sees the request and starts `talaia-update.service`, which runs
+  `/usr/local/sbin/talaia-hostd update`. It moves the request out of the core's reach and accepts only a 40-character
+  commit that is on `origin/main` and newer than the running one; any other branch, path or field is refused.
+- It backs up the database to `/var/lib/talaia-hostd/backups` (the last three, readable only by root), fast-forwards
+  the clone (git runs as the owner of the clone, not as root), rebuilds and waits up to three minutes for `/healthz`.
+- If the new core does not answer, it goes back to the previous commit, restores the backup in one transaction and
+  rebuilds that version. The panel shows the result and the last log lines; the full log is in
+  `sudo journalctl -u talaia-update`.
+
+Its settings are in `/etc/talaia/hostd.conf` (`REPO_DIR`, `REPO_USER`). The clone must stay on `main` without local
+changes. Whoever owns the clone can change what gets built as root, so keep it under an administrator account.
 
 ## 6. Running the core on a public server
 

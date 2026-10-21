@@ -602,9 +602,11 @@ func NewRequester(hostDir string) *Requester {
 	return &Requester{hostDir: hostDir}
 }
 
-// Available reports whether the host helper directory exists.
+// Available reports whether the host helper is installed: its installer creates
+// the requests directory for the core. Docker creates an empty host directory
+// on its own when the helper is missing, so that alone proves nothing.
 func (r *Requester) Available() bool {
-	info, err := os.Stat(r.hostDir)
+	info, err := os.Lstat(filepath.Join(r.hostDir, requestsDirectory))
 	return err == nil && info.IsDir()
 }
 
@@ -627,9 +629,6 @@ func (r *Requester) Request(target string) error {
 	}
 
 	directory := filepath.Join(r.hostDir, requestsDirectory)
-	if err := os.MkdirAll(directory, requestsDirectoryMode); err != nil {
-		return fmt.Errorf("create the requests directory: %w", err)
-	}
 
 	path := filepath.Join(directory, requestFileName)
 	if _, err := os.Stat(path); err == nil {

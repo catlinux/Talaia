@@ -126,6 +126,15 @@ jobs:
       - name: Test the i18n check
         run: node --test scripts
 
+  hostd:
+    name: host helper
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v7.0.1
+      - name: Test talaia-hostd
+        run: bash packaging/core/hostd/test.sh
+
   core-stack:
     name: core stack (docker)
     runs-on: ubuntu-latest
@@ -206,9 +215,27 @@ jobs:
           test "$(sudo journalctl -u talaia-agent --no-pager | grep -c 'starting talaia-agent')" -ge 2
           # The agent kept its identity: no second server was created.
           test "$(docker compose exec -T db psql -U talaia -d talaia -tAc "SELECT count(*) FROM server" | tr -d '[:space:]')" = 1
+      - name: The host helper takes a request written as the core user
+        run: |
+          set -eu
+          test "$(stat -c %u /var/lib/talaia-host/requests)" = 65532
+          test "$(stat -c %u /var/lib/talaia-host)" = 0
+          sudo systemctl is-active --quiet talaia-update.path
+          sha="$(git rev-parse HEAD)"
+          sudo setpriv --reuid=65532 --regid=65532 --clear-groups \
+            sh -c "printf '{\"target\":\"%s\"}' '$sha' > /var/lib/talaia-host/requests/update.json"
+          for _ in $(seq 1 30); do
+            if grep -q '"state":"succeeded"' /var/lib/talaia-host/status.json 2>/dev/null; then
+              break
+            fi
+            sleep 2
+          done
+          grep -q "already at ${sha:0:12}" /var/lib/talaia-host/status.json
+          test ! -e /var/lib/talaia-host/requests/update.json
       - name: Logs on failure
         if: failure()
         working-directory: packaging/core
         run: |
           docker compose logs --no-color
           sudo journalctl -u talaia-agent --no-pager || true
+          sudo journalctl -u talaia-update --no-pager || true

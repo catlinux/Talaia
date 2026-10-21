@@ -270,6 +270,9 @@ func TestSystemUpdateValidation(t *testing.T) {
 func TestSystemUpdateWritesTheRequestFile(t *testing.T) {
 	_, _, deps := systemDeps()
 	hostDir := t.TempDir()
+	if err := os.Mkdir(filepath.Join(hostDir, "requests"), 0o750); err != nil {
+		t.Fatal(err)
+	}
 	deps.Requester = updates.NewRequester(hostDir)
 	panel := newSystemPanel(t, deps)
 	panel.createUser(t, "admin", testPassword)

@@ -513,7 +513,7 @@ func TestNewValidatesItsOptions(t *testing.T) {
 }
 
 func TestRequesterWritesTheRequest(t *testing.T) {
-	hostDir := t.TempDir()
+	hostDir := helperDir(t)
 	requester := NewRequester(hostDir)
 	if !requester.Available() {
 		t.Fatal("the host helper directory is not available")
@@ -539,7 +539,7 @@ func TestRequesterWritesTheRequest(t *testing.T) {
 }
 
 func TestRequesterRefusesWhileAnUpdateRuns(t *testing.T) {
-	hostDir := t.TempDir()
+	hostDir := helperDir(t)
 	if err := os.WriteFile(filepath.Join(hostDir, statusFileName), []byte(`{"state":"running"}`), 0o600); err != nil {
 		t.Fatal(err)
 	}
@@ -560,7 +560,7 @@ func TestRequesterNeedsTheHostHelper(t *testing.T) {
 }
 
 func TestRequesterRejectsInvalidTargets(t *testing.T) {
-	hostDir := t.TempDir()
+	hostDir := helperDir(t)
 	requester := NewRequester(hostDir)
 	for _, target := range []string{"", "abc", strings.Repeat("g", 40), shaCurrent + "0"} {
 		if err := requester.Request(target); !errors.Is(err, ErrInvalidTarget) {
@@ -657,5 +657,27 @@ func checkMode(t *testing.T, path string, want os.FileMode) {
 	}
 	if got := info.Mode().Perm(); got != want {
 		t.Errorf("%s mode = %o, want %o", path, got, want)
+	}
+}
+
+// helperDir returns a host directory as the host helper installer leaves it.
+func helperDir(t *testing.T) string {
+	t.Helper()
+	hostDir := t.TempDir()
+	if err := os.Mkdir(filepath.Join(hostDir, requestsDirectory), requestsDirectoryMode); err != nil {
+		t.Fatal(err)
+	}
+	return hostDir
+}
+
+func TestRequesterNeedsTheRequestsDirectory(t *testing.T) {
+	// Docker creates the bind-mounted host directory empty when the helper was
+	// never installed: the core must not offer updates then.
+	requester := NewRequester(t.TempDir())
+	if requester.Available() {
+		t.Fatal("an empty host directory was reported as available")
+	}
+	if err := requester.Request(shaCurrent); !errors.Is(err, ErrHostHelperMissing) {
+		t.Fatalf("request = %v, want ErrHostHelperMissing", err)
 	}
 }

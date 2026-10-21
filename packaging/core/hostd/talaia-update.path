@@ -1,0 +1,9 @@
+[Unit]
+Description=Watch for Talaia update requests from the core
+
+[Path]
+PathExists=/var/lib/talaia-host/requests/update.json
+Unit=talaia-update.service
+
+[Install]
+WantedBy=paths.target
