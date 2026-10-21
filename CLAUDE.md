@@ -47,8 +47,10 @@ anything:
    No hard-coded UI text. See [docs/en/i18n.md](docs/en/i18n.md).
 7. **Changelog and TODO.** Each user-visible change adds a line under *Unreleased* in both changelogs.
    Finished tasks are ticked in both TODO files.
-8. **Versioning.** SemVer `x.y.z` in the `VERSION` file. Only bump it when the maintainer asks for a
-   release or a phase is closed (see the table in README → Versioning).
+8. **Versioning.** SemVer `x.y.z` in the `VERSION` file. Closing a phase raises the middle number (see the
+   table in README → Versioning); every finished fix or implementation inside a phase raises the last one.
+   Use `scripts/bump-version.sh` and keep both changelogs in the same commit. Tags and releases still need
+   the maintainer's approval.
 9. **Line endings.** Always LF. The repo is edited on Windows and run on Linux; `.gitattributes` enforces
    it. Shell scripts must use `#!/usr/bin/env bash`.
 10. **Secrets.** Never commit tokens, keys, `.env` files with real values, or IPs/hostnames of the

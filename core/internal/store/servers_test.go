@@ -262,6 +262,69 @@ func TestServerLifecycle(t *testing.T) {
 	}
 }
 
+func TestRemoveServerFreesTheNameAndKeepsTheRow(t *testing.T) {
+	s := newTestStore(t)
+	ctx := context.Background()
+	name := testName(t, s)
+
+	oldID, err := s.CreateServer(ctx, name)
+	if err != nil {
+		t.Fatalf("create server: %v", err)
+	}
+	if err := s.SetServerCertificate(ctx, oldID, "abcdef0123", time.Now().Add(time.Hour)); err != nil {
+		t.Fatalf("set certificate: %v", err)
+	}
+	if err := s.RemoveServer(ctx, oldID); err != nil {
+		t.Fatalf("remove server: %v", err)
+	}
+
+	// The row stays for the terminal recordings, but it is revoked and hidden.
+	removed, err := s.GetServer(ctx, oldID)
+	if err != nil {
+		t.Fatalf("get removed server: %v", err)
+	}
+	if removed.RemovedAt.IsZero() {
+		t.Error("removed_at is zero")
+	}
+	if removed.RevokedAt.IsZero() {
+		t.Error("removing a server did not revoke its certificate")
+	}
+	servers, err := s.ListServers(ctx)
+	if err != nil {
+		t.Fatalf("list servers: %v", err)
+	}
+	for _, server := range servers {
+		if server.ID == oldID {
+			t.Errorf("the removed server is still listed: %+v", server)
+		}
+	}
+
+	// Removing it again is a not-found, not a second removal.
+	if err := s.RemoveServer(ctx, oldID); !errors.Is(err, ErrNotFound) {
+		t.Errorf("second removal = %v, want ErrNotFound", err)
+	}
+
+	// The name is free and a new enrollment can use it.
+	token, err := s.CreateEnrollmentToken(ctx, name, time.Minute)
+	if err != nil {
+		t.Fatalf("create a token for the removed name: %v", err)
+	}
+	newID, _, err := s.EnrollServer(ctx, token, testSigner("newserial"))
+	if err != nil {
+		t.Fatalf("enroll the name again: %v", err)
+	}
+	if newID == oldID {
+		t.Fatal("the re-enrollment reused the removed row")
+	}
+	server, err := s.GetServer(ctx, newID)
+	if err != nil {
+		t.Fatalf("get the new server: %v", err)
+	}
+	if server.Name != name || !server.RemovedAt.IsZero() || !server.RevokedAt.IsZero() {
+		t.Errorf("new server = %+v, want a fresh row with the same name", server)
+	}
+}
+
 func TestServerNotFound(t *testing.T) {
 	s := newTestStore(t)
 	ctx := context.Background()
@@ -272,6 +335,9 @@ func TestServerNotFound(t *testing.T) {
 	}
 	if err := s.RevokeServer(ctx, missing); !errors.Is(err, ErrNotFound) {
 		t.Errorf("revoke = %v, want ErrNotFound", err)
+	}
+	if err := s.RemoveServer(ctx, missing); !errors.Is(err, ErrNotFound) {
+		t.Errorf("remove = %v, want ErrNotFound", err)
 	}
 	if err := s.TouchServer(ctx, missing); !errors.Is(err, ErrNotFound) {
 		t.Errorf("touch = %v, want ErrNotFound", err)

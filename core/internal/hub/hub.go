@@ -55,6 +55,27 @@ type agentConn struct {
 	outbox chan *agentv1.CoreMsg
 	// done is closed when the connection ends.
 	done chan struct{}
+	// stopOnce makes closing the connection idempotent: the API may remove a
+	// server while its stream is ending on its own.
+	stopOnce sync.Once
+	cancel   context.CancelFunc
+	// closeStream unblocks a stream that waits for another message. The real
+	// connect stream has no Close, so it stays nil there.
+	closeStream func() error
+}
+
+// stop ends the connection: it releases waiters, cancels the stream context and,
+// when possible, closes the stream so its read loop returns at once.
+func (c *agentConn) stop() {
+	c.stopOnce.Do(func() {
+		if c.cancel != nil {
+			c.cancel()
+		}
+		close(c.done)
+		if c.closeStream != nil {
+			_ = c.closeStream()
+		}
+	})
 }
 
 // defaultCheckInterval is how often at most the hub re-validates a connection
@@ -267,6 +288,27 @@ func (h *Hub) Connected() []AgentInfo {
 	return agents
 }
 
+// Disconnect closes the live stream of a server at once, drops it from the
+// registry and tells the terminal manager that its shells are gone. It is
+// idempotent and does nothing when the server is not connected.
+func (h *Hub) Disconnect(serverID string) {
+	if serverID == "" {
+		return
+	}
+
+	h.mu.Lock()
+	link, ok := h.conns[serverID]
+	delete(h.conns, serverID)
+	delete(h.agents, serverID)
+	h.mu.Unlock()
+	if !ok {
+		return
+	}
+
+	link.stop()
+	h.terminalsGone(serverID)
+}
+
 // Connect implements agentv1connect.AgentHubHandler.
 func (h *Hub) Connect(ctx context.Context, stream agentv1connect.AgentHubConnectServerStream) error {
 	return h.serve(ctx, stream)
@@ -314,14 +356,22 @@ func (h *Hub) serve(ctx context.Context, stream agentStream) error {
 	// from the rest of the core queue here.
 	ctx, cancelStream := context.WithCancel(ctx)
 	defer cancelStream()
-	link := &agentConn{token: info.token, outbox: make(chan *agentv1.CoreMsg, outboxSize), done: make(chan struct{})}
+	link := &agentConn{
+		token:  info.token,
+		outbox: make(chan *agentv1.CoreMsg, outboxSize),
+		done:   make(chan struct{}),
+		cancel: cancelStream,
+	}
+	if closer, ok := stream.(interface{ Close() error }); ok {
+		link.closeStream = closer.Close
+	}
 	h.register(key, link)
 	go writeLoop(ctx, stream, link.outbox, cancelStream)
 	h.touchServer(ctx, serverID)
 	slog.Info("agent connected", "server_id", serverID, "hostname", hostname, "agent_version", info.AgentVersion)
 
 	defer func() {
-		close(link.done)
+		link.stop()
 		if h.unregister(key, link) {
 			h.terminalsGone(serverID)
 		}
@@ -330,14 +380,22 @@ func (h *Hub) serve(ctx context.Context, stream agentStream) error {
 	}()
 
 	lastCheck := h.now()
+	messages := make(chan receivedMessage)
+	go receiveMessages(ctx, stream, messages)
 
 	for {
-		msg, err := stream.Receive()
-		if err != nil {
-			if errors.Is(err, io.EOF) {
-				return nil
+		var msg *agentv1.AgentMsg
+		select {
+		case <-ctx.Done():
+			return nil
+		case received := <-messages:
+			if received.err != nil {
+				if errors.Is(received.err, io.EOF) {
+					return nil
+				}
+				return received.err
 			}
-			return err
+			msg = received.msg
 		}
 
 		switch {
@@ -404,6 +462,29 @@ func (h *Hub) serve(ctx context.Context, stream agentStream) error {
 
 		default:
 			slog.Debug("unhandled message", "hostname", hostname)
+		}
+	}
+}
+
+// receivedMessage is one message read from the agent stream, or the error that
+// ended it.
+type receivedMessage struct {
+	msg *agentv1.AgentMsg
+	err error
+}
+
+// receiveMessages reads the stream in its own goroutine so the serve loop can
+// also react to the connection being canceled by Disconnect.
+func receiveMessages(ctx context.Context, stream agentStream, out chan<- receivedMessage) {
+	for {
+		msg, err := stream.Receive()
+		select {
+		case out <- receivedMessage{msg: msg, err: err}:
+		case <-ctx.Done():
+			return
+		}
+		if err != nil {
+			return
 		}
 	}
 }

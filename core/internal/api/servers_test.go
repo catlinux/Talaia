@@ -9,6 +9,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/go-chi/chi/v5"
+
 	"github.com/catlinux/Talaia/core/internal/hub"
 	"github.com/catlinux/Talaia/core/internal/store"
 )
@@ -24,6 +26,58 @@ func (f fakeServers) ListServers(context.Context) ([]store.Server, error) {
 type fakeAgents struct{ agents []hub.AgentInfo }
 
 func (f fakeAgents) Connected() []hub.AgentInfo { return f.agents }
+
+// fakeServerRemoval records what the remove endpoint asks of the store.
+type fakeServerRemoval struct {
+	server    store.Server
+	getErr    error
+	removeErr error
+	removed   []string
+}
+
+func (f *fakeServerRemoval) GetServer(context.Context, string) (store.Server, error) {
+	if f.getErr != nil {
+		return store.Server{}, f.getErr
+	}
+	return f.server, nil
+}
+
+func (f *fakeServerRemoval) RemoveServer(_ context.Context, id string) error {
+	f.removed = append(f.removed, id)
+	return f.removeErr
+}
+
+// fakeDisconnect records the live connections the endpoint closed.
+type fakeDisconnect struct{ ids []string }
+
+func (f *fakeDisconnect) Disconnect(serverID string) { f.ids = append(f.ids, serverID) }
+
+// fakeAudit records the audit events of the endpoint.
+type fakeAudit struct{ events []store.AuditEvent }
+
+func (f *fakeAudit) AppendAudit(_ context.Context, event store.AuditEvent) error {
+	f.events = append(f.events, event)
+	return nil
+}
+
+// removeServerHandler mounts the DELETE route the way the router does.
+func removeServerHandler(deps ServerDeps) http.Handler {
+	router := chi.NewRouter()
+	router.Delete("/api/v1/servers/{serverID}", NewServerRemoveHandler(deps).ServeHTTP)
+	return router
+}
+
+// deleteServer calls the endpoint with the given body.
+func deleteServer(handler http.Handler, id, body string, token string) *httptest.ResponseRecorder {
+	request := httptest.NewRequest(http.MethodDelete, "/api/v1/servers/"+id, strings.NewReader(body))
+	request.Header.Set("Content-Type", "application/json")
+	if token != "" {
+		request.AddCookie(&http.Cookie{Name: SessionCookieName, Value: token})
+	}
+	recorder := httptest.NewRecorder()
+	handler.ServeHTTP(recorder, request)
+	return recorder
+}
 
 // serversHandler mounts the endpoint the way the router does: behind the session
 // middleware and RequireFull.
@@ -191,6 +245,131 @@ func TestServersEndpointMergesTheLiveAgents(t *testing.T) {
 	revoked := body.Servers[2]
 	if revoked.ID != revokedID || !revoked.Revoked || revoked.Connected {
 		t.Errorf("revoked server = %+v", revoked)
+	}
+}
+
+func TestRemoveServerRequiresConfirmation(t *testing.T) {
+	removal := &fakeServerRemoval{server: store.Server{ID: "srv-1", Name: "vps-web-01"}}
+	handler := removeServerHandler(ServerDeps{Remover: removal})
+
+	for _, body := range []string{`{}`, `{"confirm":false}`, `not json`} {
+		recorder := deleteServer(handler, "srv-1", body, "")
+		if recorder.Code != http.StatusBadRequest {
+			t.Errorf("body %q: status = %d, want 400", body, recorder.Code)
+		}
+		if code := errorCodeOf(t, recorder); code != "confirmation_required" {
+			t.Errorf("body %q: code = %q, want confirmation_required", body, code)
+		}
+	}
+	if len(removal.removed) != 0 {
+		t.Errorf("removed without confirmation: %v", removal.removed)
+	}
+}
+
+func TestRemoveServerClosesTheConnectionAndAudits(t *testing.T) {
+	removal := &fakeServerRemoval{server: store.Server{ID: "srv-1", Name: "vps-web-01"}}
+	disconnect := &fakeDisconnect{}
+	audit := &fakeAudit{}
+	handler := removeServerHandler(ServerDeps{
+		Remover:    removal,
+		Disconnect: disconnect,
+		Audit:      audit,
+	})
+
+	recorder := deleteServer(handler, "srv-1", `{"confirm":true}`, "")
+	if recorder.Code != http.StatusNoContent {
+		t.Fatalf("status = %d, want 204: %s", recorder.Code, recorder.Body.String())
+	}
+	if recorder.Body.Len() != 0 {
+		t.Errorf("body = %q, want empty", recorder.Body.String())
+	}
+	if len(removal.removed) != 1 || removal.removed[0] != "srv-1" {
+		t.Errorf("removed = %v, want srv-1", removal.removed)
+	}
+	if len(disconnect.ids) != 1 || disconnect.ids[0] != "srv-1" {
+		t.Errorf("disconnected = %v, want srv-1", disconnect.ids)
+	}
+	if len(audit.events) != 1 {
+		t.Fatalf("audit events = %d, want 1", len(audit.events))
+	}
+	event := audit.events[0]
+	if event.Action != "server_removed" || event.Result != "success" {
+		t.Errorf("audit event = %+v", event)
+	}
+	if event.Details["server_name"] != "vps-web-01" {
+		t.Errorf("audit details = %v, want the server name", event.Details)
+	}
+}
+
+func TestRemoveServerUnknownOrAlreadyRemoved(t *testing.T) {
+	tests := []struct {
+		name    string
+		removal *fakeServerRemoval
+	}{
+		{
+			name:    "unknown",
+			removal: &fakeServerRemoval{getErr: store.ErrNotFound},
+		},
+		{
+			name: "already removed",
+			removal: &fakeServerRemoval{
+				server:    store.Server{ID: "srv-1", Name: "vps-web-01"},
+				removeErr: store.ErrNotFound,
+			},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			disconnect := &fakeDisconnect{}
+			audit := &fakeAudit{}
+			handler := removeServerHandler(ServerDeps{
+				Remover:    test.removal,
+				Disconnect: disconnect,
+				Audit:      audit,
+			})
+
+			recorder := deleteServer(handler, "srv-1", `{"confirm":true}`, "")
+			if recorder.Code != http.StatusNotFound {
+				t.Fatalf("status = %d, want 404", recorder.Code)
+			}
+			if code := errorCodeOf(t, recorder); code != "not_found" {
+				t.Errorf("code = %q, want not_found", code)
+			}
+			if len(disconnect.ids) != 0 || len(audit.events) != 0 {
+				t.Errorf("a failed removal disconnected %v or audited %v", disconnect.ids, audit.events)
+			}
+		})
+	}
+}
+
+func TestRemoveServerRequiresAFullSession(t *testing.T) {
+	removal := &fakeServerRemoval{server: store.Server{ID: "srv-1", Name: "vps-web-01"}}
+	audit := &fakeAudit{}
+	deps := ServerDeps{Remover: removal, Audit: audit}
+
+	fullStore, fullClock, _, fullToken := newSessionFixture(t, store.StageFull)
+	full := Sessions(SessionDeps{Store: fullStore, Now: fullClock.Now})(
+		RequireFull(removeServerHandler(deps)))
+
+	recorder := deleteServer(full, "srv-1", `{"confirm":true}`, "")
+	if recorder.Code != http.StatusUnauthorized {
+		t.Fatalf("without a session: status = %d, want 401", recorder.Code)
+	}
+
+	pendingStore, pendingClock, _, pendingToken := newSessionFixture(t, store.StageMFAPending)
+	pending := Sessions(SessionDeps{Store: pendingStore, Now: pendingClock.Now})(
+		RequireFull(removeServerHandler(deps)))
+	recorder = deleteServer(pending, "srv-1", `{"confirm":true}`, pendingToken)
+	if recorder.Code != http.StatusUnauthorized {
+		t.Fatalf("with a pending session: status = %d, want 401", recorder.Code)
+	}
+
+	recorder = deleteServer(full, "srv-1", `{"confirm":true}`, fullToken)
+	if recorder.Code != http.StatusNoContent {
+		t.Fatalf("with a full session: status = %d, want 204", recorder.Code)
+	}
+	if len(audit.events) != 1 || audit.events[0].Actor != "admin" {
+		t.Errorf("audit = %+v, want the signed-in actor", audit.events)
 	}
 }
 

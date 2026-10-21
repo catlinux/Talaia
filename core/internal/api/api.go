@@ -28,6 +28,13 @@ type RouterDeps struct {
 	// Servers and Agents feed GET /api/v1/servers.
 	Servers ServerLister
 	Agents  LiveAgents
+	// ServerRemover enables DELETE /api/v1/servers/{serverID}; nil leaves it out.
+	ServerRemover ServerRemover
+	// ServerDisconnector closes the live agent of a server being removed; nil
+	// skips it.
+	ServerDisconnector ServerDisconnector
+	// ServerAudit records server administration events; nil skips them.
+	ServerAudit Auditor
 	// Enrollment enables POST /api/v1/servers/enrollment-tokens; nil leaves it
 	// out (the insecure development mode has no CA to enroll against).
 	Enrollment *EnrollmentTokenDeps
@@ -56,8 +63,17 @@ func NewRouter(deps RouterDeps) http.Handler {
 		// factors. Later tasks add their endpoints to this group.
 		r.Group(func(r chi.Router) {
 			r.Use(RequireFull)
-			r.Get("/servers",
-				NewServersHandler(ServerDeps{Servers: deps.Servers, Agents: deps.Agents}).ServeHTTP)
+			serverDeps := ServerDeps{
+				Servers:    deps.Servers,
+				Agents:     deps.Agents,
+				Remover:    deps.ServerRemover,
+				Disconnect: deps.ServerDisconnector,
+				Audit:      deps.ServerAudit,
+			}
+			r.Get("/servers", NewServersHandler(serverDeps).ServeHTTP)
+			if deps.ServerRemover != nil {
+				r.Delete("/servers/{serverID}", NewServerRemoveHandler(serverDeps).ServeHTTP)
+			}
 			if deps.Containers != nil {
 				r.Get("/servers/{serverID}/containers", NewContainersHandler(*deps.Containers).ServeHTTP)
 				r.Post("/servers/{serverID}/containers/{container}/actions", NewContainerActionHandler(*deps.Containers).ServeHTTP)

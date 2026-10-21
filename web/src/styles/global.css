@@ -729,6 +729,82 @@ code {
   font-size: 0.8125rem;
 }
 
+.settings__servers {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.settings__server {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-top: 1px dashed var(--line);
+}
+
+.settings__server:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.settings__server-name {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.settings__server-state {
+  color: var(--muted);
+  font-size: 0.8125rem;
+}
+
+.settings__server-state--online {
+  color: var(--ok);
+}
+
+.settings__server-remove {
+  padding: 5px 10px;
+  font-size: 0.875rem;
+}
+
+.settings__field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+.settings__input {
+  padding: 9px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  color: var(--ink);
+  font: inherit;
+}
+
+.settings__input:focus {
+  border-color: var(--accent);
+  outline: 2px solid color-mix(in srgb, var(--accent) 35%, transparent);
+  outline-offset: 1px;
+}
+
+.settings__button--danger {
+  border-color: var(--crit);
+  background: var(--crit);
+  color: var(--accent-ink);
+}
+
+.settings__button--danger:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--crit) 82%, var(--ink));
+  background: color-mix(in srgb, var(--crit) 82%, var(--ink));
+}
+
 .settings__progress {
   border-left: 3px solid var(--accent);
 }

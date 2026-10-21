@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { ApiError, isSignedOut } from '../api/http'
+import type { ServerSummary } from '../api/servers'
 import {
   createSystemApi,
   type SystemApi,
@@ -105,6 +106,35 @@ export function Settings({ api = defaultApi, pollMs = pollEvery }: SettingsProps
   const [checkingNow, setCheckingNow] = useState(false)
   const [checkNotice, setCheckNotice] = useState<string | null>(null)
   const [notesExpanded, setNotesExpanded] = useState(false)
+  const [servers, setServers] = useState<ServerSummary[] | null>(null)
+  const [serversError, setServersError] = useState<string | null>(null)
+  const [removing, setRemoving] = useState<ServerSummary | null>(null)
+  const [confirmName, setConfirmName] = useState('')
+  const [removeBusy, setRemoveBusy] = useState(false)
+  const [removeError, setRemoveError] = useState<string | null>(null)
+
+  const showServers = api.listServers !== undefined
+
+  useEffect(() => {
+    if (!api.listServers) {
+      return
+    }
+    let cancelled = false
+    api.listServers().then(
+      (list) => {
+        if (cancelled) return
+        setServers(list)
+        setServersError(null)
+      },
+      (error: unknown) => {
+        if (cancelled || isSignedOut(error)) return
+        setServersError(errorMessage(t, error))
+      },
+    )
+    return () => {
+      cancelled = true
+    }
+  }, [api, t])
 
   useEffect(() => {
     let cancelled = false
@@ -251,6 +281,60 @@ export function Settings({ api = defaultApi, pollMs = pollEvery }: SettingsProps
           return
         }
         setActionError(errorMessage(t, error))
+      },
+    )
+  }
+
+  const reloadServers = () => {
+    const list = api.listServers
+    if (!list) {
+      return
+    }
+    list().then(
+      (next) => {
+        setServers(next)
+        setServersError(null)
+      },
+      (error: unknown) => {
+        if (isSignedOut(error)) return
+        setServersError(errorMessage(t, error))
+      },
+    )
+  }
+
+  const startRemoval = (server: ServerSummary) => {
+    setRemoving(server)
+    setConfirmName('')
+    setRemoveError(null)
+  }
+
+  const cancelRemoval = () => {
+    setRemoving(null)
+    setConfirmName('')
+    setRemoveError(null)
+  }
+
+  const confirmRemoval = () => {
+    if (!removing || !api.removeServer || confirmName !== removing.name) {
+      return
+    }
+    const target = removing
+    setRemoveBusy(true)
+    setRemoveError(null)
+    api.removeServer(target.id).then(
+      () => {
+        setRemoveBusy(false)
+        setRemoving(null)
+        setConfirmName('')
+        setServers((current) =>
+          current === null ? current : current.filter((server) => server.id !== target.id),
+        )
+        reloadServers()
+      },
+      (error: unknown) => {
+        setRemoveBusy(false)
+        if (isSignedOut(error)) return
+        setRemoveError(errorMessage(t, error))
       },
     )
   }
@@ -416,6 +500,51 @@ export function Settings({ api = defaultApi, pollMs = pollEvery }: SettingsProps
             ) : null}
           </section>
 
+          {showServers ? (
+            <section className="settings__card" aria-labelledby="settings-servers-title">
+              <h2 className="settings__card-title" id="settings-servers-title">
+                {t('settings:servers.title')}
+              </h2>
+              {serversError !== null ? (
+                <p className="settings__message settings__message--error" role="alert">
+                  {serversError}
+                </p>
+              ) : servers === null ? (
+                <p className="settings__message" role="status">
+                  {t('settings:servers.loading')}
+                </p>
+              ) : servers.length === 0 ? (
+                <p className="settings__message">{t('settings:servers.empty')}</p>
+              ) : (
+                <ul className="settings__servers">
+                  {servers.map((server) => (
+                    <li className="settings__server" key={server.id}>
+                      <span className="settings__server-name">{server.name}</span>
+                      <span
+                        className={
+                          server.connected
+                            ? 'settings__server-state settings__server-state--online'
+                            : 'settings__server-state'
+                        }
+                      >
+                        {server.connected
+                          ? t('settings:servers.connected')
+                          : t('settings:servers.offline')}
+                      </span>
+                      <button
+                        type="button"
+                        className="settings__button settings__server-remove"
+                        onClick={() => startRemoval(server)}
+                      >
+                        {t('settings:servers.remove')}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+          ) : null}
+
           {update.pending.length > 0 || notes.length > 0 ? (
             <section className="settings__card" aria-labelledby="settings-pending-title">
               <h2 className="settings__card-title" id="settings-pending-title">
@@ -517,6 +646,62 @@ export function Settings({ api = defaultApi, pollMs = pollEvery }: SettingsProps
                 onClick={() => setConfirming(false)}
               >
                 {t('settings:confirm.no')}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {removing !== null ? (
+        <div className="settings__overlay">
+          <div
+            className="settings__dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="settings-remove-title"
+          >
+            <h2 className="settings__dialog-title" id="settings-remove-title">
+              {t('settings:servers.confirm.title', { name: removing.name })}
+            </h2>
+            <p className="settings__dialog-body">{t('settings:servers.confirm.effect')}</p>
+            <p className="settings__dialog-body">{t('settings:servers.confirm.reinstall')}</p>
+            <p className="settings__dialog-body">
+              {t('settings:servers.confirm.prompt', { name: removing.name })}
+            </p>
+            <label className="settings__field" htmlFor="settings-remove-name">
+              <span>{t('settings:servers.confirm.name')}</span>
+              <input
+                id="settings-remove-name"
+                className="settings__input"
+                type="text"
+                autoComplete="off"
+                value={confirmName}
+                onChange={(event) => setConfirmName(event.target.value)}
+              />
+            </label>
+            {removeError !== null ? (
+              <p className="settings__message settings__message--error" role="alert">
+                {removeError}
+              </p>
+            ) : null}
+            <div className="settings__dialog-actions">
+              <button
+                type="button"
+                className="settings__button settings__button--danger"
+                disabled={confirmName !== removing.name || removeBusy}
+                onClick={confirmRemoval}
+              >
+                {removeBusy
+                  ? t('settings:servers.confirm.removing')
+                  : t('settings:servers.confirm.confirm')}
+              </button>
+              <button
+                type="button"
+                className="settings__button"
+                disabled={removeBusy}
+                onClick={cancelRemoval}
+              >
+                {t('settings:servers.confirm.cancel')}
               </button>
             </div>
           </div>

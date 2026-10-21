@@ -18,8 +18,11 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-10-21
+
 ### Added
 
+- Settings: a **Servers** card lists the enrolled servers and lets the administrator remove one (`DELETE /api/v1/servers/{id}`, full session and `confirm`; the panel asks to type the server name). The removal is soft: the server leaves the panel, its live connection is closed, its certificate is revoked and its name is free to enroll again; terminal recordings are kept. Audited as `server_removed`. New migration `0008`.
 - Updates say what the new version brings: Settings shows a **What's new** list with the CHANGELOG entries added between the running build and the offered one, in the language of the panel (Catalan uses the Spanish text), above the commit list. The core reads both changelogs from `raw.githubusercontent.com` at the two commits; if that fails the card shows only the commits, as before.
 - The core installer and the `install-core.sh` bootstrap speak English, Spanish and Catalan: every question, error, note and the help text come from a message catalog. The language is taken from `--lang <en|es|ca>` or from `LC_ALL`/`LC_MESSAGES`/`LANG`, with English as the default; the answers stay `yes`/`no` (`sí` and `s` are also accepted in Spanish and Catalan). `test-install.sh` covers the selection and a translated error in each language.
 - Guide for the trusted certificate with two DNS records (`docs/en/dns-delegation.md`, also in Spanish and Catalan): the records to create, with the OVH steps, port 53, what each line of the check means, security and how to undo it. The installation guide and the README now recommend it, with the OVH key as the alternative.
@@ -124,5 +127,6 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.0.1...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.2.1...HEAD
+[0.2.1]: https://github.com/catlinux/Talaia/releases/tag/v0.2.1
 [0.0.1]: https://github.com/catlinux/Talaia/releases/tag/v0.0.1

@@ -37,6 +37,24 @@
     "more_one": "y {{count}} más",
     "more_other": "y {{count}} más"
   },
+  "servers": {
+    "title": "Servidores",
+    "loading": "Cargando servidores…",
+    "empty": "Todavía no hay ningún servidor inscrito.",
+    "connected": "Conectado",
+    "offline": "Desconectado",
+    "remove": "Eliminar",
+    "confirm": {
+      "title": "¿Eliminar {{name}}?",
+      "effect": "El servidor desaparece del panel, se corta su agente y se revoca su certificado. Los contenedores del servidor no se tocan.",
+      "reinstall": "Para volver a añadirlo, instala el agente con un token nuevo. Si el agente ya está instalado, vuelve a ejecutar el comando de instalación para sustituir la identidad anterior.",
+      "prompt": "Escribe el nombre del servidor ({{name}}) para confirmar.",
+      "name": "Nombre del servidor",
+      "confirm": "Eliminar servidor",
+      "removing": "Eliminando…",
+      "cancel": "Cancelar"
+    }
+  },
   "update": {
     "to": "Actualizar a {{sha}}",
     "none": "No hay ninguna actualización disponible",

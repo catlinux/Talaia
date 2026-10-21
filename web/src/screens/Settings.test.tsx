@@ -1,7 +1,8 @@
-import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { ApiError } from '../api/http'
+import type { ServerSummary } from '../api/servers'
 import type { SystemApi, SystemVersion, UpdateInfo, UpdateStatus } from '../api/system'
 import i18n from '../i18n'
 import { Settings, pollEvery } from './Settings'
@@ -50,11 +51,13 @@ function apiWith(
   version: () => Promise<SystemVersion>,
   update?: SystemApi['update'],
   check?: SystemApi['check'],
+  servers?: Pick<SystemApi, 'listServers' | 'removeServer'>,
 ): SystemApi {
   return {
     version,
     check: check ?? vi.fn(() => Promise.reject(new Error('unexpected check'))),
     update: update ?? vi.fn(() => Promise.reject(new Error('unexpected update'))),
+    ...servers,
   }
 }
 
@@ -87,6 +90,84 @@ describe('Settings', () => {
 
     const button = screen.getByRole('button', { name: 'Update to bbbbbbb' }) as HTMLButtonElement
     expect(button.disabled).toBe(false)
+  })
+
+  it('lists the servers with their connection state', async () => {
+    const servers: ServerSummary[] = [
+      { id: 'srv-1', name: 'vps-web-01', connected: true, revoked: false },
+      { id: 'srv-2', name: 'vps-db-01', connected: false, revoked: false },
+    ]
+    renderSettings(
+      apiWith(() => Promise.resolve(makeSystem()), undefined, undefined, {
+        listServers: () => Promise.resolve(servers),
+      }),
+    )
+
+    expect(await screen.findByText('Servers')).toBeTruthy()
+    expect(await screen.findByText('vps-web-01')).toBeTruthy()
+    expect(screen.getByText('vps-db-01')).toBeTruthy()
+    expect(screen.getByText('Connected')).toBeTruthy()
+    expect(screen.getByText('Offline')).toBeTruthy()
+  })
+
+  it('requires the exact server name and refreshes the list after removal', async () => {
+    const servers: ServerSummary[] = [
+      { id: 'srv-1', name: 'vps-web-01', connected: true, revoked: false },
+    ]
+    const listServers = vi
+      .fn<() => Promise<ServerSummary[]>>()
+      .mockResolvedValueOnce(servers)
+      .mockResolvedValueOnce([])
+    const removeServer = vi.fn<(id: string) => Promise<void>>(() => Promise.resolve())
+    renderSettings(
+      apiWith(() => Promise.resolve(makeSystem()), undefined, undefined, {
+        listServers,
+        removeServer,
+      }),
+    )
+
+    fireEvent.click((await screen.findAllByRole('button', { name: 'Remove' }))[0])
+    expect(screen.getByRole('dialog')).toBeTruthy()
+    expect(screen.getByText('Remove vps-web-01?')).toBeTruthy()
+    expect(screen.getByText(/Containers on the server are not touched/)).toBeTruthy()
+    expect(
+      screen.getByText(/run the install command again to replace the old identity/),
+    ).toBeTruthy()
+
+    const confirm = screen.getByRole('button', { name: 'Remove server' }) as HTMLButtonElement
+    expect(confirm.disabled).toBe(true)
+
+    fireEvent.change(screen.getByLabelText('Server name'), { target: { value: 'vps-web-0' } })
+    expect(confirm.disabled).toBe(true)
+    expect(removeServer).not.toHaveBeenCalled()
+
+    fireEvent.change(screen.getByLabelText('Server name'), { target: { value: 'vps-web-01' } })
+    expect(confirm.disabled).toBe(false)
+    fireEvent.click(confirm)
+
+    await waitFor(() => expect(removeServer).toHaveBeenCalledWith('srv-1'))
+    await waitFor(() => expect(listServers).toHaveBeenCalledTimes(2))
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+    expect(screen.queryByText('vps-web-01')).toBeNull()
+  })
+
+  it('cancels a server removal without calling the API', async () => {
+    const servers: ServerSummary[] = [
+      { id: 'srv-1', name: 'vps-web-01', connected: true, revoked: false },
+    ]
+    const removeServer = vi.fn<(id: string) => Promise<void>>(() => Promise.resolve())
+    renderSettings(
+      apiWith(() => Promise.resolve(makeSystem()), undefined, undefined, {
+        listServers: () => Promise.resolve(servers),
+        removeServer,
+      }),
+    )
+
+    fireEvent.click((await screen.findAllByRole('button', { name: 'Remove' }))[0])
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+
+    expect(screen.queryByRole('dialog')).toBeNull()
+    expect(removeServer).not.toHaveBeenCalled()
   })
 
   const noteLanguages = [

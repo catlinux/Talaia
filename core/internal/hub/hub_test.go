@@ -15,8 +15,9 @@ import (
 )
 
 type fakeStream struct {
-	in  chan *agentv1.AgentMsg
-	out chan *agentv1.CoreMsg
+	in        chan *agentv1.AgentMsg
+	out       chan *agentv1.CoreMsg
+	closeOnce sync.Once
 }
 
 func newFakeStream() *fakeStream {
@@ -40,7 +41,13 @@ func (f *fakeStream) Send(msg *agentv1.CoreMsg) error {
 }
 
 func (f *fakeStream) close() {
-	close(f.in)
+	f.closeOnce.Do(func() { close(f.in) })
+}
+
+// Close lets the hub end the stream at once when a server is removed.
+func (f *fakeStream) Close() error {
+	f.close()
+	return nil
 }
 
 func inventoryMsg(hostname string) *agentv1.AgentMsg {
@@ -162,6 +169,33 @@ func TestServeKeysTheRegistryByServerID(t *testing.T) {
 
 	stream.close()
 	waitServe(t, done)
+}
+
+func TestDisconnectClosesTheConnectionAndItsTerminals(t *testing.T) {
+	h := New(newFakeServerStore(enrolledServer("server-1", "aa")))
+	sink := &recordingTerminals{}
+	h.SetTerminals(sink)
+	_, done := startStreamedAgent(t, h, "server-1", "aa")
+
+	h.Disconnect("server-1")
+
+	waitServe(t, done)
+	if connected := h.Connected(); len(connected) != 0 {
+		t.Fatalf("the agent is still connected: %+v", connected)
+	}
+	found := false
+	for _, line := range sink.got() {
+		if line == "gone:server-1" {
+			found = true
+		}
+	}
+	if !found {
+		t.Errorf("terminals were not told the agent is gone: %v", sink.got())
+	}
+
+	// Removing a server twice, or one that is not connected, is harmless.
+	h.Disconnect("server-1")
+	h.Disconnect("nobody")
 }
 
 func TestServeKeepsTheNewConnectionWhenTheOldOneEnds(t *testing.T) {

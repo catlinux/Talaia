@@ -37,6 +37,24 @@
     "more_one": "i {{count}} més",
     "more_other": "i {{count}} més"
   },
+  "servers": {
+    "title": "Servidors",
+    "loading": "S'estan carregant els servidors…",
+    "empty": "Encara no hi ha cap servidor inscrit.",
+    "connected": "Connectat",
+    "offline": "Desconnectat",
+    "remove": "Elimina",
+    "confirm": {
+      "title": "Vols eliminar {{name}}?",
+      "effect": "El servidor desapareix del panell, es talla el seu agent i es revoca el seu certificat. Els contenidors del servidor no es toquen.",
+      "reinstall": "Per tornar-lo a afegir, instal·la l'agent amb un token nou. Si l'agent ja està instal·lat, torna a executar l'ordre d'instal·lació per substituir la identitat anterior.",
+      "prompt": "Escriu el nom del servidor ({{name}}) per confirmar.",
+      "name": "Nom del servidor",
+      "confirm": "Elimina el servidor",
+      "removing": "S'està eliminant…",
+      "cancel": "Cancel·la"
+    }
+  },
   "update": {
     "to": "Actualitza a {{sha}}",
     "none": "No hi ha cap actualització disponible",

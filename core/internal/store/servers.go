@@ -28,7 +28,8 @@ var ErrNameTaken = errors.New("server name is already in use")
 const tokenPrefix = "tl_enr_"
 
 // Server is a row of the server table. The time fields use the zero value to
-// mean "not set": a server without certificate, never seen or not revoked.
+// mean "not set": a server without certificate, never seen, not revoked or not
+// removed.
 type Server struct {
 	ID             string
 	Name           string
@@ -37,6 +38,7 @@ type Server struct {
 	CertNotAfter   time.Time
 	LastSeen       time.Time
 	RevokedAt      time.Time
+	RemovedAt      time.Time
 	CreatedAt      time.Time
 }
 
@@ -77,7 +79,7 @@ func (s *Store) CreateEnrollmentToken(ctx context.Context, serverName string, tt
 	var enrolled, pending bool
 	if err := s.pool.QueryRow(ctx,
 		`SELECT
-		   EXISTS (SELECT 1 FROM server WHERE name = $1),
+		   EXISTS (SELECT 1 FROM server WHERE name = $1 AND removed_at IS NULL),
 		   EXISTS (SELECT 1 FROM enrollment_token WHERE server_name = $1 AND used_at IS NULL AND expires_at > now())`,
 		serverName).Scan(&enrolled, &pending); err != nil {
 		return "", fmt.Errorf("check server name: %w", err)
@@ -145,6 +147,18 @@ func (s *Store) EnrollServer(ctx context.Context, token string, sign SignFunc) (
 	}
 	if err != nil {
 		return "", nil, fmt.Errorf("consume enrollment token: %w", err)
+	}
+
+	// A removed server does not block its name; an active one does. The partial
+	// unique index is the final guard against a concurrent enrollment.
+	var taken bool
+	if err := tx.QueryRow(ctx,
+		`SELECT EXISTS (SELECT 1 FROM server WHERE name = $1 AND removed_at IS NULL)`,
+		serverName).Scan(&taken); err != nil {
+		return "", nil, fmt.Errorf("check server name: %w", err)
+	}
+	if taken {
+		return "", nil, fmt.Errorf("server %q is already enrolled: %w", serverName, ErrNameTaken)
 	}
 
 	var serverID string
@@ -224,7 +238,7 @@ func (s *Store) GetServer(ctx context.Context, id string) (Server, error) {
 
 // serverColumns is the SELECT list of the server queries. Keeping it in one
 // place keeps scanServer in step with them.
-const serverColumns = `id, name, cert_serial, prev_cert_serial, cert_not_after, created_at, last_seen, revoked_at`
+const serverColumns = `id, name, cert_serial, prev_cert_serial, cert_not_after, created_at, last_seen, revoked_at, removed_at`
 
 // rowScanner is what pgx.Row and pgx.Rows have in common.
 type rowScanner interface {
@@ -240,10 +254,11 @@ func scanServer(row rowScanner) (Server, error) {
 		certNotAfter   *time.Time
 		lastSeen       *time.Time
 		revokedAt      *time.Time
+		removedAt      *time.Time
 	)
 
 	err := row.Scan(&server.ID, &server.Name, &certSerial, &prevCertSerial, &certNotAfter,
-		&server.CreatedAt, &lastSeen, &revokedAt)
+		&server.CreatedAt, &lastSeen, &revokedAt, &removedAt)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return Server{}, ErrNotFound
 	}
@@ -254,6 +269,7 @@ func scanServer(row rowScanner) (Server, error) {
 	server.CertNotAfter = timeValue(certNotAfter)
 	server.LastSeen = timeValue(lastSeen)
 	server.RevokedAt = timeValue(revokedAt)
+	server.RemovedAt = timeValue(removedAt)
 	if certSerial != nil {
 		server.CertSerial = *certSerial
 	}
@@ -264,9 +280,10 @@ func scanServer(row rowScanner) (Server, error) {
 	return server, nil
 }
 
-// ListServers returns every server, revoked ones included, ordered by name.
+// ListServers returns the enrolled servers, revoked ones included but removed
+// ones excluded, ordered by name.
 func (s *Store) ListServers(ctx context.Context) ([]Server, error) {
-	rows, err := s.pool.Query(ctx, `SELECT `+serverColumns+` FROM server ORDER BY name, id`)
+	rows, err := s.pool.Query(ctx, `SELECT `+serverColumns+` FROM server WHERE removed_at IS NULL ORDER BY name, id`)
 	if err != nil {
 		return nil, fmt.Errorf("list servers: %w", err)
 	}
@@ -284,6 +301,24 @@ func (s *Store) ListServers(ctx context.Context) ([]Server, error) {
 		return nil, fmt.Errorf("read servers: %w", err)
 	}
 	return servers, nil
+}
+
+// RemoveServer removes a server from the panel without deleting its row: the
+// terminal recordings still reference it. It also revokes it, so its
+// certificate is rejected from then on. ErrNotFound means the server does not
+// exist or was already removed.
+func (s *Store) RemoveServer(ctx context.Context, id string) error {
+	tag, err := s.pool.Exec(ctx,
+		`UPDATE server
+		 SET revoked_at = COALESCE(revoked_at, now()), removed_at = now()
+		 WHERE id = $1 AND removed_at IS NULL`, id)
+	if err != nil {
+		return fmt.Errorf("remove server %q: %w", id, err)
+	}
+	if tag.RowsAffected() == 0 {
+		return ErrNotFound
+	}
+	return nil
 }
 
 // RevokeServer marks a server as revoked. Revoking twice is not an error.

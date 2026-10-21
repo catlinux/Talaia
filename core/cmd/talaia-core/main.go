@@ -116,17 +116,21 @@ type panelOptions struct {
 // API, the protected API and the panel. agents is the hub the agents connect to,
 // so the API sees their live data.
 func newCoreRouter(st *store.Store, agents api.LiveAgents, options panelOptions) http.Handler {
+	disconnector, _ := agents.(api.ServerDisconnector)
 	return api.NewRouter(api.RouterDeps{
-		DB:         st,
-		WebDir:     options.WebDir,
-		Security:   api.SecurityConfig{TLS: options.TLS, Origins: options.Origins},
-		Session:    api.SessionDeps{Store: st, Now: options.Now},
-		Servers:    st,
-		Agents:     agents,
-		Enrollment: options.Enrollment,
-		Containers: options.Containers,
-		Terminal:   options.Terminal,
-		System:     options.System,
+		DB:                 st,
+		WebDir:             options.WebDir,
+		Security:           api.SecurityConfig{TLS: options.TLS, Origins: options.Origins},
+		Session:            api.SessionDeps{Store: st, Now: options.Now},
+		Servers:            st,
+		Agents:             agents,
+		ServerRemover:      st,
+		ServerDisconnector: disconnector,
+		ServerAudit:        st,
+		Enrollment:         options.Enrollment,
+		Containers:         options.Containers,
+		Terminal:           options.Terminal,
+		System:             options.System,
 		Auth: api.AuthDeps{
 			Store:        st,
 			Box:          options.Box,

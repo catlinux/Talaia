@@ -13,8 +13,11 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+## [0.2.1] - 2026-10-21
+
 ### Añadido
 
+- Ajustes: una tarjeta **Servidores** lista los servidores enrolados y permite al administrador quitar uno (`DELETE /api/v1/servers/{id}`, sesión completa y `confirm`; el panel pide escribir el nombre del servidor). La baja es lógica: el servidor sale del panel, se cierra su conexión, se revoca su certificado y su nombre queda libre para enrolarlo de nuevo; las grabaciones de terminal se conservan. Se audita como `server_removed`. Nueva migración `0008`.
 - Las actualizaciones dicen qué trae la versión nueva: Ajustes muestra una lista de **Novedades** con las entradas del CHANGELOG añadidas entre la versión en marcha y la ofrecida, en el idioma del panel (el catalán usa el texto en castellano), encima de la lista de commits. El núcleo lee los dos changelogs de `raw.githubusercontent.com` en los dos commits; si falla, la tarjeta muestra solo los commits, como antes.
 - El instalador del núcleo y el arranque `install-core.sh` hablan inglés, español y catalán: cada pregunta, error, aviso y el texto de ayuda salen de un catálogo de mensajes. El idioma se toma de `--lang <en|es|ca>` o de `LC_ALL`/`LC_MESSAGES`/`LANG`, con el inglés por defecto; las respuestas siguen siendo `yes`/`no` (en español y catalán se acepta también `sí` y `s`). `test-install.sh` cubre la selección y un error traducido en cada idioma.
 - Guía del certificado de confianza con dos registros DNS (`docs/es/dns-delegation.md`, también en inglés y catalán): los registros que hay que crear, con los pasos de OVH, el puerto 53, qué significa cada línea de la comprobación, la seguridad y cómo deshacerlo. La guía de instalación y el README la recomiendan ahora, con la clave de OVH como alternativa.
@@ -124,5 +127,6 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
   `.gitattributes` y `.gitignore`.
 - Licencia WNCL-1.0 aplicada: archivo `LICENSE` y sección de créditos en los README.
 
-[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.0.1...HEAD
+[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.2.1...HEAD
+[0.2.1]: https://github.com/catlinux/Talaia/releases/tag/v0.2.1
 [0.0.1]: https://github.com/catlinux/Talaia/releases/tag/v0.0.1

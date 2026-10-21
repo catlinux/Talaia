@@ -37,6 +37,24 @@
     "more_one": "and {{count}} more",
     "more_other": "and {{count}} more"
   },
+  "servers": {
+    "title": "Servers",
+    "loading": "Loading servers…",
+    "empty": "No servers are enrolled yet.",
+    "connected": "Connected",
+    "offline": "Offline",
+    "remove": "Remove",
+    "confirm": {
+      "title": "Remove {{name}}?",
+      "effect": "The server disappears from the panel, its agent is cut off and its certificate is revoked. Containers on the server are not touched.",
+      "reinstall": "To add it again, install the agent with a new token. If the agent is already installed, run the install command again to replace the old identity.",
+      "prompt": "Type the server name ({{name}}) to confirm.",
+      "name": "Server name",
+      "confirm": "Remove server",
+      "removing": "Removing…",
+      "cancel": "Cancel"
+    }
+  },
   "update": {
     "to": "Update to {{sha}}",
     "none": "No update available",

@@ -1,4 +1,5 @@
 import { createHttpClient } from './http'
+import { createServersApi, type ServersApi } from './servers'
 
 /** PendingCommit is one commit between the running build and the newest green one. */
 export interface PendingCommit {
@@ -53,13 +54,17 @@ export interface SystemVersion {
   status: UpdateStatus
 }
 
-/** SystemApi is the version and update API of the core. */
+/** SystemApi is the version, update and server API of the Settings screen. */
 export interface SystemApi {
   version(): Promise<SystemVersion>
   /** check asks GitHub now and returns the refreshed version. */
   check(): Promise<SystemVersion>
   /** update queues target for the host helper; it must be the offered commit. */
   update(target: string): Promise<{ target: string }>
+  /** listServers is present on the real client; a system-only fake may omit it. */
+  listServers?: ServersApi['listServers']
+  /** removeServer soft-removes an enrolled server, revoking its certificate. */
+  removeServer?: ServersApi['removeServer']
 }
 
 interface apiPendingCommit {
@@ -148,8 +153,10 @@ function mapSystem(body: apiSystemVersion): SystemVersion {
 /** createSystemApi returns the update API, optionally over an injected fetch. */
 export function createSystemApi(fetchImpl?: typeof fetch): SystemApi {
   const http = createHttpClient(fetchImpl)
+  const servers = createServersApi(fetchImpl)
 
   return {
+    ...servers,
     version: async () => mapSystem(await http.get<apiSystemVersion>('/api/v1/system/version')),
     check: async () => mapSystem(await http.post<apiSystemVersion>('/api/v1/system/check', {})),
     update: async (target) => {

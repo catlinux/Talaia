@@ -2,9 +2,12 @@ package api
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"net/http"
 	"time"
+
+	"github.com/go-chi/chi/v5"
 
 	"github.com/catlinux/Talaia/core/internal/hub"
 	"github.com/catlinux/Talaia/core/internal/store"
@@ -15,15 +18,29 @@ type ServerLister interface {
 	ListServers(ctx context.Context) ([]store.Server, error)
 }
 
+// ServerRemover reads and removes an enrolled server.
+type ServerRemover interface {
+	GetServer(ctx context.Context, id string) (store.Server, error)
+	RemoveServer(ctx context.Context, id string) error
+}
+
+// ServerDisconnector closes the live connection of a server, if it has one.
+type ServerDisconnector interface {
+	Disconnect(serverID string)
+}
+
 // LiveAgents reports the agents connected right now.
 type LiveAgents interface {
 	Connected() []hub.AgentInfo
 }
 
-// ServerDeps are the collaborators of the servers endpoint.
+// ServerDeps are the collaborators of the servers endpoints.
 type ServerDeps struct {
-	Servers ServerLister
-	Agents  LiveAgents
+	Servers    ServerLister
+	Agents     LiveAgents
+	Remover    ServerRemover
+	Disconnect ServerDisconnector
+	Audit      Auditor
 }
 
 // devServerPrefix marks the entries that only exist in insecure dev mode.
@@ -132,6 +149,74 @@ func NewServersHandler(deps ServerDeps) http.Handler {
 		}
 
 		writeJSON(w, http.StatusOK, serversResponse{Servers: entries})
+	})
+}
+
+// removeServerRequest is the body of DELETE /api/v1/servers/{serverID}. The
+// confirmation is not a formality: removing a server revokes its certificate.
+type removeServerRequest struct {
+	Confirm bool `json:"confirm"`
+}
+
+// NewServerRemoveHandler returns DELETE /api/v1/servers/{serverID}. It is
+// mounted behind RequireFull, like the rest of the server routes.
+func NewServerRemoveHandler(deps ServerDeps) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if deps.Remover == nil {
+			writeError(w, http.StatusInternalServerError, "internal")
+			return
+		}
+		var request removeServerRequest
+		if err := decodeJSON(w, r, &request); err != nil || !request.Confirm {
+			writeError(w, http.StatusBadRequest, "confirmation_required")
+			return
+		}
+
+		serverID := chi.URLParam(r, "serverID")
+		server, err := deps.Remover.GetServer(r.Context(), serverID)
+		if errors.Is(err, store.ErrNotFound) {
+			writeError(w, http.StatusNotFound, "not_found")
+			return
+		}
+		if err != nil {
+			slog.Error("get server to remove", "server_id", serverID, "error", err)
+			writeError(w, http.StatusInternalServerError, "internal")
+			return
+		}
+
+		if err := deps.Remover.RemoveServer(r.Context(), serverID); err != nil {
+			if errors.Is(err, store.ErrNotFound) {
+				writeError(w, http.StatusNotFound, "not_found")
+				return
+			}
+			slog.Error("remove server", "server_id", serverID, "error", err)
+			writeError(w, http.StatusInternalServerError, "internal")
+			return
+		}
+
+		// The row is gone from the panel; cut the agent off before answering so
+		// it cannot keep working with the certificate just revoked.
+		if deps.Disconnect != nil {
+			deps.Disconnect.Disconnect(serverID)
+		}
+
+		actor := ""
+		if session, ok := sessionFromContext(r.Context()); ok {
+			actor = session.User.Username
+		}
+		if deps.Audit != nil {
+			if err := deps.Audit.AppendAudit(r.Context(), store.AuditEvent{
+				Actor:   actor,
+				Action:  "server_removed",
+				IP:      clientIP(r),
+				Result:  "success",
+				Details: map[string]any{"server_name": server.Name},
+			}); err != nil {
+				slog.Error("append audit event", "action", "server_removed", "error", err)
+			}
+		}
+
+		w.WriteHeader(http.StatusNoContent)
 	})
 }
 
