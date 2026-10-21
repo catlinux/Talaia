@@ -174,6 +174,28 @@ Full detail: [docs/en/architecture.md](docs/en/architecture.md). What the panel 
 The core runs in Docker on one machine; each server gets an agent installed with one pasted command.
 Step by step, with troubleshooting: [docs/en/installation.md](docs/en/installation.md).
 
+On a fresh Debian or Ubuntu, the one-line bootstrap clones the current `main` into `/opt/talaia` and runs the
+installer (before 1.0 this installs `main`, not a tagged release):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/catlinux/Talaia/main/install-core.sh | bash
+```
+
+Pass installer flags after `bash -s --`; for example, a public name and a trusted certificate at OVH:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/catlinux/Talaia/main/install-core.sh | bash -s -- \
+  --hostname talaia.example.com --acme ovh
+```
+
+The bootstrap uses `TALAIA_DIR` (default `/opt/talaia`), `TALAIA_REPO_URL` (default
+`https://github.com/catlinux/Talaia.git`) and `TALAIA_BRANCH` (default `main`). The installer accepts
+`--acme-zone <zone>` (the registered domain; default: the last two labels of the host name) and
+`--no-acme-check` (skip the OVH key check for an offline install). The OVH key guide is
+[docs/en/ovh-dns.md](docs/en/ovh-dns.md).
+
+You can also clone it and run the installer yourself:
+
 ```bash
 git clone https://github.com/catlinux/Talaia.git && cd Talaia
 packaging/core/install.sh --hostname <address> --port 8443 --agent-port 8444

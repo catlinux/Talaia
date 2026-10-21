@@ -6,15 +6,19 @@
 #
 # Usage:
 #   packaging/core/install.sh [--hostname <ip-or-name>] [--port <port>] [--agent-port <port>]
-#                             [--acme <provider>] [--acme-email <address>] [--username <name>]
-#                             [--no-user] [--no-hostd] [--install-docker]
+#                             [--acme <provider>] [--acme-zone <zone>] [--acme-email <address>]
+#                             [--no-acme-check] [--username <name>] [--no-user] [--no-hostd]
+#                             [--install-docker]
 #
 #   --hostname    name or address the core is reached at (asked for in a terminal; default: the first address of this machine)
 #   --port        port of the panel (default: the first free one from 8443; 80 and 443 are never chosen on their own)
 #   --agent-port  port of the agents (default: the first free one from 8444)
 #   --acme        trusted certificate for the panel by ACME DNS-01 with this DNS provider (ovh); the
-#                 credentials come from the environment (OVH_*) or are asked for, and go to .env.acme
+#                 installer prints the key page, asks for the zone, region and key, and checks the key
+#                 with OVH before writing .env.acme (the key can also come from the OVH_* variables)
+#   --acme-zone   DNS zone at OVH (the registered domain; default: the last two labels of --hostname)
 #   --acme-email  contact address for the certificate authority
+#   --no-acme-check  do not check the OVH key with the OVH API (offline installs)
 #   --username    name of the administrator (default: admin)
 #   --no-user     do not create the administrator
 #   --no-hostd    do not install talaia-hostd, the root helper that applies updates requested from the panel
@@ -39,11 +43,14 @@ hostname_arg=""
 port=""
 agent_port=""
 acme_provider=""
+acme_zone_arg=""
 acme_email=""
+no_acme_check=0
 username="admin"
 create_user=1
 install_helper=1
 install_docker=0
+env_existed=0
 
 while [ "$#" -gt 0 ]; do
     case "$1" in
@@ -71,6 +78,15 @@ while [ "$#" -gt 0 ]; do
             [ "$#" -ge 2 ] || { echo "error: --acme-email needs a value" >&2; exit 1; }
             acme_email="$2"
             shift 2
+            ;;
+        --acme-zone)
+            [ "$#" -ge 2 ] || { echo "error: --acme-zone needs a value" >&2; exit 1; }
+            acme_zone_arg="$2"
+            shift 2
+            ;;
+        --no-acme-check)
+            no_acme_check=1
+            shift
             ;;
         --username)
             [ "$#" -ge 2 ] || { echo "error: --username needs a value" >&2; exit 1; }
@@ -375,38 +391,372 @@ preflight() {
     fi
 }
 
-# write_acme_credentials stores the DNS provider credentials in .env.acme (mode
-# 0600), which compose hands to the core. Values come from the environment or,
-# in a terminal, from a prompt that does not echo secrets.
-write_acme_credentials() {
-    if [ -f .env.acme ]; then
-        echo "keeping the existing .env.acme"
-        return 0
+# guess_acme_zone prints the last two labels of a host name, the usual registered
+# domain. It is only a default: names like .co.uk need the registered domain.
+guess_acme_zone() {
+    local name="$1" labels
+    name="${name%%,*}"
+    name="${name#[}"
+    name="${name%]}"
+    case "$name" in
+        *:*) printf '\n'; return 0 ;;
+    esac
+    case "$name" in
+        *[!0-9.]*) : ;;
+        *) printf '\n'; return 0 ;;
+    esac
+    IFS='.' read -r -a labels <<< "$name"
+    if [ "${#labels[@]}" -ge 2 ]; then
+        printf '%s.%s\n' "${labels[$((${#labels[@]} - 2))]}" "${labels[$((${#labels[@]} - 1))]}"
+    else
+        printf '%s\n' "$name"
     fi
-    local endpoint="${OVH_ENDPOINT:-}" key="${OVH_APPLICATION_KEY:-}" secret="${OVH_APPLICATION_SECRET:-}" consumer="${OVH_CONSUMER_KEY:-}"
-    if [ -t 0 ]; then
-        [ -n "$endpoint" ] || endpoint="$(ask "OVH endpoint" "ovh-eu")"
-        [ -n "$key" ] || read -r -p "OVH application key: " key
-        if [ -z "$secret" ]; then
-            read -r -s -p "OVH application secret: " secret
-            echo
-        fi
-        if [ -z "$consumer" ]; then
-            read -r -s -p "OVH consumer key: " consumer
-            echo
-        fi
-    fi
-    : "${endpoint:=ovh-eu}"
-    if [ -z "$key" ] || [ -z "$secret" ] || [ -z "$consumer" ]; then
-        echo "error: set OVH_APPLICATION_KEY, OVH_APPLICATION_SECRET and OVH_CONSUMER_KEY (or run in a terminal)" >&2
-        exit 1
-    fi
+}
+
+# read_acme_file reads the four known key=value lines of .env.acme without
+# sourcing it, so nothing in it can run.
+read_acme_file() {
+    local line key value
+    acme_endpoint=""
+    acme_key=""
+    acme_secret=""
+    acme_consumer=""
+    while IFS= read -r line || [ -n "$line" ]; do
+        line="${line%$'\r'}"
+        case "$line" in
+            '' | '#'*) continue ;;
+        esac
+        key="${line%%=*}"
+        value="${line#*=}"
+        case "$key" in
+            OVH_ENDPOINT) acme_endpoint="$value" ;;
+            OVH_APPLICATION_KEY) acme_key="$value" ;;
+            OVH_APPLICATION_SECRET) acme_secret="$value" ;;
+            OVH_CONSUMER_KEY) acme_consumer="$value" ;;
+        esac
+    done < .env.acme
+}
+
+# write_acme_file stores the OVH credentials in .env.acme (mode 0600), which
+# compose hands to the core.
+write_acme_file() {
     (
         umask 077
         printf 'OVH_ENDPOINT=%s\nOVH_APPLICATION_KEY=%s\nOVH_APPLICATION_SECRET=%s\nOVH_CONSUMER_KEY=%s\n' \
-            "$endpoint" "$key" "$secret" "$consumer" > .env.acme
+            "$acme_endpoint" "$acme_key" "$acme_secret" "$acme_consumer" > .env.acme
     )
     echo "wrote .env.acme"
+}
+
+acme_tmp=""
+cleanup_acme() {
+    [ -z "$acme_tmp" ] || rm -rf "$acme_tmp"
+}
+trap cleanup_acme EXIT
+
+# sanitize_ovh_text turns an OVH error into one printable line and removes the
+# application secret and the consumer key if OVH echoed them.
+sanitize_ovh_text() {
+    local text
+    text="$(printf '%s' "$1" | tr -c '[:print:]' ' ' | cut -c1-300)"
+    text="${text//$acme_secret/[redacted]}"
+    text="${text//$acme_consumer/[redacted]}"
+    printf '%s\n' "$text"
+}
+
+# check_ovh_key asks OVH who the key belongs to and what it may do. It returns
+# 0 when the key is valid and has the three rights, 1 when OVH rejected it or a
+# right is missing, and 2 when OVH cannot be reached. Secret headers travel in a
+# mode 0600 --config file, never in the curl command line.
+check_ovh_key() {
+    local endpoint="$1" zone="$2" base url timestamp time_response time_code time_body
+    local response code body status_value flat rule rule_method rule_path digest config
+    local message safe right
+    local -a rule_methods=() rule_paths=() missing=()
+
+    if [ -n "$acme_tmp" ]; then
+        rm -rf "$acme_tmp"
+    fi
+    acme_tmp="$(mktemp -d)"
+    chmod 700 "$acme_tmp" 2>/dev/null || true
+
+    case "$endpoint" in
+        ovh-eu) base="https://eu.api.ovh.com/1.0" ;;
+        ovh-ca) base="https://ca.api.ovh.com/1.0" ;;
+    esac
+    # Test hook: point the OVH calls at a canned server without changing the signature path.
+    [ -z "${TALAIA_OVH_API_URL:-}" ] || base="${TALAIA_OVH_API_URL}"
+    base="${base%/}"
+
+    if ! command -v sha1sum >/dev/null 2>&1; then
+        echo "error: sha1sum is required to sign the OVH request (package coreutils)." >&2
+        exit 1
+    fi
+
+    if ! time_response="$(curl -sS --max-time 15 -w '\n%{http_code}' "$base/auth/time" 2>"$acme_tmp/curl.err")"; then
+        echo "OVH: could not reach OVH at $base" >&2
+        return 2
+    fi
+    time_code="${time_response##*$'\n'}"
+    time_body="${time_response%$'\n'*}"
+    if [ "$time_code" != "200" ]; then
+        echo "OVH: could not reach OVH at $base (HTTP $time_code)" >&2
+        return 2
+    fi
+    timestamp="$(printf '%s' "$time_body" | tr -d '[:space:]')"
+    case "$timestamp" in
+        '' | *[!0-9]*)
+            echo "OVH: OVH returned an invalid time" >&2
+            return 1
+            ;;
+    esac
+
+    url="$base/auth/currentCredential"
+    digest="$(printf '%s' "${acme_secret}+${acme_consumer}+GET+${url}++${timestamp}" | sha1sum | cut -d' ' -f1)"
+    config="$acme_tmp/headers.conf"
+    (
+        umask 077
+        {
+            printf 'header = "X-Ovh-Application: %s"\n' "$acme_key"
+            printf 'header = "X-Ovh-Consumer: %s"\n' "$acme_consumer"
+            printf 'header = "X-Ovh-Timestamp: %s"\n' "$timestamp"
+            printf 'header = "X-Ovh-Signature: $1$%s"\n' "$digest"
+        } > "$config"
+    )
+
+    if ! response="$(curl -sS --max-time 15 --config "$config" -w '\n%{http_code}' "$url" 2>"$acme_tmp/curl.err")"; then
+        echo "OVH: could not reach OVH at $base" >&2
+        return 2
+    fi
+    code="${response##*$'\n'}"
+    body="${response%$'\n'*}"
+
+    if [ "$code" = "200" ]; then
+        status_value="$(printf '%s' "$body" | tr -d '\r\n' | sed -n 's/.*"status"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p')"
+        case "$status_value" in
+            validated)
+                flat="$(printf '%s' "$body" | tr -d '\r\n\t')"
+                while IFS= read -r rule; do
+                    rule_method="$(printf '%s' "$rule" | sed -n 's/.*"method"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p')"
+                    rule_path="$(printf '%s' "$rule" | sed -n 's/.*"path"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p')"
+                    if [ -n "$rule_method" ] && [ -n "$rule_path" ]; then
+                        rule_methods+=("$rule_method")
+                        rule_paths+=("$rule_path")
+                    fi
+                done <<< "$(printf '%s' "$flat" | tr '{' '\n')"
+
+                right_covered() {
+                    local method="$1" needed="$2" i
+                    for i in "${!rule_methods[@]}"; do
+                        if [ "${rule_methods[$i]}" = "$method" ] && [[ "$needed" == ${rule_paths[$i]} ]]; then
+                            return 0
+                        fi
+                    done
+                    return 1
+                }
+
+                if ! right_covered POST "/domain/zone/$zone/record"; then
+                    missing+=("POST /domain/zone/$zone/record")
+                fi
+                if ! right_covered POST "/domain/zone/$zone/refresh"; then
+                    missing+=("POST /domain/zone/$zone/refresh")
+                fi
+                if ! right_covered DELETE "/domain/zone/$zone/record/1"; then
+                    missing+=("DELETE /domain/zone/$zone/record/*")
+                fi
+                if [ "${#missing[@]}" -eq 0 ]; then
+                    echo "OVH key: ok"
+                    return 0
+                fi
+                for right in "${missing[@]}"; do
+                    echo "OVH key: missing right: $right"
+                done
+                return 1
+                ;;
+            '')
+                message="$(printf '%s' "$body" | tr -d '\r\n' | sed -n 's/.*"message"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p')"
+                [ -n "$message" ] || message="$body"
+                safe="$(sanitize_ovh_text "$message")"
+                echo "OVH rejected the key: $safe" >&2
+                return 1
+                ;;
+            *)
+                echo "OVH: the key was created but it is not validated yet. Open the validation page OVH shows (or the API keys page) and finish the validation, then run the installer again." >&2
+                return 1
+                ;;
+        esac
+    fi
+
+    message="$(printf '%s' "$body" | tr -d '\r\n' | sed -n 's/.*"message"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p')"
+    [ -n "$message" ] || message="$body"
+    safe="$(sanitize_ovh_text "$message")"
+    echo "OVH rejected the key (HTTP $code): $safe" >&2
+    return 1
+}
+
+# setup_acme runs before .env.acme is written and before the build. It prints the
+# prepared OVH key link, reads or asks for the credentials, and validates them
+# with OVH. With --no-acme-check the network check is skipped (offline installs).
+setup_acme() {
+    [ "${TALAIA_ACME_PROVIDER:-}" = "ovh" ] || return 0
+
+    local zone="${acme_zone_arg:-}" endpoint="" existing=0
+    local create_link guide="https://github.com/catlinux/Talaia/blob/main/docs/en/ovh-dns.md"
+    local answer="" key="" secret="" consumer="" result=0
+
+    if [ -z "$zone" ]; then
+        zone="$(guess_acme_zone "${TALAIA_PUBLIC_HOSTNAMES%%,*}")"
+        if [ -t 0 ]; then
+            zone="$(ask "DNS zone at OVH (the registered domain; for names like .co.uk type the registered domain)" "$zone")"
+        fi
+    fi
+    if [ -z "$zone" ]; then
+        echo "error: pass --acme-zone <zone> (the registered domain at OVH) and run again." >&2
+        exit 1
+    fi
+    case "$zone" in
+        *[!A-Za-z0-9.-]* | .* | *. | *..*)
+            echo "error: --acme-zone may only contain letters, digits, dots and hyphens" >&2
+            exit 1
+            ;;
+    esac
+
+    if [ -f .env.acme ]; then
+        existing=1
+        read_acme_file
+        endpoint="${acme_endpoint:-}"
+        if [ -z "$acme_key" ] || [ -z "$acme_secret" ] || [ -z "$acme_consumer" ]; then
+            echo "error: .env.acme is incomplete; it needs OVH_APPLICATION_KEY, OVH_APPLICATION_SECRET and OVH_CONSUMER_KEY." >&2
+            exit 1
+        fi
+        case "$acme_key$acme_secret$acme_consumer" in
+            *[!A-Za-z0-9._-]*)
+                echo "error: .env.acme contains unexpected characters; edit the three OVH values and run again." >&2
+                exit 1
+                ;;
+        esac
+    fi
+    if [ -z "$endpoint" ]; then
+        endpoint="${OVH_ENDPOINT:-}"
+    fi
+    if [ -z "$endpoint" ] && [ "$existing" -eq 0 ] && [ -t 0 ]; then
+        endpoint="$(ask "OVH region (ovh-eu or ovh-ca)" "ovh-eu")"
+    fi
+    : "${endpoint:=ovh-eu}"
+    case "$endpoint" in
+        ovh-eu | ovh-ca) ;;
+        *)
+            echo "error: the OVH region must be ovh-eu or ovh-ca (got $endpoint)" >&2
+            exit 1
+            ;;
+    esac
+    acme_endpoint="$endpoint"
+
+    case "$endpoint" in
+        ovh-eu)
+            create_link="https://api.eu.ovhcloud.com/createToken/?POST=/domain/zone/${zone}/record&POST=/domain/zone/${zone}/refresh&DELETE=/domain/zone/${zone}/record/*"
+            ;;
+        ovh-ca)
+            create_link="https://ca.api.ovh.com/createToken/?POST=/domain/zone/${zone}/record&POST=/domain/zone/${zone}/refresh&DELETE=/domain/zone/${zone}/record/*"
+            ;;
+    esac
+    echo "Create an OVH API key for the zone $zone with these three rights:"
+    echo "  $create_link"
+    echo "Guide: $guide (also docs/es/ovh-dns.md and docs/ca/ovh-dns.md)."
+
+    if [ "$existing" -eq 0 ]; then
+        key="${OVH_APPLICATION_KEY:-}"
+        secret="${OVH_APPLICATION_SECRET:-}"
+        consumer="${OVH_CONSUMER_KEY:-}"
+    fi
+
+    if [ -t 0 ] && [ "$existing" -eq 0 ] && { [ -z "$key" ] || [ -z "$secret" ] || [ -z "$consumer" ]; }; then
+        read -r -p "Press Enter when you have the three values: " answer || true
+    fi
+
+    while :; do
+        if [ "$existing" -eq 0 ]; then
+            if [ -t 0 ]; then
+                [ -n "$key" ] || read -r -p "OVH application key: " key
+                if [ -z "$secret" ]; then
+                    read -r -s -p "OVH application secret: " secret
+                    echo
+                fi
+                if [ -z "$consumer" ]; then
+                    read -r -s -p "OVH consumer key: " consumer
+                    echo
+                fi
+            fi
+            if [ -z "$key" ] || [ -z "$secret" ] || [ -z "$consumer" ]; then
+                echo "error: set OVH_APPLICATION_KEY, OVH_APPLICATION_SECRET and OVH_CONSUMER_KEY (or run in a terminal)" >&2
+                exit 1
+            fi
+            case "$key$secret$consumer" in
+                *[!A-Za-z0-9._-]*)
+                    echo "error: the OVH key values contain unexpected characters; copy them again." >&2
+                    exit 1
+                    ;;
+            esac
+            acme_key="$key"
+            acme_secret="$secret"
+            acme_consumer="$consumer"
+            acme_endpoint="$endpoint"
+        fi
+
+        if [ "$no_acme_check" -eq 1 ]; then
+            echo "skipping the OVH check (--no-acme-check)"
+            break
+        fi
+
+        result=0
+        check_ovh_key "$endpoint" "$zone" || result=$?
+        if [ "$result" -eq 0 ]; then
+            break
+        fi
+
+        if [ "$result" -eq 2 ] && [ -t 0 ]; then
+            if [ "$(ask "Could not reach OVH. Continue without validating the key? (yes/no)" "no")" = "yes" ]; then
+                echo "warning: continuing without the OVH check"
+                break
+            fi
+        fi
+        if [ ! -t 0 ]; then
+            echo "error: the OVH key could not be validated; fix it or pass --no-acme-check (offline installs)." >&2
+            exit 1
+        fi
+        answer="$(ask "OVH check failed: [1] re-enter the keys, [2] continue without a trusted certificate (own CA, ACME off), [3] abort" "1")"
+        case "$answer" in
+            1)
+                echo "re-enter the three values"
+                key=""
+                secret=""
+                consumer=""
+                existing=0
+                ;;
+            2)
+                echo "continuing with the Talaia CA; ACME is off."
+                if grep -q '^TALAIA_ACME_PROVIDER=' .env 2>/dev/null; then
+                    sed -i 's|^TALAIA_ACME_PROVIDER=.*|TALAIA_ACME_PROVIDER=|' .env
+                else
+                    printf 'TALAIA_ACME_PROVIDER=\n' >> .env
+                fi
+                echo "ACME turned off in packaging/core/.env."
+                TALAIA_ACME_PROVIDER=""
+                acme_state=none
+                return 0
+                ;;
+            3 | *)
+                echo "aborting without building anything." >&2
+                exit 1
+                ;;
+        esac
+    done
+
+    if [ "$existing" -eq 1 ]; then
+        echo "keeping the existing .env.acme"
+    else
+        write_acme_file
+    fi
 }
 
 # install_hostd sets up talaia-hostd, the root helper that applies the updates
@@ -503,6 +853,7 @@ acme_watch() {
 # .env holds the database password: an existing one is never replaced, because
 # the database volume was initialised with it.
 if [ -f .env ]; then
+    env_existed=1
     echo "keeping the existing .env"
 else
     if [ -z "$hostname_arg" ]; then
@@ -538,7 +889,6 @@ else
         if [ -z "$acme_email" ] && [ -t 0 ]; then
             acme_email="$(ask "Contact address for the certificate authority (optional)" "")"
         fi
-        write_acme_credentials
     fi
 
     # Both go into .env unquoted and through sed: only plain characters.
@@ -582,6 +932,18 @@ else
 fi
 
 agent_url="https://${TALAIA_PUBLIC_HOSTNAMES%%,*}:${agent_port}"
+
+if [ "$env_existed" -eq 1 ] && [ "$acme_provider" = "ovh" ] && [ "${TALAIA_ACME_PROVIDER:-}" != "ovh" ]; then
+    echo "error: packaging/core/.env already exists and does not enable ACME. Set TALAIA_ACME_PROVIDER=ovh in it and run again (the installer never replaces an existing .env)." >&2
+    exit 1
+fi
+setup_acme
+
+# The tests stop after the ACME check; this is not an option for users.
+if [ "${TALAIA_INSTALL_ACME_ONLY:-0}" = "1" ]; then
+    echo "acme: checked"
+    exit 0
+fi
 
 if [ "$dns_checked" -eq 0 ] && [ -n "${TALAIA_PUBLIC_HOSTNAMES:-}" ]; then
     dns_guidance "$TALAIA_PUBLIC_HOSTNAMES"

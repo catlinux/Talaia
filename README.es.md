@@ -175,6 +175,29 @@ Detalle completo: [docs/es/arquitectura.md](docs/es/arquitectura.md). Qué puede
 El núcleo corre en Docker en una máquina; cada servidor recibe un agente con una sola orden pegada.
 Paso a paso y con solución de problemas: [docs/es/instalacion.md](docs/es/instalacion.md).
 
+En un Debian o Ubuntu recién instalado, el arranque de una línea clona el `main` actual en `/opt/talaia` y
+ejecuta el instalador (antes de la 1.0 instala `main`, no una versión etiquetada):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/catlinux/Talaia/main/install-core.sh | bash
+```
+
+Pasa las opciones del instalador tras `bash -s --`; por ejemplo, un nombre público y un certificado de confianza
+en OVH:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/catlinux/Talaia/main/install-core.sh | bash -s -- \
+  --hostname talaia.example.com --acme ovh
+```
+
+El arranque usa `TALAIA_DIR` (por defecto `/opt/talaia`), `TALAIA_REPO_URL` (por defecto
+`https://github.com/catlinux/Talaia.git`) y `TALAIA_BRANCH` (por defecto `main`). El instalador acepta
+`--acme-zone <zona>` (el dominio registrado; por defecto: las dos últimas etiquetas del nombre) y
+`--no-acme-check` (omite la comprobación de la clave de OVH en una instalación sin conexión). La guía de la clave
+de OVH está en [docs/es/ovh-dns.md](docs/es/ovh-dns.md).
+
+También puedes clonarlo y ejecutar el instalador tú mismo:
+
 ```bash
 git clone https://github.com/catlinux/Talaia.git && cd Talaia
 packaging/core/install.sh --hostname <dirección> --port 8443 --agent-port 8444

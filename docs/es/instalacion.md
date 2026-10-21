@@ -23,6 +23,30 @@ Talaia tiene dos partes: el **núcleo** (panel, API y base de datos), que corre 
 
 ## 2. Instalar el núcleo
 
+En un Debian o Ubuntu recién instalado, el arranque de una línea clona el `main` actual en `/opt/talaia` y
+ejecuta el instalador. Antes de la 1.0 instala `main`, no una versión etiquetada:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/catlinux/Talaia/main/install-core.sh | bash
+```
+
+Pasa las opciones del instalador tras `bash -s --`; por ejemplo, un nombre público con un certificado de
+confianza en OVH:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/catlinux/Talaia/main/install-core.sh | bash -s -- \
+  --hostname talaia.example.com --acme ovh
+```
+
+El arranque usa `TALAIA_DIR` (por defecto `/opt/talaia`), `TALAIA_REPO_URL` (por defecto
+`https://github.com/catlinux/Talaia.git`) y `TALAIA_BRANCH` (por defecto `main`). Crea el directorio con `sudo`
+solo cuando su directorio padre no es escribible, deja el clon a nombre de tu usuario (el ayudante de
+actualizaciones ejecuta git como ese propietario) y reutiliza un clon existente del mismo repositorio sin hacer
+pull; si el directorio contiene otra cosa, se detiene. Necesita bash y git y, en Debian o Ubuntu, ofrece
+instalar git con apt-get.
+
+La segunda opción es clonarlo y ejecutar el instalador tú mismo:
+
 ```bash
 git clone https://github.com/catlinux/Talaia.git
 cd Talaia
@@ -56,11 +80,17 @@ Cambia `192.0.2.10` por la dirección desde la que se llegará al panel (en un t
 8. crea el administrador y te pide la contraseña dos veces (mínimo 12 caracteres).
 
 Con `--acme ovh` (o contestando que sí cuando lo pregunta, en un terminal) prepara además un certificado de
-confianza para el panel por ACME DNS-01: las credenciales de OVH se leen de `OVH_ENDPOINT`,
-`OVH_APPLICATION_KEY`, `OVH_APPLICATION_SECRET` y `OVH_CONSUMER_KEY` o se piden sin eco, y se guardan en
-`packaging/core/.env.acme` (modo 0600, ignorado por git). `--acme-email` fija el correo de contacto. Después de
-arrancar la pila espera hasta tres minutos a `ACME certificate ready` y dice si el certificado se obtuvo o sigue
-pendiente. Véase la sección 6.
+confianza para el panel por ACME DNS-01. Pregunta la zona DNS (por defecto: las dos últimas etiquetas del nombre;
+para nombres como `.co.uk` escribe el dominio registrado, o pasa `--acme-zone`) y la región de OVH (`ovh-eu` u
+`ovh-ca`; también se lee de `OVH_ENDPOINT`), imprime el enlace preparado para crear la clave y la guía
+[docs/es/ovh-dns.md](ovh-dns.md), y pide la clave de aplicación, el secreto y la clave de consumidor (las dos
+últimas sin eco), o los lee de `OVH_APPLICATION_KEY`, `OVH_APPLICATION_SECRET` y `OVH_CONSUMER_KEY`. Los
+comprueba con la API de OVH antes de escribir `packaging/core/.env.acme` (modo 0600, ignorado por git) o de
+construir nada: nombra el derecho que falte, explica si la clave no está validada o ha sido rechazada, y ofrece
+volver a introducir las claves, continuar con la CA de Talaia (ACME desactivado) o abortar. `--no-acme-check`
+omite la comprobación de red en una instalación sin conexión. Un `.env.acme` existente también se comprueba.
+`--acme-email` fija el correo de contacto. Después de arrancar la pila espera hasta tres minutos a
+`ACME certificate ready` y dice si el certificado se obtuvo o sigue pendiente. Véase la sección 6.
 
 Las últimas líneas repiten las direcciones del panel y de los agentes, cómo añadir un servidor, cómo actualizar
 desde **Ajustes**, dónde están los registros y si el ayudante de actualizaciones está activo. Se puede volver a

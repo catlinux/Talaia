@@ -22,6 +22,28 @@ Talaia has two parts: the **core** (panel, API and database), which runs in Dock
 
 ## 2. Install the core
 
+On a fresh Debian or Ubuntu the one-line bootstrap clones the current `main` into `/opt/talaia` and runs the
+installer. Before 1.0 this installs `main`, not a tagged release:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/catlinux/Talaia/main/install-core.sh | bash
+```
+
+Pass installer flags after `bash -s --`; for a public name with a trusted certificate at OVH:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/catlinux/Talaia/main/install-core.sh | bash -s -- \
+  --hostname talaia.example.com --acme ovh
+```
+
+The bootstrap uses `TALAIA_DIR` (default `/opt/talaia`), `TALAIA_REPO_URL` (default
+`https://github.com/catlinux/Talaia.git`) and `TALAIA_BRANCH` (default `main`). It creates the directory with
+`sudo` only when its parent is not writable, leaves the clone owned by your user (the update helper runs git as
+that owner) and reuses an existing clone of the same repository without pulling; if the directory holds
+anything else it stops. It needs bash and git and, on Debian or Ubuntu, offers to install git with apt-get.
+
+The second option is to clone and run the installer yourself:
+
 ```bash
 git clone https://github.com/catlinux/Talaia.git
 cd Talaia
@@ -54,11 +76,17 @@ Replace `192.0.2.10` with the address the panel will be reached at (in a termina
 8. creates the administrator, asking for the password twice (at least 12 characters).
 
 With `--acme ovh` (or answering yes when it asks, in a terminal) it also prepares a trusted certificate for the
-panel by ACME DNS-01: the OVH credentials are read from `OVH_ENDPOINT`, `OVH_APPLICATION_KEY`,
-`OVH_APPLICATION_SECRET` and `OVH_CONSUMER_KEY` or asked for without echo, and are stored in
-`packaging/core/.env.acme` (mode 0600, ignored by git). `--acme-email` sets the contact address. After the stack
-starts it waits up to three minutes for `ACME certificate ready` and says whether the certificate was obtained
-or is still pending. See section 6.
+panel by ACME DNS-01. It asks for the DNS zone (default: the last two labels of the host name; for names like
+`.co.uk` type the registered domain, or pass `--acme-zone`) and the OVH region (`ovh-eu` or `ovh-ca`; also read
+from `OVH_ENDPOINT`), prints the prepared key-creation link and the guide [docs/en/ovh-dns.md](ovh-dns.md), and
+asks for the application key, secret and consumer key (the last two without echo), or reads them from
+`OVH_APPLICATION_KEY`, `OVH_APPLICATION_SECRET` and `OVH_CONSUMER_KEY`. It checks them with the OVH API before it
+writes `packaging/core/.env.acme` (mode 0600, ignored by git) or builds anything: a missing right is named, a key
+that is not validated or is rejected is explained, and it offers to re-enter the keys, continue with the Talaia
+CA (ACME off) or abort. `--no-acme-check` skips the network check for an offline install. An existing
+`.env.acme` is checked too. `--acme-email` sets the contact address. After the stack starts it waits up to three
+minutes for `ACME certificate ready` and says whether the certificate was obtained or is still pending. See
+section 6.
 
 The final lines repeat the panel and agent URLs, how to add a server, how to update from **Settings**, where the
 logs are and whether the update helper is active. It is safe to run again. If your user cannot talk to Docker, it
