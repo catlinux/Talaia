@@ -12,7 +12,9 @@ Talaia has two parts: the **core** (panel, API and database), which runs in Dock
 
 ## 1. Requirements
 
-- **Core machine:** Debian 13 (or Ubuntu) with Docker Engine and the Docker Compose plugin, and `git`.
+- **Core machine:** Debian 13 (or Ubuntu), `git`, `curl`, and Docker Engine with the Docker Compose plugin. If
+  Docker is missing, the installer explains how to add it and can run the official script with `--install-docker`
+  (or when you answer yes).
 - **Servers to manage:** Debian or Ubuntu with systemd, `curl`, and root access (`sudo`).
 - A name or IP address the servers and your browser can reach the core at, and two free TCP ports for it
   (8443 by default); a second port is used by the agents (8444 by default).
@@ -29,22 +31,38 @@ packaging/core/install.sh --hostname 192.0.2.10 --username admin
 Replace `192.0.2.10` with the address the panel will be reached at (in a terminal it asks for it when you omit
 `--hostname`). The script:
 
-1. chooses the ports: the first free one from 8443 for the panel and from 8444 for the agents (checked with
+1. checks the machine before writing anything: Debian or Ubuntu (anything else only warns), `git`, a way to
+   get root (root or `sudo`; if `sudo` needs a password it says so), at least 2 GiB free on the filesystem
+   that holds `/var/lib/docker` (it warns below 5 GiB) and Docker with the Compose plugin. Every missing piece
+   comes with the command that fixes it. If Docker is missing, `--install-docker` runs
+   `curl -fsSL https://get.docker.com | sudo sh`; in a terminal the script offers it first, and it never
+   installs it otherwise. If the Compose plugin is missing, it names
+   `sudo apt-get install -y docker-compose-plugin` (or `docker-compose-v2` on some systems);
+2. chooses the ports: the first free one from 8443 for the panel and from 8444 for the agents (checked with
    `ss`), never 80 or 443 on its own. `--port` and `--agent-port` force a port; if it is busy the script stops;
-2. writes `packaging/core/.env` with a random database password and those ports (an existing `.env` is never
+3. when `--hostname` is a DNS name, checks that it resolves. It warns when it does not, or when it points to an
+   address that is not one of this machine (normal behind provider NAT), and continues;
+4. writes `packaging/core/.env` with a random database password and those ports (an existing `.env` is never
    replaced, ports included);
-3. installs the update helper `talaia-hostd` with `sudo` (see section 5), then builds the image and starts the
-   stack with `docker compose up -d --build`. The first build takes a few
-   minutes;
-4. waits for the core to answer;
-5. creates the administrator, asking for the password twice (at least 12 characters).
+5. prints the exact firewall commands for the two ports when ufw or firewalld is active, and always reminds
+   you about the provider's firewall or security group. It never opens a port;
+6. installs the update helper `talaia-hostd` with `sudo` (see section 5), reports whether
+   `talaia-update.path` is active, and then builds the image and starts the stack with
+   `docker compose up -d --build`. The first build takes a few minutes;
+7. waits for the core to answer and checks the panel (`/healthz`) and the agent port (`/ca.pem`) from this
+   machine, printing `ok` or `FAILED` for each;
+8. creates the administrator, asking for the password twice (at least 12 characters).
 
 With `--acme ovh` (or answering yes when it asks, in a terminal) it also prepares a trusted certificate for the
 panel by ACME DNS-01: the OVH credentials are read from `OVH_ENDPOINT`, `OVH_APPLICATION_KEY`,
 `OVH_APPLICATION_SECRET` and `OVH_CONSUMER_KEY` or asked for without echo, and are stored in
-`packaging/core/.env.acme` (mode 0600, ignored by git). `--acme-email` sets the contact address. See section 6.
+`packaging/core/.env.acme` (mode 0600, ignored by git). `--acme-email` sets the contact address. After the stack
+starts it waits up to three minutes for `ACME certificate ready` and says whether the certificate was obtained
+or is still pending. See section 6.
 
-It is safe to run again. If your user cannot talk to Docker, it uses `sudo docker` on its own.
+The final lines repeat the panel and agent URLs, how to add a server, how to update from **Settings**, where the
+logs are and whether the update helper is active. It is safe to run again. If your user cannot talk to Docker, it
+uses `sudo docker` on its own.
 
 ### Without the script
 
@@ -178,7 +196,13 @@ side.
 
 - **It does not need ports 80 or 443.** The installer picks free ports (8443 and 8444 by default), so a VPS that
   already runs a web server or a reverse proxy keeps working. Open the two chosen ports in the firewall of the VPS
-  (they are written to `packaging/core/.env`) and point a DNS `A` record at the VPS.
+  (they are written to `packaging/core/.env`): when ufw or firewalld is active the installer prints the exact
+  commands (`sudo ufw allow <port>/tcp`, or
+  `sudo firewall-cmd --permanent --add-port=<port>/tcp && sudo firewall-cmd --reload`) and never opens a port
+  itself. Also open them in the firewall or security group of your provider.
+- **DNS:** point an `A` (or `AAAA`) record at the VPS. When `--hostname` is a DNS name the installer checks it,
+  warns if it does not resolve or if it resolves to an address that is not one of the machine (normal behind
+  provider NAT), and continues either way.
 - **Install with the public name:** `packaging/core/install.sh --hostname talaia.example.com --username admin`.
 - **The panel is then on the internet.** What protects it is the password plus the second factor, the rate limit
   and the lockout after 5 failed sign-ins (see section 7). Keep the password long and the authenticator safe.
@@ -207,9 +231,10 @@ it works on any port and needs no web server. It needs a DNS name in `--hostname
    (the email is optional). The credentials go to `packaging/core/.env.acme` (mode 0600) and the core reads them as
    `OVH_ENDPOINT`, `OVH_APPLICATION_KEY`, `OVH_APPLICATION_SECRET` and `OVH_CONSUMER_KEY`.
 3. Until the certificate is ready the panel answers with the certificate of the internal CA; then it swaps to the
-   trusted one without a restart. The core logs `ACME certificate ready`. The account and the certificate are kept
-   in the `core-data` volume (`/var/lib/talaia/acme`) and renewed 30 days before they expire. Opened
-   by IP address, the panel keeps answering with the certificate of the internal CA.
+   trusted one without a restart. The core logs `ACME certificate ready`; the installer waits up to three minutes
+   after the stack starts and reports whether the certificate was obtained or is still pending. The account and the
+   certificate are kept in the `core-data` volume (`/var/lib/talaia/acme`) and renewed 30 days before they expire.
+   Opened by IP address, the panel keeps answering with the certificate of the internal CA.
 
 The **agents port always uses the internal CA**, never the public certificate: agents pin the CA fingerprint, so
 nobody who gets control of your DNS can impersonate the core and send commands to your servers.

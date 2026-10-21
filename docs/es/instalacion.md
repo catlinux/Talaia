@@ -13,7 +13,9 @@ Talaia tiene dos partes: el **núcleo** (panel, API y base de datos), que corre 
 
 ## 1. Requisitos
 
-- **Máquina del núcleo:** Debian 13 (o Ubuntu) con Docker Engine y el plugin Docker Compose, y `git`.
+- **Máquina del núcleo:** Debian 13 (o Ubuntu), `git`, `curl` y Docker Engine con el plugin Docker Compose. Si
+  falta Docker, el instalador explica cómo añadirlo y puede ejecutar el script oficial con `--install-docker` (o
+  contestando que sí).
 - **Servidores a gestionar:** Debian o Ubuntu con systemd, `curl` y acceso root (`sudo`).
 - Un nombre o una IP desde la que los servidores y tu navegador lleguen al núcleo, y dos puertos TCP libres para
   él (8443 por defecto); los agentes usan un segundo puerto (8444 por defecto).
@@ -30,23 +32,39 @@ packaging/core/install.sh --hostname 192.0.2.10 --username admin
 Cambia `192.0.2.10` por la dirección desde la que se llegará al panel (en un terminal la pregunta si omites
 `--hostname`). El script:
 
-1. elige los puertos: el primero libre desde 8443 para el panel y desde 8444 para los agentes (lo comprueba con
+1. comprueba la máquina antes de escribir nada: Debian o Ubuntu (cualquier otra cosa solo avisa), `git`, una
+   forma de obtener root (root o `sudo`; si `sudo` pide contraseña lo dice), al menos 2 GiB libres en el sistema
+   de archivos de `/var/lib/docker` (avisa por debajo de 5 GiB) y Docker con el plugin Compose. Cada pieza que
+   falta viene con la orden que la arregla. Si falta Docker, `--install-docker` ejecuta
+   `curl -fsSL https://get.docker.com | sudo sh`; en un terminal el script lo ofrece primero, y nunca lo instala
+   de otra forma. Si falta el plugin Compose, indica
+   `sudo apt-get install -y docker-compose-plugin` (o `docker-compose-v2` en algunos sistemas);
+2. elige los puertos: el primero libre desde 8443 para el panel y desde 8444 para los agentes (lo comprueba con
    `ss`), y nunca el 80 ni el 443 por su cuenta. `--port` y `--agent-port` fuerzan un puerto; si está ocupado,
    el script se detiene;
-2. escribe `packaging/core/.env` con una contraseña aleatoria de base de datos y esos puertos (un `.env`
+3. cuando `--hostname` es un nombre DNS, comprueba que resuelve. Avisa si no lo hace o si apunta a una dirección
+   que no es de esta máquina (normal detrás de un NAT del proveedor), y continúa;
+4. escribe `packaging/core/.env` con una contraseña aleatoria de base de datos y esos puertos (un `.env`
    existente nunca se sustituye, puertos incluidos);
-3. instala el ayudante de actualizaciones `talaia-hostd` con `sudo` (véase la sección 5) y luego construye la
-   imagen y arranca la pila con `docker compose up -d --build`. La primera construcción tarda
-   unos minutos;
-4. espera a que el núcleo responda;
-5. crea el administrador y te pide la contraseña dos veces (mínimo 12 caracteres).
+5. imprime las órdenes exactas de cortafuegos para los dos puertos cuando ufw o firewalld están activos, y
+   recuerda siempre el cortafuegos o el grupo de seguridad del proveedor. Nunca abre un puerto;
+6. instala el ayudante de actualizaciones `talaia-hostd` con `sudo` (véase la sección 5), informa de si
+   `talaia-update.path` está activo y luego construye la imagen y arranca la pila con
+   `docker compose up -d --build`. La primera construcción tarda unos minutos;
+7. espera a que el núcleo responda y comprueba desde esta máquina el panel (`/healthz`) y el puerto de los
+   agentes (`/ca.pem`), mostrando `ok` o `FAILED` en cada uno;
+8. crea el administrador y te pide la contraseña dos veces (mínimo 12 caracteres).
 
 Con `--acme ovh` (o contestando que sí cuando lo pregunta, en un terminal) prepara además un certificado de
 confianza para el panel por ACME DNS-01: las credenciales de OVH se leen de `OVH_ENDPOINT`,
 `OVH_APPLICATION_KEY`, `OVH_APPLICATION_SECRET` y `OVH_CONSUMER_KEY` o se piden sin eco, y se guardan en
-`packaging/core/.env.acme` (modo 0600, ignorado por git). `--acme-email` fija el correo de contacto. Véase la sección 6.
+`packaging/core/.env.acme` (modo 0600, ignorado por git). `--acme-email` fija el correo de contacto. Después de
+arrancar la pila espera hasta tres minutos a `ACME certificate ready` y dice si el certificado se obtuvo o sigue
+pendiente. Véase la sección 6.
 
-Se puede volver a ejecutar sin riesgo. Si tu usuario no puede hablar con Docker, usa `sudo docker` por su cuenta.
+Las últimas líneas repiten las direcciones del panel y de los agentes, cómo añadir un servidor, cómo actualizar
+desde **Ajustes**, dónde están los registros y si el ayudante de actualizaciones está activo. Se puede volver a
+ejecutar sin riesgo. Si tu usuario no puede hablar con Docker, usa `sudo docker` por su cuenta.
 
 ### Sin el script
 
@@ -181,7 +199,13 @@ VPN ni puerto abierto por su lado.
 
 - **No necesita los puertos 80 ni 443.** El instalador elige puertos libres (8443 y 8444 por defecto), de modo que
   un VPS que ya tenga un servidor web o un proxy inverso sigue funcionando. Abre los dos puertos elegidos en el
-  cortafuegos del VPS (quedan escritos en `packaging/core/.env`) y apunta un registro DNS `A` al VPS.
+  cortafuegos del VPS (quedan escritos en `packaging/core/.env`): cuando ufw o firewalld están activos, el
+  instalador imprime las órdenes exactas (`sudo ufw allow <puerto>/tcp`, o
+  `sudo firewall-cmd --permanent --add-port=<puerto>/tcp && sudo firewall-cmd --reload`) y nunca abre un puerto
+  por su cuenta. Ábrelos también en el cortafuegos o grupo de seguridad del proveedor.
+- **DNS:** apunta un registro `A` (o `AAAA`) al VPS. Cuando `--hostname` es un nombre DNS, el instalador lo
+  comprueba, avisa si no resuelve o si resuelve a una dirección que no es de la máquina (normal detrás de un NAT
+  del proveedor) y continúa en cualquier caso.
 - **Instala con el nombre público:** `packaging/core/install.sh --hostname talaia.example.com --username admin`.
 - **El panel queda entonces en internet.** Lo protegen la contraseña más el segundo factor, el límite de intentos y
   el bloqueo tras 5 accesos fallidos (véase la sección 7). Usa una contraseña larga y guarda bien la aplicación de
@@ -212,9 +236,10 @@ no puede tenerlo).
    (el correo es opcional). Las credenciales van a `packaging/core/.env.acme` (modo 0600) y el núcleo las lee como
    `OVH_ENDPOINT`, `OVH_APPLICATION_KEY`, `OVH_APPLICATION_SECRET` y `OVH_CONSUMER_KEY`.
 3. Hasta que el certificado esté listo, el panel responde con el de la CA interna; después pasa al de confianza sin
-   reiniciar. El núcleo registra `ACME certificate ready`. La cuenta y el certificado se guardan en el volumen
-   `core-data` (`/var/lib/talaia/acme`) y se renuevan 30 días antes de caducar. Si
-   se abre por dirección IP, el panel sigue respondiendo con el certificado de la CA interna.
+   reiniciar. El núcleo registra `ACME certificate ready`; el instalador espera hasta tres minutos después de
+   arrancar la pila e informa de si el certificado se obtuvo o sigue pendiente. La cuenta y el certificado se
+   guardan en el volumen `core-data` (`/var/lib/talaia/acme`) y se renuevan 30 días antes de caducar. Si se abre
+   por dirección IP, el panel sigue respondiendo con el certificado de la CA interna.
 
 El **puerto de los agentes usa siempre la CA interna**, nunca el certificado público: los agentes fijan la huella de
 la CA, así que quien se haga con tu DNS no puede hacerse pasar por el núcleo y mandar órdenes a tus servidores.

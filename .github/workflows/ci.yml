@@ -127,11 +127,13 @@ jobs:
         run: node --test scripts
 
   hostd:
-    name: host helper
+    name: installer and host helper
     runs-on: ubuntu-latest
     steps:
       - name: Check out the repository
         uses: actions/checkout@v7.0.1
+      - name: Test the installer preflight
+        run: bash packaging/core/test-install.sh
       - name: Test talaia-hostd
         run: bash packaging/core/hostd/test.sh
 
