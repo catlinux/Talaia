@@ -218,20 +218,10 @@ núcleo puede obtener solo un certificado de Let's Encrypt. DNS-01 demuestra el 
 funciona en cualquier puerto y no necesita servidor web. Hace falta un nombre DNS en `--hostname` (una dirección IP
 no puede tenerlo).
 
-1. Crea una aplicación de la API de OVH y una clave de consumidor siguiendo la
-   [guía de OVH](https://docs.ovh.com/gb/en/customer/first-steps-with-ovh-api/). Da a la clave de consumidor
-   derechos solo sobre tu zona (sustituye `example.com` por ella): son las tres llamadas que hace lego, la
-   biblioteca ACME que usa el núcleo. La documentación de lego propone `/domain/zone/*`, que dejaría a la clave
-   cambiar todas las zonas de la cuenta si alguien llegara a controlar el núcleo.
-
-   ```json
-   { "accessRules": [
-       { "method": "POST", "path": "/domain/zone/example.com/record" },
-       { "method": "POST", "path": "/domain/zone/example.com/refresh" },
-       { "method": "DELETE", "path": "/domain/zone/example.com/record/*" }
-   ] }
-   ```
-
+1. Crea una clave de la API de OVH autorizada a cambiar solo tu zona DNS. La guía paso a paso, con los derechos
+   exactos y qué copiar, es [ovh-dns.md](ovh-dns.md) (también en [English](../en/ovh-dns.md) y
+   [català](../ca/ovh-dns.md)); el instalador imprime un enlace ya preparado para tu zona y comprueba la clave antes
+   de construir nada.
 2. Instala con el proveedor: `packaging/core/install.sh --hostname talaia.example.com --acme ovh --acme-email tu@example.com`
    (el correo es opcional). Las credenciales van a `packaging/core/.env.acme` (modo 0600) y el núcleo las lee como
    `OVH_ENDPOINT`, `OVH_APPLICATION_KEY`, `OVH_APPLICATION_SECRET` y `OVH_CONSUMER_KEY`.

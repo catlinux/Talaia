@@ -213,20 +213,10 @@ With the internal CA the browser warns that the panel is "not secure". If the DN
 the core can obtain a certificate from Let's Encrypt on its own. DNS-01 proves the name through a DNS record, so
 it works on any port and needs no web server. It needs a DNS name in `--hostname` (an IP address cannot get one).
 
-1. Create an OVH API application and a consumer key following the
-   [OVH guide](https://docs.ovh.com/gb/en/customer/first-steps-with-ovh-api/). Give the consumer key rights over
-   your zone only (replace `example.com` with it): these are the three calls lego, the ACME library the core uses,
-   makes. lego's own documentation suggests `/domain/zone/*`, which would let the key change every zone of the
-   account if the core were ever compromised.
-
-   ```json
-   { "accessRules": [
-       { "method": "POST", "path": "/domain/zone/example.com/record" },
-       { "method": "POST", "path": "/domain/zone/example.com/refresh" },
-       { "method": "DELETE", "path": "/domain/zone/example.com/record/*" }
-   ] }
-   ```
-
+1. Create an OVH API key allowed to change only your DNS zone. The step-by-step guide, with the exact rights and
+   what to copy, is [ovh-dns.md](ovh-dns.md) (also in [castellano](../es/ovh-dns.md) and
+   [català](../ca/ovh-dns.md)); the installer prints a link already prepared for your zone and checks the key
+   before it builds anything.
 2. Install with the provider: `packaging/core/install.sh --hostname talaia.example.com --acme ovh --acme-email you@example.com`
    (the email is optional). The credentials go to `packaging/core/.env.acme` (mode 0600) and the core reads them as
    `OVH_ENDPOINT`, `OVH_APPLICATION_KEY`, `OVH_APPLICATION_SECRET` and `OVH_CONSUMER_KEY`.
