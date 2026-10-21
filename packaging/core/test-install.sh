@@ -21,6 +21,7 @@ trap 'rm -rf "$tmp"' EXIT
 
 # The installer is copied so .env, if any, cannot land in the repository.
 cp "$installer" "$tmp/install.sh"
+cp "$script_dir/.env.example" "$tmp/.env.example"
 
 stub="$tmp/bin"
 mkdir -p "$stub"
@@ -70,7 +71,32 @@ EOF
 
 write_stub hostname <<'EOF'
 #!/bin/sh
-echo 192.0.2.10
+printf '%s\n' "${HOSTNAME_OUT:-192.0.2.10}"
+EOF
+
+write_stub ip <<'EOF'
+#!/bin/sh
+if [ -n "${IP_ROUTE_OUTPUT:-}" ]; then
+    printf '%s\n' "$IP_ROUTE_OUTPUT"
+    exit "${IP_ROUTE_STATUS:-0}"
+fi
+exit 1
+EOF
+
+write_stub ss <<'EOF'
+#!/bin/sh
+case "$*" in
+    *"sport = :"*) exit 0 ;;
+esac
+if [ -n "${SS_OUTPUT:-}" ]; then
+    printf '%s\n' "$SS_OUTPUT"
+fi
+exit 0
+EOF
+
+write_stub sleep <<'EOF'
+#!/bin/sh
+exit 0
 EOF
 
 write_stub curl <<'EOF'
@@ -130,6 +156,12 @@ write_stub docker <<'EOF'
 #!/bin/sh
 exit 0
 EOF
+
+# Source the installer's helpers without running the installation. The variable
+# is not exported, so the child runs below start the installer normally.
+TALAIA_INSTALL_SOURCE_ONLY=1
+. "$installer"
+unset TALAIA_INSTALL_SOURCE_ONLY
 
 # run_install runs the copied installer with only the stubs in its PATH.
 run_install() {
@@ -479,7 +511,360 @@ else
     fail "the new offline install called OVH"
 fi
 
-# 15. The bootstrap clones, reuses, refuses a foreign directory and passes
+# --- Delegation checks ----------------------------------------------------
+
+write_delegation_env() {
+    cat > "$tmp/.env" <<'EOF'
+POSTGRES_PASSWORD=test
+TALAIA_PUBLIC_HOSTNAMES=talaia.example.com
+TALAIA_PANEL_PORT=8443
+TALAIA_AGENT_PORT=8444
+TALAIA_ACME_PROVIDER=delegation
+TALAIA_ACME_EMAIL=
+EOF
+}
+
+run_delegation() {
+    local status=0
+    PATH="$stub:$system_path" \
+        TALAIA_INSTALL_ACME_ONLY=1 \
+        SYSTEM_PATH="$system_path" \
+        STUB_DIR="$stub" \
+        IP_ROUTE_OUTPUT="${IP_ROUTE_OUTPUT:-1.1.1.1 via 192.0.2.1 dev eth0 src 203.0.113.10 uid 0}" \
+        SS_OUTPUT="${SS_OUTPUT:-UNCONN 0 0 127.0.0.53:53 0.0.0.0:*}" \
+        DF_AVAILABLE=10000000 \
+        "$bash_path" "$tmp/install.sh" "$@" < /dev/null >"$tmp/out" 2>"$tmp/err" || status=$?
+    return "$status"
+}
+
+write_stub compose <<'EOF'
+#!/bin/sh
+if [ -n "${COMPOSE_LOG:-}" ]; then
+    printf '%s\n' "$*" >> "$COMPOSE_LOG"
+fi
+case "${COMPOSE_MODE:-pass}" in
+    pass)
+        printf 'a-record: ok 203.0.113.10\naaaa-record: none\ndelegation: ok\ndns-server: ok\n'
+        exit 0
+        ;;
+    failpass)
+        if [ ! -f "${COMPOSE_COUNTER:?}" ]; then
+            : > "$COMPOSE_COUNTER"
+            printf 'dns-server: not delegated yet\n'
+            exit 1
+        fi
+        printf 'a-record: ok\naaaa-record: none\ndelegation: ok\ndns-server: ok\n'
+        exit 0
+        ;;
+    never)
+        printf 'dns-server: not delegated yet\n'
+        exit 1
+        ;;
+    staging)
+        case "$*" in
+            *"restart core"*) exit 0 ;;
+            *"logs --since"*) printf '%s\n' '{"level":"INFO","msg":"ACME certificate ready"}'; exit 0 ;;
+            *"up -d core"*) exit 0 ;;
+            *) exit 0 ;;
+        esac
+        ;;
+    stagingfail)
+        case "$*" in
+            *"restart core"*) exit 0 ;;
+            *"logs --since"*) printf '%s\n' '{"level":"ERROR","msg":"ACME certificate renewal failed; keeping the current certificate: boom"}'; exit 0 ;;
+            *"up -d core"*) exit 0 ;;
+            *) exit 0 ;;
+        esac
+        ;;
+esac
+EOF
+
+# 15. Public IPv4 detection: default route, fallback, private NAT and flag.
+public_ip="$( export PATH="$stub:$system_path"; export IP_ROUTE_OUTPUT="1.1.1.1 via 192.0.2.1 dev eth0 src 203.0.113.10 uid 0"; public_ip_arg=""; delegation_public_ip=""; detect_public_ipv4; printf '%s' "$delegation_public_ip" )"
+if [ "$public_ip" = "203.0.113.10" ]; then
+    pass "the route source is the public IPv4"
+else
+    fail "the route source was not used"
+fi
+public_ip="$( export PATH="$stub:$system_path"; export IP_ROUTE_OUTPUT=""; export HOSTNAME_OUT="2001:db8::1 192.0.2.50"; public_ip_arg=""; delegation_public_ip=""; detect_public_ipv4; printf '%s' "$delegation_public_ip" )"
+if [ "$public_ip" = "192.0.2.50" ]; then
+    pass "hostname -I is the fallback"
+else
+    fail "the hostname -I fallback failed"
+fi
+if ( export PATH="$stub:$system_path"; export IP_ROUTE_OUTPUT="1.1.1.1 via 192.0.2.1 dev eth0 src 10.0.0.5 uid 0"; public_ip_arg=""; detect_public_ipv4 ) < /dev/null >"$tmp/out" 2>"$tmp/err"; then
+    fail "a private address was accepted"
+else
+    pass "a private address stops without a terminal"
+fi
+if grep -q 'behind NAT' "$tmp/err"; then
+    pass "the NAT case is explained"
+else
+    fail "the NAT message is missing"
+fi
+public_ip="$( export PATH="$stub:$system_path"; IP_ROUTE_OUTPUT="1.1.1.1 via 192.0.2.1 dev eth0 src 10.0.0.5 uid 0"; export IP_ROUTE_OUTPUT; public_ip_arg="198.51.100.7"; delegation_public_ip=""; detect_public_ipv4; printf '%s' "$delegation_public_ip" )"
+if [ "$public_ip" = "198.51.100.7" ]; then
+    pass "--public-ip overrides the route"
+else
+    fail "--public-ip did not override the route"
+fi
+
+# 16. Port 53: 127.x is fine; the wildcard and the public IPv4 conflict.
+if ( export PATH="$stub:$system_path"; export SS_OUTPUT="UNCONN 0 0 127.0.0.53:53 0.0.0.0:*"; delegation_public_ip="203.0.113.10"; check_port_53 ) < /dev/null; then
+    pass "a listener on 127.0.0.53 is fine"
+else
+    fail "127.0.0.53 was treated as a conflict"
+fi
+if ( export PATH="$stub:$system_path"; export SS_OUTPUT="UNCONN 0 0 0.0.0.0:53 0.0.0.0:*"; delegation_public_ip="203.0.113.10"; check_port_53 ) < /dev/null >"$tmp/out" 2>"$tmp/err"; then
+    fail "0.0.0.0:53 was accepted"
+else
+    pass "0.0.0.0:53 is a conflict"
+fi
+if grep -q 'port 53' "$tmp/err"; then
+    pass "the port 53 conflict is explained"
+else
+    fail "the port 53 message is missing"
+fi
+if ( export PATH="$stub:$system_path"; export SS_OUTPUT="LISTEN 0 4096 203.0.113.10:53 0.0.0.0:*"; delegation_public_ip="203.0.113.10"; check_port_53 ) < /dev/null; then
+    fail "a listener on the public IPv4 was accepted"
+else
+    pass "a listener on the public IPv4 is a conflict"
+fi
+
+# 17. set_env_key replaces, appends, keeps the other lines and mode, and rejects
+# values that would break the file.
+if (
+    cd "$tmp"
+    mode_supported=0
+    probe="$(mktemp)"
+    chmod 600 "$probe"
+    [ "$(stat -c %a "$probe" 2>/dev/null)" = "600" ] && mode_supported=1
+    rm -f "$probe"
+    printf 'POSTGRES_PASSWORD=keep\nTALAIA_ACME_PROVIDER=old\nKEEP=value\n' > .env
+    chmod 644 .env
+    set_env_key TALAIA_ACME_PROVIDER delegation
+    set_env_key NEW_KEY new-value
+    grep -q '^POSTGRES_PASSWORD=keep$' .env || exit 1
+    grep -q '^KEEP=value$' .env || exit 1
+    grep -q '^TALAIA_ACME_PROVIDER=delegation$' .env || exit 1
+    grep -q '^NEW_KEY=new-value$' .env || exit 1
+    if [ "$mode_supported" -eq 1 ]; then
+        mode="$(stat -c %a .env 2>/dev/null || echo 600)"
+        [ "$mode" = "600" ] || exit 1
+    fi
+    set_env_key BAD_KEY 'two words' >/dev/null 2>&1 && exit 1
+    set_env_key BAD_KEY 'a|b' >/dev/null 2>&1 && exit 1
+    grep -q '^BAD_KEY=' .env && exit 1
+    exit 0
+); then
+    pass "set_env_key edits the .env safely"
+else
+    fail "set_env_key failed"
+fi
+
+# 18. The zone guess and the two records.
+zone="$( { export TALAIA_PUBLIC_HOSTNAMES="talaia.example.com"; acme_zone_arg=""; acme_zone_value=""; determine_acme_zone; printf '%s' "$acme_zone_value"; } < /dev/null )"
+if [ "$zone" = "example.com" ]; then
+    pass "the zone is guessed from the host name"
+else
+    fail "the zone guess failed"
+fi
+records="$( export delegation_host="talaia.example.com" delegation_zone="example.com" delegation_public_ip="203.0.113.10"; delegation_records )"
+if grep -q '^A.*talaia.*203.0.113.10' <<< "$records" && grep -q '^NS.*_acme-challenge.talaia.*talaia.example.com\.' <<< "$records"; then
+    pass "the delegation records use relative names"
+else
+    fail "the delegation records are wrong"
+fi
+if grep -q 'AAAA' <<< "$records" && grep -q 'IPv4 only' <<< "$records"; then
+    pass "the AAAA warning is printed"
+else
+    fail "the AAAA warning is missing"
+fi
+apex="$( export delegation_host="example.com" delegation_zone="example.com" delegation_public_ip="203.0.113.10"; delegation_records )"
+if grep -q '^A.*@.*203.0.113.10' <<< "$apex" && grep -q '^NS.*_acme-challenge ' <<< "$apex"; then
+    pass "the apex records are printed"
+else
+    fail "the apex records are wrong"
+fi
+
+# 19. The check loop: pass, fail then pass, and never (ACME off, staging gone).
+if (
+    export PATH="$stub:$system_path" COMPOSE_MODE=pass
+    cd "$tmp"
+    compose=("$stub/compose")
+    delegation_host="talaia.example.com"
+    delegation_public_ip="203.0.113.10"
+    delegation_check
+) < /dev/null >"$tmp/out" 2>"$tmp/err"; then
+    pass "the delegation check passes"
+else
+    fail "a passing delegation check failed"
+fi
+if grep -q 'dns-server: ok' "$tmp/out"; then
+    pass "the check lines are shown"
+else
+    fail "the check lines are missing"
+fi
+rm -f "$tmp/check.counter"
+if (
+    export PATH="$stub:$system_path" COMPOSE_MODE=failpass COMPOSE_COUNTER="$tmp/check.counter"
+    cd "$tmp"
+    compose=("$stub/compose")
+    delegation_host="talaia.example.com"
+    delegation_public_ip="203.0.113.10"
+    delegation_check
+) < /dev/null >"$tmp/out" 2>"$tmp/err"; then
+    pass "the check loop retries and passes"
+else
+    fail "the check loop did not pass after a retry"
+fi
+write_delegation_env
+printf 'COMPOSE_PROFILES=acme-dns\nTALAIA_DNS_ADDRESS=203.0.113.10\nTALAIA_ACME_DIRECTORY_URL=https://staging.example/directory\n' >> "$tmp/.env"
+if (
+    export PATH="$stub:$system_path" COMPOSE_MODE=never
+    cd "$tmp"
+    compose=("$stub/compose")
+    delegation_host="talaia.example.com"
+    delegation_public_ip="203.0.113.10"
+    delegation_check
+) < /dev/null >"$tmp/out" 2>"$tmp/err"; then
+    fail "the check loop passed when it never should"
+else
+    pass "the check loop gives up after ten attempts"
+fi
+if grep -q '^TALAIA_ACME_PROVIDER=$' "$tmp/.env" && ! grep -q '^TALAIA_ACME_DIRECTORY_URL=' "$tmp/.env"; then
+    pass "giving up turns ACME off and removes staging"
+else
+    fail "the cleanup after the check loop is wrong"
+fi
+
+# 20. Staging to production with the stubbed logs.
+write_delegation_env
+printf 'COMPOSE_PROFILES=acme-dns\nTALAIA_DNS_ADDRESS=203.0.113.10\nTALAIA_ACME_DIRECTORY_URL=https://staging.example/directory\n' >> "$tmp/.env"
+: > "$tmp/compose.log"
+if (
+    export PATH="$stub:$system_path" COMPOSE_MODE=staging COMPOSE_LOG="$tmp/compose.log"
+    cd "$tmp"
+    compose=("$stub/compose")
+    delegation_watched=0
+    delegation_staging
+) < /dev/null >"$tmp/out" 2>"$tmp/err"; then
+    pass "the staging certificate switches to production"
+else
+    fail "the staging switch failed"
+fi
+if grep -q 'staging certificate: ok (the delegation works from the internet)' "$tmp/out"; then
+    pass "the staging success is reported"
+else
+    fail "the staging success is missing"
+fi
+if grep -q '^TALAIA_ACME_DIRECTORY_URL=$' "$tmp/.env"; then
+    pass "production leaves an empty directory URL"
+else
+    fail "the production directory URL is not empty"
+fi
+if grep -q 'restart core' "$tmp/compose.log" && grep -q 'up -d core' "$tmp/compose.log"; then
+    pass "the core is restarted and recreated"
+else
+    fail "the staging switch did not restart/recreate the core"
+fi
+
+# 21. The delegation setup writes the keys and the records (no build).
+write_delegation_env
+if run_delegation --acme delegation; then
+    pass "the delegation setup completes"
+else
+    fail "the delegation setup failed"
+fi
+if grep -q '^COMPOSE_PROFILES=acme-dns$' "$tmp/.env" &&
+    grep -q '^TALAIA_DNS_ADDRESS=203.0.113.10$' "$tmp/.env" &&
+    grep -q '^TALAIA_ACME_DIRECTORY_URL=https://acme-staging-v02.api.letsencrypt.org/directory$' "$tmp/.env" &&
+    grep -q '^TALAIA_ACME_PROVIDER=delegation$' "$tmp/.env"; then
+    pass "the delegation keys are written"
+else
+    fail "the delegation keys are missing"
+fi
+if grep -q 'Create these two records' "$tmp/out" && grep -q '^A.*talaia.*203.0.113.10' "$tmp/out" && grep -q '^NS.*_acme-challenge.talaia.*talaia.example.com\.' "$tmp/out"; then
+    pass "the setup prints the records"
+else
+    fail "the setup did not print the records"
+fi
+if grep -q 'acme: checked' "$tmp/out"; then
+    pass "the setup stops before the build"
+else
+    fail "the setup did not stop before the build"
+fi
+
+# 22. The port 53 conflict and the NAT case stop, and --public-ip overrides.
+write_delegation_env
+if SS_OUTPUT="UNCONN 0 0 0.0.0.0:53 0.0.0.0:*" run_delegation --acme delegation; then
+    fail "the setup accepted a port 53 conflict"
+else
+    pass "the setup stops on a port 53 conflict"
+fi
+if grep -q 'port 53' "$tmp/err"; then
+    pass "the setup explains the port 53 conflict"
+else
+    fail "the setup did not explain the port 53 conflict"
+fi
+write_delegation_env
+if IP_ROUTE_OUTPUT="1.1.1.1 via 192.0.2.1 dev eth0 src 10.0.0.5 uid 0" run_delegation --acme delegation; then
+    fail "the setup accepted a private address"
+else
+    pass "the setup stops on a private address"
+fi
+if grep -q 'behind NAT' "$tmp/err"; then
+    pass "the setup explains NAT"
+else
+    fail "the setup did not explain NAT"
+fi
+write_delegation_env
+if IP_ROUTE_OUTPUT="1.1.1.1 via 192.0.2.1 dev eth0 src 10.0.0.5 uid 0" run_delegation --acme delegation --public-ip 198.51.100.7; then
+    pass "--public-ip carries the setup through NAT"
+else
+    fail "--public-ip did not carry the setup"
+fi
+if grep -q '^TALAIA_DNS_ADDRESS=198.51.100.7$' "$tmp/.env"; then
+    pass "--public-ip is written to .env"
+else
+    fail "--public-ip was not written"
+fi
+
+# 23. --no-acme explicitly turns ACME off and removes staging.
+write_delegation_env
+printf 'COMPOSE_PROFILES=acme-dns\nTALAIA_DNS_ADDRESS=203.0.113.10\nTALAIA_ACME_DIRECTORY_URL=https://staging.example/directory\n' >> "$tmp/.env"
+if run_delegation --no-acme; then
+    pass "--no-acme completes"
+else
+    fail "--no-acme failed"
+fi
+if grep -q '^TALAIA_ACME_PROVIDER=$' "$tmp/.env" && ! grep -q '^TALAIA_ACME_DIRECTORY_URL=' "$tmp/.env"; then
+    pass "--no-acme turns ACME off and removes staging"
+else
+    fail "--no-acme left ACME or staging on"
+fi
+if run_delegation --acme delegation --no-acme; then
+    fail "--acme and --no-acme were accepted together"
+else
+    pass "--acme and --no-acme conflict"
+fi
+
+# 24. A fresh .env with --acme delegation writes the keys and records.
+rm -f "$tmp/.env"
+if run_delegation --hostname talaia.example.com --acme delegation; then
+    pass "a fresh delegation install completes the setup"
+else
+    fail "a fresh delegation install failed"
+fi
+if grep -q '^TALAIA_ACME_PROVIDER=delegation$' "$tmp/.env" &&
+    grep -q '^COMPOSE_PROFILES=acme-dns$' "$tmp/.env" &&
+    grep -q '^TALAIA_DNS_ADDRESS=203.0.113.10$' "$tmp/.env"; then
+    pass "a fresh .env gets the delegation keys"
+else
+    fail "a fresh .env did not get the delegation keys"
+fi
+
+# 25. The bootstrap clones, reuses, refuses a foreign directory and passes
 # the installer flags through. It needs real git (the test stubs it elsewhere).
 if command -v git >/dev/null 2>&1; then
     bootstrap_repo="$tmp/remote.git"

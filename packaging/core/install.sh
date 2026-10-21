@@ -6,18 +6,20 @@
 #
 # Usage:
 #   packaging/core/install.sh [--hostname <ip-or-name>] [--port <port>] [--agent-port <port>]
-#                             [--acme <provider>] [--acme-zone <zone>] [--acme-email <address>]
-#                             [--no-acme-check] [--username <name>] [--no-user] [--no-hostd]
-#                             [--install-docker]
+#                             [--acme delegation|ovh] [--public-ip <IPv4>] [--acme-zone <zone>]
+#                             [--acme-email <address>] [--no-acme] [--no-acme-check]
+#                             [--username <name>] [--no-user] [--no-hostd] [--install-docker]
 #
 #   --hostname    name or address the core is reached at (asked for in a terminal; default: the first address of this machine)
 #   --port        port of the panel (default: the first free one from 8443; 80 and 443 are never chosen on their own)
 #   --agent-port  port of the agents (default: the first free one from 8444)
-#   --acme        trusted certificate for the panel by ACME DNS-01 with this DNS provider (ovh); the
-#                 installer prints the key page, asks for the zone, region and key, and checks the key
-#                 with OVH before writing .env.acme (the key can also come from the OVH_* variables)
-#   --acme-zone   DNS zone at OVH (the registered domain; default: the last two labels of --hostname)
+#   --acme        trusted certificate for the panel: delegation (recommended; two DNS records and no
+#                 provider key) or ovh (an OVH API key). In a terminal the installer asks and offers
+#                 the own CA as the third choice.
+#   --public-ip   public IPv4 for the delegation A record (default: the default route source)
+#   --acme-zone   DNS zone (the registered domain; default: the last two labels of --hostname)
 #   --acme-email  contact address for the certificate authority
+#   --no-acme     do not get a trusted certificate now; keep the Talaia CA
 #   --no-acme-check  do not check the OVH key with the OVH API (offline installs)
 #   --username    name of the administrator (default: admin)
 #   --no-user     do not create the administrator
@@ -37,7 +39,6 @@ case "$script_path" in
     *) script_dir="." ;;
 esac
 SCRIPT_DIR="$(cd "$script_dir" && pwd)"
-cd "$SCRIPT_DIR"
 
 hostname_arg=""
 port=""
@@ -46,11 +47,26 @@ acme_provider=""
 acme_zone_arg=""
 acme_email=""
 no_acme_check=0
+no_acme=0
+public_ip_arg=""
 username="admin"
 create_user=1
 install_helper=1
 install_docker=0
 env_existed=0
+delegation_active=0
+delegation_public_ip=""
+delegation_host=""
+delegation_zone=""
+delegation_firewall_done=0
+delegation_watched=0
+# Set after the preflight; empty until then so helpers can tell.
+compose=()
+
+# TALAIA_INSTALL_SOURCE_ONLY=1 sources this file only to reuse its helpers in
+# the tests; the installer itself does not run.
+if [ "${TALAIA_INSTALL_SOURCE_ONLY:-0}" != "1" ]; then
+cd "$SCRIPT_DIR"
 
 while [ "$#" -gt 0 ]; do
     case "$1" in
@@ -87,6 +103,15 @@ while [ "$#" -gt 0 ]; do
         --no-acme-check)
             no_acme_check=1
             shift
+            ;;
+        --no-acme)
+            no_acme=1
+            shift
+            ;;
+        --public-ip)
+            [ "$#" -ge 2 ] || { echo "error: --public-ip needs a value" >&2; exit 1; }
+            public_ip_arg="$2"
+            shift 2
             ;;
         --username)
             [ "$#" -ge 2 ] || { echo "error: --username needs a value" >&2; exit 1; }
@@ -130,12 +155,17 @@ if [ -n "$port" ] && [ "$port" = "$agent_port" ]; then
     exit 1
 fi
 case "$acme_provider" in
-    '' | ovh) ;;
+    '' | ovh | delegation) ;;
     *)
-        echo "error: unsupported ACME provider $acme_provider (supported: ovh)" >&2
+        echo "error: unsupported ACME provider $acme_provider (supported: delegation, ovh)" >&2
         exit 1
         ;;
 esac
+if [ "$no_acme" -eq 1 ] && [ -n "$acme_provider" ]; then
+    echo "error: use either --acme or --no-acme, not both" >&2
+    exit 1
+fi
+fi
 
 # port_in_use reports whether something already listens on a TCP port.
 port_in_use() {
@@ -413,6 +443,49 @@ guess_acme_zone() {
     fi
 }
 
+# determine_acme_zone sets acme_zone_value from --acme-zone or the last two
+# labels of the public host name, asking in a terminal. The OVH and delegation
+# flows share it.
+determine_acme_zone() {
+    local zone="${acme_zone_arg:-}"
+    if [ -z "$zone" ]; then
+        zone="$(guess_acme_zone "${TALAIA_PUBLIC_HOSTNAMES%%,*}")"
+        if [ -t 0 ]; then
+            zone="$(ask "DNS zone (the registered domain; for names like .co.uk type the registered domain)" "$zone")"
+        fi
+    fi
+    if [ -z "$zone" ]; then
+        echo "error: pass --acme-zone <zone> (the registered domain) and run again." >&2
+        exit 1
+    fi
+    case "$zone" in
+        *[!A-Za-z0-9.-]* | .* | *. | *..*)
+            echo "error: --acme-zone may only contain letters, digits, dots and hyphens" >&2
+            exit 1
+            ;;
+    esac
+    acme_zone_value="$zone"
+}
+
+# read_env_file loads the keys the installer uses from .env without executing
+# it. It accepts only known key names and key=value lines.
+read_env_file() {
+    local line key value
+    while IFS= read -r line || [ -n "$line" ]; do
+        line="${line%$'\r'}"
+        case "$line" in
+            '' | '#'*) continue ;;
+        esac
+        key="${line%%=*}"
+        value="${line#*=}"
+        case "$key" in
+            POSTGRES_PASSWORD | TALAIA_PUBLIC_HOSTNAMES | TALAIA_PANEL_PORT | TALAIA_AGENT_PORT | TALAIA_ACME_PROVIDER | TALAIA_ACME_EMAIL | TALAIA_ACME_DIRECTORY_URL | TALAIA_DNS_ADDRESS | COMPOSE_PROFILES)
+                printf -v "$key" '%s' "$value"
+                ;;
+        esac
+    done < .env
+}
+
 # read_acme_file reads the four known key=value lines of .env.acme without
 # sourcing it, so nothing in it can run.
 read_acme_file() {
@@ -452,7 +525,24 @@ acme_tmp=""
 cleanup_acme() {
     [ -z "$acme_tmp" ] || rm -rf "$acme_tmp"
 }
-trap cleanup_acme EXIT
+# cleanup_on_exit also makes sure a run that stops before production never
+# leaves the staging directory configured. The ACME-only test hook is allowed
+# to stop after the setup so the tests can inspect the .env it wrote.
+cleanup_on_exit() {
+    cleanup_acme
+    if [ "${TALAIA_INSTALL_ACME_ONLY:-0}" = "1" ]; then
+        return 0
+    fi
+    if [ -f .env ] && grep -q '^TALAIA_ACME_DIRECTORY_URL=.*acme-staging' .env 2>/dev/null; then
+        set_env_key TALAIA_ACME_PROVIDER "" 2>/dev/null || true
+        remove_env_key TALAIA_ACME_DIRECTORY_URL 2>/dev/null || true
+        echo "warning: the run ended before production; ACME is off and staging was removed." >&2
+        echo "To finish later: cd $SCRIPT_DIR && ./install.sh --acme delegation" >&2
+    fi
+}
+if [ "${TALAIA_INSTALL_SOURCE_ONLY:-0}" != "1" ]; then
+    trap cleanup_on_exit EXIT
+fi
 
 # sanitize_ovh_text turns an OVH error into one printable line and removes the
 # application secret and the consumer key if OVH echoed them.
@@ -600,26 +690,12 @@ check_ovh_key() {
 setup_acme() {
     [ "${TALAIA_ACME_PROVIDER:-}" = "ovh" ] || return 0
 
-    local zone="${acme_zone_arg:-}" endpoint="" existing=0
+    local zone="" endpoint="" existing=0
     local create_link guide="https://github.com/catlinux/Talaia/blob/main/docs/en/ovh-dns.md"
     local answer="" key="" secret="" consumer="" result=0
 
-    if [ -z "$zone" ]; then
-        zone="$(guess_acme_zone "${TALAIA_PUBLIC_HOSTNAMES%%,*}")"
-        if [ -t 0 ]; then
-            zone="$(ask "DNS zone at OVH (the registered domain; for names like .co.uk type the registered domain)" "$zone")"
-        fi
-    fi
-    if [ -z "$zone" ]; then
-        echo "error: pass --acme-zone <zone> (the registered domain at OVH) and run again." >&2
-        exit 1
-    fi
-    case "$zone" in
-        *[!A-Za-z0-9.-]* | .* | *. | *..*)
-            echo "error: --acme-zone may only contain letters, digits, dots and hyphens" >&2
-            exit 1
-            ;;
-    esac
+    determine_acme_zone
+    zone="$acme_zone_value"
 
     if [ -f .env.acme ]; then
         existing=1
@@ -759,6 +835,461 @@ setup_acme() {
     fi
 }
 
+# is_ipv4 returns 0 for a dotted-quad IPv4 address.
+is_ipv4() {
+    [[ "$1" =~ ^([0-9]{1,3})\.([0-9]{1,3})\.([0-9]{1,3})\.([0-9]{1,3})$ ]] || return 1
+    local part
+    for part in "${BASH_REMATCH[@]:1}"; do
+        [ "$((10#$part))" -le 255 ] || return 1
+    done
+    return 0
+}
+
+# is_private_ipv4 covers the ranges the installer must not publish in a DNS A
+# record, including the loopback and link-local addresses.
+is_private_ipv4() {
+    local a b
+    IFS=. read -r a b _ <<< "$1"
+    [ "$a" = "10" ] && return 0
+    [ "$a" = "172" ] && [ "$b" -ge 16 ] && [ "$b" -le 31 ] && return 0
+    [ "$a" = "192" ] && [ "$b" = "168" ] && return 0
+    [ "$a" = "100" ] && [ "$b" -ge 64 ] && [ "$b" -le 127 ] && return 0
+    [ "$a" = "127" ] && return 0
+    [ "$a" = "169" ] && [ "$b" = "254" ] && return 0
+    return 1
+}
+
+# is_dns_name reports whether the first host name is a DNS name, not an IP.
+is_dns_name() {
+    local name="${1%%,*}"
+    name="${name#[}"
+    name="${name%]}"
+    case "$name" in
+        *:*) return 1 ;;
+    esac
+    is_ipv4 "$name" && return 1
+    [[ "$name" == *.* ]] || return 1
+    [[ "$name" =~ ^[A-Za-z0-9.-]+$ ]] || return 1
+    return 0
+}
+
+# detect_public_ipv4 finds the public IPv4 used in the A record: --public-ip,
+# the source of the default route (no packet is sent) or the first IPv4 of
+# hostname -I. A private address means NAT; it asks in a terminal.
+detect_public_ipv4() {
+    local ip="" candidate
+    if [ -n "$public_ip_arg" ]; then
+        ip="$public_ip_arg"
+    else
+        if command -v ip >/dev/null 2>&1; then
+            ip="$(ip -4 route get 1.1.1.1 2>/dev/null | awk '{for (i=1;i<=NF;i++) if ($i=="src") {print $(i+1); exit}}')"
+        fi
+        if [ -z "$ip" ] && command -v hostname >/dev/null 2>&1; then
+            for candidate in $(hostname -I 2>/dev/null || true); do
+                if is_ipv4 "$candidate"; then
+                    ip="$candidate"
+                    break
+                fi
+            done
+        fi
+    fi
+    if [ -z "$ip" ]; then
+        if [ -t 0 ]; then
+            ip="$(ask "Public IPv4 address of this server" "")"
+        else
+            echo "error: could not find the public IPv4 address; pass --public-ip <IPv4>." >&2
+            exit 1
+        fi
+    fi
+    while :; do
+        if ! is_ipv4 "$ip"; then
+            echo "error: $ip is not a valid IPv4 address; pass --public-ip <IPv4>." >&2
+            if [ -t 0 ]; then
+                ip="$(ask "Public IPv4 address of this server" "")"
+                continue
+            fi
+            exit 1
+        fi
+        if ! is_private_ipv4 "$ip"; then
+            break
+        fi
+        echo "This server is behind NAT: $ip is a private address." >&2
+        if [ -t 0 ]; then
+            ip="$(ask "Public IPv4 address of this server" "")"
+            continue
+        fi
+        echo "error: pass the public IPv4 address with --public-ip <IPv4>." >&2
+        exit 1
+    done
+    delegation_public_ip="$ip"
+}
+
+# check_port_53 returns 0 when port 53 is free for acme-dns on the public IPv4.
+# Listeners on 127.x (systemd-resolved) are fine; 0.0.0.0, ::, * or the public
+# IPv4 are conflicts. It never changes the firewall.
+check_port_53() {
+    local can_root=0 lines line addr conflict="" detailed process=""
+    port53_conflict=0
+    if ! command -v ss >/dev/null 2>&1; then
+        echo "warning: ss is not available; cannot check whether port 53 is free." >&2
+        return 0
+    fi
+    lines="$({ ss -lunH 2>/dev/null; ss -ltnH 2>/dev/null; } | grep -E ':(53)([[:space:]]|$)' || true)"
+    while IFS= read -r line; do
+        [ -n "$line" ] || continue
+        addr="$(printf '%s\n' "$line" | grep -oE '[^[:space:]]+:53' | head -n 1)"
+        [ -n "$addr" ] || continue
+        addr="${addr%:*}"
+        case "$addr" in
+            127.*) continue ;;
+            0.0.0.0 | \[::\] | :: | '*') conflict="$addr" ;;
+            "$delegation_public_ip") conflict="$addr" ;;
+            *) continue ;;
+        esac
+        [ -z "$conflict" ] || break
+    done <<< "$lines"
+    if [ -z "$conflict" ]; then
+        return 0
+    fi
+    if [ "$(id -u)" -eq 0 ]; then
+        can_root=1
+    elif sudo -n true 2>/dev/null; then
+        can_root=1
+    fi
+    if [ "$can_root" -eq 1 ]; then
+        if [ "$(id -u)" -eq 0 ]; then
+            detailed="$(ss -lunpH 2>/dev/null; ss -ltnpH 2>/dev/null)"
+        else
+            detailed="$(sudo -n ss -lunpH 2>/dev/null; sudo -n ss -ltnpH 2>/dev/null)"
+        fi
+        process="$(printf '%s\n' "$detailed" | grep -F "$conflict" | sed -n 's/.*users:((\"\([^\"]*\)\".*/\1/p' | head -n 1)"
+    fi
+    echo "error: something is already listening on port 53 at ${conflict}${process:+ ($process)}." >&2
+    echo "acme-dns needs UDP and TCP port 53 on the public IPv4 ${delegation_public_ip}." >&2
+    port53_conflict=1
+    return 1
+}
+
+# validate_env_value rejects the characters that would break the key=value line.
+validate_env_value() {
+    case "$1" in
+        *[[:space:]]* | *\"* | *\'* | *\|*) return 1 ;;
+    esac
+    return 0
+}
+
+# set_env_key replaces a key in .env or appends it, atomically and keeping the
+# mode at 0600; every other line is kept. Values never contain spaces, quotes,
+# newlines or |.
+set_env_key() {
+    local key="$1" value="$2" tmp_file
+    case "$key" in
+        '' | *[!A-Za-z0-9_]* | [0-9]*) echo "error: invalid .env key: $key" >&2; return 1 ;;
+    esac
+    if ! validate_env_value "$value"; then
+        echo "error: the value for $key contains a space, quote, newline or |." >&2
+        return 1
+    fi
+    tmp_file="$(mktemp ".env.XXXXXX")" || return 1
+    chmod 600 "$tmp_file" 2>/dev/null || true
+    if [ -f .env ]; then
+        awk -v key="$key" -v value="$value" '
+            BEGIN { done = 0 }
+            $0 ~ "^" key "=" { print key "=" value; done = 1; next }
+            { print }
+            END { if (!done) print key "=" value }
+        ' .env > "$tmp_file"
+    else
+        printf '%s=%s\n' "$key" "$value" > "$tmp_file"
+    fi
+    chmod 600 "$tmp_file" 2>/dev/null || true
+    mv "$tmp_file" .env
+    chmod 600 .env 2>/dev/null || true
+}
+
+# remove_env_key deletes a key from .env, keeping the mode and every other line.
+remove_env_key() {
+    local key="$1" tmp_file
+    [ -f .env ] || return 0
+    tmp_file="$(mktemp ".env.XXXXXX")" || return 1
+    chmod 600 "$tmp_file" 2>/dev/null || true
+    awk -v key="$key" '$0 !~ "^" key "=" { print }' .env > "$tmp_file"
+    chmod 600 "$tmp_file" 2>/dev/null || true
+    mv "$tmp_file" .env
+    chmod 600 .env 2>/dev/null || true
+}
+
+# clear_delegation_env removes the acme-dns profile and address when the setup
+# switches to OVH or the own CA because port 53 is not available.
+clear_delegation_env() {
+    remove_env_key COMPOSE_PROFILES
+    remove_env_key TALAIA_DNS_ADDRESS
+    remove_env_key TALAIA_ACME_DIRECTORY_URL
+}
+
+# disable_acme turns the trusted certificate off and removes the staging URL,
+# so a run never ends pointing at staging. The panel uses the own CA.
+disable_acme() {
+    set_env_key TALAIA_ACME_PROVIDER ""
+    remove_env_key TALAIA_ACME_DIRECTORY_URL
+    # Nothing left to answer: acme-dns must not keep port 53 open for nothing.
+    if [ "${delegation_active:-0}" -eq 1 ] && [ "${#compose[@]}" -gt 0 ]; then
+        "${compose[@]}" --profile acme-dns rm -sf acme-dns >/dev/null 2>&1 || true
+        clear_delegation_env
+        delegation_active=0
+    fi
+    TALAIA_ACME_PROVIDER=""
+    acme_state=none
+    echo "ACME is off; the panel uses the Talaia CA for now."
+    echo "To finish later: cd $SCRIPT_DIR && ./install.sh --acme delegation"
+}
+
+# delegation_records prints the two records to create and the AAAA warning.
+delegation_records() {
+    local host="${delegation_host%.}" zone="$delegation_zone" prefix a_name ns_name
+    if [ "$host" = "$zone" ]; then
+        prefix=""
+        a_name="@"
+        ns_name="_acme-challenge"
+    else
+        prefix="${host%.$zone}"
+        if [ "$prefix" = "$host" ]; then
+            echo "warning: $host is not inside $zone; check the zone." >&2
+            prefix="$host"
+        fi
+        a_name="$prefix"
+        ns_name="_acme-challenge.$prefix"
+    fi
+    echo
+    echo "Create these two records in the DNS zone of $zone (at your DNS provider):"
+    echo
+    printf '%-5s %-25s %s\n' "Type" "Name" "Value"
+    printf '%-5s %-25s %s\n' "A" "$a_name" "$delegation_public_ip"
+    printf '%-5s %-25s %s\n' "NS" "$ns_name" "${host}."
+    echo
+    echo "Do not create an AAAA record for $host: the challenge server answers on IPv4 only."
+    echo "Guide: https://github.com/catlinux/Talaia/blob/main/docs/en/dns-delegation.md (also docs/es and docs/ca)."
+    echo
+}
+
+# delegation_firewall prints the four ports and, only after an explicit yes in a
+# terminal with root, opens them in ufw or firewalld. The provider firewall is
+# always left to the user.
+delegation_firewall() {
+    local can_root=0 status="" ufw_active=0 firewalld_active=0 as_root=()
+    if [ "$(id -u)" -eq 0 ]; then
+        can_root=1
+    elif sudo -n true 2>/dev/null; then
+        can_root=1
+    fi
+    [ "$(id -u)" -eq 0 ] || as_root=(sudo)
+    if command -v ufw >/dev/null 2>&1; then
+        if [ "$can_root" -eq 1 ]; then
+            if [ "$(id -u)" -eq 0 ]; then status="$(ufw status 2>/dev/null || true)"; else status="$(sudo -n ufw status 2>/dev/null || true)"; fi
+            case "$status" in *"Status: active"*) ufw_active=1 ;; esac
+        else
+            echo "note: ufw is installed; run 'sudo ufw status' to see whether it is active." >&2
+            echo "  sudo ufw allow ${port}/tcp"
+            echo "  sudo ufw allow ${agent_port}/tcp"
+            echo "  sudo ufw allow 53/udp"
+            echo "  sudo ufw allow 53/tcp"
+        fi
+    fi
+    if command -v firewall-cmd >/dev/null 2>&1; then
+        if [ "$can_root" -eq 1 ]; then
+            if [ "$(id -u)" -eq 0 ]; then status="$(firewall-cmd --state 2>/dev/null || true)"; else status="$(sudo -n firewall-cmd --state 2>/dev/null || true)"; fi
+            case "$status" in *running*) firewalld_active=1 ;; esac
+        else
+            echo "note: firewalld is installed; run 'sudo firewall-cmd --state' to see whether it is running." >&2
+            echo "  sudo firewall-cmd --permanent --add-port=${port}/tcp --add-port=${agent_port}/tcp --add-port=53/udp --add-port=53/tcp && sudo firewall-cmd --reload"
+        fi
+    fi
+
+    echo "The delegation needs these ports open:"
+    echo "  TCP $port (panel), TCP $agent_port (agents), UDP 53 and TCP 53 (acme-dns)."
+    if [ "$ufw_active" -eq 1 ]; then
+        if [ -t 0 ] && [ "$can_root" -eq 1 ] && [ "$(ask "Open these ports in ufw now? (yes/no)" "no")" = "yes" ]; then
+            "${as_root[@]}" ufw allow "${port}/tcp"
+            "${as_root[@]}" ufw allow "${agent_port}/tcp"
+            "${as_root[@]}" ufw allow 53/udp
+            "${as_root[@]}" ufw allow 53/tcp
+            echo "opened the ports in ufw"
+        else
+            echo "ufw is active. Open them with:"
+            echo "  sudo ufw allow ${port}/tcp"
+            echo "  sudo ufw allow ${agent_port}/tcp"
+            echo "  sudo ufw allow 53/udp"
+            echo "  sudo ufw allow 53/tcp"
+        fi
+    elif [ "$firewalld_active" -eq 1 ]; then
+        if [ -t 0 ] && [ "$can_root" -eq 1 ] && [ "$(ask "Open these ports in firewalld now? (yes/no)" "no")" = "yes" ]; then
+            "${as_root[@]}" firewall-cmd --permanent --add-port="${port}/tcp"
+            "${as_root[@]}" firewall-cmd --permanent --add-port="${agent_port}/tcp"
+            "${as_root[@]}" firewall-cmd --permanent --add-port=53/udp
+            "${as_root[@]}" firewall-cmd --permanent --add-port=53/tcp
+            "${as_root[@]}" firewall-cmd --reload
+            echo "opened the ports in firewalld"
+        else
+            echo "firewalld is active. Open them with:"
+            echo "  sudo firewall-cmd --permanent --add-port=${port}/tcp --add-port=${agent_port}/tcp --add-port=53/udp --add-port=53/tcp && sudo firewall-cmd --reload"
+        fi
+    else
+        if command -v ufw >/dev/null 2>&1 || command -v firewall-cmd >/dev/null 2>&1; then
+            echo "ufw or firewalld is installed but not active."
+        else
+            echo "No active ufw or firewalld was detected."
+        fi
+    fi
+    echo "Also allow TCP ${port}, TCP ${agent_port}, UDP 53 and TCP 53 in the firewall or security group of your provider."
+    echo "The installer never opens a port in the provider firewall."
+    if [ -t 0 ]; then
+        read -r -p "Press Enter when the records exist and the ports are open" _ || true
+    fi
+    delegation_firewall_done=1
+}
+
+# setup_delegation prepares the acme-dns delegation before the build: public IP,
+# port 53, .env keys, records and firewall. It may switch to OVH or ACME off.
+setup_delegation() {
+    local host choice=""
+    if ! is_dns_name "${TALAIA_PUBLIC_HOSTNAMES%%,*}"; then
+        echo "error: the delegation needs a DNS name in --hostname (not an IP address)." >&2
+        echo "Use --acme ovh or --no-acme, or install with --hostname talaia.example.com." >&2
+        exit 1
+    fi
+    host="${TALAIA_PUBLIC_HOSTNAMES%%,*}"
+    delegation_host="${host%.}"
+    detect_public_ipv4
+    if ! check_port_53; then
+        if [ -t 0 ]; then
+            echo "Port 53 is already in use, so acme-dns cannot bind the public IPv4."
+            echo "  1) use an OVH API key instead"
+            echo "  2) continue without a trusted certificate for now (Talaia's own CA)"
+            echo "  3) quit"
+            choice="$(ask "Choice" "2")"
+            case "$choice" in
+                1)
+                    clear_delegation_env
+                    set_env_key TALAIA_ACME_PROVIDER ovh
+                    acme_provider="ovh"
+                    TALAIA_ACME_PROVIDER="ovh"
+                    delegation_active=0
+                    return 0
+                    ;;
+                2)
+                    clear_delegation_env
+                    disable_acme
+                    delegation_active=0
+                    return 0
+                    ;;
+                *)
+                    clear_delegation_env
+                    disable_acme
+                    exit 1
+                    ;;
+            esac
+        fi
+        echo "error: stop the process listening on port 53, or use --acme ovh or --no-acme." >&2
+        exit 1
+    fi
+    determine_acme_zone
+    delegation_zone="$acme_zone_value"
+    set_env_key COMPOSE_PROFILES acme-dns
+    set_env_key TALAIA_DNS_ADDRESS "$delegation_public_ip"
+    set_env_key TALAIA_ACME_DIRECTORY_URL "https://acme-staging-v02.api.letsencrypt.org/directory"
+    set_env_key TALAIA_ACME_PROVIDER delegation
+    TALAIA_ACME_PROVIDER="delegation"
+    acme_provider="delegation"
+    delegation_active=1
+    delegation_records
+    delegation_firewall
+}
+
+# delegation_check runs talaia-core acme check-delegation until it passes. In a
+# terminal it waits for Enter, o (own CA) or q; without one it retries 10 times.
+delegation_check() {
+    local attempt=1 max=10 choice=""
+    while :; do
+        echo "checking the delegation with the public resolvers (attempt $attempt of $max)"
+        if "${compose[@]}" run --rm --no-deps core acme check-delegation --hostname "$delegation_host" --address "$delegation_public_ip"; then
+            return 0
+        fi
+        if [ -t 0 ]; then
+            echo "DNS changes can take a few minutes."
+            choice="$(ask "Enter: check again, o: continue without a trusted certificate, q: quit" "")"
+            case "$choice" in
+                '') : ;;
+                o | O)
+                    disable_acme
+                    return 1
+                    ;;
+                q | Q)
+                    disable_acme
+                    "${compose[@]}" up -d
+                    exit 1
+                    ;;
+                *) echo "unknown choice; checking again" >&2 ;;
+            esac
+        else
+            if [ "$attempt" -ge "$max" ]; then
+                echo "error: the delegation check did not pass after $max attempts." >&2
+                disable_acme
+                return 1
+            fi
+            attempt=$((attempt + 1))
+            sleep 30
+        fi
+    done
+}
+
+# delegation_staging restarts the core with staging, waits for the staging
+# certificate, then switches to production and waits for the real one. It always
+# ends with staging removed (or with the trusted certificate finished).
+delegation_staging() {
+    local restart_at log warning="" i choice production_at
+    echo "restarting the core to ask for the staging certificate"
+    "${compose[@]}" restart core
+    restart_at="$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || true)"
+    for i in $(seq 1 48); do
+        log="$("${compose[@]}" logs --since "$restart_at" core 2>/dev/null || true)"
+        if printf '%s\n' "$log" | grep -qE 'ACME certificate ready|using the stored ACME certificate'; then
+            echo "staging certificate: ok (the delegation works from the internet)"
+            set_env_key TALAIA_ACME_DIRECTORY_URL ""
+            production_at="$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || true)"
+            "${compose[@]}" up -d core
+            acme_state=pending
+            acme_watch "$production_at"
+            delegation_watched=1
+            return 0
+        fi
+        warning="$(printf '%s\n' "$log" | grep -Ei 'acme|renewal failed' | grep -E '"level":"(WARN|ERROR)"' | tail -n 1 || true)"
+        sleep 5
+    done
+    echo "error: the staging certificate did not arrive within four minutes." >&2
+    if [ -n "$warning" ]; then
+        echo "last ACME warning: $warning" >&2
+    fi
+    if [ -t 0 ]; then
+        choice="$(ask "Staging failed: [1] retry, [2] continue without a trusted certificate, [3] quit" "1")"
+        case "$choice" in
+            1) delegation_staging; return $? ;;
+            2)
+                disable_acme
+                "${compose[@]}" up -d
+                return 1
+                ;;
+            *)
+                disable_acme
+                "${compose[@]}" up -d
+                exit 1
+                ;;
+        esac
+    fi
+    disable_acme
+    "${compose[@]}" up -d
+    return 1
+}
+
 # install_hostd sets up talaia-hostd, the root helper that applies the updates
 # requested from the panel: the core only gets a directory to drop requests in,
 # never the Docker socket. It runs before the stack starts, so Docker finds the
@@ -796,18 +1327,6 @@ install_hostd() {
     "${as_root[@]}" systemctl enable talaia-update.service
 }
 
-preflight
-
-# The commit is stamped into the core so the panel can tell which updates are new.
-git_commit="$(git -C "$SCRIPT_DIR" rev-parse HEAD 2>/dev/null || true)"
-
-# Use sudo only when the current user cannot talk to the Docker daemon.
-if docker info >/dev/null 2>&1; then
-    compose=(env "TALAIA_GIT_COMMIT=${git_commit}" docker compose)
-else
-    compose=(sudo env "TALAIA_GIT_COMMIT=${git_commit}" docker compose)
-fi
-
 # self_check asks the two TLS listeners of the core from this machine. It says
 # ok or FAILED and never fails the installation by itself.
 self_check() {
@@ -825,21 +1344,28 @@ self_check() {
 
 # acme_watch waits up to three minutes for the certificate. It only reads the
 # core log (which never holds secrets) and never blocks the rest of the output
-# when the wait times out.
+# when the wait times out. An optional argument limits the log to logs after
+# that RFC 3339 time; the delegation flow uses it to ignore the staging success.
 acme_watch() {
-    local deadline log warning="" now
+    local since="${1:-}" deadline log warning="" now
     now="$(date +%s 2>/dev/null || echo 0)"
     deadline=$((now + 180))
     while [ "$(date +%s 2>/dev/null || echo 0)" -lt "$deadline" ]; do
-        # The whole log, not only this run: a rerun that changes nothing does not
-        # restart the core, and the certificate it obtained earlier is still valid.
-        log="$("${compose[@]}" logs core 2>/dev/null || true)"
+        if [ -n "$since" ]; then
+            log="$("${compose[@]}" logs --since "$since" core 2>/dev/null || true)"
+        else
+            # The whole log, not only this run: a rerun that changes nothing does
+            # not restart the core, and the certificate it obtained earlier is valid.
+            log="$("${compose[@]}" logs core 2>/dev/null || true)"
+        fi
         if printf '%s\n' "$log" | grep -qE 'ACME certificate ready|using the stored ACME certificate'; then
             acme_state=ready
             echo "ACME certificate: obtained"
             return 0
         fi
-        log="$("${compose[@]}" logs --since "$run_started" core 2>/dev/null || true)"
+        if [ -z "$since" ]; then
+            log="$("${compose[@]}" logs --since "$run_started" core 2>/dev/null || true)"
+        fi
         warning="$(printf '%s\n' "$log" | grep -Ei 'acme|renewal failed' | grep -E '"level":"(WARN|ERROR)"|renewal failed' | tail -n 1 || true)"
         sleep 5
     done
@@ -849,6 +1375,24 @@ acme_watch() {
         echo "ACME certificate: still pending (the core keeps trying; see: ${compose[*]} logs core | grep ACME)"
     fi
 }
+
+# The tests source this file with TALAIA_INSTALL_SOURCE_ONLY=1 to call the
+# helpers; only the main run executes preflight and the installation.
+if [ "${TALAIA_INSTALL_SOURCE_ONLY:-0}" = "1" ]; then
+    return 0 2>/dev/null || exit 0
+fi
+
+preflight
+
+# The commit is stamped into the core so the panel can tell which updates are new.
+git_commit="$(git -C "$SCRIPT_DIR" rev-parse HEAD 2>/dev/null || true)"
+
+# Use sudo only when the current user cannot talk to the Docker daemon.
+if docker info >/dev/null 2>&1; then
+    compose=(env "TALAIA_GIT_COMMIT=${git_commit}" docker compose)
+else
+    compose=(sudo env "TALAIA_GIT_COMMIT=${git_commit}" docker compose)
+fi
 
 # .env holds the database password: an existing one is never replaced, because
 # the database volume was initialised with it.
@@ -879,11 +1423,20 @@ else
     [ -n "$port" ] || port="$(pick_port 8443 "$agent_port")"
     [ -n "$agent_port" ] || agent_port="$(pick_port 8444 "$port")"
 
-    if [ -z "$acme_provider" ] && [ -t 0 ]; then
-        echo "A trusted certificate for the panel needs a domain name whose DNS you can edit through an API."
-        if [ "$(ask "Get it automatically with ACME DNS-01 (ovh)? (yes/no)" "no")" = "yes" ]; then
-            acme_provider="ovh"
-        fi
+    if [ -z "$acme_provider" ] && [ "$no_acme" -eq 0 ] && [ -t 0 ] && is_dns_name "$hostname_arg"; then
+        echo "Which certificate should the panel use?"
+        echo "  1) automatic, with two DNS records (recommended)"
+        echo "  2) with an OVH API key"
+        echo "  3) none for now (Talaia's own CA)"
+        while :; do
+            acme_choice="$(ask "Choice" "1")"
+            case "$acme_choice" in
+                1) acme_provider="delegation"; break ;;
+                2) acme_provider="ovh"; break ;;
+                3) acme_provider=""; break ;;
+                *) echo "error: choose 1, 2 or 3" >&2 ;;
+            esac
+        done
     fi
     if [ -n "$acme_provider" ]; then
         if [ -z "$acme_email" ] && [ -t 0 ]; then
@@ -917,8 +1470,8 @@ else
     echo "wrote .env for $hostname_arg (panel $port, agents $agent_port)"
 fi
 
-# shellcheck disable=SC1091
-. ./.env
+# Load the values the installer wrote, without executing .env as a script.
+read_env_file
 if [ -n "${TALAIA_PANEL_PORT:-}" ]; then
     port="$TALAIA_PANEL_PORT"
 fi
@@ -937,7 +1490,22 @@ if [ "$env_existed" -eq 1 ] && [ "$acme_provider" = "ovh" ] && [ "${TALAIA_ACME_
     echo "error: packaging/core/.env already exists and does not enable ACME. Set TALAIA_ACME_PROVIDER=ovh in it and run again (the installer never replaces an existing .env)." >&2
     exit 1
 fi
-setup_acme
+if [ "$no_acme" -eq 1 ]; then
+    disable_acme
+elif [ "$acme_provider" = "delegation" ]; then
+    setup_delegation
+elif [ -z "$acme_provider" ]; then
+    case "${TALAIA_ACME_PROVIDER:-}" in
+        delegation)
+            if [ "$env_existed" -eq 0 ] || [ -n "${TALAIA_ACME_DIRECTORY_URL:-}" ]; then
+                setup_delegation
+            fi
+            ;;
+    esac
+fi
+if [ "${TALAIA_ACME_PROVIDER:-}" = "ovh" ]; then
+    setup_acme
+fi
 
 # The tests stop after the ACME check; this is not an option for users.
 if [ "${TALAIA_INSTALL_ACME_ONLY:-0}" = "1" ]; then
@@ -948,7 +1516,9 @@ fi
 if [ "$dns_checked" -eq 0 ] && [ -n "${TALAIA_PUBLIC_HOSTNAMES:-}" ]; then
     dns_guidance "$TALAIA_PUBLIC_HOSTNAMES"
 fi
-firewall_guidance
+if [ "$delegation_firewall_done" -eq 0 ]; then
+    firewall_guidance
+fi
 
 helper_active=0
 if [ "$install_helper" -eq 1 ]; then
@@ -999,10 +1569,23 @@ if [ "$create_user" -eq 1 ]; then
     fi
 fi
 
-acme_state=none
-if [ -n "${TALAIA_ACME_PROVIDER:-}" ]; then
-    acme_state=pending
-    acme_watch
+if [ "$delegation_active" -eq 1 ]; then
+    if delegation_check; then
+        # A failed staging turns ACME off and returns 1; the summary below must
+        # still be printed, so set -e must not stop here.
+        delegation_staging || true
+    else
+        echo "continuing with the Talaia CA for now."
+        "${compose[@]}" up -d
+    fi
+fi
+
+if [ "${delegation_watched:-0}" != "1" ]; then
+    acme_state=none
+    if [ -n "${TALAIA_ACME_PROVIDER:-}" ]; then
+        acme_state=pending
+        acme_watch
+    fi
 fi
 
 echo
