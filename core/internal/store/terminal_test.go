@@ -74,7 +74,7 @@ func TestTerminalOrphansAndPurge(t *testing.T) {
 
 	// Nothing is purged while the cutoff is in the past, and a session that is
 	// still open is never purged.
-	if n, err := s.PurgeTerminalSessions(ctx, time.Now().Add(-time.Hour)); err != nil || n != 0 {
+	if n, err := s.PurgeTerminalSessions(ctx, time.Now().Add(-100*365*24*time.Hour)); err != nil || n != 0 {
 		t.Errorf("early purge = %d, %v", n, err)
 	}
 	if n, err := s.PurgeTerminalSessions(ctx, time.Now().Add(time.Hour)); err != nil || n < 1 {

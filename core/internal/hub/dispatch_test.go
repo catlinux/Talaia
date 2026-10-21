@@ -86,6 +86,7 @@ func TestDispatchRefusesWhenTheAgentHasTooManyPendingCommands(t *testing.T) {
 	go func() { _ = h.serve(withConnection(context.Background(), "server-1", "aa"), stream) }()
 	stream.in <- inventoryMsg("vps-web-01")
 	waitFor(t, func() bool { return len(h.Connected()) == 1 })
+	waitForLink(t, h, "server-1")
 
 	var full error
 	for i := 0; i < outboxSize+5 && full == nil; i++ {
@@ -141,4 +142,16 @@ func TestConnectedAgentsExposeTheirContainers(t *testing.T) {
 	if len(agents) != 1 || len(agents[0].ContainerList) != 3 {
 		t.Fatalf("connected = %+v", agents)
 	}
+}
+
+// waitForLink waits until the link of a server accepts commands. The agent is
+// listed by Connected a moment before that.
+func waitForLink(t *testing.T, h *Hub, serverID string) {
+	t.Helper()
+	waitFor(t, func() bool {
+		h.mu.RLock()
+		defer h.mu.RUnlock()
+		_, registered := h.conns[serverID]
+		return registered
+	})
 }

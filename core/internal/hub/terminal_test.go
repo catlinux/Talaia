@@ -107,6 +107,7 @@ func TestDispatchWaitWaitsForRoomAndGivesUp(t *testing.T) {
 	go func() { _ = h.serve(withConnection(context.Background(), "server-1", "aa"), stream) }()
 	stream.in <- inventoryMsg("vps-web-01")
 	waitFor(t, func() bool { return len(h.Connected()) == 1 })
+	waitForLink(t, h, "server-1")
 
 	// Fill the queue.
 	for i := 0; i < outboxSize+2; i++ {
