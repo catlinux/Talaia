@@ -137,6 +137,42 @@ jobs:
       - name: Test talaia-hostd
         run: bash packaging/core/hostd/test.sh
 
+  acme-dns-stack:
+    name: acme-dns on a clean machine
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v7.0.1
+      - name: Start the stack with the acme-dns profile from nothing
+        working-directory: packaging/core
+        run: |
+          set -eu
+          # No image exists yet: Compose must build it for both services
+          # instead of trying to pull it from a registry.
+          if docker image inspect talaia-core:local >/dev/null 2>&1; then exit 1; fi
+          printf 'POSTGRES_PASSWORD=%s\nTALAIA_PUBLIC_HOSTNAMES=talaia.example.com\nCOMPOSE_PROFILES=acme-dns\nTALAIA_DNS_ADDRESS=127.0.0.1\n' "$(openssl rand -hex 16)" > .env
+          docker compose up -d --build
+          docker compose ps --format '{{.Service}} {{.State}}'
+          running="$(docker compose ps --format '{{.Service}} {{.State}}' | grep -c 'running')"
+          test "$running" -ge 3
+      - name: acme-dns answers
+        working-directory: packaging/core
+        run: |
+          set -eu
+          command -v dig >/dev/null || sudo apt-get install -y dnsutils
+          for _ in $(seq 1 15); do
+            if dig +short +time=1 +tries=1 @127.0.0.1 _acme-challenge.talaia.example.com SOA | grep -q hostmaster; then
+              break
+            fi
+            sleep 2
+          done
+          dig +norec @127.0.0.1 _acme-challenge.talaia.example.com SOA | grep -q 'flags: qr aa'
+      - name: Logs on failure
+        if: failure()
+        working-directory: packaging/core
+        run: docker compose logs --no-color
+
   core-stack:
     name: core stack (docker)
     runs-on: ubuntu-latest

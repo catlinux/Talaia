@@ -94,6 +94,7 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ### Fixed
 
+- `docker compose up --build` with the `acme-dns` profile failed on a clean machine with "pull access denied for talaia-core": the ACME DNS service uses the core image but did not say how to build it. Both services now share the build, and the CI starts the stack with that profile from nothing.
 - ACME: the account and the certificate are stored per ACME directory (`<data_dir>/acme/<host>/`), so staging and production never mix and an account registered in one is not reused in the other.
 - Update check: a commit whose CI was still running at the first check was never offered afterwards (the ETag of the head made every later check a 304), and a build newer than the newest green commit was offered a downgrade. The panel opened by IP address with ACME enabled now gets the certificate of the own CA, which covers it, instead of the public one.
 - A stack action that takes more than two minutes (a slow `pull` or `up`) is no longer reported as timed out while it is still running: each kind of job now waits a little longer than the agent gives it.

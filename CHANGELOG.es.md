@@ -94,6 +94,7 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ### Corregido
 
+- `docker compose up --build` con el perfil `acme-dns` fallaba en una máquina limpia con «pull access denied for talaia-core»: el servicio DNS de ACME usa la imagen del núcleo pero no decía cómo construirla. Ahora los dos servicios comparten la construcción y el CI arranca la pila con ese perfil desde cero.
 - ACME: la cuenta y el certificado se guardan por directorio ACME (`<data_dir>/acme/<host>/`), así que staging y producción nunca se mezclan y una cuenta registrada en uno no se reutiliza en el otro.
 - Comprobación de actualizaciones: un commit cuyo CI seguía en marcha en la primera comprobación ya no se ofrecía nunca (el ETag de la cabeza convertía las siguientes en un 304), y a una versión más nueva que el último commit en verde se le ofrecía volver atrás. Con ACME, el panel abierto por dirección IP recibe ahora el certificado de la CA propia, que la cubre, en vez del público.
 - Una acción de stack que tarda más de dos minutos (un `pull` o un `up` lentos) ya no aparece como caducada mientras sigue en marcha: cada tipo de trabajo espera ahora algo más de lo que le da el agente.

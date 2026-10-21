@@ -9,6 +9,19 @@
 # Keep the volume: it also holds the secrets key that encrypts the TOTP secret.
 name: talaia
 
+# The core and the ACME DNS server run the same image. Both services say how to
+# build it: with only one of them, Compose looks for the other's image in a
+# registry (it exists nowhere but here) before the build has made it.
+x-talaia-image: &talaia-image
+  image: talaia-core:local
+  build:
+    context: ../..
+    dockerfile: packaging/core/Dockerfile
+    args:
+      # The commit the core reports in Settings; install.sh and the host helper
+      # pass it. Empty leaves the version unknown.
+      GIT_COMMIT: ${TALAIA_GIT_COMMIT:-}
+
 services:
   db:
     image: timescale/timescaledb:latest-pg16
@@ -47,14 +60,7 @@ services:
     restart: "no"
 
   core:
-    image: talaia-core:local
-    build:
-      context: ../..
-      dockerfile: packaging/core/Dockerfile
-      args:
-        # The commit the core reports in Settings; install.sh and the host helper
-        # pass it. Empty leaves the version unknown.
-        GIT_COMMIT: ${TALAIA_GIT_COMMIT:-}
+    <<: *talaia-image
     depends_on:
       db:
         condition: service_healthy
@@ -108,7 +114,7 @@ services:
   # no data volume, only the challenge values, read only. Enabled by the
   # acme-dns profile (COMPOSE_PROFILES in .env).
   acme-dns:
-    image: talaia-core:local
+    <<: *talaia-image
     command: ["dns"]
     profiles: ["acme-dns"]
     depends_on:
