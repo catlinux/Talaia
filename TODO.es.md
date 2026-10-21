@@ -98,7 +98,7 @@ tareas concretas de la fase actual y de la siguiente.
 - [x] Revisión de seguridad (Opus)
 - [x] Una petición que el ayudante nunca recoge (ayudante parado o no instalado) deja el panel en «actualización en curso»: avisar de una petición de hace más de unos minutos como atascada
 - [x] El ayudante no se actualiza solo: una actualización que cambie `packaging/core/hostd/` necesita volver a ejecutar `install.sh`; hacerlo desde el ayudante o avisar en el panel
-- [ ] Instalación real en `talaia.invierteconcriterio.es` con el mantenedor (desde cero; el Debian de casa pasa a ser un servidor más)
+- [x] Instalación real en `talaia.invierteconcriterio.es` con el mantenedor (desde cero; el Debian de casa pasa a ser un servidor más)
 - [ ] Más adelante: cambiar la dirección del core en los agentes con una orden tipada (para mudarse al dominio y VPS nuevos) y actualizar los agentes desde el core
 
 ## Ideas (sin planificar)
