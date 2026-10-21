@@ -4,6 +4,9 @@
 # and the bootstrap. It uses no real network, sudo or Docker and writes only in
 # a temporary directory. It runs on Debian, Ubuntu and Git Bash on Windows.
 set -eu
+LANG=C
+LC_ALL=C
+export LANG LC_ALL
 
 script_path="${BASH_SOURCE[0]}"
 case "$script_path" in
@@ -159,7 +162,7 @@ EOF
 
 # Source the installer's helpers without running the installation. The variable
 # is not exported, so the child runs below start the installer normally.
-TALAIA_INSTALL_SOURCE_ONLY=1
+LANG=C LC_ALL=C TALAIA_INSTALL_SOURCE_ONLY=1
 . "$installer"
 unset TALAIA_INSTALL_SOURCE_ONLY
 
@@ -167,6 +170,9 @@ unset TALAIA_INSTALL_SOURCE_ONLY
 run_install() {
     local status=0
     PATH="$stub" \
+        LANG="${TEST_LANG:-C}" \
+        LC_ALL="${TEST_LC_ALL-C}" \
+        LC_MESSAGES="${TEST_LC_MESSAGES-C}" \
         TALAIA_INSTALL_PREFLIGHT_ONLY=1 \
         SYSTEM_PATH="$system_path" \
         STUB_DIR="$stub" \
@@ -193,6 +199,38 @@ if [ -e "$tmp/.env" ]; then
     fail "the preflight wrote .env"
 else
     pass "the preflight writes nothing"
+fi
+
+# 1b. Messages follow --lang and LANG; English stays the default.
+if run_install --lang es --hostname 127.0.0.1 --no-user; then
+    fail "the Spanish installer continued without Docker"
+else
+    pass "--lang es stops the installer"
+fi
+if grep -q 'Docker es necesario' "$tmp/err"; then
+    pass "--lang es translates the Docker error"
+else
+    fail "--lang es did not translate the Docker error"
+fi
+if run_install --lang ca --hostname 127.0.0.1 --no-user; then
+    fail "the Catalan installer continued without Docker"
+else
+    pass "--lang ca stops the installer"
+fi
+if grep -q 'cal Docker' "$tmp/err"; then
+    pass "--lang ca translates the Docker error"
+else
+    fail "--lang ca did not translate the Docker error"
+fi
+if TEST_LANG=ca_ES.UTF-8 TEST_LC_ALL= TEST_LC_MESSAGES= run_install --hostname 127.0.0.1 --no-user; then
+    fail "the Catalan environment continued without Docker"
+else
+    pass "LANG=ca_ES.UTF-8 selects Catalan"
+fi
+if grep -q 'cal Docker' "$tmp/err"; then
+    pass "LANG=ca_ES.UTF-8 translates the Docker error"
+else
+    fail "LANG=ca_ES.UTF-8 did not translate the Docker error"
 fi
 
 # 2. --install-docker runs the official command (stubbed) and never silently.
@@ -293,6 +331,8 @@ EOF
 run_acme() {
     local status=0
     PATH="$stub:$system_path" \
+        LANG=C \
+        LC_ALL=C \
         TALAIA_INSTALL_ACME_ONLY=1 \
         SYSTEM_PATH="$system_path" \
         STUB_DIR="$stub" \
@@ -527,6 +567,8 @@ EOF
 run_delegation() {
     local status=0
     PATH="$stub:$system_path" \
+        LANG=C \
+        LC_ALL=C \
         TALAIA_INSTALL_ACME_ONLY=1 \
         SYSTEM_PATH="$system_path" \
         STUB_DIR="$stub" \
@@ -904,6 +946,7 @@ EOF
         local status=0
         shift
         TALAIA_REPO_URL="${BOOTSTRAP_URL:-$bootstrap_repo}" TALAIA_BRANCH=main TALAIA_DIR="$target" \
+            LANG=C LC_ALL=C \
             "$bash_path" "$bootstrap" "$@" < /dev/null >"$tmp/bout" 2>&1 || status=$?
         return "$status"
     }
@@ -974,6 +1017,18 @@ EOF
         pass "the flags pass through bash -s --"
     else
         fail "the flags did not pass through bash -s --"
+    fi
+
+    rm -rf "$tmp/clone4"
+    if TALAIA_BOOTSTRAP_NO_EXEC=1 run_bootstrap "$tmp/clone4" --lang es; then
+        pass "the bootstrap accepts --lang es"
+    else
+        fail "the bootstrap did not accept --lang es"
+    fi
+    if grep -q 'Talaia: se clona' "$tmp/bout"; then
+        pass "--lang es translates the bootstrap messages"
+    else
+        fail "--lang es did not translate the bootstrap messages"
     fi
 else
     echo "skipped: the bootstrap clone tests need git"

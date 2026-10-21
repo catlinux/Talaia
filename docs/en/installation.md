@@ -75,6 +75,9 @@ Replace `192.0.2.10` with the address the panel will be reached at (in a termina
    machine, printing `ok` or `FAILED` for each;
 8. creates the administrator, asking for the password twice (at least 12 characters).
 
+The installer speaks English, Spanish and Catalan. It picks the language from `--lang <en|es|ca>` or from your
+`LANG`; the default is English.
+
 With `--acme ovh` (or answering yes when it asks, in a terminal) it also prepares a trusted certificate for the
 panel by ACME DNS-01. It asks for the DNS zone (default: the last two labels of the host name; for names like
 `.co.uk` type the registered domain, or pass `--acme-zone`) and the OVH region (`ovh-eu` or `ovh-ca`; also read

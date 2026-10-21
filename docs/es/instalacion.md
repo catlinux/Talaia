@@ -79,6 +79,9 @@ Cambia `192.0.2.10` por la dirección desde la que se llegará al panel (en un t
    agentes (`/ca.pem`), mostrando `ok` o `FAILED` en cada uno;
 8. crea el administrador y te pide la contraseña dos veces (mínimo 12 caracteres).
 
+El instalador habla inglés, español y catalán. Elige el idioma con `--lang <en|es|ca>` o según tu `LANG`; por
+defecto, inglés.
+
 Con `--acme ovh` (o contestando que sí cuando lo pregunta, en un terminal) prepara además un certificado de
 confianza para el panel por ACME DNS-01. Pregunta la zona DNS (por defecto: las dos últimas etiquetas del nombre;
 para nombres como `.co.uk` escribe el dominio registrado, o pasa `--acme-zone`) y la región de OVH (`ovh-eu` u
