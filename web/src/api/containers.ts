@@ -99,6 +99,14 @@ export interface Job {
   output: string
 }
 
+/** LogOptions asks for an incremental log read, used by the live follow. */
+export interface LogOptions {
+  /** since is an RFC 3339 timestamp: only lines after it are returned. */
+  since?: string
+  /** timestamps prefixes each line with the time Docker saw it. */
+  timestamps?: boolean
+}
+
 /** ContainersApi is the typed container API of the core. */
 export interface ContainersApi {
   list(serverId: string): Promise<ContainerList>
@@ -123,7 +131,7 @@ export interface ContainersApi {
   /** runStack sends an operation on a stack and returns the id of the job. */
   runStack(serverId: string, name: string, action: StackAction, confirm?: boolean): Promise<string>
   /** logs asks for the last lines of a container and returns the id of the job. */
-  logs(serverId: string, container: string, tail?: number): Promise<string>
+  logs(serverId: string, container: string, tail?: number, options?: LogOptions): Promise<string>
   job(id: string): Promise<Job>
 }
 
@@ -255,10 +263,10 @@ export function createContainersApi(fetchImpl?: typeof fetch): ContainersApi {
       )
       return body.job_id
     },
-    logs: async (serverId, container, tail = 0) => {
+    logs: async (serverId, container, tail = 0, options = {}) => {
       const body = await http.post<{ job_id: string }>(
         `/api/v1/servers/${encodeURIComponent(serverId)}/containers/${encodeURIComponent(container)}/logs`,
-        { tail },
+        { tail, ...options },
       )
       return body.job_id
     },

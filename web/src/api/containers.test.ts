@@ -105,4 +105,18 @@ describe('createContainersApi', () => {
     expect(path).toBe('/api/v1/servers/srv-1/containers/web/logs')
     expect(init.body).toBe(JSON.stringify({ tail: 50 }))
   })
+
+  it('asks for the logs after a timestamp, with timestamps', async () => {
+    const fetchImpl = vi.fn(() => Promise.resolve(jsonResponse({ job_id: 'job-4' }, 202)))
+    const since = '2026-10-20T10:00:00.123456789Z'
+
+    await createContainersApi(fetchImpl).logs('srv-1', 'web', 1000, {
+      since,
+      timestamps: true,
+    })
+
+    const [path, init] = fetchImpl.mock.calls[0] as unknown as [string, RequestInit]
+    expect(path).toBe('/api/v1/servers/srv-1/containers/web/logs')
+    expect(init.body).toBe(JSON.stringify({ tail: 1000, since, timestamps: true }))
+  })
 })

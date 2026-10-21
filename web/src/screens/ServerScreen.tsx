@@ -23,6 +23,7 @@ import {
 import { formatBytes, formatPercent } from './fleet/format'
 import { LogsPanel } from './server/LogsPanel'
 import { ResourcesSection } from './server/ResourcesSection'
+import { StackScreen } from './server/StackScreen'
 import { StacksSection } from './server/StacksSection'
 import { TimedOut, waitForJob } from './server/waitForJob'
 import { UseGauge } from './server/UseGauge'
@@ -105,6 +106,8 @@ export function ServerScreen({
   const [logsFor, setLogsFor] = useState<string | null>(null)
   // The container whose terminal is open, if any.
   const [terminalFor, setTerminalFor] = useState<string | null>(null)
+  // The managed stack whose screen is open, if any.
+  const [openStack, setOpenStack] = useState<{ name: string; adopted: boolean } | null>(null)
   const mounted = useRef(true)
 
   const load = useCallback(async () => {
@@ -172,6 +175,23 @@ export function ServerScreen({
   const containers = list ? sortContainers(list.containers) : []
   const running = containers.filter((container) => container.state === 'running').length
 
+  if (openStack !== null) {
+    return (
+      <StackScreen
+        api={api}
+        server={server}
+        name={openStack.name}
+        adopted={openStack.adopted}
+        containers={list?.containers ?? []}
+        connected={list?.connected ?? false}
+        dockerAvailable={list?.dockerAvailable ?? false}
+        pollMs={pollMs}
+        onBack={() => setOpenStack(null)}
+        onChanged={() => void load()}
+      />
+    )
+  }
+
   return (
     <section className="serverscreen" aria-labelledby="server-title">
       <button type="button" className="serverscreen__back" onClick={onBack}>
@@ -225,6 +245,7 @@ export function ServerScreen({
           containers={list.containers}
           pollMs={pollMs}
           onChanged={() => void load()}
+          onOpenStack={(name, adopted) => setOpenStack({ name, adopted })}
         />
       ) : null}
 

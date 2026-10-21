@@ -19,6 +19,8 @@ interface StacksSectionProps {
   pollMs: number
   /** onChanged is called when an operation ends, so the containers reload. */
   onChanged: () => void
+  /** onOpenStack opens the screen of a managed stack. */
+  onOpenStack: (name: string, adopted: boolean) => void
 }
 
 type Outcome = { kind: 'working' } | { kind: 'done' } | { kind: 'failed'; message: string }
@@ -45,6 +47,7 @@ export function StacksSection({
   containers,
   pollMs,
   onChanged,
+  onOpenStack,
 }: StacksSectionProps) {
   const { t } = useTranslation(['server', 'errors'])
   const [list, setList] = useState<StackList | null>(null)
@@ -209,7 +212,13 @@ export function StacksSection({
               <li key={name} className={`stack${running > 0 ? ' stack--up' : ''}`}>
                 <div className="stack__main">
                   <h3 className="stack__name">
-                    {name}
+                    <button
+                      type="button"
+                      className="stack__open"
+                      onClick={() => onOpenStack(name, adopted)}
+                    >
+                      {name}
+                    </button>
                     {adopted ? <span className="tag">{t('server:stacks.adoptedTag')}</span> : null}
                   </h3>
                   <p className="stack__meta">

@@ -35,6 +35,8 @@ function apiWith(
   run: ReturnType<typeof vi.fn>
   list: ReturnType<typeof vi.fn>
   logs: ReturnType<typeof vi.fn>
+  stacks: ReturnType<typeof vi.fn>
+  job: ReturnType<typeof vi.fn>
 } {
   const queue = [...jobs]
   return {
@@ -188,6 +190,31 @@ describe('ServerScreen', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Back to the fleet' }))
 
     expect(onBack).toHaveBeenCalledTimes(1)
+  })
+
+  it('opens the screen of a managed stack and goes back to the server', async () => {
+    const api = apiWith(listOf(container()))
+    api.stacks.mockResolvedValue({
+      connected: true,
+      stacks: ['shop'],
+      adopted: [],
+      adoptable: [],
+    })
+    api.job.mockResolvedValue({
+      id: 'job-1',
+      state: 'succeeded',
+      message: '',
+      output: JSON.stringify({ compose: 'services: {}\n', env: '' }),
+    })
+    renderScreen(api)
+
+    fireEvent.click(await screen.findByRole('button', { name: 'shop' }))
+
+    expect(await screen.findByRole('heading', { level: 1, name: /shop/ })).toBeTruthy()
+    expect(screen.getByText('Compose')).toBeTruthy()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Back to the server' }))
+    expect(await screen.findByRole('heading', { level: 1, name: 'vps-web-01' })).toBeTruthy()
   })
 
   it('shows an error when the first load fails', async () => {

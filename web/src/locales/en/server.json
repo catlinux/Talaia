@@ -39,6 +39,10 @@
   },
   "logs": {
     "title": "Logs of {{name}}",
+    "follow": "Follow",
+    "live": "Live",
+    "content": "Log lines",
+    "noteLive": "Following new lines every 3 seconds.",
     "loading": "Reading the logs…",
     "refresh": "Refresh",
     "close": "Close",
@@ -80,6 +84,7 @@
       "name": "Name",
       "nameHint": "Lower case letters, digits, dash and underscore.",
       "compose": "compose.yaml",
+      "rootNote": "A Compose file is run as root on the server. Anyone who can edit it can control the server.",
       "env": ".env (optional)",
       "envHint": "Variables for the compose file. It is stored on the server readable by root only.",
       "loading": "Reading the files…",
@@ -164,6 +169,33 @@
       "recording_failed": "Closed: the recording could not be stored.",
       "core_shutdown": "The core was shut down.",
       "other": "The terminal ended ({{reason}})."
+    }
+  },
+  "stack": {
+    "back": "Back to the server",
+    "breadcrumb": "Breadcrumb",
+    "summary": "{{running}} of {{total}} running",
+    "compose": {
+      "title": "Compose"
+    },
+    "containers": {
+      "title": "Containers",
+      "name": "Name",
+      "state": "State",
+      "cpu": "CPU",
+      "memory": "Memory",
+      "empty": "This stack has no containers yet."
+    },
+    "logs": {
+      "title": "Logs",
+      "select": "Container",
+      "choose": "Choose a container to see its logs."
+    },
+    "actions": {
+      "restart": "Restart",
+      "stop": "Stop",
+      "deploy": "Deploy",
+      "pull": "Pull"
     }
   }
 }

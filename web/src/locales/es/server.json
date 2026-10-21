@@ -39,6 +39,10 @@
   },
   "logs": {
     "title": "Registros de {{name}}",
+    "follow": "Seguir",
+    "live": "En directo",
+    "content": "Líneas del registro",
+    "noteLive": "Siguiendo las líneas nuevas cada 3 segundos.",
     "loading": "Leyendo los registros…",
     "refresh": "Actualizar",
     "close": "Cerrar",
@@ -80,6 +84,7 @@
       "name": "Nombre",
       "nameHint": "Minúsculas, cifras, guion y guion bajo.",
       "compose": "compose.yaml",
+      "rootNote": "Un archivo Compose se ejecuta como root en el servidor. Cualquiera que pueda editarlo puede controlar el servidor.",
       "env": ".env (opcional)",
       "envHint": "Variables para el compose. Se guarda en el servidor con permisos solo para root.",
       "loading": "Leyendo los archivos…",
@@ -164,6 +169,33 @@
       "recording_failed": "Cerrada: no se pudo guardar la grabación.",
       "core_shutdown": "El core se ha apagado.",
       "other": "La terminal ha terminado ({{reason}})."
+    }
+  },
+  "stack": {
+    "back": "Volver al servidor",
+    "breadcrumb": "Ruta de navegación",
+    "summary": "{{running}} de {{total}} en marcha",
+    "compose": {
+      "title": "Compose"
+    },
+    "containers": {
+      "title": "Contenedores",
+      "name": "Nombre",
+      "state": "Estado",
+      "cpu": "CPU",
+      "memory": "Memoria",
+      "empty": "Este stack todavía no tiene contenedores."
+    },
+    "logs": {
+      "title": "Registros",
+      "select": "Contenedor",
+      "choose": "Elige un contenedor para ver sus registros."
+    },
+    "actions": {
+      "restart": "Reiniciar",
+      "stop": "Parar",
+      "deploy": "Desplegar",
+      "pull": "Actualizar imágenes"
     }
   }
 }

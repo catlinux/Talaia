@@ -17,7 +17,8 @@ interface StackEditorProps {
   pollMs: number
   /** onDone is called after a successful save; start tells whether it also started. */
   onDone: (name: string, start: boolean) => void
-  onCancel: () => void
+  /** onCancel is left out when the editor cannot be closed, as in the stack screen. */
+  onCancel?: () => void
 }
 
 type Phase =
@@ -158,6 +159,9 @@ export function StackEditor({ api, serverId, name, pollMs, onDone, onCancel }: S
               onChange={(event) => setCompose(event.target.value)}
             />
           </label>
+          <p className="stackeditor__note" role="note">
+            {t('server:stacks.editor.rootNote')}
+          </p>
 
           <label className="stackeditor__field">
             <span className="stackeditor__label">{t('server:stacks.editor.env')}</span>
@@ -182,9 +186,11 @@ export function StackEditor({ api, serverId, name, pollMs, onDone, onCancel }: S
             <button type="button" className="cbtn" disabled={busy} onClick={() => void save(true)}>
               {t('server:stacks.editor.saveStart')}
             </button>
-            <button type="button" className="cbtn" onClick={onCancel}>
-              {t('server:stacks.editor.cancel')}
-            </button>
+            {onCancel !== undefined ? (
+              <button type="button" className="cbtn" onClick={onCancel}>
+                {t('server:stacks.editor.cancel')}
+              </button>
+            ) : null}
           </div>
         </form>
       )}

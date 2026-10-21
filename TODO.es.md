@@ -79,7 +79,7 @@ tareas concretas de la fase actual y de la siguiente.
 
 - [ ] Terminal en contenedor, paso 6: documentación EN/ES (seguridad: el administrador es root en los servidores; grabación y retención; `terminal export`) y prueba con un Docker real en el Debian
 - [ ] Terminal en contenedor, paso 7: revisión final de seguridad de todo el diff (Opus)
-- [ ] Pantalla de stack (maqueta 3), registros en directo (`-f`) y una nota fija en el editor de stacks: un compose se ejecuta como root en el servidor
+- [x] Pantalla de stack (maqueta 3), registros en directo (`-f`) y una nota fija en el editor de stacks: un compose se ejecuta como root en el servidor
 - [ ] Cerrar la fase contra su criterio; versión 0.3.0 solo si el mantenedor lo pide
 
 ## Bloque de operación (decidido el 2026-10-20, antes de cerrar la fase 2)

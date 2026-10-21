@@ -79,7 +79,7 @@ of the current phase and the next one.
 
 - [ ] Terminal in a container, step 6: documentation EN/ES (security: the administrator is root on the servers; recording and retention; `terminal export`) and a test with a real Docker on the Debian
 - [ ] Terminal in a container, step 7: final security review of the whole diff (Opus)
-- [ ] Stack screen (mockup 3), live logs (`-f`) and a fixed note in the stack editor: a compose file runs as root on the server
+- [x] Stack screen (mockup 3), live logs (`-f`) and a fixed note in the stack editor: a compose file runs as root on the server
 - [ ] Close the phase against its criterion; version 0.3.0 only if the maintainer asks
 
 ## Operations block (decided 2026-10-20, before closing phase 2)

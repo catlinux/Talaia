@@ -39,6 +39,10 @@
   },
   "logs": {
     "title": "Registres de {{name}}",
+    "follow": "Segueix",
+    "live": "En directe",
+    "content": "Línies del registre",
+    "noteLive": "Seguint les línies noves cada 3 segons.",
     "loading": "Llegint els registres…",
     "refresh": "Actualitza",
     "close": "Tanca",
@@ -80,6 +84,7 @@
       "name": "Nom",
       "nameHint": "Minúscules, xifres, guió i guió baix.",
       "compose": "compose.yaml",
+      "rootNote": "Un fitxer Compose s'executa com a root al servidor. Qualsevol que el pugui editar pot controlar el servidor.",
       "env": ".env (opcional)",
       "envHint": "Variables per al compose. Es desa al servidor amb permisos només per a root.",
       "loading": "Llegint els fitxers…",
@@ -164,6 +169,33 @@
       "recording_failed": "Tancat: no s’ha pogut desar l’enregistrament.",
       "core_shutdown": "El core s’ha apagat.",
       "other": "El terminal ha acabat ({{reason}})."
+    }
+  },
+  "stack": {
+    "back": "Torna al servidor",
+    "breadcrumb": "Ruta de navegació",
+    "summary": "{{running}} de {{total}} en marxa",
+    "compose": {
+      "title": "Compose"
+    },
+    "containers": {
+      "title": "Contenidors",
+      "name": "Nom",
+      "state": "Estat",
+      "cpu": "CPU",
+      "memory": "Memòria",
+      "empty": "Aquest stack encara no té contenidors."
+    },
+    "logs": {
+      "title": "Registres",
+      "select": "Contenidor",
+      "choose": "Tria un contenidor per veure'n els registres."
+    },
+    "actions": {
+      "restart": "Reinicia",
+      "stop": "Atura",
+      "deploy": "Desplega",
+      "pull": "Actualitza les imatges"
     }
   }
 }
