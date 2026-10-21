@@ -52,7 +52,7 @@
     "log": "Últimas líneas del registro"
   },
   "updateError": {
-    "hostHelperMissing": "El ayudante de actualización del host no está instalado, así que el panel no puede aplicar actualizaciones.",
+    "hostHelperMissing": "El ayudante de actualización del host no está instalado o no está en marcha, así que el panel no puede aplicar actualizaciones. En la máquina del núcleo, revisa: systemctl status talaia-update.path",
     "rateLimited": "GitHub ha limitado las comprobaciones de actualizaciones. El panel lo volverá a intentar más tarde.",
     "unreachable": "No se ha podido contactar con el servidor de actualizaciones. El panel lo volverá a intentar más tarde.",
     "generic": "La comprobación de actualizaciones ha fallado. El panel lo volverá a intentar más tarde."

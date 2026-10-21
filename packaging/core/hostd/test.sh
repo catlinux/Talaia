@@ -33,6 +33,17 @@ for name in A B C D; do
     git_q -C "$T/seed" commit -m "$name"
     eval "SHA_$name=\$(git -C \"\$T/seed\" rev-parse HEAD)"
 done
+# E changes the helper and its units; F does not.
+mkdir -p "$T/seed/packaging/core/hostd"
+for file in talaia-hostd talaia-update.path talaia-update.service; do
+    echo "# new $file" > "$T/seed/packaging/core/hostd/$file"
+done
+git_q -C "$T/seed" add -A
+git_q -C "$T/seed" commit -m E
+SHA_E="$(git -C "$T/seed" rev-parse HEAD)"
+echo F > "$T/seed/packaging/core/version.txt"
+git_q -C "$T/seed" commit -am F
+SHA_F="$(git -C "$T/seed" rev-parse HEAD)"
 git_q -C "$T/seed" push origin main
 git_q -C "$T/seed" checkout -b other "$SHA_B"
 echo X > "$T/seed/packaging/core/version.txt"
@@ -45,7 +56,7 @@ git_q -C "$T/repo" reset --hard "$SHA_A"
 printf 'TALAIA_PANEL_PORT=9443\n' > "$T/repo/packaging/core/.env"
 printf '.env\n' > "$T/repo/.git/info/exclude"
 
-mkdir -p "$T/host/requests" "$T/bin"
+mkdir -p "$T/host/requests" "$T/bin" "$T/sbin" "$T/units"
 cat > "$T/hostd.conf" << EOF
 # test configuration
 REPO_DIR=$T/repo
@@ -53,6 +64,8 @@ REPO_USER=$(id -un)
 HOST_DIR=$T/host
 STATE_DIR=$T/state
 HEALTH_TIMEOUT=1
+SBIN_DIR=$T/sbin
+UNIT_DIR=$T/units
 EOF
 
 # docker stub: the "running core" is the commit of the last successful up.
@@ -81,7 +94,12 @@ T="${STUB_DIR:?}"
 case "$*" in *"https://127.0.0.1:9443/healthz"*) ;; *) exit 7 ;; esac
 [ "$(cat "$T/running" 2> /dev/null)" != "$(cat "$T/bad_commit" 2> /dev/null)" ]
 EOF
-chmod +x "$T/bin/docker" "$T/bin/curl"
+cat > "$T/bin/systemctl" << 'EOF'
+#!/usr/bin/env bash
+echo "$*" >> "${STUB_DIR:?}/systemctl.log"
+EOF
+chmod +x "$T/bin/docker" "$T/bin/curl" "$T/bin/systemctl"
+
 echo "$SHA_A" > "$T/running"
 echo "id-$SHA_A" > "$T/core_id"
 
@@ -170,6 +188,28 @@ request "$SHA_C"
 request "$SHA_D"
 check "update after rollbacks succeeds" state_is succeeded
 check "no more than three backups" [ "$(backups)" -le 3 ]
+
+# 8b. An update that changes the helper installs it; one that does not, does not.
+echo "# old helper" > "$T/sbin/talaia-hostd"
+request "$SHA_E"
+check "update to E succeeds" state_is succeeded
+check "the new helper was installed" grep -q "# new talaia-hostd" "$T/sbin/talaia-hostd"
+check "the new helper is executable" [ -x "$T/sbin/talaia-hostd" ]
+check "the new units were installed" grep -q "# new talaia-update.path" "$T/units/talaia-update.path"
+check "systemd reloaded the units" grep -q "daemon-reload" "$T/systemctl.log"
+echo "# kept helper" > "$T/sbin/talaia-hostd"
+request "$SHA_F"
+check "update to F succeeds" state_is succeeded
+check "an update without helper changes keeps it" grep -q "# kept helper" "$T/sbin/talaia-hostd"
+
+# 8c. A request older than half an hour is not applied.
+git_q -C "$T/repo" reset --keep "$SHA_E"
+rm -f "$T/host/status.json"
+printf '{"target":"%s"}' "$SHA_F" > "$T/host/requests/update.json"
+touch -d '2 hours ago' "$T/host/requests/update.json"
+run_hostd
+check "an old request is refused" log_has "is older than 30 minutes"
+check "an old request leaves the clone" head_is "$SHA_E"
 
 # 9. An update cut short is reported at the next start.
 printf '{"state":"running","from":"","to":"","started_at":"","finished_at":"","log":[]}\n' > "$T/host/status.json"

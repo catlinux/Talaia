@@ -97,7 +97,7 @@ export function Settings({ api = defaultApi, pollMs = pollEvery }: SettingsProps
         if (cancelled) return
         setView({ status: 'ready', system })
         setWaiting(false)
-        if (isFinal(system.status.state)) {
+        if (isFinal(system.status.state) || system.update.error === 'host_helper_missing') {
           setRequested(false)
         }
       },
@@ -137,7 +137,7 @@ export function Settings({ api = defaultApi, pollMs = pollEvery }: SettingsProps
           if (cancelled) return
           setView({ status: 'ready', system })
           setWaiting(false)
-          if (isFinal(system.status.state)) {
+          if (isFinal(system.status.state) || system.update.error === 'host_helper_missing') {
             setRequested(false)
           }
         },
@@ -176,7 +176,7 @@ export function Settings({ api = defaultApi, pollMs = pollEvery }: SettingsProps
           (system) => {
             setView({ status: 'ready', system })
             setWaiting(false)
-            if (isFinal(system.status.state)) {
+            if (isFinal(system.status.state) || system.update.error === 'host_helper_missing') {
               setRequested(false)
             }
           },

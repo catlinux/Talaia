@@ -164,6 +164,10 @@ El núcleo corre en un contenedor de solo lectura sin el socket de Docker, así 
   esa versión. El panel muestra el resultado y las últimas líneas del registro; el registro completo está en
   `sudo journalctl -u talaia-update`. Lo que el panel registró entre la copia y la vuelta atrás (auditoría,
   métricas) se pierde.
+- Cuando una actualización cambia el propio ayudante, instala la versión nueva en cuanto responde el núcleo nuevo,
+  así que la siguiente actualización ya la usa.
+- Si el ayudante no recoge una petición en cinco minutos, el panel avisa de que no está en marcha (revisa
+  `systemctl status talaia-update.path`); una petición de más de 30 minutos se rechaza en vez de aplicarse tarde.
 
 Su configuración está en `/etc/talaia/hostd.conf` (`REPO_DIR`, `REPO_USER`). El clon debe seguir en `main` sin
 cambios locales. Quien sea dueño del clon puede cambiar lo que se construye como root, así que déjalo en una cuenta

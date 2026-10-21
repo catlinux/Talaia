@@ -773,3 +773,27 @@ func TestHeadIsOfferedOnceItsCIFinishes(t *testing.T) {
 		t.Fatalf("second check offered %q, want the head once its CI is green", state.Latest)
 	}
 }
+
+func TestRequesterReportsAStuckRequest(t *testing.T) {
+	hostDir := helperDir(t)
+	requester := NewRequester(hostDir)
+	if err := requester.Request(shaCurrent); err != nil {
+		t.Fatalf("request: %v", err)
+	}
+	if !requester.Available() {
+		t.Fatal("a fresh request made the helper unavailable")
+	}
+
+	// Nobody took the request for ten minutes: the helper is not running.
+	path := filepath.Join(hostDir, requestsDirectory, requestFileName)
+	old := time.Now().Add(-10 * time.Minute)
+	if err := os.Chtimes(path, old, old); err != nil {
+		t.Fatal(err)
+	}
+	if requester.Available() {
+		t.Fatal("a request waiting for ten minutes was not reported")
+	}
+	if err := requester.Request(shaCurrent); !errors.Is(err, ErrHostHelperMissing) {
+		t.Fatalf("request = %v, want ErrHostHelperMissing", err)
+	}
+}

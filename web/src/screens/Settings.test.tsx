@@ -138,9 +138,7 @@ describe('Settings', () => {
     )
 
     expect(
-      await screen.findByText(
-        'The host update helper is not installed, so the panel cannot apply updates.',
-      ),
+      await screen.findByText(/The host update helper is not installed or is not running/),
     ).toBeTruthy()
     const button = screen.getByRole('button', { name: 'Update to bbbbbbb' }) as HTMLButtonElement
     expect(button.disabled).toBe(true)
@@ -182,6 +180,34 @@ describe('Settings', () => {
     expect(update).toHaveBeenCalledWith(latest)
     expect(await screen.findByText('The update is running.')).toBeTruthy()
     expect(screen.getByText('building')).toBeTruthy()
+  })
+
+  it('stops waiting for a queued update when the host helper does not take it', async () => {
+    vi.useFakeTimers()
+    const update = vi.fn(() => Promise.resolve({ target: latest }))
+    const version = vi
+      .fn<() => Promise<SystemVersion>>()
+      .mockResolvedValueOnce(makeSystem())
+      .mockResolvedValueOnce(makeSystem())
+      .mockResolvedValue(makeSystem({ update: { error: 'host_helper_missing' } }))
+    renderSettings(apiWith(version, update))
+
+    await act(async () => {})
+    fireEvent.click(screen.getByRole('button', { name: 'Update to bbbbbbb' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Update now' }))
+    await act(async () => {})
+    expect(update).toHaveBeenCalledWith(latest)
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(pollEvery)
+    })
+    expect(screen.getByText(/is not installed or is not running/)).toBeTruthy()
+
+    const calls = version.mock.calls.length
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(pollEvery * 3)
+    })
+    expect(version).toHaveBeenCalledTimes(calls)
   })
 
   it('polls a running update until it succeeds and then stops', async () => {

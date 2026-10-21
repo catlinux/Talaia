@@ -35,6 +35,7 @@ const (
 	maxStatusBytes        = 1 << 20
 	requestTimeout        = 10 * time.Second
 	forcedRefreshAfter    = time.Minute
+	staleRequestAfter     = 5 * time.Minute
 	shortSHALength        = 7
 	maxSubjectBytes       = 500
 	maxLogLines           = 50
@@ -621,8 +622,16 @@ func NewRequester(hostDir string) *Requester {
 // the requests directory for the core. Docker creates an empty host directory
 // on its own when the helper is missing, so that alone proves nothing.
 func (r *Requester) Available() bool {
-	info, err := os.Lstat(filepath.Join(r.hostDir, requestsDirectory))
-	return err == nil && info.IsDir()
+	directory := filepath.Join(r.hostDir, requestsDirectory)
+	info, err := os.Lstat(directory)
+	if err != nil || !info.IsDir() {
+		return false
+	}
+	// The helper takes a request within seconds. One still waiting after
+	// minutes means it is stopped, and the panel must say so instead of showing
+	// a queued update for ever.
+	request, err := os.Lstat(filepath.Join(directory, requestFileName))
+	return err != nil || time.Since(request.ModTime()) <= staleRequestAfter
 }
 
 // Request queues an update to target. The helper watches the request file; the

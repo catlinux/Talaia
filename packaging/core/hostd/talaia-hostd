@@ -20,11 +20,16 @@
 #   HOST_DIR        directory shared with the core (default /var/lib/talaia-host)
 #   STATE_DIR       backups and lock, never shared (default /var/lib/talaia-hostd)
 #   HEALTH_TIMEOUT  seconds to wait for the new core (default 180)
+#   SBIN_DIR        where the helper itself is installed (default /usr/local/sbin)
+#   UNIT_DIR        where its systemd units are installed (default /etc/systemd/system)
 set -euo pipefail
 
 CONF="${TALAIA_HOSTD_CONF:-/etc/talaia/hostd.conf}"
 KEEP_BACKUPS=3
 MAX_REQUEST_BYTES=256
+# A request the helper did not take in time (it was stopped) is not applied
+# hours later by surprise: the administrator asks again.
+MAX_REQUEST_AGE=1800
 MAX_LOG_LINES=40
 
 REPO_DIR=""
@@ -32,6 +37,8 @@ REPO_USER=""
 HOST_DIR="/var/lib/talaia-host"
 STATE_DIR="/var/lib/talaia-hostd"
 HEALTH_TIMEOUT=180
+SBIN_DIR="/usr/local/sbin"
+UNIT_DIR="/etc/systemd/system"
 
 state="idle"
 from=""
@@ -76,12 +83,14 @@ load_config() {
             HOST_DIR) HOST_DIR="$value" ;;
             STATE_DIR) STATE_DIR="$value" ;;
             HEALTH_TIMEOUT) HEALTH_TIMEOUT="$value" ;;
+            SBIN_DIR) SBIN_DIR="$value" ;;
+            UNIT_DIR) UNIT_DIR="$value" ;;
             *) die "unknown key $key in $CONF" ;;
         esac
     done < "$CONF"
 
     local dir
-    for dir in "$REPO_DIR" "$HOST_DIR" "$STATE_DIR"; do
+    for dir in "$REPO_DIR" "$HOST_DIR" "$STATE_DIR" "$SBIN_DIR" "$UNIT_DIR"; do
         [[ "$dir" =~ ^/[A-Za-z0-9._/-]+$ ]] || die "invalid directory '$dir' in $CONF"
     done
     [[ "$REPO_USER" =~ ^[a-z_][a-z0-9_-]{0,31}$ ]] || die "invalid REPO_USER in $CONF"
@@ -207,7 +216,7 @@ wait_healthy() {
 # take_request moves the request into a directory only root can enter, then
 # checks it there, where the core can no longer swap it for a link.
 take_request() {
-    local request="$HOST_DIR/requests/update.json" inbox="$HOST_DIR/.inbox" taken content
+    local request="$HOST_DIR/requests/update.json" inbox="$HOST_DIR/.inbox" taken content age
     [ -e "$request" ] || [ -L "$request" ] || return 1
 
     mkdir -p "$inbox"
@@ -217,16 +226,22 @@ take_request() {
     mv -f -T "$request" "$taken"
 
     content=""
+    age=0
     if [ -f "$taken" ] && [ ! -L "$taken" ] && [ "$(stat -c %h "$taken")" -eq 1 ] &&
         [ "$(stat -c %s "$taken")" -le "$MAX_REQUEST_BYTES" ]; then
         content="$(head -c "$MAX_REQUEST_BYTES" "$taken")"
+        age=$(($(date +%s) - $(stat -c %Y "$taken")))
     fi
     rm -rf "$taken"
 
+    to=""
+    reject_reason="the request is not a valid update request"
     if [[ "$content" =~ ^\{\"target\":\"([0-9a-f]{40})\"\}$ ]]; then
-        to="${BASH_REMATCH[1]}"
-    else
-        to=""
+        if [ "$age" -gt "$MAX_REQUEST_AGE" ]; then
+            reject_reason="the request is older than $((MAX_REQUEST_AGE / 60)) minutes; ask again from the panel"
+        else
+            to="${BASH_REMATCH[1]}"
+        fi
     fi
     return 0
 }
@@ -285,6 +300,46 @@ roll_back() {
     finish rolled_back "the update failed and ${from:0:12} is running again"
 }
 
+# replace_file installs a file of the clone by renaming a copy into place:
+# bash reads this script while it runs, so it must never be rewritten in place.
+replace_file() {
+    local source="$1" target="$2" mode="$3" tmp
+    # The clone belongs to REPO_USER: a link there must not make root copy, say,
+    # /etc/shadow into a world-readable file.
+    [ -f "$source" ] && [ ! -L "$source" ] || return 1
+    tmp="$(mktemp "$(dirname "$target")/.talaia-hostd.XXXXXX")"
+    if ! cat "$source" > "$tmp" || ! chmod "$mode" "$tmp"; then
+        rm -f "$tmp"
+        return 1
+    fi
+    if is_root && ! chown root:root "$tmp"; then
+        rm -f "$tmp"
+        return 1
+    fi
+    mv -f -T "$tmp" "$target"
+}
+
+# self_update installs the helper and its units from the new commit when the
+# update changed them, so the next update runs the new helper.
+self_update() {
+    local hostd="packaging/core/hostd" units_changed=0
+    if git_repo diff --quiet "$from" "$to" -- "$hostd/talaia-hostd" "$hostd/talaia-update.path" "$hostd/talaia-update.service"; then
+        return 0
+    fi
+    say "installing the new version of the update helper"
+    if ! git_repo diff --quiet "$from" "$to" -- "$hostd/talaia-update.path" "$hostd/talaia-update.service"; then
+        units_changed=1
+    fi
+    replace_file "$REPO_DIR/$hostd/talaia-hostd" "$SBIN_DIR/talaia-hostd" 0755 || return 1
+    if [ "$units_changed" -eq 1 ]; then
+        replace_file "$REPO_DIR/$hostd/talaia-update.path" "$UNIT_DIR/talaia-update.path" 0644 || return 1
+        replace_file "$REPO_DIR/$hostd/talaia-update.service" "$UNIT_DIR/talaia-update.service" 0644 || return 1
+        systemctl daemon-reload || return 1
+        # Restarting the path unit does not stop this service, which it started.
+        systemctl try-restart talaia-update.path || return 1
+    fi
+}
+
 update() {
     load_config
     check_host_dir
@@ -309,7 +364,7 @@ update() {
     started_at="$(now)"
     from="$(git_repo rev-parse HEAD)"
     if [ -z "$to" ]; then
-        finish failed "rejected: the request is not a valid update request"
+        finish failed "rejected: $reject_reason"
         return 0
     fi
     say "update requested from ${from:0:12} to ${to:0:12}"
@@ -375,6 +430,9 @@ update() {
         say "the new core did not answer within ${HEALTH_TIMEOUT} s"
         roll_back yes
         return 0
+    fi
+    if ! self_update; then
+        say "warning: the new update helper could not be installed; run packaging/core/install.sh again"
     fi
     finish succeeded "updated to ${to:0:12}"
 }

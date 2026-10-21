@@ -161,6 +161,11 @@ a small root helper on the host, **`talaia-hostd`** (skip it with `--no-hostd`):
   rebuilds that version. The panel shows the result and the last log lines; the full log is in
   `sudo journalctl -u talaia-update`. What the panel recorded between the backup and the rollback (audit entries,
   metrics) is lost.
+- When an update changes the helper itself, it installs the new version once the new core answers, so the next
+  update already uses it.
+- A request the helper does not take within five minutes makes the panel say that the helper is not running
+  (check `systemctl status talaia-update.path`); a request older than 30 minutes is refused instead of applied
+  late.
 
 Its settings are in `/etc/talaia/hostd.conf` (`REPO_DIR`, `REPO_USER`). The clone must stay on `main` without local
 changes. Whoever owns the clone can change what gets built as root, so keep it under an administrator account.

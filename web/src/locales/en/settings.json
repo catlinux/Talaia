@@ -52,7 +52,7 @@
     "log": "Last lines of the log"
   },
   "updateError": {
-    "hostHelperMissing": "The host update helper is not installed, so the panel cannot apply updates.",
+    "hostHelperMissing": "The host update helper is not installed or is not running, so the panel cannot apply updates. On the core machine, check: systemctl status talaia-update.path",
     "rateLimited": "GitHub has rate-limited the update checks. The panel will try again later.",
     "unreachable": "The update server could not be reached. The panel will try again later.",
     "generic": "The update check failed. The panel will try again later."

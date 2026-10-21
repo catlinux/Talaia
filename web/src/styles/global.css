@@ -699,7 +699,7 @@ code {
 }
 
 /* After the progress card, so a running update is seen first. */
-.settings__card[aria-labelledby="settings-pending-title"] {
+.settings__card[aria-labelledby='settings-pending-title'] {
   order: 1;
 }
 

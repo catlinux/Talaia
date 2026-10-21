@@ -52,7 +52,7 @@
     "log": "Darreres línies del registre"
   },
   "updateError": {
-    "hostHelperMissing": "L'ajudant d'actualització de l'amfitrió no està instal·lat, així que el panell no pot aplicar actualitzacions.",
+    "hostHelperMissing": "L'ajudant d'actualització de l'amfitrió no està instal·lat o no està en marxa, així que el panell no pot aplicar actualitzacions. A la màquina del nucli, revisa: systemctl status talaia-update.path",
     "rateLimited": "GitHub ha limitat les comprovacions d'actualitzacions. El panell ho tornarà a provar més tard.",
     "unreachable": "No s'ha pogut contactar amb el servidor d'actualitzacions. El panell ho tornarà a provar més tard.",
     "generic": "La comprovació d'actualitzacions ha fallat. El panell ho tornarà a provar més tard."
