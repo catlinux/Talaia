@@ -80,6 +80,7 @@ of the current phase and the next one.
 - [ ] Terminal in a container, step 6 (what is left): a test with a real Docker on the Debian (the documentation is in `docs/en/security.md`)
 - [ ] Terminal in a container, step 7: final security review of the whole diff (Opus)
 - [x] Stack screen (mockup 3), live logs (`-f`) and a fixed note in the stack editor: a compose file runs as root on the server
+- [ ] An adopted stack whose directory has disappeared stays as a broken entry: detect it and offer **Stop managing** (or clean the record) in the panel; found in the real test of 2026-10-22
 - [ ] Close the phase against its criterion; closing it raises the version to 0.3.0 (maintainer policy, 2026-10-21)
 
 ## Operations block (decided 2026-10-20, before closing phase 2)
