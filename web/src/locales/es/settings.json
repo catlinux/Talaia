@@ -43,6 +43,30 @@
     "empty": "Todavía no hay ningún servidor inscrito.",
     "connected": "Conectado",
     "offline": "Desconectado",
+    "agentVersion": "Agente {{version}}",
+    "agentUnknown": "Versión del agente desconocida",
+    "update": "Actualizar",
+    "updateAll": "Actualizar todos los agentes ({{count}})",
+    "updateStarted": "Actualizando… el agente se volverá a conectar.",
+    "updateAllResult": "{{queued}} actualización en cola, {{skipped}} omitidas.",
+    "updateConfirm": {
+      "titleAgent": "¿Actualizar el agente de {{name}}?",
+      "titleAll": "¿Actualizar todos los agentes?",
+      "bodyAgent": "El panel descarga el paquete desde el núcleo, comprueba su SHA-256, lo instala y reinicia el agente. Los contenedores no se tocan; el servidor aparece desconectado un momento.",
+      "bodyAll": "El panel descarga cada paquete desde el núcleo, comprueba su SHA-256, lo instala y reinicia el agente. Los contenedores no se tocan; cada servidor aparece desconectado un momento.",
+      "confirmAgent": "Actualizar agente",
+      "confirmAll": "Actualizar todos los agentes",
+      "updating": "Actualizando…",
+      "cancel": "Cancelar"
+    },
+    "updateErrors": {
+      "agent_offline": "El agente de este servidor no está conectado.",
+      "no_update": "No hay ningún paquete de agente más nuevo.",
+      "update_in_progress": "Ya hay una actualización del agente en curso.",
+      "session_required": "La sesión ha terminado. Vuelve a entrar.",
+      "not_found": "El servidor ya no existe.",
+      "generic": "No se ha podido iniciar la actualización."
+    },
     "remove": "Eliminar",
     "confirm": {
       "title": "¿Eliminar {{name}}?",

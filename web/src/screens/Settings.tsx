@@ -3,7 +3,12 @@ import { useTranslation } from 'react-i18next'
 
 import { createAuthApi, type AccessApi } from '../api/auth'
 import { ApiError, isSignedOut } from '../api/http'
-import type { ServerSummary } from '../api/servers'
+import {
+  AgentUpdateError,
+  type AgentUpdateAllResult,
+  type ServerSummary,
+  type ServersApi,
+} from '../api/servers'
 import {
   createSystemApi,
   type SystemApi,
@@ -20,9 +25,12 @@ export const pendingShown = 10
 /** logShown is how many of the last log lines the progress card shows. */
 const logShown = 8
 
+/** SettingsApi is the system API plus the optional agent update calls. */
+export type SettingsApi = SystemApi & Partial<Pick<ServersApi, 'updateAgent' | 'updateAllAgents'>>
+
 interface SettingsProps {
   /** api is injected by the tests; the panel builds its own otherwise. */
-  api?: SystemApi
+  api?: SettingsApi
   /** accessApi manages trusted devices and passkeys; the panel builds its own otherwise. */
   accessApi?: AccessApi
   /** pollMs overrides the polling interval, for the tests. */
@@ -54,6 +62,27 @@ function restarting(error: unknown): boolean {
     error instanceof ApiError &&
     (error.status === 502 || error.status === 503 || error.code === 'network')
   )
+}
+
+/** agentUpdateErrorKey returns the settings key of a refused agent update. */
+function agentUpdateErrorKey(error: unknown): string {
+  if (!(error instanceof AgentUpdateError)) {
+    return ''
+  }
+  switch (error.code) {
+    case 'agent_offline':
+      return 'servers.updateErrors.agent_offline'
+    case 'no_update':
+      return 'servers.updateErrors.no_update'
+    case 'update_in_progress':
+      return 'servers.updateErrors.update_in_progress'
+    case 'session_required':
+      return 'servers.updateErrors.session_required'
+    case 'not_found':
+      return 'servers.updateErrors.not_found'
+    default:
+      return 'servers.updateErrors.generic'
+  }
 }
 
 function updateErrorKey(code: string): string {
@@ -122,7 +151,16 @@ export function Settings({ api = defaultApi, accessApi, pollMs = pollEvery }: Se
   const [removeBusy, setRemoveBusy] = useState(false)
   const [removeError, setRemoveError] = useState<string | null>(null)
 
+  const [updatingAgent, setUpdatingAgent] = useState<ServerSummary | null>(null)
+  const [updatingAll, setUpdatingAll] = useState(false)
+  const [updateBusy, setUpdateBusy] = useState(false)
+  const [updateError, setUpdateError] = useState<string | null>(null)
+  const [updateNotice, setUpdateNotice] = useState<string | null>(null)
+
   const showServers = api.listServers !== undefined
+  const canUpdateAgent = api.updateAgent !== undefined
+  const canUpdateAll = api.updateAllAgents !== undefined
+  const updateAvailableCount = servers?.filter((server) => server.agentUpdateAvailable).length ?? 0
 
   useEffect(() => {
     if (!api.listServers) {
@@ -315,6 +353,8 @@ export function Settings({ api = defaultApi, accessApi, pollMs = pollEvery }: Se
     setRemoving(server)
     setConfirmName('')
     setRemoveError(null)
+    setUpdatingAgent(null)
+    setUpdatingAll(false)
   }
 
   const cancelRemoval = () => {
@@ -344,6 +384,83 @@ export function Settings({ api = defaultApi, accessApi, pollMs = pollEvery }: Se
         setRemoveBusy(false)
         if (isSignedOut(error)) return
         setRemoveError(errorMessage(t, error))
+      },
+    )
+  }
+
+  const updateErrorMessage = (error: unknown): string => {
+    const key = agentUpdateErrorKey(error)
+    return key === '' ? errorMessage(t, error) : t(`settings:${key}`)
+  }
+
+  const startAgentUpdate = (server: ServerSummary) => {
+    setUpdatingAgent(server)
+    setUpdatingAll(false)
+    setRemoving(null)
+    setUpdateError(null)
+    setUpdateNotice(null)
+  }
+
+  const startAllUpdates = () => {
+    setUpdatingAll(true)
+    setUpdatingAgent(null)
+    setRemoving(null)
+    setUpdateError(null)
+    setUpdateNotice(null)
+  }
+
+  const cancelUpdate = () => {
+    setUpdatingAgent(null)
+    setUpdatingAll(false)
+    setUpdateError(null)
+  }
+
+  const confirmAgentUpdate = () => {
+    const updateAgent = api.updateAgent
+    if (!updatingAgent || !updateAgent) {
+      return
+    }
+    const target = updatingAgent
+    setUpdateBusy(true)
+    setUpdateError(null)
+    updateAgent(target.id).then(
+      () => {
+        setUpdateBusy(false)
+        setUpdatingAgent(null)
+        setUpdateNotice(t('settings:servers.updateStarted'))
+        reloadServers()
+      },
+      (error: unknown) => {
+        setUpdateBusy(false)
+        if (isSignedOut(error)) return
+        setUpdateError(updateErrorMessage(error))
+      },
+    )
+  }
+
+  const confirmAllUpdates = () => {
+    const updateAll = api.updateAllAgents
+    if (!updatingAll || !updateAll) {
+      return
+    }
+    setUpdateBusy(true)
+    setUpdateError(null)
+    updateAll().then(
+      (result: AgentUpdateAllResult) => {
+        setUpdateBusy(false)
+        setUpdatingAll(false)
+        setUpdateNotice(
+          t('settings:servers.updateAllResult', {
+            queued: result.queued.length,
+            skipped: result.skipped.length,
+          }),
+        )
+        reloadServers()
+      },
+      (error: unknown) => {
+        setUpdateBusy(false)
+        if (isSignedOut(error)) return
+        setUpdateError(updateErrorMessage(error))
       },
     )
   }
@@ -513,9 +630,20 @@ export function Settings({ api = defaultApi, accessApi, pollMs = pollEvery }: Se
 
           {showServers ? (
             <section className="settings__card" aria-labelledby="settings-servers-title">
-              <h2 className="settings__card-title" id="settings-servers-title">
-                {t('settings:servers.title')}
-              </h2>
+              <div className="settings__card-head">
+                <h2 className="settings__card-title" id="settings-servers-title">
+                  {t('settings:servers.title')}
+                </h2>
+                {canUpdateAll && updateAvailableCount > 0 ? (
+                  <button
+                    type="button"
+                    className="settings__button settings__server-update-all"
+                    onClick={startAllUpdates}
+                  >
+                    {t('settings:servers.updateAll', { count: updateAvailableCount })}
+                  </button>
+                ) : null}
+              </div>
               {serversError !== null ? (
                 <p className="settings__message settings__message--error" role="alert">
                   {serversError}
@@ -531,6 +659,11 @@ export function Settings({ api = defaultApi, accessApi, pollMs = pollEvery }: Se
                   {servers.map((server) => (
                     <li className="settings__server" key={server.id}>
                       <span className="settings__server-name">{server.name}</span>
+                      <span className="settings__server-agent">
+                        {server.agentVersion === ''
+                          ? t('settings:servers.agentUnknown')
+                          : t('settings:servers.agentVersion', { version: server.agentVersion })}
+                      </span>
                       <span
                         className={
                           server.connected
@@ -542,6 +675,15 @@ export function Settings({ api = defaultApi, accessApi, pollMs = pollEvery }: Se
                           ? t('settings:servers.connected')
                           : t('settings:servers.offline')}
                       </span>
+                      {canUpdateAgent && server.agentUpdateAvailable ? (
+                        <button
+                          type="button"
+                          className="settings__button settings__server-update"
+                          onClick={() => startAgentUpdate(server)}
+                        >
+                          {t('settings:servers.update')}
+                        </button>
+                      ) : null}
                       <button
                         type="button"
                         className="settings__button settings__server-remove"
@@ -553,6 +695,16 @@ export function Settings({ api = defaultApi, accessApi, pollMs = pollEvery }: Se
                   ))}
                 </ul>
               )}
+              {updateNotice !== null ? (
+                <p className="settings__notice" role="status">
+                  {updateNotice}
+                </p>
+              ) : null}
+              {updateError !== null && updatingAgent === null && !updatingAll ? (
+                <p className="settings__message settings__message--error" role="alert">
+                  {updateError}
+                </p>
+              ) : null}
             </section>
           ) : null}
 
@@ -657,6 +809,57 @@ export function Settings({ api = defaultApi, accessApi, pollMs = pollEvery }: Se
                 onClick={() => setConfirming(false)}
               >
                 {t('settings:confirm.no')}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {updatingAgent !== null || updatingAll ? (
+        <div className="settings__overlay">
+          <div
+            className="settings__dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="settings-agent-update-title"
+          >
+            <h2 className="settings__dialog-title" id="settings-agent-update-title">
+              {updatingAll
+                ? t('settings:servers.updateConfirm.titleAll')
+                : t('settings:servers.updateConfirm.titleAgent', {
+                    name: updatingAgent?.name ?? '',
+                  })}
+            </h2>
+            <p className="settings__dialog-body">
+              {updatingAll
+                ? t('settings:servers.updateConfirm.bodyAll')
+                : t('settings:servers.updateConfirm.bodyAgent')}
+            </p>
+            {updateError !== null ? (
+              <p className="settings__message settings__message--error" role="alert">
+                {updateError}
+              </p>
+            ) : null}
+            <div className="settings__dialog-actions">
+              <button
+                type="button"
+                className="settings__button settings__button--primary"
+                disabled={updateBusy}
+                onClick={updatingAll ? confirmAllUpdates : confirmAgentUpdate}
+              >
+                {updateBusy
+                  ? t('settings:servers.updateConfirm.updating')
+                  : updatingAll
+                    ? t('settings:servers.updateConfirm.confirmAll')
+                    : t('settings:servers.updateConfirm.confirmAgent')}
+              </button>
+              <button
+                type="button"
+                className="settings__button"
+                disabled={updateBusy}
+                onClick={cancelUpdate}
+              >
+                {t('settings:servers.updateConfirm.cancel')}
               </button>
             </div>
           </div>

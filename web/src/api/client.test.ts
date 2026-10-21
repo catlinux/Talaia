@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { createApiFleetClient } from './client'
 
 interface LiveOverrides {
+  agent_version?: string
   cpu_count?: number
   cpu_percent?: number
   mem_used_bytes?: number
@@ -51,6 +52,7 @@ function serverEntry(overrides: Record<string, unknown> = {}) {
     revoked: false,
     cert_not_after: '2027-01-01T10:00:00Z',
     connected: true,
+    agent_update_available: false,
     live: live(),
     ...overrides,
   }
@@ -95,7 +97,20 @@ describe('api fleet client', () => {
       stacks: 1,
       tags: [],
       lastSeen: '2026-10-19T12:00:00Z',
+      agentVersion: '0.2.0',
+      agentUpdateAvailable: false,
     })
+  })
+
+  it('maps the agent version and the update flag', async () => {
+    const { client } = clientFor([
+      serverEntry({ agent_update_available: true, live: live({ agent_version: '0.2.0' }) }),
+    ])
+
+    const [server] = await client.listServers()
+
+    expect(server?.agentVersion).toBe('0.2.0')
+    expect(server?.agentUpdateAvailable).toBe(true)
   })
 
   it('marks a server over 75 percent as warning and over 90 as critical', async () => {

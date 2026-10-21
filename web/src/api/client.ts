@@ -63,6 +63,7 @@ interface apiServer {
   revoked: boolean
   cert_not_after: string | null
   connected: boolean
+  agent_update_available: boolean
   live?: apiLiveAgent
 }
 
@@ -140,6 +141,8 @@ function toServer(server: apiServer): Server {
     stacks: live ? live.compose_projects : 0,
     tags: [],
     lastSeen: live?.seen_at ?? server.last_seen,
+    agentVersion: live?.agent_version ?? '',
+    agentUpdateAvailable: server.agent_update_available ?? false,
   }
 }
 

@@ -171,6 +171,23 @@
       "other": "La terminal ha terminado ({{reason}})."
     }
   },
+  "agentVersion": "Agente {{version}}",
+  "agentUpdate": {
+    "button": "Actualizar agente",
+    "confirmTitle": "¿Actualizar el agente?",
+    "confirmBody": "El panel descarga el paquete desde el núcleo, comprueba su SHA-256, lo instala y reinicia el agente. Los contenedores no se tocan; el servidor aparece desconectado un momento.",
+    "confirm": "Actualizar agente",
+    "cancel": "Cancelar",
+    "running": "Actualizando… el agente se volverá a conectar.",
+    "errors": {
+      "agent_offline": "El agente de este servidor no está conectado.",
+      "no_update": "No hay ningún paquete de agente más nuevo.",
+      "update_in_progress": "Ya hay una actualización del agente en curso.",
+      "session_required": "La sesión ha terminado. Vuelve a entrar.",
+      "not_found": "El servidor ya no existe.",
+      "generic": "No se ha podido iniciar la actualización."
+    }
+  },
   "stack": {
     "back": "Volver al servidor",
     "breadcrumb": "Ruta de navegación",

@@ -3,10 +3,37 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { Container, ContainerList, ContainersApi, Job } from '../api/containers'
 import { ApiError } from '../api/http'
+import { AgentUpdateError, type ServerSummary, type ServersApi } from '../api/servers'
 import i18n from '../i18n'
 import { ServerScreen } from './ServerScreen'
 
 const server = { id: 'srv-1', name: 'vps-web-01' }
+
+/** serverSummary builds the server list entry the screen loads. */
+function serverSummary(overrides: Partial<ServerSummary> = {}): ServerSummary {
+  return {
+    id: 'srv-1',
+    name: 'vps-web-01',
+    connected: true,
+    revoked: false,
+    agentVersion: '0.2.0',
+    agentUpdateAvailable: false,
+    ...overrides,
+  }
+}
+
+/** serversApiWith builds a fake server API; list is served once per call. */
+function serversApiWith(
+  list: ServerSummary[] | (() => Promise<ServerSummary[]>),
+  updateAgent: ServersApi['updateAgent'] = vi.fn(() => Promise.resolve()),
+): ServersApi {
+  return {
+    listServers: vi.fn(typeof list === 'function' ? list : () => Promise.resolve(list)),
+    updateAgent,
+    updateAllAgents: vi.fn(() => Promise.resolve({ queued: [], skipped: [] })),
+    removeServer: vi.fn(() => Promise.resolve()),
+  }
+}
 
 function container(overrides: Partial<Container> = {}): Container {
   return {
@@ -56,8 +83,14 @@ function apiWith(
   }
 }
 
-function renderScreen(api: ContainersApi, onBack = () => undefined) {
-  render(<ServerScreen server={server} api={api} onBack={onBack} pollMs={1} />)
+function renderScreen(
+  api: ContainersApi,
+  onBack = () => undefined,
+  serversApi: ServersApi = serversApiWith([serverSummary()]),
+) {
+  render(
+    <ServerScreen server={server} api={api} serversApi={serversApi} onBack={onBack} pollMs={1} />,
+  )
 }
 
 describe('ServerScreen', () => {
@@ -181,6 +214,76 @@ describe('ServerScreen', () => {
 
     expect(api.run).toHaveBeenCalledWith('srv-1', 'web', 'remove', true)
     expect(await screen.findByText('Done')).toBeTruthy()
+  })
+
+  it('shows the agent version and updates it after confirmation', async () => {
+    const serversApi = serversApiWith([serverSummary({ agentUpdateAvailable: true })])
+    renderScreen(apiWith(listOf(container())), undefined, serversApi)
+
+    expect(await screen.findByText('Agent 0.2.0')).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Update agent' }))
+
+    const dialog = screen.getByRole('dialog')
+    expect(within(dialog).getByText('Update the agent?')).toBeTruthy()
+    expect(within(dialog).getByText(/downloads the package from the core/)).toBeTruthy()
+
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Update agent' }))
+
+    expect(serversApi.updateAgent).toHaveBeenCalledWith('srv-1')
+    expect(await screen.findByText('Updating… the agent will reconnect.')).toBeTruthy()
+  })
+
+  it('hides the update button when the agent is offline or up to date', async () => {
+    renderScreen(
+      apiWith(listOf(container())),
+      undefined,
+      serversApiWith([serverSummary({ connected: false, agentUpdateAvailable: true })]),
+    )
+
+    expect(await screen.findByText('Agent 0.2.0')).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'Update agent' })).toBeNull()
+  })
+
+  const refusedUpdates = [
+    ['no_update', 'There is no newer agent package.'],
+    ['agent_offline', 'The agent of this server is not connected.'],
+    ['update_in_progress', 'An agent update is already in progress.'],
+    ['session_required', 'The session ended. Sign in again.'],
+  ] as const
+
+  for (const [code, message] of refusedUpdates) {
+    it(`shows a clear message when the update is refused with ${code}`, async () => {
+      const updateAgent = vi.fn(() => Promise.reject(new AgentUpdateError(code, 409)))
+      const serversApi = serversApiWith(
+        [serverSummary({ agentUpdateAvailable: true })],
+        updateAgent,
+      )
+      renderScreen(apiWith(listOf(container())), undefined, serversApi)
+
+      fireEvent.click(await screen.findByRole('button', { name: 'Update agent' }))
+      fireEvent.click(
+        within(screen.getByRole('dialog')).getByRole('button', { name: 'Update agent' }),
+      )
+
+      expect((await screen.findByRole('alert')).textContent).toBe(message)
+    })
+  }
+
+  it('clears the updating line when a refresh reports the new version', async () => {
+    const listServers = vi
+      .fn<() => Promise<ServerSummary[]>>()
+      .mockResolvedValueOnce([serverSummary({ agentUpdateAvailable: true })])
+      .mockResolvedValue([serverSummary({ agentVersion: '0.3.0', agentUpdateAvailable: false })])
+    const serversApi = serversApiWith(listServers)
+    renderScreen(apiWith(listOf(container())), undefined, serversApi)
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Update agent' }))
+    fireEvent.click(
+      within(screen.getByRole('dialog')).getByRole('button', { name: 'Update agent' }),
+    )
+
+    expect(await screen.findByText('Agent 0.3.0')).toBeTruthy()
+    expect(screen.queryByText('Updating… the agent will reconnect.')).toBeNull()
   })
 
   it('goes back to the fleet', async () => {

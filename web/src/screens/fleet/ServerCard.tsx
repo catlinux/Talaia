@@ -48,6 +48,16 @@ export function ServerCard({ server, onOpen }: ServerCardProps) {
               })}
         </p>
       ) : null}
+      {server.agentVersion !== '' || server.agentUpdateAvailable ? (
+        <p className="server__agent">
+          {server.agentVersion !== '' ? (
+            <span>{t('server.agentVersion', { version: server.agentVersion })}</span>
+          ) : null}
+          {server.agentUpdateAvailable ? (
+            <span className="server__update">{t('server.updateAvailable')}</span>
+          ) : null}
+        </p>
+      ) : null}
       <div className="server__meters">
         <Meter label={t('metric.cpu')} percent={server.cpuPercent} />
         <Meter label={t('metric.ram')} percent={server.memPercent} />

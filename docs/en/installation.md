@@ -200,7 +200,10 @@ identity matches the CA and would keep trying to use the revoked certificate. Pu
 - **Lost the authenticator or the codes:** `sudo docker compose run --rm core user reset-2fa` clears the second
   factor and closes all sessions; the next sign-in sets it up again.
 - **Logs:** `sudo docker compose logs core`.
-- **Update the agents:** after updating the core, its image carries the new agent package. On the core machine,
+- **Update the agents:** after updating the core, its image carries the new agent package. The panel shows the agent
+  version of each server and an **Update available** badge; use **Update agent** on the server screen or
+  **Update all agents** in **Settings > Servers**. The agent downloads the package from the core, checks its
+  SHA-256, installs it and restarts (containers are not touched). Without the panel, on the core machine,
   `sudo docker compose run --rm -T core server upgrade-command` prints a command; run it on each server. It checks
   the script like the install command does, reinstalls the package and restarts the agent, keeping its
   configuration and identity (no token needed).

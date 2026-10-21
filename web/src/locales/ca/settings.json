@@ -43,6 +43,30 @@
     "empty": "Encara no hi ha cap servidor inscrit.",
     "connected": "Connectat",
     "offline": "Desconnectat",
+    "agentVersion": "Agent {{version}}",
+    "agentUnknown": "Versió de l'agent desconeguda",
+    "update": "Actualitza",
+    "updateAll": "Actualitza tots els agents ({{count}})",
+    "updateStarted": "S'està actualitzant… l'agent es tornarà a connectar.",
+    "updateAllResult": "{{queued}} actualitzacions en cua, {{skipped}} omeses.",
+    "updateConfirm": {
+      "titleAgent": "Vols actualitzar l'agent de {{name}}?",
+      "titleAll": "Vols actualitzar tots els agents?",
+      "bodyAgent": "El tauler baixa el paquet del nucli, en comprova el SHA-256, l'instal·la i reinicia l'agent. Els contenidors no es toquen; el servidor apareix desconnectat un moment.",
+      "bodyAll": "El tauler baixa cada paquet del nucli, en comprova el SHA-256, l'instal·la i reinicia l'agent. Els contenidors no es toquen; cada servidor apareix desconnectat un moment.",
+      "confirmAgent": "Actualitza l'agent",
+      "confirmAll": "Actualitza tots els agents",
+      "updating": "S'està actualitzant…",
+      "cancel": "Cancel·la"
+    },
+    "updateErrors": {
+      "agent_offline": "L'agent d'aquest servidor no està connectat.",
+      "no_update": "No hi ha cap paquet d'agent més nou.",
+      "update_in_progress": "Ja hi ha una actualització de l'agent en curs.",
+      "session_required": "La sessió s'ha acabat. Torna a entrar.",
+      "not_found": "El servidor ja no existeix.",
+      "generic": "No s'ha pogut iniciar l'actualització."
+    },
     "remove": "Elimina",
     "confirm": {
       "title": "Vols eliminar {{name}}?",

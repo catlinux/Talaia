@@ -51,6 +51,15 @@ métodos opcionales que hacen más rápido el acceso habitual:
 Los dos métodos son adicionales: la contraseña, el TOTP y los códigos de recuperación siguen siendo la base y la
 vía de recuperación. Configuración, uso, eliminación y problemas frecuentes: [acceso.md](acceso.md).
 
+## Actualizaciones de los agentes
+
+El núcleo puede ordenar a un agente que se actualice (la orden es tipada y lleva el SHA-256 del paquete). El agente
+descarga `/agent/talaia-agent_<arq>.deb` por su canal con TLS mutuo, rechaza una versión igual o anterior y un
+paquete cuyo hash no coincide, y lo instala con `apt-get` en una unidad de systemd aparte. Es código que se ejecuta
+como root en cada servidor, elegido por quien controla el núcleo: el hash protege de corrupción y manipulación en
+tránsito, no de un núcleo comprometido, la misma confianza que el comando de instalación. Cada orden se audita como
+`agent_update`.
+
 ## Qué protege el panel y los agentes
 
 - **Acceso:** contraseña y TOTP, PIN opcional en dispositivos de confianza y claves de acceso, límite de

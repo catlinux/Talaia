@@ -43,6 +43,30 @@
     "empty": "No servers are enrolled yet.",
     "connected": "Connected",
     "offline": "Offline",
+    "agentVersion": "Agent {{version}}",
+    "agentUnknown": "Agent version unknown",
+    "update": "Update",
+    "updateAll": "Update all agents ({{count}})",
+    "updateStarted": "Updating… the agent will reconnect.",
+    "updateAllResult": "{{queued}} update queued, {{skipped}} skipped.",
+    "updateConfirm": {
+      "titleAgent": "Update the agent of {{name}}?",
+      "titleAll": "Update all agents?",
+      "bodyAgent": "The panel downloads the package from the core, verifies its SHA-256, installs it and restarts the agent. Containers are not touched; the server shows offline for a moment.",
+      "bodyAll": "The panel downloads each package from the core, verifies its SHA-256, installs it and restarts the agent. Containers are not touched; each server shows offline for a moment.",
+      "confirmAgent": "Update agent",
+      "confirmAll": "Update all agents",
+      "updating": "Updating…",
+      "cancel": "Cancel"
+    },
+    "updateErrors": {
+      "agent_offline": "The agent of this server is not connected.",
+      "no_update": "There is no newer agent package.",
+      "update_in_progress": "An agent update is already in progress.",
+      "session_required": "The session ended. Sign in again.",
+      "not_found": "The server no longer exists.",
+      "generic": "The update could not be started."
+    },
     "remove": "Remove",
     "confirm": {
       "title": "Remove {{name}}?",

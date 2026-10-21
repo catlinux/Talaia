@@ -1,12 +1,12 @@
-import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { AccessApi } from '../api/auth'
 import { ApiError } from '../api/http'
-import type { ServerSummary } from '../api/servers'
-import type { SystemApi, SystemVersion, UpdateInfo, UpdateStatus } from '../api/system'
+import { AgentUpdateError, type ServerSummary, type ServersApi } from '../api/servers'
+import type { SystemVersion, UpdateInfo, UpdateStatus } from '../api/system'
 import i18n from '../i18n'
-import { Settings, pollEvery } from './Settings'
+import { Settings, pollEvery, type SettingsApi } from './Settings'
 
 const current = 'a'.repeat(40)
 const latest = 'b'.repeat(40)
@@ -50,10 +50,12 @@ function makeSystem(overrides: SystemOverrides = {}): SystemVersion {
 
 function apiWith(
   version: () => Promise<SystemVersion>,
-  update?: SystemApi['update'],
-  check?: SystemApi['check'],
-  servers?: Pick<SystemApi, 'listServers' | 'removeServer'>,
-): SystemApi {
+  update?: SettingsApi['update'],
+  check?: SettingsApi['check'],
+  servers?: Partial<
+    Pick<ServersApi, 'listServers' | 'removeServer' | 'updateAgent' | 'updateAllAgents'>
+  >,
+): SettingsApi {
   return {
     version,
     check: check ?? vi.fn(() => Promise.reject(new Error('unexpected check'))),
@@ -62,7 +64,7 @@ function apiWith(
   }
 }
 
-function renderSettings(api: SystemApi, access?: AccessApi) {
+function renderSettings(api: SettingsApi, access?: AccessApi) {
   render(<Settings api={api} accessApi={access} />)
 }
 
@@ -133,8 +135,22 @@ describe('Settings', () => {
 
   it('lists the servers with their connection state', async () => {
     const servers: ServerSummary[] = [
-      { id: 'srv-1', name: 'vps-web-01', connected: true, revoked: false },
-      { id: 'srv-2', name: 'vps-db-01', connected: false, revoked: false },
+      {
+        id: 'srv-1',
+        name: 'vps-web-01',
+        connected: true,
+        revoked: false,
+        agentVersion: '0.2.0',
+        agentUpdateAvailable: false,
+      },
+      {
+        id: 'srv-2',
+        name: 'vps-db-01',
+        connected: false,
+        revoked: false,
+        agentVersion: '',
+        agentUpdateAvailable: false,
+      },
     ]
     renderSettings(
       apiWith(() => Promise.resolve(makeSystem()), undefined, undefined, {
@@ -149,9 +165,119 @@ describe('Settings', () => {
     expect(screen.getByText('Offline')).toBeTruthy()
   })
 
+  it('shows the agent version and updates one server after confirmation', async () => {
+    const servers: ServerSummary[] = [
+      {
+        id: 'srv-1',
+        name: 'vps-web-01',
+        connected: true,
+        revoked: false,
+        agentVersion: '0.2.0',
+        agentUpdateAvailable: true,
+      },
+    ]
+    const listServers = vi.fn<() => Promise<ServerSummary[]>>().mockResolvedValue(servers)
+    const updateAgent = vi.fn<(id: string) => Promise<void>>(() => Promise.resolve())
+    renderSettings(
+      apiWith(() => Promise.resolve(makeSystem()), undefined, undefined, {
+        listServers,
+        updateAgent,
+      }),
+    )
+
+    expect(await screen.findByText('Agent 0.2.0')).toBeTruthy()
+    fireEvent.click(await screen.findByRole('button', { name: 'Update' }))
+
+    const dialog = screen.getByRole('dialog')
+    expect(within(dialog).getByText('Update the agent of vps-web-01?')).toBeTruthy()
+    expect(within(dialog).getByText(/verifies its SHA-256/)).toBeTruthy()
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Update agent' }))
+
+    expect(updateAgent).toHaveBeenCalledWith('srv-1')
+    expect(await screen.findByText('Updating… the agent will reconnect.')).toBeTruthy()
+    await waitFor(() => expect(listServers).toHaveBeenCalledTimes(2))
+  })
+
+  it('updates all agents and shows the queued and skipped counts', async () => {
+    const servers: ServerSummary[] = [
+      {
+        id: 'srv-1',
+        name: 'vps-web-01',
+        connected: true,
+        revoked: false,
+        agentVersion: '0.2.0',
+        agentUpdateAvailable: true,
+      },
+      {
+        id: 'srv-2',
+        name: 'vps-db-01',
+        connected: true,
+        revoked: false,
+        agentVersion: '0.2.0',
+        agentUpdateAvailable: false,
+      },
+    ]
+    const updateAllAgents = vi.fn(() =>
+      Promise.resolve({
+        queued: ['srv-1'],
+        skipped: [{ id: 'srv-2', reason: 'no_update' }],
+      }),
+    )
+    renderSettings(
+      apiWith(() => Promise.resolve(makeSystem()), undefined, undefined, {
+        listServers: () => Promise.resolve(servers),
+        updateAllAgents,
+      }),
+    )
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Update all agents (1)' }))
+    const dialog = screen.getByRole('dialog')
+    expect(within(dialog).getByText('Update all agents?')).toBeTruthy()
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Update all agents' }))
+
+    expect(updateAllAgents).toHaveBeenCalledTimes(1)
+    expect(await screen.findByText('1 update queued, 1 skipped.')).toBeTruthy()
+  })
+
+  it('shows why a server agent update was refused', async () => {
+    const servers: ServerSummary[] = [
+      {
+        id: 'srv-1',
+        name: 'vps-web-01',
+        connected: true,
+        revoked: false,
+        agentVersion: '0.2.0',
+        agentUpdateAvailable: true,
+      },
+    ]
+    const updateAgent = vi.fn(() => Promise.reject(new AgentUpdateError('update_in_progress', 409)))
+    renderSettings(
+      apiWith(() => Promise.resolve(makeSystem()), undefined, undefined, {
+        listServers: () => Promise.resolve(servers),
+        updateAgent,
+      }),
+    )
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Update' }))
+    fireEvent.click(
+      within(screen.getByRole('dialog')).getByRole('button', { name: 'Update agent' }),
+    )
+
+    expect((await screen.findByRole('alert')).textContent).toBe(
+      'An agent update is already in progress.',
+    )
+  })
+
   it('requires the exact server name and refreshes the list after removal', async () => {
     const servers: ServerSummary[] = [
-      { id: 'srv-1', name: 'vps-web-01', connected: true, revoked: false },
+      {
+        id: 'srv-1',
+        name: 'vps-web-01',
+        connected: true,
+        revoked: false,
+        agentVersion: '0.2.0',
+        agentUpdateAvailable: false,
+      },
     ]
     const listServers = vi
       .fn<() => Promise<ServerSummary[]>>()
@@ -192,7 +318,14 @@ describe('Settings', () => {
 
   it('cancels a server removal without calling the API', async () => {
     const servers: ServerSummary[] = [
-      { id: 'srv-1', name: 'vps-web-01', connected: true, revoked: false },
+      {
+        id: 'srv-1',
+        name: 'vps-web-01',
+        connected: true,
+        revoked: false,
+        agentVersion: '0.2.0',
+        agentUpdateAvailable: false,
+      },
     ]
     const removeServer = vi.fn<(id: string) => Promise<void>>(() => Promise.resolve())
     renderSettings(

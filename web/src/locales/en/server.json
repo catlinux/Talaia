@@ -171,6 +171,23 @@
       "other": "The terminal ended ({{reason}})."
     }
   },
+  "agentVersion": "Agent {{version}}",
+  "agentUpdate": {
+    "button": "Update agent",
+    "confirmTitle": "Update the agent?",
+    "confirmBody": "The panel downloads the package from the core, verifies its SHA-256, installs it and restarts the agent. Containers are not touched; the server shows offline for a moment.",
+    "confirm": "Update agent",
+    "cancel": "Cancel",
+    "running": "Updating… the agent will reconnect.",
+    "errors": {
+      "agent_offline": "The agent of this server is not connected.",
+      "no_update": "There is no newer agent package.",
+      "update_in_progress": "An agent update is already in progress.",
+      "session_required": "The session ended. Sign in again.",
+      "not_found": "The server no longer exists.",
+      "generic": "The update could not be started."
+    }
+  },
   "stack": {
     "back": "Back to the server",
     "breadcrumb": "Breadcrumb",

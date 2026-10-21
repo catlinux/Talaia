@@ -99,7 +99,7 @@ of the current phase and the next one.
 - [x] A request the helper never takes (helper stopped or not installed by hand) leaves the panel showing "update in progress": report a request older than a few minutes as stuck
 - [x] The helper does not update itself: an update that changes `packaging/core/hostd/` needs `install.sh` run again; do it from the helper or warn in the panel
 - [x] Real install at `talaia.invierteconcriterio.es` with the maintainer (fresh install; the Debian at home becomes one more server)
-- [ ] Later: change the core address of the agents with a typed command (to move to the new domain and VPS) and update the agents from the core
+- [ ] Later: change the core address of the agents with a typed command (to move to the new domain and VPS)
 
 ## Ideas (not planned yet)
 

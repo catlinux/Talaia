@@ -19,6 +19,10 @@ export interface Server {
   stacks: number
   tags: string[]
   lastSeen: string | null
+  /** agentVersion is the version the connected agent reports; empty when offline. */
+  agentVersion: string
+  /** agentUpdateAvailable is true when the core offers a newer agent package. */
+  agentUpdateAvailable: boolean
 }
 
 /**

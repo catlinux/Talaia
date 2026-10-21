@@ -48,6 +48,14 @@ methods make regular sign-in faster:
 Both methods are additive: the password, TOTP and recovery codes remain the base and the recovery path. Setup,
 use, removal and troubleshooting: [access.md](access.md).
 
+## Agent updates
+
+The core can order an agent to update itself (the order is typed and carries the SHA-256 of the package). The agent
+downloads `/agent/talaia-agent_<arch>.deb` over its mutual-TLS channel, refuses an equal or older version and a
+package whose hash differs, and installs it with `apt-get` in a separate systemd unit. This is code that runs as root
+on every server, chosen by whoever controls the core: the hash protects against corruption and tampering in transit,
+not against a compromised core, the same trust as the install command. Every order is audited as `agent_update`.
+
 ## What protects the panel and the agents
 
 - **Sign-in:** password and TOTP, optional PIN on trusted devices and passkeys, rate limiting, lock-out after

@@ -1031,3 +1031,86 @@ code {
     grid-template-columns: 1fr;
   }
 }
+
+/* ---------- Agent update ---------- */
+
+.server__agent {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: -2px 0 0;
+  color: var(--muted);
+  font-size: 0.8125rem;
+}
+
+.server__update {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--warn-soft);
+  color: var(--warn);
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.serverscreen__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.serverscreen__agent {
+  color: var(--muted);
+  font-size: 0.8125rem;
+}
+
+.serverscreen__update {
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--accent);
+  font: inherit;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.serverscreen__update:hover {
+  background: var(--surface-2);
+}
+
+.settings__card-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.settings__server {
+  flex-wrap: wrap;
+}
+
+.settings__server-agent {
+  color: var(--muted);
+  font-size: 0.8125rem;
+  white-space: nowrap;
+}
+
+.settings__server-update,
+.settings__server-update-all {
+  padding: 5px 10px;
+  font-size: 0.875rem;
+}
+
+@media (max-width: 720px) {
+  .settings__server-agent {
+    flex-basis: 100%;
+  }
+
+  .settings__server-update-all {
+    width: 100%;
+  }
+}

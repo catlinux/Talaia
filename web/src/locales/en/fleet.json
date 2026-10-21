@@ -55,7 +55,9 @@
     "stacks_one": "{{count}} stack",
     "stacks_other": "{{count}} stacks",
     "facts": "{{containers}} · {{stacks}}",
-    "lastSeen": "Last seen {{time}}"
+    "lastSeen": "Last seen {{time}}",
+    "agentVersion": "Agent {{version}}",
+    "updateAvailable": "Update available"
   },
   "activity": {
     "title": "Activity",

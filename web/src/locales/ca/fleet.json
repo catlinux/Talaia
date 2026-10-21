@@ -55,7 +55,9 @@
     "stacks_one": "{{count}} stack",
     "stacks_other": "{{count}} stacks",
     "facts": "{{containers}} · {{stacks}}",
-    "lastSeen": "Vist per últim cop {{time}}"
+    "lastSeen": "Vist per últim cop {{time}}",
+    "agentVersion": "Agent {{version}}",
+    "updateAvailable": "Actualització disponible"
   },
   "activity": {
     "title": "Activitat",

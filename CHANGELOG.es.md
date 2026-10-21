@@ -13,6 +13,12 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+## [0.2.8] - 2026-10-21
+
+### Añadido
+
+- Actualizar los agentes desde el panel: las tarjetas y pantallas de servidor muestran la versión del agente y una etiqueta **Actualización disponible**, la pantalla del servidor tiene el botón **Actualizar agente** y **Ajustes > Servidores** tiene **Actualizar todos los agentes**. El núcleo envía una orden tipada nueva (`AgentUpdate`, campo 22 del proto) con la versión y el SHA-256 del paquete que sirve; el agente lo descarga por su canal con TLS mutuo (límite de 64 MiB), rechaza una versión igual o anterior o un hash erróneo, y lo instala con `apt-get` en una unidad de systemd aparte, de modo que el reinicio del agente no la interrumpe. API nueva: `POST /api/v1/servers/{id}/agent/update`, `POST /api/v1/agents/update-all` y el campo `agent_update_available` de `GET /api/v1/servers`. Se audita como `agent_update`. Guía de seguridad actualizada.
+
 ## [0.2.7] - 2026-10-21
 
 ### Corregido
@@ -163,7 +169,8 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
   `.gitattributes` y `.gitignore`.
 - Licencia WNCL-1.0 aplicada: archivo `LICENSE` y sección de créditos en los README.
 
-[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.2.7...HEAD
+[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.2.8...HEAD
+[0.2.8]: https://github.com/catlinux/Talaia/releases/tag/v0.2.8
 [0.2.7]: https://github.com/catlinux/Talaia/releases/tag/v0.2.7
 [0.2.6]: https://github.com/catlinux/Talaia/releases/tag/v0.2.6
 [0.2.5]: https://github.com/catlinux/Talaia/releases/tag/v0.2.5

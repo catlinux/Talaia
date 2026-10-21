@@ -171,6 +171,23 @@
       "other": "El terminal ha acabat ({{reason}})."
     }
   },
+  "agentVersion": "Agent {{version}}",
+  "agentUpdate": {
+    "button": "Actualitza l'agent",
+    "confirmTitle": "Vols actualitzar l'agent?",
+    "confirmBody": "El tauler baixa el paquet del nucli, en comprova el SHA-256, l'instal·la i reinicia l'agent. Els contenidors no es toquen; el servidor apareix desconnectat un moment.",
+    "confirm": "Actualitza l'agent",
+    "cancel": "Cancel·la",
+    "running": "S'està actualitzant… l'agent es tornarà a connectar.",
+    "errors": {
+      "agent_offline": "L'agent d'aquest servidor no està connectat.",
+      "no_update": "No hi ha cap paquet d'agent més nou.",
+      "update_in_progress": "Ja hi ha una actualització de l'agent en curs.",
+      "session_required": "La sessió s'ha acabat. Torna a entrar.",
+      "not_found": "El servidor ja no existeix.",
+      "generic": "No s'ha pogut iniciar l'actualització."
+    }
+  },
   "stack": {
     "back": "Torna al servidor",
     "breadcrumb": "Ruta de navegació",
