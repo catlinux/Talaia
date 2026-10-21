@@ -121,6 +121,9 @@ type panelOptions struct {
 func newCoreRouter(st *store.Store, agents api.LiveAgents, options panelOptions) http.Handler {
 	disconnector, _ := agents.(api.ServerDisconnector)
 	packages := api.AgentPackages{Version: version, DistDir: options.DistDir}
+	if enrollment := options.Enrollment; enrollment != nil {
+		packages.UpgradeCommand = install.UpgradeCommand(enrollment.PublicURL, enrollment.CAFingerprint, enrollment.ScriptSHA256)
+	}
 	var agentUpdates *api.AgentUpdateDeps
 	if options.Containers != nil {
 		agentUpdates = &api.AgentUpdateDeps{

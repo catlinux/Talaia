@@ -20,8 +20,11 @@ const agentUpdateKind = "agent_update"
 // AgentPackages is the release the core can offer to its agents: the version of
 // the packages and the directory where they are served from.
 type AgentPackages struct {
-	Version string
-	DistDir string
+	// UpgradeCommand is the console command that upgrades an agent by hand; empty
+	// when the core has no public address.
+	UpgradeCommand string
+	Version        string
+	DistDir        string
 }
 
 // AgentUpdatePackage is one package that can be sent to an agent.
@@ -43,6 +46,23 @@ func (p AgentPackages) LatestVersion() string {
 // ForAgent returns the package to offer to the agent, if its version is newer
 // and the package for its architecture exists.
 func (p AgentPackages) ForAgent(agent hub.AgentInfo) (AgentUpdatePackage, bool) {
+	if !agentpkg.SupportsSelfUpdate(agent.AgentVersion) {
+		return AgentUpdatePackage{}, false
+	}
+	return p.offer(agent)
+}
+
+// ManualUpdate reports whether a newer package exists for an agent too old to
+// understand the update order: it must be upgraded once with the command.
+func (p AgentPackages) ManualUpdate(agent hub.AgentInfo) bool {
+	if agentpkg.SupportsSelfUpdate(agent.AgentVersion) {
+		return false
+	}
+	_, ok := p.offer(agent)
+	return ok
+}
+
+func (p AgentPackages) offer(agent hub.AgentInfo) (AgentUpdatePackage, bool) {
 	if !agentpkg.ValidVersion(p.Version) {
 		return AgentUpdatePackage{}, false
 	}

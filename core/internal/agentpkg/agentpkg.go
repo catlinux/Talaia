@@ -96,6 +96,19 @@ func Info(distDir, arch string) (string, error) {
 	return sum, nil
 }
 
+// MinSelfUpdate is the first agent version that understands the update order.
+// Older agents ignore it, so they need one manual upgrade.
+const MinSelfUpdate = "0.2.8"
+
+// SupportsSelfUpdate reports whether an agent of this version can update itself
+// from the panel. A version that is not x.y.z, such as "dev", is assumed to.
+func SupportsSelfUpdate(running string) bool {
+	if !ValidVersion(running) {
+		return true
+	}
+	return !Newer(MinSelfUpdate, running)
+}
+
 // ValidVersion reports whether version is x.y.z with numeric components.
 func ValidVersion(version string) bool {
 	_, ok := parseVersion(version)

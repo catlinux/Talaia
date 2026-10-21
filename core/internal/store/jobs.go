@@ -119,7 +119,10 @@ func (s *Store) UpdateJobState(ctx context.Context, id, serverID, state, message
 }
 
 // HasActiveJob reports whether the server has a pending or running job of the
-// given kind. A caller can use it to refuse a duplicate operation.
+// given kind created in the last 15 minutes; an older one never finished (for
+// example an agent that ignored the order) and must not block a new attempt.
+//
+//	A caller can use it to refuse a duplicate operation.
 func (s *Store) HasActiveJob(ctx context.Context, serverID, kind string) (bool, error) {
 	if strings.TrimSpace(serverID) == "" || strings.TrimSpace(kind) == "" {
 		return false, errors.New("server id and kind are required")
@@ -129,6 +132,7 @@ func (s *Store) HasActiveJob(ctx context.Context, serverID, kind string) (bool, 
 		`SELECT EXISTS (
 			SELECT 1 FROM job
 			 WHERE server_id = $1 AND kind = $2 AND state IN ('pending', 'running')
+			   AND created_at > now() - interval '15 minutes'
 		 )`, serverID, kind).Scan(&active); err != nil {
 		return false, fmt.Errorf("check active job: %w", err)
 	}

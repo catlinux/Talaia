@@ -53,6 +53,8 @@ type serversResponse struct {
 	// AgentLatestVersion is the core version of the agent packages, or empty
 	// when the core runs a build without a comparable version.
 	AgentLatestVersion string `json:"agent_latest_version"`
+	// AgentUpgradeCommand is the command that upgrades an old agent by hand.
+	AgentUpgradeCommand string `json:"agent_upgrade_command"`
 }
 
 // serverEntry is one server: the enrolled row and, when its agent is connected,
@@ -70,6 +72,9 @@ type serverEntry struct {
 	// AgentUpdateAvailable is true when the core can offer a newer agent
 	// package to this connected server.
 	AgentUpdateAvailable bool `json:"agent_update_available"`
+	// AgentUpdateManual is true when a newer package exists but the agent is too
+	// old to update itself: it needs the command in agent_upgrade_command once.
+	AgentUpdateManual bool `json:"agent_update_manual"`
 }
 
 // liveAgent is the state a connected agent reports.
@@ -138,6 +143,7 @@ func NewServersHandler(deps ServerDeps) http.Handler {
 				entry.Connected = true
 				entry.Live = liveOf(agent)
 				_, entry.AgentUpdateAvailable = deps.Packages.ForAgent(agent)
+				entry.AgentUpdateManual = deps.Packages.ManualUpdate(agent)
 			}
 			entries = append(entries, entry)
 		}
@@ -155,12 +161,14 @@ func NewServersHandler(deps ServerDeps) http.Handler {
 				Connected:            true,
 				Live:                 liveOf(agent),
 				AgentUpdateAvailable: available,
+				AgentUpdateManual:    deps.Packages.ManualUpdate(agent),
 			})
 		}
 
 		writeJSON(w, http.StatusOK, serversResponse{
-			Servers:            entries,
-			AgentLatestVersion: deps.Packages.LatestVersion(),
+			Servers:             entries,
+			AgentLatestVersion:  deps.Packages.LatestVersion(),
+			AgentUpgradeCommand: deps.Packages.UpgradeCommand,
 		})
 	})
 }
