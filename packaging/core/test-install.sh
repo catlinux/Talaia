@@ -631,6 +631,19 @@ else
     pass "a listener on the public IPv4 is a conflict"
 fi
 
+# Our own acme-dns, left running by an earlier run, is not a conflict; another
+# process holding the port still is.
+if ( export PATH="$stub:$system_path"; export SS_OUTPUT="LISTEN 0 4096 203.0.113.10:53 0.0.0.0:*"; delegation_public_ip="203.0.113.10"; compose=(echo abc123); check_port_53 ) < /dev/null >"$tmp/out" 2>"$tmp/err"; then
+    pass "a rerun keeps its own running acme-dns"
+else
+    fail "a rerun took its own acme-dns for a conflict"
+fi
+if ( export PATH="$stub:$system_path"; export SS_OUTPUT="LISTEN 0 4096 203.0.113.10:53 0.0.0.0:*"; delegation_public_ip="203.0.113.10"; compose=(true); check_port_53 ) < /dev/null >"$tmp/out" 2>"$tmp/err"; then
+    fail "a listener was accepted although acme-dns is not running"
+else
+    pass "a listener is a conflict when acme-dns is not running"
+fi
+
 # 17. set_env_key replaces, appends, keeps the other lines and mode, and rejects
 # values that would break the file.
 if (

@@ -924,6 +924,15 @@ detect_public_ipv4() {
     delegation_public_ip="$ip"
 }
 
+# own_acme_dns_running reports whether the acme-dns container of this
+# installation is up: a rerun must not take its own server for a conflict.
+own_acme_dns_running() {
+    [ "${#compose[@]}" -gt 0 ] || return 1
+    local id
+    id="$("${compose[@]}" --profile acme-dns ps -q --status running acme-dns 2>/dev/null || true)"
+    [ -n "$id" ]
+}
+
 # check_port_53 returns 0 when port 53 is free for acme-dns on the public IPv4.
 # Listeners on 127.x (systemd-resolved) are fine; 0.0.0.0, ::, * or the public
 # IPv4 are conflicts. It never changes the firewall.
@@ -949,6 +958,10 @@ check_port_53() {
         [ -z "$conflict" ] || break
     done <<< "$lines"
     if [ -z "$conflict" ]; then
+        return 0
+    fi
+    if own_acme_dns_running; then
+        echo "port 53 is held by the acme-dns container of this installation; keeping it."
         return 0
     fi
     if [ "$(id -u)" -eq 0 ]; then
