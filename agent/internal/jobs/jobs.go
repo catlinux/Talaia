@@ -64,6 +64,8 @@ type Executor struct {
 	stacks  StackManager
 	// resources is nil until WithResources sets it.
 	resources ResourceManager
+	// updates is nil until WithUpdates sets it.
+	updates Updater
 
 	mu       sync.Mutex
 	finished map[string]*agentv1.JobEvent
@@ -99,7 +101,8 @@ func (e *Executor) Handle(ctx context.Context, msg *agentv1.CoreMsg, emit func(*
 	action, logs := msg.GetContainerAction(), msg.GetReadLogs()
 	write, stackAction, read, adopt := msg.GetStackWrite(), msg.GetStackAction(), msg.GetStackRead(), msg.GetStackAdopt()
 	list, remove := msg.GetListResources(), msg.GetRemoveResources()
-	if action == nil && logs == nil && write == nil && stackAction == nil && read == nil && adopt == nil && list == nil && remove == nil {
+	updateCommand := msg.GetAgentUpdate()
+	if action == nil && logs == nil && write == nil && stackAction == nil && read == nil && adopt == nil && list == nil && remove == nil && updateCommand == nil {
 		return false
 	}
 
@@ -175,6 +178,13 @@ func (e *Executor) Handle(ctx context.Context, msg *agentv1.CoreMsg, emit func(*
 				return "", errNoStacks
 			}
 			return e.stacks.Adopt(ctx, adopt.GetName())
+		})
+	case updateCommand != nil:
+		go e.execute(ctx, jobID, "agent update", updateTimeout, emit, func(ctx context.Context) (string, error) {
+			if e.updates == nil {
+				return "", errNoUpdates
+			}
+			return e.updates.Update(ctx, updateCommand.GetVersion(), updateCommand.GetSha256())
 		})
 	default:
 		go e.execute(ctx, jobID, "stack read", jobTimeout, emit, func(ctx context.Context) (string, error) {

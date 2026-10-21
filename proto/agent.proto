@@ -33,6 +33,7 @@ message CoreMsg {
     TerminalInput terminal_input = 19;
     TerminalResize terminal_resize = 20;
     TerminalClose terminal_close = 21;
+    AgentUpdate agent_update = 22;
   }
 }
 
@@ -152,6 +153,15 @@ message ResourceRef {
 // JSON output of the job.
 message RemoveResources {
   repeated ResourceRef items = 1;
+}
+
+// AgentUpdate asks the agent to download and install a newer agent package. The
+// agent checks the package against sha256 before installing it.
+message AgentUpdate {
+  // Version in the form x.y.z; it must be newer than the running agent.
+  string version = 1;
+  // SHA-256 of the .deb, as 64 hexadecimal characters.
+  string sha256 = 2;
 }
 
 // JobEvent reports how a command (identified by CoreMsg.job_id) is going.

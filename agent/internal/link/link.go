@@ -27,6 +27,7 @@ import (
 	"github.com/catlinux/Talaia/agent/internal/jobs"
 	"github.com/catlinux/Talaia/agent/internal/stacks"
 	"github.com/catlinux/Talaia/agent/internal/terminal"
+	"github.com/catlinux/Talaia/agent/internal/update"
 	agentv1 "github.com/catlinux/Talaia/proto/gen/go"
 	"github.com/catlinux/Talaia/proto/gen/go/agentv1connect"
 )
@@ -91,7 +92,7 @@ func newLink(cfg config.Config, collector collect.Collector, identity *enroll.Id
 		collector:         collector,
 		identity:          identity,
 		client:            agentv1connect.NewAgentHubClient(connect.NewClient(rpcTransport)),
-		jobs:              newExecutor(),
+		jobs:              newExecutor(cfg, identity),
 		terminals:         terminal.New(terminal.NewDockerBackend(), terminal.DefaultLimits()),
 		HeartbeatInterval: 10 * time.Second,
 		MetricsInterval:   15 * time.Second,
@@ -391,11 +392,12 @@ func jitter(backoff time.Duration) time.Duration {
 	return time.Duration(half + rand.Int64N(half+1))
 }
 
-// newExecutor builds the executor of a real agent: container actions, stacks and
-// Docker resources, all on the local Docker.
-func newExecutor() *jobs.Executor {
+// newExecutor builds the executor of a real agent: container actions, stacks,
+// Docker resources and agent updates, all on the local Docker.
+func newExecutor(cfg config.Config, identity *enroll.Identity) *jobs.Executor {
 	docker := jobs.NewDockerActions()
 	return jobs.New(docker).
 		WithStacks(stacks.NewDefault().WithProjects(inventory.NewDocker())).
-		WithResources(docker)
+		WithResources(docker).
+		WithUpdates(update.New(update.Options{CoreURL: cfg.CoreURL, Identity: identity}))
 }
