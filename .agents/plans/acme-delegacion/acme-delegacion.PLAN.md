@@ -60,5 +60,32 @@ de proveedor en el servidor.
 | 1 ✅ | Servidor DNS, proveedor `delegation`, almacenamiento por directorio, `talaia-core dns` y `acme check-delegation`, servicio de compose con perfil | `core/internal/acmedns` (nuevo), `core/internal/acme`, `core/internal/config`, `core/cmd/talaia-core`, `packaging/core/compose.yaml`, `.env.example` | pruebas: respuestas (TXT, SOA, NS, NODATA, REFUSED, TC), límite por origen, caducidad, recarga del fichero, proveedor y precomprobación, almacenamiento por directorio | **Opus** |
 | 2 ✅ | Instalador: asistente de delegación (IP pública, puerto 53, registros a crear, permiso para abrir puertos, espera y reintento, comprobación, *staging* → producción, alternativas OVH o CA propia) | `packaging/core/install.sh`, `test-install.sh`, CI | pruebas con dobles; CI `core stack` arranca `acme-dns` y le pregunta | Sonnet, alto |
 | 3 ✅ | Guías EN/ES/CA: crear los dos registros (con los pasos de OVH), seguridad del puerto 53; instalación y seguridad al día | `docs/*/dns-delegation.md` (nuevo), `docs/*/installation*`, `docs/*/security*`/`seguridad` | revisadas contra lo construido | Sonnet, bajo |
-| 4 | Revisión de seguridad de 1–3 | — | hallazgos corregidos | **Opus** |
+| 4 ✅ | Revisión de seguridad de 1–3 | — | hallazgos corregidos | **Opus** |
 | 5 | Prueba real en el VPS con el mantenedor | — | panel con candado sin claves de OVH | sesión con el mantenedor |
+
+## Revisión de seguridad (paso 4, 2026-10-21, Opus)
+
+**Corregido en la revisión**
+- La biblioteca DNS contestaba ella misma (FORMERR/NOTIMP) a los mensajes raros antes del límite por origen; ahora
+  `acceptQuery` los ignora sin respuesta (solo consultas QUERY con una pregunta y, como mucho, un registro EDNS).
+- `pids_limit` de `acme-dns` a 128: con 64 el runtime de Go podía quedarse sin hilos bajo carga y el servicio caer.
+- `set_env_key` pasa el valor por `awk -v`, que interpreta barras invertidas: ahora se rechazan.
+- Durante la revisión del paso 2: un *staging* fallido abortaba el instalador por `set -e` sin el resumen final, y al
+  desactivar ACME `acme-dns` seguía escuchando en el 53; ahora se para y se quitan el perfil y la dirección.
+
+**Comprobado sin cambios**
+- Superficie expuesta: solo `_acme-challenge.<host>`; todo lo demás `REFUSED` sin secciones extra; sin recursión;
+  respuestas de unos cientos de bytes, truncado a TCP por encima de 512 (o del tamaño EDNS, máx. 1232); límite por
+  /24 y /56 con descarte silencioso; 64 conexiones TCP con 5 s y una consulta por conexión.
+- Aislamiento: contenedor propio de solo lectura, sin capacidades, sin base de datos, sin `secrets.key` ni
+  `core-data`; el volumen de desafíos es de solo lectura para él (comprobado en el CI con `docker inspect`).
+- Lo que un `acme-dns` comprometido podría hacer: servir otros valores en el nombre delegado (solo afecta a los
+  certificados de ese nombre). Lo que podría hacer un core comprometido con esto: publicar valores en esos mismos
+  nombres; no gana nada que no tuviera.
+- El instalador nunca abre puertos sin un sí explícito, nunca termina con *staging* y no ejecuta `.env`.
+
+**Riesgos aceptados**
+- Un servicio DNS más expuesto a internet. Mitigado como arriba; se mantiene solo si se usa la delegación.
+- Solo IPv4: con un `AAAA` en el nombre, Let's Encrypt podría preguntar por IPv6 y fallar (el instalador y la
+  comprobación lo avisan).
+- Sin probar todavía contra Let's Encrypt de verdad (paso 5).

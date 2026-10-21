@@ -132,7 +132,7 @@ services:
     cap_drop:
       - ALL
     mem_limit: 64m
-    pids_limit: 64
+    pids_limit: 128
     restart: unless-stopped
 
 volumes:

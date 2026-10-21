@@ -261,12 +261,27 @@ func (s *Server) ListenAndServe(ctx context.Context, addr string) error {
 	return s.Serve(ctx, packetConn, listener)
 }
 
+// acceptQuery lets through only what this server answers: a plain query with
+// one question and at most an EDNS record. Everything else gets no answer at
+// all, not even the error the DNS library would send before the rate limit.
+func acceptQuery(dh dns.Header) dns.MsgAcceptAction {
+	const qr = 1 << 15
+	if dh.Bits&qr != 0 || int(dh.Bits>>11)&0xF != dns.OpcodeQuery {
+		return dns.MsgIgnore
+	}
+	if dh.Qdcount != 1 || dh.Ancount != 0 || dh.Nscount != 0 || dh.Arcount > 1 {
+		return dns.MsgIgnore
+	}
+	return dns.MsgAccept
+}
+
 // Serve answers on the given connections until ctx ends.
 func (s *Server) Serve(ctx context.Context, packetConn net.PacketConn, listener net.Listener) error {
-	udp := &dns.Server{PacketConn: packetConn, Handler: s, UDPSize: maxUDPSize}
+	udp := &dns.Server{PacketConn: packetConn, Handler: s, UDPSize: maxUDPSize, MsgAcceptFunc: acceptQuery}
 	tcp := &dns.Server{
 		Listener:      &limitListener{Listener: listener, slots: make(chan struct{}, maxTCPConns)},
 		Handler:       s,
+		MsgAcceptFunc: acceptQuery,
 		ReadTimeout:   tcpTimeout,
 		WriteTimeout:  tcpTimeout,
 		IdleTimeout:   func() time.Duration { return tcpTimeout },

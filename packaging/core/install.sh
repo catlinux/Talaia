@@ -973,7 +973,7 @@ check_port_53() {
 # validate_env_value rejects the characters that would break the key=value line.
 validate_env_value() {
     case "$1" in
-        *[[:space:]]* | *\"* | *\'* | *\|*) return 1 ;;
+        *[[:space:]]* | *\"* | *\'* | *\|* | *\\*) return 1 ;;
     esac
     return 0
 }

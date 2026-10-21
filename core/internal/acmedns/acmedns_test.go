@@ -377,3 +377,27 @@ func TestLimiter(t *testing.T) {
 		t.Fatal("two addresses of one /56 got different buckets")
 	}
 }
+
+func TestOnlyPlainQueriesAreAccepted(t *testing.T) {
+	plain := dns.Header{Qdcount: 1}
+	withEDNS := dns.Header{Qdcount: 1, Arcount: 1}
+	response := dns.Header{Bits: 1 << 15, Qdcount: 1}
+	notify := dns.Header{Bits: uint16(dns.OpcodeNotify) << 11, Qdcount: 1}
+	update := dns.Header{Bits: uint16(dns.OpcodeUpdate) << 11, Qdcount: 1, Nscount: 3}
+	twoQuestions := dns.Header{Qdcount: 2}
+	withAnswer := dns.Header{Qdcount: 1, Ancount: 1}
+
+	for name, header := range map[string]dns.Header{"plain": plain, "edns": withEDNS} {
+		if acceptQuery(header) != dns.MsgAccept {
+			t.Errorf("%s was not accepted", name)
+		}
+	}
+	for name, header := range map[string]dns.Header{
+		"response": response, "notify": notify, "update": update,
+		"two questions": twoQuestions, "with an answer": withAnswer,
+	} {
+		if acceptQuery(header) != dns.MsgIgnore {
+			t.Errorf("%s was not ignored", name)
+		}
+	}
+}
