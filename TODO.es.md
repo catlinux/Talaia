@@ -73,14 +73,14 @@ tareas concretas de la fase actual y de la siguiente.
 ### Entorno de pruebas
 - [ ] Dos VPS desechables: Debian 12 y Debian 13
 - [x] Guía de clonar y ejecutar en el equipo Linux (`docs/es/instalacion.md`)
-- [ ] Verificar `packaging/core/install.sh` y la descarga del agente desde el núcleo de principio a fin en una máquina limpia
+- [x] Verificar `packaging/core/install.sh` y la descarga del agente desde el núcleo de principio a fin en una máquina limpia
 
 ## Fase 2 · Lo que queda (ver `.agents/plans/fase2/`)
 
 - [ ] Terminal en contenedor, paso 6 (lo que falta): prueba con un Docker real en el Debian (la documentación está en `docs/es/seguridad.md`)
 - [ ] Terminal en contenedor, paso 7: revisión final de seguridad de todo el diff (Opus)
 - [x] Pantalla de stack (maqueta 3), registros en directo (`-f`) y una nota fija en el editor de stacks: un compose se ejecuta como root en el servidor
-- [ ] Cerrar la fase contra su criterio; versión 0.3.0 solo si el mantenedor lo pide
+- [ ] Cerrar la fase contra su criterio; al cerrarla la versión pasa a 0.3.0 (política del mantenedor, 2026-10-21)
 
 ## Bloque de operación (decidido el 2026-10-20, antes de cerrar la fase 2)
 
