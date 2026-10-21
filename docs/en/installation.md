@@ -17,7 +17,8 @@ Talaia has two parts: the **core** (panel, API and database), which runs in Dock
   (or when you answer yes).
 - **Servers to manage:** Debian or Ubuntu with systemd, `curl`, and root access (`sudo`).
 - A name or IP address the servers and your browser can reach the core at, and two free TCP ports for it
-  (8443 by default); a second port is used by the agents (8444 by default).
+  (8443 by default); a second port is used by the agents (8444 by default). The panel is reached at
+  `https://<address>:<port>`: the port is part of the URL unless it is 443 (see section 6).
 - An authenticator app that reads TOTP codes (Google Authenticator, Aegis, 2FAS, Bitwarden…).
 
 ## 2. Install the core
@@ -126,6 +127,8 @@ sudo docker compose run --rm core user create --username admin
 4. Type the six-digit code of the app. The panel shows your **recovery codes**: keep them somewhere safe, they
    are shown only once.
 
+You can add a PIN on this browser or a passkey later from **Settings > Access**: see [access.md](access.md).
+
 **Trusting the CA (removes the browser warning).** Download `https://<address>:<port>/ca.pem`, save it as
 `talaia-ca.crt` and install it as a trusted root authority (on Windows: double click → Install certificate →
 Trusted Root Certification Authorities). Only do it on your own machines: whoever holds the CA key (it lives in
@@ -172,12 +175,23 @@ sudo journalctl -u talaia-agent -n 20 --no-pager
 The log must say `enrolled with the core` and `connected to core`. The server then appears in the panel's
 **Fleet** screen with its CPU, memory, disk and containers.
 
+### Re-enrolling an agent
+
+To move a machine to another core, create a new token there and run the install command again. `install.sh`
+replaces `core_url` and `ca_fingerprint` and writes the new one-time token. When the agent starts and the stored
+CA fingerprint does not match the new one, it discards the old identity and enrolls again.
+
+If the agent still belongs to this same core, for example because its server was removed in the panel, the old
+identity matches the CA and would keep trying to use the revoked certificate. Purge the package on the server
+(`sudo apt purge talaia-agent`) before running the install command again.
+
 ## 5. Day to day
 
 - **Update the core from the panel:** the **Settings** screen shows the running version and the newest commit of
-  `main` whose CI is green, with the commits you would get. **Update** asks for confirmation and hands the work to
-  the host helper (below); the panel is unavailable for a few minutes and follows the progress on its own. The
-  **Check now** button asks GitHub at once; otherwise the core checks every 30 minutes.
+  `main` whose CI is green, with the commits you would get. When an update is available, **What's new** lists the
+  CHANGELOG entries between the running and the offered version. **Update** asks for confirmation and hands the
+  work to the host helper (below); the panel is unavailable for a few minutes and follows the progress on its
+  own. The **Check now** button asks GitHub at once; otherwise the core checks every 30 minutes.
 - **Update the core by hand:** `git pull`, then in `packaging/core` run
   `sudo TALAIA_GIT_COMMIT=$(git rev-parse HEAD) docker compose up -d --build` (without the variable the panel shows
   the version as unknown).
@@ -190,10 +204,13 @@ The log must say `enrolled with the core` and `connected to core`. The server th
   `sudo docker compose run --rm -T core server upgrade-command` prints a command; run it on each server. It checks
   the script like the install command does, reinstalls the package and restarts the agent, keeping its
   configuration and identity (no token needed).
-- **Remove a server:** on the core machine, `sudo docker compose run --rm -T core server list` prints each server's
-  id, name and state, and `sudo docker compose run --rm -T core server revoke <id>` revokes it: the core stops
-  accepting its certificate. Then, on the server itself, `sudo apt purge talaia-agent` removes the agent and its
-  configuration.
+- **Remove a server:** in **Settings > Servers**, select **Remove** and type the server name. Removal is soft:
+  the panel hides the server, cuts the agent off, revokes its certificate and frees the name. Containers on the
+  server are untouched and terminal recordings are kept. To add it again, create a new token and run the install
+  command (see section 4). From the console, `sudo docker compose run --rm -T core server list` prints each
+  server's id, name and state, and `server revoke <id>` revokes its certificate, but it does not do the panel's
+  soft removal. On the server, `sudo apt purge talaia-agent` removes the agent and its configuration; purge it
+  before enrolling the same machine again to this core.
 
 ### How updates from the panel work
 
@@ -226,10 +243,14 @@ The agents connect **outbound** to the core, so the best place for the core is a
 (a VPS): servers behind a home router or any NAT enroll and stay connected without a VPN or an open port on their
 side.
 
-- **It does not need ports 80 or 443.** The installer picks free ports (8443 and 8444 by default), so a VPS that
-  already runs a web server or a reverse proxy keeps working. Open the two chosen ports in the firewall of the VPS
-  (they are written to `packaging/core/.env`): when ufw or firewalld is active the installer prints the exact
-  commands (`sudo ufw allow <port>/tcp`, or
+- **It does not need ports 80 or 443.** The installer never picks 80 or 443 on its own: it uses the first free
+  port from 8443 for the panel and from 8444 for the agents. `--port` and `--agent-port` force a value; if the
+  chosen port is busy, the installer stops. The panel URL is `https://<name>:<port>`. If you pass `--port 443`
+  and it is free, `https://<name>` is enough; with any other port, the port is part of the URL because HTTPS has
+  no other default. The agent URL always includes its own port. A VPS that already runs a web server or a reverse
+  proxy keeps working. Open the two chosen ports in the firewall of the VPS (they are written to
+  `packaging/core/.env`): when ufw or firewalld is active the installer prints the exact commands
+  (`sudo ufw allow <port>/tcp`, or
   `sudo firewall-cmd --permanent --add-port=<port>/tcp && sudo firewall-cmd --reload`) and never opens a port
   itself. Also open them in the firewall or security group of your provider.
 - **DNS:** point an `A` (or `AAAA`) record at the VPS. When `--hostname` is a DNS name the installer checks it,

@@ -18,6 +18,12 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.2.5] - 2026-10-21
+
+### Added
+
+- Access guide (`docs/en/access.md`, also in Spanish and Catalan): PIN on a trusted device, passkeys, the second-factor window and how to undo each method. The installation guide now explains why the panel address carries a port (8443 unless `--port 443` is free), how an agent enrolls again and how to remove a server; the README and the security guide link to the new guide.
+
 ## [0.2.4] - 2026-10-21
 
 ### Added
@@ -145,7 +151,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.2.4...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.2.5...HEAD
+[0.2.5]: https://github.com/catlinux/Talaia/releases/tag/v0.2.5
 [0.2.4]: https://github.com/catlinux/Talaia/releases/tag/v0.2.4
 [0.2.3]: https://github.com/catlinux/Talaia/releases/tag/v0.2.3
 [0.2.2]: https://github.com/catlinux/Talaia/releases/tag/v0.2.2

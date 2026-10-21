@@ -28,10 +28,31 @@ and scopes (for example, access to a single stack) come in a later phase; when t
 stacks, adopt projects and open terminals will be marked as equivalent to root and will not be granted by
 default.
 
+## Sign-in methods
+
+The base is the administrator password plus TOTP, with the recovery codes as the way back in. Two optional
+methods make regular sign-in faster:
+
+- **A PIN on a trusted device.** From **Settings > Access**, a signed-in browser becomes a trusted device with a
+  6-12 digit PIN and the current password. The core sends it a 180-day `__Host-talaia_device` cookie and stores
+  only its hash; the PIN is useless without that cookie and is stored hashed. Five wrong PINs disable the
+  device. TOTP is asked again when the browser is closed or after `device_mfa_hours` (default 12, range 1-168),
+  and a user can have at most 10 trusted devices. Changing the password, or resetting the TOTP secret, removes
+  every trusted device.
+- **Passkeys.** WebAuthn credentials with user verification (fingerprint, face or the device PIN). A passkey
+  counts as the password plus the second factor, so it opens a full session without TOTP. A user can have at
+  most 10 passkeys. They need HTTPS with a DNS name in `public_hostnames`; an IP address cannot be the relying
+  party, and with Talaia's own CA some browsers may refuse them. Challenges expire after five minutes, and a
+  signature counter that goes backwards disables the passkey.
+
+Both methods are additive: the password, TOTP and recovery codes remain the base and the recovery path. Setup,
+use, removal and troubleshooting: [access.md](access.md).
+
 ## What protects the panel and the agents
 
-- **Sign-in:** password and TOTP, rate limiting, lock-out after repeated failures, sessions that expire, and
-  protection of every change against requests from other sites (origin check).
+- **Sign-in:** password and TOTP, optional PIN on trusted devices and passkeys, rate limiting, lock-out after
+  repeated failures, sessions that expire, and protection of every change against requests from other sites
+  (origin check).
 - **Typed commands only.** The core never sends a shell command to an agent. It sends closed, validated
   messages (start a container, read logs, write a stack, open a terminal…), and the agent checks them again.
   Container names, stack names and paths are validated before they are used.

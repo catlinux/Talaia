@@ -18,7 +18,8 @@ Talaia tiene dos partes: el **núcleo** (panel, API y base de datos), que corre 
   contestando que sí).
 - **Servidores a gestionar:** Debian o Ubuntu con systemd, `curl` y acceso root (`sudo`).
 - Un nombre o una IP desde la que los servidores y tu navegador lleguen al núcleo, y dos puertos TCP libres para
-  él (8443 por defecto); los agentes usan un segundo puerto (8444 por defecto).
+  él (8443 por defecto); los agentes usan un segundo puerto (8444 por defecto). Se llega al panel en
+  `https://<dirección>:<puerto>`: el puerto forma parte de la URL salvo que sea el 443 (véase la sección 6).
 - Una aplicación de autenticación que lea códigos TOTP (Google Authenticator, Aegis, 2FAS, Bitwarden…).
 
 ## 2. Instalar el núcleo
@@ -130,6 +131,9 @@ sudo docker compose run --rm core user create --username admin
 4. Escribe el código de seis cifras de la aplicación. El panel muestra tus **códigos de recuperación**:
    guárdalos en un sitio seguro, solo se muestran una vez.
 
+Más adelante puedes añadir un PIN en este navegador o una clave de acceso desde **Ajustes > Acceso**: véase
+[acceso.md](acceso.md).
+
 **Confiar en la CA (quita el aviso del navegador).** Descarga `https://<dirección>:<puerto>/ca.pem`, guárdalo
 como `talaia-ca.crt` e instálalo como autoridad raíz de confianza (en Windows: doble clic → Instalar
 certificado → Entidades de certificación raíz de confianza). Hazlo solo en tus equipos: quien tenga la clave de
@@ -176,12 +180,25 @@ sudo journalctl -u talaia-agent -n 20 --no-pager
 El registro debe decir `enrolled with the core` y `connected to core`. El servidor aparece entonces en la
 pantalla **Flota** del panel con su CPU, memoria, disco y contenedores.
 
+### Volver a dar de alta un agente
+
+Para mover una máquina a otro núcleo, crea un token nuevo allí y ejecuta otra vez la orden de instalación.
+`install.sh` sustituye `core_url` y `ca_fingerprint` y escribe el nuevo token de un solo uso. Cuando el agente
+arranca y la huella de la CA guardada no coincide con la nueva, descarta la identidad antigua y se vuelve a dar
+de alta.
+
+Si el agente sigue perteneciendo a este mismo núcleo, por ejemplo porque su servidor se eliminó en el panel, la
+identidad antigua coincide con la CA y seguiría intentando usar el certificado revocado. Purga el paquete en el
+servidor (`sudo apt purge talaia-agent`) antes de ejecutar de nuevo la orden de instalación.
+
 ## 5. Día a día
 
 - **Actualizar el núcleo desde el panel:** la pantalla **Ajustes** muestra la versión en marcha y el commit más
-  reciente de `main` con el CI en verde, con los commits que recibirías. **Actualizar** pide confirmación y pasa el
-  trabajo al ayudante del host (más abajo); el panel deja de responder unos minutos y sigue el progreso solo. El
-  botón **Comprobar ahora** pregunta a GitHub al momento; si no, el núcleo comprueba cada 30 minutos.
+  reciente de `main` con el CI en verde, con los commits que recibirías. Cuando hay una actualización disponible,
+  **Novedades** lista las entradas del CHANGELOG entre la versión en marcha y la ofrecida. **Actualizar** pide
+  confirmación y pasa el trabajo al ayudante del host (más abajo); el panel deja de responder unos minutos y sigue
+  el progreso solo. El botón **Comprobar ahora** pregunta a GitHub al momento; si no, el núcleo comprueba cada 30
+  minutos.
 - **Actualizar el núcleo a mano:** `git pull` y, en `packaging/core`,
   `sudo TALAIA_GIT_COMMIT=$(git rev-parse HEAD) docker compose up -d --build` (sin la variable, el panel muestra la
   versión como desconocida).
@@ -193,10 +210,14 @@ pantalla **Flota** del panel con su CPU, memoria, disco y contenedores.
   del núcleo, `sudo docker compose run --rm -T core server upgrade-command` imprime una orden; ejecútala en cada
   servidor. Comprueba el script igual que la orden de instalación, reinstala el paquete y reinicia el agente,
   conservando su configuración e identidad (no hace falta token).
-- **Quitar un servidor:** en la máquina del núcleo, `sudo docker compose run --rm -T core server list` imprime el
-  id, el nombre y el estado de cada servidor, y `sudo docker compose run --rm -T core server revoke <id>` lo revoca:
-  el núcleo deja de aceptar su certificado. Después, en el propio servidor, `sudo apt purge talaia-agent` quita el
-  agente y su configuración.
+- **Quitar un servidor:** en **Ajustes > Servidores**, pulsa **Eliminar** y escribe el nombre del servidor. La
+  eliminación es suave: el panel oculta el servidor, corta el agente, revoca su certificado y libera el nombre.
+  Los contenedores del servidor no se tocan y las grabaciones de terminal se conservan. Para volver a añadirlo,
+  crea un token nuevo y ejecuta la orden de instalación (véase la sección 4). Desde la consola,
+  `sudo docker compose run --rm -T core server list` imprime el id, el nombre y el estado de cada servidor, y
+  `server revoke <id>` revoca su certificado, pero no hace la eliminación suave del panel. En el servidor,
+  `sudo apt purge talaia-agent` quita el agente y su configuración; purga antes de volver a dar de alta la misma
+  máquina en este núcleo.
 
 ### Cómo funcionan las actualizaciones desde el panel
 
@@ -231,8 +252,12 @@ Los agentes se conectan **hacia fuera** con el núcleo, así que el mejor sitio 
 pública (un VPS): los servidores detrás del router de casa o de cualquier NAT se dan de alta y siguen conectados sin
 VPN ni puerto abierto por su lado.
 
-- **No necesita los puertos 80 ni 443.** El instalador elige puertos libres (8443 y 8444 por defecto), de modo que
-  un VPS que ya tenga un servidor web o un proxy inverso sigue funcionando. Abre los dos puertos elegidos en el
+- **No necesita los puertos 80 ni 443.** El instalador nunca elige 80 ni 443 por su cuenta: usa el primer puerto
+  libre desde 8443 para el panel y desde 8444 para los agentes. `--port` y `--agent-port` fuerzan un valor; si el
+  puerto elegido está ocupado, el instalador se detiene. La URL del panel es `https://<nombre>:<puerto>`. Si pasas
+  `--port 443` y está libre, basta con `https://<nombre>`; con cualquier otro puerto, el puerto forma parte de la
+  URL porque HTTPS no tiene otro valor por defecto. La URL de los agentes siempre incluye su propio puerto. Un VPS
+  que ya tenga un servidor web o un proxy inverso sigue funcionando. Abre los dos puertos elegidos en el
   cortafuegos del VPS (quedan escritos en `packaging/core/.env`): cuando ufw o firewalld están activos, el
   instalador imprime las órdenes exactas (`sudo ufw allow <puerto>/tcp`, o
   `sudo firewall-cmd --permanent --add-port=<puerto>/tcp && sudo firewall-cmd --reload`) y nunca abre un puerto

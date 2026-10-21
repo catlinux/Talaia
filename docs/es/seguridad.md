@@ -29,10 +29,33 @@ Los roles y abasto por usuario (por ejemplo, acceso a un solo stack) llegan en u
 los permisos de editar stacks, adoptar proyectos y abrir terminales se marcarán como equivalentes a root y no se
 concederán por defecto.
 
+## Métodos de acceso
+
+La base es la contraseña del administrador más TOTP, con los códigos de recuperación como vía de vuelta. Hay dos
+métodos opcionales que hacen más rápido el acceso habitual:
+
+- **Un PIN en un dispositivo de confianza.** Desde **Ajustes > Acceso**, un navegador con sesión iniciada se
+  convierte en un dispositivo de confianza con un PIN de 6 a 12 dígitos y la contraseña actual. El núcleo le
+  envía una cookie `__Host-talaia_device` de 180 días y guarda solo su hash; el PIN no sirve sin esa cookie y se
+  guarda con hash. Cinco PIN erróneos desactivan el dispositivo. El TOTP se vuelve a pedir cuando se cierra el
+  navegador o después de `device_mfa_hours` (12 por defecto, rango de 1 a 168), y un usuario puede tener como
+  máximo 10 dispositivos de confianza. Cambiar la contraseña, o restablecer el secreto TOTP, elimina todos los
+  dispositivos de confianza.
+- **Claves de acceso.** Credenciales WebAuthn con verificación del usuario (huella, cara o PIN del dispositivo).
+  Una clave cuenta como la contraseña más el segundo factor, así que abre una sesión completa sin TOTP. Un
+  usuario puede tener como máximo 10 claves. Necesitan HTTPS con un nombre DNS en `public_hostnames`; una
+  dirección IP no puede ser el relying party, y con la CA propia de Talaia algunos navegadores pueden
+  rechazarlas. Los desafíos caducan a los cinco minutos, y un contador de firmas que retrocede desactiva la
+  clave.
+
+Los dos métodos son adicionales: la contraseña, el TOTP y los códigos de recuperación siguen siendo la base y la
+vía de recuperación. Configuración, uso, eliminación y problemas frecuentes: [acceso.md](acceso.md).
+
 ## Qué protege el panel y los agentes
 
-- **Acceso:** contraseña y TOTP, límite de intentos, bloqueo tras fallos repetidos, sesiones que caducan y
-  protección de cada cambio frente a peticiones de otros sitios (comprobación del origen).
+- **Acceso:** contraseña y TOTP, PIN opcional en dispositivos de confianza y claves de acceso, límite de
+  intentos, bloqueo tras fallos repetidos, sesiones que caducan y protección de cada cambio frente a peticiones
+  de otros sitios (comprobación del origen).
 - **Solo órdenes tipadas.** El núcleo nunca envía un comando de shell a un agente. Envía mensajes cerrados y
   validados (iniciar un contenedor, leer registros, escribir un stack, abrir una terminal…) y el agente los
   vuelve a comprobar. Los nombres de contenedores y stacks y las rutas se validan antes de usarlos.

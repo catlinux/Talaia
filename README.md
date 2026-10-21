@@ -35,6 +35,7 @@
 - [Architecture](#architecture)
 - [Supported systems](#supported-systems)
 - [Installation](#installation)
+- [Sign-in and access](#sign-in-and-access)
 - [Technology stack](#technology-stack)
 - [Languages (i18n)](#languages-i18n)
 - [Repository layout](#repository-layout)
@@ -122,7 +123,7 @@ Each feature is tagged with the release where it is planned. See [ROADMAP.md](RO
 | Monitoring and alerts | — | Metrics history, alert rules, HTTP/TCP checks, certificate expiry, Telegram/ntfy/email/Discord/webhook | Public status page |
 | Backups | — | restic plans, consistent database dumps, S3/B2/SFTP, restore from the panel | Automatic monthly restore test |
 | Fleet automation | — | Bulk actions, scheduled procedures, GitOps sync | Ansible playbooks, VPS provisioning via provider APIs |
-| Users and security | Single user with 2FA, audit log | Users, teams, scoped roles, passkeys, OIDC SSO, terminal session recording, scoped API keys | — |
+| Users and security | Single user with 2FA, trusted-device PIN, passkeys, audit log | Users, teams, scoped roles, OIDC SSO, terminal session recording, scoped API keys | — |
 
 ## Architecture
 
@@ -203,6 +204,15 @@ git clone https://github.com/catlinux/Talaia.git && cd Talaia
 packaging/core/install.sh --hostname <address> --port 8443 --agent-port 8444
 ```
 
+## Sign-in and access
+
+Password and TOTP are the base. A browser can also become a **trusted device** and open the panel with a PIN,
+and **passkeys** can sign in with the fingerprint, the face or the device PIN. Both are optional and keep the
+password, TOTP and recovery codes as the way back in.
+
+How to set up, use, remove and troubleshoot each method: [docs/en/access.md](docs/en/access.md). The security
+model and what is recorded are in [docs/en/security.md](docs/en/security.md).
+
 ## Technology stack
 
 | Layer | Choice |
@@ -214,7 +224,7 @@ packaging/core/install.sh --hostname <address> --port 8443 --agent-port 8444
 | i18n | i18next (web) · go-i18n (core, agent, CLI) |
 | Reverse proxy | Caddy (managed through its admin API) |
 | Backups | restic |
-| Auth | Sessions + TOTP · WebAuthn passkeys · OIDC |
+| Auth | Password + TOTP · trusted devices with PIN · WebAuthn passkeys · recovery codes · OIDC |
 | Packaging | GoReleaser · nfpm (.deb) · cosign |
 | Tests | go test · testcontainers · Playwright · Debian VMs |
 
@@ -232,7 +242,8 @@ Every user-facing string goes through the i18n system. A change that adds text w
 translations is not accepted. The language is taken from the user's profile, then the browser, then
 falls back to English. Detail: [docs/en/i18n.md](docs/en/i18n.md).
 
-Project **documentation** is written in **English and Spanish**.
+Project **documentation** is written in **English and Spanish**. Some guides, such as the sign-in guide, are
+also available in **Catalan**.
 
 ## Repository layout
 

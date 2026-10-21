@@ -36,6 +36,7 @@
 - [Arquitectura](#arquitectura)
 - [Sistemas soportados](#sistemas-soportados)
 - [Instalación](#instalación)
+- [Acceso e inicio de sesión](#acceso-e-inicio-de-sesión)
 - [Tecnologías](#tecnologías)
 - [Idiomas (i18n)](#idiomas-i18n)
 - [Estructura del repositorio](#estructura-del-repositorio)
@@ -122,7 +123,7 @@ Cada funcionalidad indica la versión donde está prevista. Detalle en [ROADMAP.
 | Monitorización y alertas | — | Historial de métricas, reglas de alerta, comprobaciones HTTP/TCP, caducidad de certificados, Telegram/ntfy/correo/Discord/webhook | Página de estado pública |
 | Copias de seguridad | — | Planes con restic, volcados coherentes de bases de datos, S3/B2/SFTP, restaurar desde el panel | Prueba de restauración mensual automática |
 | Automatización de flota | — | Acciones en bloque, procedimientos programados, sincronización GitOps | Playbooks de Ansible, creación de VPS vía API del proveedor |
-| Usuarios y seguridad | Usuario único con 2FA, registro de auditoría | Usuarios, equipos, roles por ámbito, passkeys, SSO OIDC, grabación de sesiones de terminal, claves de API con permisos | — |
+| Usuarios y seguridad | Usuario único con 2FA, PIN en dispositivos de confianza, claves de acceso, registro de auditoría | Usuarios, equipos, roles por ámbito, SSO OIDC, grabación de sesiones de terminal, claves de API con permisos | — |
 
 ## Arquitectura
 
@@ -204,6 +205,16 @@ git clone https://github.com/catlinux/Talaia.git && cd Talaia
 packaging/core/install.sh --hostname <dirección> --port 8443 --agent-port 8444
 ```
 
+## Acceso e inicio de sesión
+
+La contraseña y el TOTP son la base. Un navegador también puede convertirse en un **dispositivo de confianza**
+y abrir el panel con un PIN, y las **claves de acceso** pueden entrar con la huella, la cara o el PIN del
+dispositivo. Los dos son opcionales y mantienen la contraseña, el TOTP y los códigos de recuperación como vía
+de vuelta.
+
+Cómo configurar, usar, eliminar y resolver problemas de cada método: [docs/es/acceso.md](docs/es/acceso.md). El
+modelo de seguridad y qué se graba están en [docs/es/seguridad.md](docs/es/seguridad.md).
+
 ## Tecnologías
 
 | Capa | Elección |
@@ -215,7 +226,7 @@ packaging/core/install.sh --hostname <dirección> --port 8443 --agent-port 8444
 | i18n | i18next (web) · go-i18n (núcleo, agente, CLI) |
 | Proxy inverso | Caddy (gestionado mediante su API de administración) |
 | Copias | restic |
-| Autenticación | Sesiones + TOTP · passkeys WebAuthn · OIDC |
+| Autenticación | Contraseña + TOTP · dispositivos de confianza con PIN · claves de acceso WebAuthn · códigos de recuperación · OIDC |
 | Empaquetado | GoReleaser · nfpm (.deb) · cosign |
 | Pruebas | go test · testcontainers · Playwright · VMs Debian |
 
@@ -233,7 +244,8 @@ Todo texto visible para el usuario pasa por el sistema i18n. No se acepta ningú
 sin las tres traducciones. El idioma se toma del perfil del usuario, después del navegador y, si no,
 se usa el inglés. Detalle: [docs/es/i18n.md](docs/es/i18n.md).
 
-La **documentación** del proyecto se escribe en **inglés y castellano**.
+La **documentación** del proyecto se escribe en **inglés y castellano**. Algunas guías, como la de acceso,
+también están en **catalán**.
 
 ## Estructura del repositorio
 
