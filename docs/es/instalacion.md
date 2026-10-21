@@ -243,29 +243,34 @@ VPN ni puerto abierto por su lado.
 
 ### Un certificado en el que confían los navegadores (ACME DNS-01)
 
-Con la CA interna el navegador avisa de que el panel «no es seguro». Si la zona DNS de tu dominio está en OVH, el
-núcleo puede obtener solo un certificado de Let's Encrypt. DNS-01 demuestra el nombre con un registro DNS, así que
-funciona en cualquier puerto y no necesita servidor web. Hace falta un nombre DNS en `--hostname` (una dirección IP
-no puede tenerlo).
+Con la CA interna el navegador avisa de que el panel «no es seguro». El núcleo puede obtener solo un certificado de
+Let's Encrypt por DNS-01, que demuestra el nombre con un registro DNS: funciona en cualquier puerto y no necesita
+servidor web, así que Apache o lo que ya use el 80/443 no se toca. Hace falta un nombre DNS en `--hostname` (una
+dirección IP no puede tenerlo). En un terminal el instalador pregunta cómo hacerlo:
 
-1. Crea una clave de la API de OVH autorizada a cambiar solo tu zona DNS. La guía paso a paso, con los derechos
-   exactos y qué copiar, es [ovh-dns.md](ovh-dns.md) (también en [English](../en/ovh-dns.md) y
-   [català](../ca/ovh-dns.md)); el instalador imprime un enlace ya preparado para tu zona y comprueba la clave antes
-   de construir nada.
-2. Instala con el proveedor: `packaging/core/install.sh --hostname talaia.example.com --acme ovh --acme-email tu@example.com`
-   (el correo es opcional). Las credenciales van a `packaging/core/.env.acme` (modo 0600) y el núcleo las lee como
-   `OVH_ENDPOINT`, `OVH_APPLICATION_KEY`, `OVH_APPLICATION_SECRET` y `OVH_CONSUMER_KEY`.
-3. Hasta que el certificado esté listo, el panel responde con el de la CA interna; después pasa al de confianza sin
-   reiniciar. El núcleo registra `ACME certificate ready`; el instalador espera hasta tres minutos después de
-   arrancar la pila e informa de si el certificado se obtuvo o sigue pendiente. La cuenta y el certificado se
-   guardan en el volumen `core-data` (`/var/lib/talaia/acme`) y se renuevan 30 días antes de caducar. Si se abre
-   por dirección IP, el panel sigue respondiendo con el certificado de la CA interna.
+1. **Dos registros DNS (recomendado, cualquier proveedor de DNS):** creas un registro `A` y un registro `NS` que
+   delega `_acme-challenge.<nombre>` en el servidor, y el servicio `acme-dns` contesta el desafío en el puerto 53.
+   Sin clave de API. El instalador imprime los dos registros con tus valores, pregunta antes de abrir los puertos,
+   comprueba los registros, prueba la configuración con el entorno de pruebas de Let's Encrypt y después pide el
+   certificado real. Paso a paso, con OVH: [dns-delegation.md](dns-delegation.md) (también en
+   [English](../en/dns-delegation.md) y [català](../ca/dns-delegation.md)). Opciones: `--acme delegation`, y
+   `--public-ip <IPv4>` detrás de un NAT.
+2. **Una clave de la API de OVH:** autorizada a cambiar solo tu zona; el instalador imprime un enlace preparado y
+   comprueba la clave antes de construir. Guía: [ovh-dns.md](ovh-dns.md). Opción: `--acme ovh`. La clave va a
+   `packaging/core/.env.acme` (modo 0600).
+3. **Ninguno por ahora** (`--no-acme`): la CA interna; vuelve a ejecutar el instalador con `--acme delegation` más
+   adelante.
+
+Hasta que el certificado esté listo, el panel responde con el de la CA interna; después pasa al de confianza sin
+reiniciar. La cuenta y el certificado se guardan en el volumen `core-data` (`/var/lib/talaia/acme/<directorio>`) y
+se renuevan 30 días antes de caducar. Si se abre por dirección IP, el panel sigue respondiendo con el certificado de
+la CA interna.
 
 El **puerto de los agentes usa siempre la CA interna**, nunca el certificado público: los agentes fijan la huella de
 la CA, así que quien se haga con tu DNS no puede hacerse pasar por el núcleo y mandar órdenes a tus servidores.
 
-> Escrito a partir del código y de sus pruebas con un servidor ACME simulado; todavía sin probar contra Let's
-> Encrypt ni OVH.
+> Escrito a partir del código y de sus pruebas (una comprobación DNS real contra la zona, un servidor ACME
+> simulado); todavía sin probar de punta a punta contra Let's Encrypt.
 
 ### Alternativa: una VPN privada
 

@@ -183,18 +183,19 @@ curl -fsSL https://raw.githubusercontent.com/catlinux/Talaia/main/install-core.s
 ```
 
 Pasa las opciones del instalador tras `bash -s --`; por ejemplo, un nombre público y un certificado de confianza
-en OVH:
+con dos registros DNS (el instalador los imprime y los comprueba; sin clave de API):
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/catlinux/Talaia/main/install-core.sh | bash -s -- \
-  --hostname talaia.example.com --acme ovh
+  --hostname talaia.example.com --acme delegation
 ```
 
 El arranque usa `TALAIA_DIR` (por defecto `/opt/talaia`), `TALAIA_REPO_URL` (por defecto
 `https://github.com/catlinux/Talaia.git`) y `TALAIA_BRANCH` (por defecto `main`). El instalador acepta
 `--acme-zone <zona>` (el dominio registrado; por defecto: las dos últimas etiquetas del nombre) y
-`--no-acme-check` (omite la comprobación de la clave de OVH en una instalación sin conexión). La guía de la clave
-de OVH está en [docs/es/ovh-dns.md](docs/es/ovh-dns.md).
+`--no-acme-check` (omite la comprobación de la clave de OVH en una instalación sin conexión). Guías del
+certificado: [docs/es/dns-delegation.md](docs/es/dns-delegation.md) (dos registros DNS, recomendada) y
+[docs/es/ovh-dns.md](docs/es/ovh-dns.md) (clave de la API de OVH).
 
 También puedes clonarlo y ejecutar el instalador tú mismo:
 

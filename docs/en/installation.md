@@ -237,27 +237,32 @@ side.
 
 ### A certificate browsers trust (ACME DNS-01)
 
-With the internal CA the browser warns that the panel is "not secure". If the DNS zone of your domain is at OVH,
-the core can obtain a certificate from Let's Encrypt on its own. DNS-01 proves the name through a DNS record, so
-it works on any port and needs no web server. It needs a DNS name in `--hostname` (an IP address cannot get one).
+With the internal CA the browser warns that the panel is "not secure". The core can get a certificate from Let's
+Encrypt on its own through DNS-01, which proves the name with a DNS record: it works on any port and needs no web
+server, so Apache or anything else already on 80/443 is not touched. It needs a DNS name in `--hostname` (an IP
+address cannot get one). In a terminal the installer asks which way to use:
 
-1. Create an OVH API key allowed to change only your DNS zone. The step-by-step guide, with the exact rights and
-   what to copy, is [ovh-dns.md](ovh-dns.md) (also in [castellano](../es/ovh-dns.md) and
-   [català](../ca/ovh-dns.md)); the installer prints a link already prepared for your zone and checks the key
-   before it builds anything.
-2. Install with the provider: `packaging/core/install.sh --hostname talaia.example.com --acme ovh --acme-email you@example.com`
-   (the email is optional). The credentials go to `packaging/core/.env.acme` (mode 0600) and the core reads them as
-   `OVH_ENDPOINT`, `OVH_APPLICATION_KEY`, `OVH_APPLICATION_SECRET` and `OVH_CONSUMER_KEY`.
-3. Until the certificate is ready the panel answers with the certificate of the internal CA; then it swaps to the
-   trusted one without a restart. The core logs `ACME certificate ready`; the installer waits up to three minutes
-   after the stack starts and reports whether the certificate was obtained or is still pending. The account and the
-   certificate are kept in the `core-data` volume (`/var/lib/talaia/acme`) and renewed 30 days before they expire.
-   Opened by IP address, the panel keeps answering with the certificate of the internal CA.
+1. **Two DNS records (recommended, any DNS provider):** you create an `A` record and an `NS` record that delegates
+   `_acme-challenge.<name>` to the server, and the `acme-dns` service answers the challenge on port 53. No API key.
+   The installer prints both records with your values, asks before opening the ports, checks the records, proves
+   the setup with Let's Encrypt staging and then gets the real certificate. Step by step, with OVH:
+   [dns-delegation.md](dns-delegation.md) (also in [castellano](../es/dns-delegation.md) and
+   [català](../ca/dns-delegation.md)). Flags: `--acme delegation`, and `--public-ip <IPv4>` behind NAT.
+2. **An OVH API key:** allowed to change only your zone; the installer prints a prepared link and checks the key
+   before building. Guide: [ovh-dns.md](ovh-dns.md). Flag: `--acme ovh`. The key goes to `packaging/core/.env.acme`
+   (mode 0600).
+3. **None for now** (`--no-acme`): the internal CA; run the installer again with `--acme delegation` later.
+
+Until the certificate is ready the panel answers with the certificate of the internal CA; then it swaps to the
+trusted one without a restart. The account and the certificate are kept in the `core-data` volume
+(`/var/lib/talaia/acme/<directory>`) and renewed 30 days before they expire. Opened by IP address, the panel keeps
+answering with the certificate of the internal CA.
 
 The **agents port always uses the internal CA**, never the public certificate: agents pin the CA fingerprint, so
 nobody who gets control of your DNS can impersonate the core and send commands to your servers.
 
-> Written from the code and its tests with a simulated ACME server; not tried yet against Let's Encrypt or OVH.
+> Written from the code and its tests (a real DNS check against the zone, a simulated ACME server); not tried yet
+> end to end against Let's Encrypt.
 
 ### Alternative: a private VPN
 

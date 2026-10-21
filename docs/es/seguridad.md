@@ -42,6 +42,10 @@ concederán por defecto.
   un solo servidor. Un agente solo puede informar y recibir órdenes de su propio servidor. El puerto de los
   agentes presenta siempre el certificado de la CA interna, aunque el panel use uno público, así que quien se
   haga con tu DNS no puede hacerse pasar por el núcleo.
+- **El certificado no necesita ninguna clave del proveedor de DNS** con la configuración recomendada: la zona
+  delega solo `_acme-challenge.<nombre>` en el servidor, y `acme-dns` lo contesta en el puerto 53 desde su propio
+  contenedor de solo lectura, sin la base de datos, los secretos ni los datos del núcleo. Solo contesta ese nombre,
+  nunca hace recursión y limita cada red de origen. Véase [dns-delegation.md](dns-delegation.md).
 - **Todo lo que hace el panel queda auditado** con nombres, ids y huellas; el registro de auditoría nunca guarda
   contenido de ficheros, texto de registros ni lo que se escribe en una terminal.
 

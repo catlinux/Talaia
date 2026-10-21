@@ -41,6 +41,10 @@ default.
   agent can only report about and receive commands for its own server. The agent port always presents the
   internal CA's certificate, even when the panel uses a public one, so whoever takes over your DNS cannot
   impersonate the core.
+- **The certificate needs no DNS provider key** with the recommended setup: the zone delegates only
+  `_acme-challenge.<name>` to the server, and `acme-dns` answers it on port 53 from its own read-only container,
+  without the database, the secrets or the data of the core. It answers that name only, never recurses and limits
+  each source network. See [dns-delegation.md](dns-delegation.md).
 - **Everything the panel does is audited** with names, ids and hashes; the audit log never holds file contents,
   log text or what is typed in a terminal.
 

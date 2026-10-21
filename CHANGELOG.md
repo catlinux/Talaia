@@ -20,6 +20,7 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ### Added
 
+- Guide for the trusted certificate with two DNS records (`docs/en/dns-delegation.md`, also in Spanish and Catalan): the records to create, with the OVH steps, port 53, what each line of the check means, security and how to undo it. The installation guide and the README now recommend it, with the OVH key as the alternative.
 - Trusted certificate without DNS provider keys: with `acme_provider = delegation` the zone delegates `_acme-challenge.<host>` to the panel server with an NS record, and the new `acme-dns` service (`talaia-core dns`, compose profile `acme-dns`) answers the DNS-01 challenge on port 53. It runs apart from the core, read only, without the database or the secrets, answers only that name, never recurses and limits each source network. `talaia-core acme check-delegation` tells which record is missing or wrong and whether port 53 answers from the internet.
 - OVH guide for the trusted certificate (`docs/en/ovh-dns.md`, also in Spanish and Catalan): how to create the API key allowed to change only your DNS zone, with the exact rights, what to copy and what to do when something fails; linked from the installation guide.
 - Security guide (`docs/en/security.md`): the administrator is root on every managed server (Compose files, adoption, the container terminal, updates), what protects the panel and the agents, and how terminal sessions are recorded, kept and exported (`terminal list`, `terminal export`).
