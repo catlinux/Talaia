@@ -33,6 +33,12 @@ el navegador (la cookie marcadora `__Host-talaia_browser` es de sesión) o cuand
 `device_mfa_hours` desde el último TOTP de ese dispositivo. El valor por defecto es 12 horas; el rango va de 1
 a 168 horas. Se configura con `TALAIA_DEVICE_MFA_HOURS` en el entorno o `device_mfa_hours` en el fichero TOML.
 
+«Cerrado» significa que el navegador ha descartado sus cookies de sesión. Los navegadores del móvil lo hacen al
+cerrar la app; Chrome en el ordenador las conserva si está activado **Continuar donde lo dejaste** o si sigue
+**ejecutándose en segundo plano al cerrarlo** (Configuración > Sistema), y entonces solo cuenta el límite de
+tiempo. Si quieres el segundo factor en cada inicio del navegador, desactiva ambos ajustes o baja
+`device_mfa_hours`.
+
 Cinco PIN erróneos desactivan el dispositivo: se borra su PIN y hay que volver a añadirlo. Un usuario puede
 tener como máximo 10 dispositivos de confianza activos.
 

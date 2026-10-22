@@ -35,6 +35,12 @@ navegador (la galeta marcadora `__Host-talaia_browser` és de sessió) o quan ha
 des del darrer TOTP d'aquell dispositiu. El valor per defecte és de 12 hores; el rang va d'1 a 168 hores. Es
 configura amb `TALAIA_DEVICE_MFA_HOURS` a l'entorn o `device_mfa_hours` al fitxer TOML.
 
+«Tancat» vol dir que el navegador ha descartat les galetes de sessió. Els navegadors del mòbil ho fan en tancar
+l'aplicació; Chrome a l'ordinador les conserva si està activat **Continua des d'on ho has deixat** o si
+continua **executant-se en segon pla en tancar-lo** (Configuració > Sistema), i llavors només compta el límit
+de temps. Si vols el segon factor a cada inici del navegador, desactiva tots dos ajustes o abaixa
+`device_mfa_hours`.
+
 Cinc PIN errònis desactiven el dispositiu: s'esborra el PIN i cal tornar-lo a afegir. Un usuari pot tenir com a
 màxim 10 dispositius de confiança actius.
 

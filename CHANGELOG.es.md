@@ -13,6 +13,12 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+## [0.2.14] - 2026-10-22
+
+### Cambiado
+
+- Guía de acceso: aclara que «navegador cerrado» significa que el navegador ha descartado sus cookies de sesión, así que Chrome en el ordenador con *Continuar donde lo dejaste* o aplicaciones en segundo plano mantiene el PIN sin segundo factor hasta que pasan `device_mfa_hours`, y cómo cambiarlo.
+
 ## [0.2.13] - 2026-10-22
 
 ### Corregido
@@ -199,7 +205,8 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
   `.gitattributes` y `.gitignore`.
 - Licencia WNCL-1.0 aplicada: archivo `LICENSE` y sección de créditos en los README.
 
-[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.2.13...HEAD
+[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.2.14...HEAD
+[0.2.14]: https://github.com/catlinux/Talaia/releases/tag/v0.2.14
 [0.2.13]: https://github.com/catlinux/Talaia/releases/tag/v0.2.13
 [0.2.12]: https://github.com/catlinux/Talaia/releases/tag/v0.2.12
 [0.2.11]: https://github.com/catlinux/Talaia/releases/tag/v0.2.11

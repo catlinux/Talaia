@@ -18,6 +18,12 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.2.14] - 2026-10-22
+
+### Changed
+
+- Access guide: it now says that "browser closed" means the browser discarded its session cookies, so Chrome on a computer with *Continue where you left off* or background apps keeps the PIN without the second factor until `device_mfa_hours` passes, and how to change it.
+
 ## [0.2.13] - 2026-10-22
 
 ### Fixed
@@ -199,7 +205,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.2.13...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.2.14...HEAD
+[0.2.14]: https://github.com/catlinux/Talaia/releases/tag/v0.2.14
 [0.2.13]: https://github.com/catlinux/Talaia/releases/tag/v0.2.13
 [0.2.12]: https://github.com/catlinux/Talaia/releases/tag/v0.2.12
 [0.2.11]: https://github.com/catlinux/Talaia/releases/tag/v0.2.11

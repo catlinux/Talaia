@@ -32,6 +32,11 @@ closed (the `__Host-talaia_browser` marker cookie is a session cookie) or when m
 passed since the last TOTP on that device. The default is 12 hours; the range is 1 to 168 hours. Set it with
 `TALAIA_DEVICE_MFA_HOURS` in the environment or `device_mfa_hours` in the TOML configuration.
 
+"Closed" means that the browser discarded its session cookies. Phone browsers do it when the app is closed; Chrome
+on a computer keeps them if **Continue where you left off** is on or if it keeps **running in the background
+after you close it** (Settings > System), so there only the time limit applies. If you want the second factor
+at every browser start, turn both settings off, or lower `device_mfa_hours`.
+
 Five wrong PINs disable the device: its PIN is cleared and it has to be added again. A user can have at most
 10 active trusted devices.
 
