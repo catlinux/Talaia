@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"connectrpc.com/connect/v2"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/catlinux/Talaia/core/internal/store"
 	agentv1 "github.com/catlinux/Talaia/proto/gen/go"
@@ -539,6 +540,16 @@ func TestServeTracksTheInventoryFacts(t *testing.T) {
 	first.GetInventory().ManagedStacks = []string{"blog", "wiki"}
 	first.GetInventory().AdoptedStacks = []string{"wiki"}
 	first.GetInventory().BrokenStacks = []string{"wiki"}
+	checkedAt := time.Date(2026, 10, 22, 9, 0, 0, 0, time.UTC)
+	listsAt := checkedAt.Add(-time.Hour)
+	first.GetInventory().Apt = &agentv1.AptSummary{
+		Upgradable:     3,
+		Security:       1,
+		RebootRequired: true,
+		CheckedAt:      timestamppb.New(checkedAt),
+		ListsUpdatedAt: timestamppb.New(listsAt),
+	}
+	first.GetInventory().HostTerminal = true
 	stream.in <- first
 	waitFor(t, func() bool { return len(h.Connected()) == 1 })
 
@@ -546,7 +557,9 @@ func TestServeTracksTheInventoryFacts(t *testing.T) {
 	if info.OSName != "Debian GNU/Linux" || info.OSVersion != "13" ||
 		info.Kernel != "6.12.0-amd64" || info.Arch != "amd64" ||
 		info.CPUCount != 4 || info.MemTotalBytes != 8<<30 ||
-		len(info.AdoptedStacks) != 1 || len(info.BrokenStacks) != 1 || info.BrokenStacks[0] != "wiki" {
+		len(info.AdoptedStacks) != 1 || len(info.BrokenStacks) != 1 || info.BrokenStacks[0] != "wiki" ||
+		!info.AptKnown || info.AptUpgradable != 3 || info.AptSecurity != 1 || !info.RebootRequired ||
+		!info.AptCheckedAt.Equal(checkedAt) || !info.AptListsUpdatedAt.Equal(listsAt) || !info.HostTerminal {
 		t.Fatalf("inventory facts = %+v, want the first inventory", info)
 	}
 

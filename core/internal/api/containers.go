@@ -37,6 +37,10 @@ func jobTimeout(kind string) time.Duration {
 		return 5*time.Minute + margin
 	case stackWriteKind:
 		return 2*time.Minute + margin
+	case aptStatusKind:
+		return 2*time.Minute + margin
+	case aptRefreshKind:
+		return 10*time.Minute + margin
 	default:
 		return 90*time.Second + margin
 	}

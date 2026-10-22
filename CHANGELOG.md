@@ -18,6 +18,12 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.3.4] - 2026-10-22
+
+### Added
+
+- The core keeps the apt summary and the host terminal flag of each connected agent and shows them in `GET /api/v1/servers` (`live.apt`, `live.host_terminal`); `POST /api/v1/servers/{id}/apt/status` asks the agent for the full list of pending updates, held packages and reboot reasons (with `refresh` it runs `apt-get update` first). Not shown in the panel yet.
+
 ## [0.3.3] - 2026-10-22
 
 ### Added
@@ -244,7 +250,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.3.3...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.3.4...HEAD
+[0.3.4]: https://github.com/catlinux/Talaia/releases/tag/v0.3.4
 [0.3.3]: https://github.com/catlinux/Talaia/releases/tag/v0.3.3
 [0.3.2]: https://github.com/catlinux/Talaia/releases/tag/v0.3.2
 [0.3.1]: https://github.com/catlinux/Talaia/releases/tag/v0.3.1

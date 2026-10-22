@@ -98,7 +98,19 @@ type liveAgent struct {
 	RunningContainers int       `json:"running_containers"`
 	ComposeProjects   int       `json:"compose_projects"`
 	Services          int       `json:"services"`
+	HostTerminal      bool      `json:"host_terminal"`
+	Apt               *liveApt  `json:"apt,omitempty"`
 	SeenAt            time.Time `json:"seen_at"`
+}
+
+// liveApt is the apt snapshot of a connected agent. It is absent when the
+// agent did not report one.
+type liveApt struct {
+	Upgradable     uint32     `json:"upgradable"`
+	Security       uint32     `json:"security"`
+	RebootRequired bool       `json:"reboot_required"`
+	CheckedAt      *time.Time `json:"checked_at,omitempty"`
+	ListsUpdatedAt *time.Time `json:"lists_updated_at,omitempty"`
 }
 
 // NewServersHandler returns GET /api/v1/servers. It is mounted behind the
@@ -243,7 +255,7 @@ func NewServerRemoveHandler(deps ServerDeps) http.Handler {
 
 // liveOf turns the snapshot of a connected agent into the shape of the API.
 func liveOf(agent hub.AgentInfo) *liveAgent {
-	return &liveAgent{
+	live := &liveAgent{
 		Hostname:          agent.Hostname,
 		AgentVersion:      agent.AgentVersion,
 		OSName:            agent.OSName,
@@ -263,6 +275,24 @@ func liveOf(agent hub.AgentInfo) *liveAgent {
 		RunningContainers: agent.RunningContainers,
 		ComposeProjects:   agent.ComposeProjects,
 		Services:          agent.Services,
+		HostTerminal:      agent.HostTerminal,
 		SeenAt:            agent.LastSeen,
 	}
+	if agent.AptKnown {
+		apt := &liveApt{
+			Upgradable:     agent.AptUpgradable,
+			Security:       agent.AptSecurity,
+			RebootRequired: agent.RebootRequired,
+		}
+		if !agent.AptCheckedAt.IsZero() {
+			checked := agent.AptCheckedAt
+			apt.CheckedAt = &checked
+		}
+		if !agent.AptListsUpdatedAt.IsZero() {
+			lists := agent.AptListsUpdatedAt
+			apt.ListsUpdatedAt = &lists
+		}
+		live.Apt = apt
+	}
+	return live
 }

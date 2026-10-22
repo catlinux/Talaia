@@ -115,6 +115,15 @@ type AgentInfo struct {
 	// BrokenStacks are the adopted stacks whose files are gone, a subset of
 	// AdoptedStacks. The panel only lets them be forgotten.
 	BrokenStacks []string
+	// AptKnown reports whether the agent sent an apt summary in its inventory.
+	AptKnown          bool
+	AptUpgradable     uint32
+	AptSecurity       uint32
+	RebootRequired    bool
+	AptCheckedAt      time.Time
+	AptListsUpdatedAt time.Time
+	// HostTerminal is true when the agent accepts terminal sessions on the host.
+	HostTerminal bool
 	// ContainerStats is the last sample of the running containers, by short id;
 	// StatsAt says when it was taken.
 	ContainerStats map[string]*agentv1.ContainerStat
@@ -155,6 +164,31 @@ func (info *AgentInfo) applyInventory(inventory *agentv1.Inventory) {
 	info.ManagedStacks = inventory.GetManagedStacks()
 	info.AdoptedStacks = inventory.GetAdoptedStacks()
 	info.BrokenStacks = inventory.GetBrokenStacks()
+	info.HostTerminal = inventory.GetHostTerminal()
+
+	if summary := inventory.GetApt(); summary == nil {
+		info.AptKnown = false
+		info.AptUpgradable = 0
+		info.AptSecurity = 0
+		info.RebootRequired = false
+		info.AptCheckedAt = time.Time{}
+		info.AptListsUpdatedAt = time.Time{}
+	} else {
+		info.AptKnown = true
+		info.AptUpgradable = summary.GetUpgradable()
+		info.AptSecurity = summary.GetSecurity()
+		info.RebootRequired = summary.GetRebootRequired()
+		if checked := summary.GetCheckedAt(); checked != nil {
+			info.AptCheckedAt = checked.AsTime()
+		} else {
+			info.AptCheckedAt = time.Time{}
+		}
+		if lists := summary.GetListsUpdatedAt(); lists != nil {
+			info.AptListsUpdatedAt = lists.AsTime()
+		} else {
+			info.AptListsUpdatedAt = time.Time{}
+		}
+	}
 }
 
 // agentStream is the part of the server stream the hub uses. Keeping it small

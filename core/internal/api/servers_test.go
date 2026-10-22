@@ -172,6 +172,13 @@ func TestServersEndpointMergesTheLiveAgents(t *testing.T) {
 		RunningContainers: 2,
 		ComposeProjects:   1,
 		Services:          5,
+		AptKnown:          true,
+		AptUpgradable:     5,
+		AptSecurity:       2,
+		RebootRequired:    true,
+		AptCheckedAt:      seen,
+		AptListsUpdatedAt: seen.Add(-time.Hour),
+		HostTerminal:      true,
 	}}
 
 	st, clock, _, token := newSessionFixture(t, store.StageFull)
@@ -211,7 +218,10 @@ func TestServersEndpointMergesTheLiveAgents(t *testing.T) {
 		live.DiskUsedBytes != 2<<30 || live.DiskTotalBytes != 4<<30 ||
 		live.NetRxBytes != 11 || live.NetTxBytes != 22 ||
 		!live.DockerAvailable || live.Containers != 3 || live.RunningContainers != 2 ||
-		live.ComposeProjects != 1 || live.Services != 5 {
+		live.ComposeProjects != 1 || live.Services != 5 || !live.HostTerminal ||
+		live.Apt == nil || live.Apt.Upgradable != 5 || live.Apt.Security != 2 ||
+		!live.Apt.RebootRequired || live.Apt.CheckedAt == nil || !live.Apt.CheckedAt.Equal(seen) ||
+		live.Apt.ListsUpdatedAt == nil || !live.Apt.ListsUpdatedAt.Equal(seen.Add(-time.Hour)) {
 		t.Errorf("live = %+v", live)
 	}
 	if !live.SeenAt.Equal(seen) {
@@ -370,6 +380,40 @@ func TestRemoveServerRequiresAFullSession(t *testing.T) {
 	}
 	if len(audit.events) != 1 || audit.events[0].Actor != "admin" {
 		t.Errorf("audit = %+v, want the signed-in actor", audit.events)
+	}
+}
+
+func TestLiveOfCarriesAptOnlyWhenTheAgentReportedIt(t *testing.T) {
+	checked := time.Date(2026, 10, 22, 9, 0, 0, 0, time.UTC)
+	lists := checked.Add(-45 * time.Minute)
+	live := liveOf(hub.AgentInfo{
+		AptKnown:          true,
+		AptUpgradable:     4,
+		AptSecurity:       2,
+		RebootRequired:    true,
+		AptCheckedAt:      checked,
+		AptListsUpdatedAt: lists,
+		HostTerminal:      true,
+	})
+	if live.Apt == nil || live.Apt.Upgradable != 4 || live.Apt.Security != 2 ||
+		!live.Apt.RebootRequired || live.Apt.CheckedAt == nil || !live.Apt.CheckedAt.Equal(checked) ||
+		live.Apt.ListsUpdatedAt == nil || !live.Apt.ListsUpdatedAt.Equal(lists) || !live.HostTerminal {
+		t.Errorf("live = %+v, want the apt summary and host terminal flag", live)
+	}
+
+	unknown := liveOf(hub.AgentInfo{})
+	if unknown.Apt != nil {
+		t.Errorf("apt = %+v, want nil when the agent did not report one", unknown.Apt)
+	}
+	encoded, err := json.Marshal(unknown)
+	if err != nil {
+		t.Fatalf("encode the live data: %v", err)
+	}
+	if strings.Contains(string(encoded), `"apt"`) {
+		t.Errorf("the JSON of an agent without apt has one: %s", encoded)
+	}
+	if !strings.Contains(string(encoded), `"host_terminal":false`) {
+		t.Errorf("the JSON of an agent without a host terminal = %s", encoded)
 	}
 }
 
