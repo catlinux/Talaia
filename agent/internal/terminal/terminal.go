@@ -74,9 +74,17 @@ func DefaultLimits() Limits {
 	}
 }
 
+// HostBackend starts shells on the server itself.
+type HostBackend interface {
+	Start(ctx context.Context, shell []string, cols, rows uint32) (Process, error)
+}
+
 // Manager runs the terminal sessions of the agent.
 type Manager struct {
 	backend Backend
+	// host is nil when host terminals are disabled.
+	host    HostBackend
+	hostMax int
 	limits  Limits
 
 	mu       sync.Mutex
@@ -88,12 +96,24 @@ func New(backend Backend, limits Limits) *Manager {
 	return &Manager{backend: backend, limits: limits, sessions: make(map[string]*session)}
 }
 
+// WithHost enables host terminal sessions with backend and at most maxSessions
+// concurrent host sessions. A nil backend leaves host terminals disabled.
+func (m *Manager) WithHost(backend HostBackend, maxSessions int) *Manager {
+	m.host = backend
+	if maxSessions <= 0 || maxSessions > 2 {
+		maxSessions = 2
+	}
+	m.hostMax = maxSessions
+	return m
+}
+
 // session is one shell.
 type session struct {
 	id     string
 	cancel context.CancelFunc
 	input  chan []byte
 	start  time.Time
+	host   bool
 	last   atomic.Int64 // unix nanoseconds of the last input or output
 
 	mu      sync.Mutex
@@ -194,13 +214,29 @@ func (m *Manager) open(ctx context.Context, request *agentv1.TerminalOpen, emit 
 	refuse := func(reason string) {
 		emit(opened(id, false, reason))
 	}
-	shell, known := shells[request.GetShell()]
+	host := request.GetTarget() == agentv1.TerminalTarget_TERMINAL_TARGET_HOST
+	if !host &&
+		request.GetTarget() != agentv1.TerminalTarget_TERMINAL_TARGET_UNSPECIFIED &&
+		request.GetTarget() != agentv1.TerminalTarget_TERMINAL_TARGET_CONTAINER {
+		refuse("invalid request")
+		return
+	}
+	shellList, known := shells[request.GetShell()]
+	if host {
+		shellList, known = hostShells[request.GetShell()]
+	}
 	cols, rows := sizeOrDefault(request.GetCols(), 80), sizeOrDefault(request.GetRows(), 24)
 	switch {
 	case !known:
 		refuse("the shell is not supported")
 		return
-	case !jobs.ValidContainerRef(request.GetContainer()):
+	case host && request.GetContainer() != "":
+		refuse("invalid request")
+		return
+	case host && m.host == nil:
+		refuse("host terminal is disabled on this server")
+		return
+	case !host && !jobs.ValidContainerRef(request.GetContainer()):
 		refuse("invalid container reference")
 		return
 	case cols > maxTerminalSize || rows > maxTerminalSize:
@@ -209,10 +245,18 @@ func (m *Manager) open(ctx context.Context, request *agentv1.TerminalOpen, emit 
 	}
 
 	sessionCtx, cancel := context.WithCancel(ctx)
-	s := &session{id: id, cancel: cancel, input: make(chan []byte, pendingInput), start: time.Now()}
+	s := &session{id: id, cancel: cancel, input: make(chan []byte, pendingInput), start: time.Now(), host: host}
 	s.touch()
 
 	m.mu.Lock()
+	hostCount := 0
+	if host {
+		for _, existing := range m.sessions {
+			if existing.host {
+				hostCount += 1
+			}
+		}
+	}
 	switch {
 	case m.sessions[id] != nil:
 		m.mu.Unlock()
@@ -224,11 +268,16 @@ func (m *Manager) open(ctx context.Context, request *agentv1.TerminalOpen, emit 
 		cancel()
 		refuse("too many terminal sessions on this server")
 		return
+	case host && hostCount >= m.hostMax:
+		m.mu.Unlock()
+		cancel()
+		refuse("too many host terminal sessions")
+		return
 	}
 	m.sessions[id] = s
 	m.mu.Unlock()
 
-	go m.run(sessionCtx, s, request.GetContainer(), shell, cols, rows, emit)
+	go m.run(sessionCtx, s, host, request.GetContainer(), shellList, cols, rows, emit)
 }
 
 // sizeOrDefault returns value, or def when it is 0.
@@ -280,11 +329,19 @@ func (m *Manager) resize(ctx context.Context, request *agentv1.TerminalResize) {
 }
 
 // run opens the shell and carries its output until the session ends.
-func (m *Manager) run(ctx context.Context, s *session, container string, shell []string, cols, rows uint32, emit func(*agentv1.AgentMsg)) {
+func (m *Manager) run(ctx context.Context, s *session, host bool, container string, shell []string, cols, rows uint32, emit func(*agentv1.AgentMsg)) {
 	defer m.forget(s.id)
 
 	startCtx, cancelStart := context.WithTimeout(ctx, startTimeout)
-	process, privileged, err := m.backend.Start(startCtx, container, shell, cols, rows)
+	var process Process
+	var privileged bool
+	var err error
+	if host {
+		process, err = m.host.Start(startCtx, shell, cols, rows)
+		privileged = true
+	} else {
+		process, privileged, err = m.backend.Start(startCtx, container, shell, cols, rows)
+	}
 	cancelStart()
 	if err != nil {
 		s.end(ReasonClosed)
@@ -305,7 +362,11 @@ func (m *Manager) run(ctx context.Context, s *session, container string, shell [
 		return
 	}
 
-	slog.Info("terminal opened", "session", s.id, "container", container, "privileged", privileged)
+	if host {
+		slog.Info("host terminal opened", "session", s.id, "privileged", privileged)
+	} else {
+		slog.Info("terminal opened", "session", s.id, "container", container, "privileged", privileged)
+	}
 	emit(opened(s.id, privileged, ""))
 
 	go m.write(ctx, s, process)

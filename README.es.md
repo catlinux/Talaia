@@ -334,7 +334,7 @@ Las copias y los forks deben conservar esta atribución y enlazar a https://gith
 | Familjen Grotesk (fuente) | The Familjen Grotesk Project Authors | OFL-1.1 | https://github.com/Familjen-Sthlm/Familjen-Grotesk |
 | IBM Plex Sans (fuente) | IBM Corp. | OFL-1.1 | https://github.com/IBM/plex |
 | JetBrains Mono (fuente) | The JetBrains Mono Project Authors | OFL-1.1 | https://github.com/JetBrains/JetBrainsMono |
-| 40 módulos Go enlazados en los binarios | Sus respectivos autores | MIT, BSD-3-Clause, ISC, Apache-2.0 | [CREDITS.es.md](CREDITS.es.md) |
+| 41 módulos Go enlazados en los binarios | Sus respectivos autores | MIT, BSD-3-Clause, ISC, Apache-2.0 | [CREDITS.es.md](CREDITS.es.md) |
 | 40 paquetes npm incluidos en el panel web | Sus respectivos autores | MIT, ISC | [CREDITS.es.md](CREDITS.es.md) |
 
 El texto de la licencia y el aviso de copyright de cada componente están en [THIRD-PARTY-NOTICES.txt](THIRD-PARTY-NOTICES.txt).

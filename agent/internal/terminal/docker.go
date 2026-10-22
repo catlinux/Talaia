@@ -31,6 +31,12 @@ var shells = map[agentv1.TerminalShell][]string{
 	agentv1.TerminalShell_TERMINAL_SHELL_BASH: {"/bin/bash"},
 }
 
+// hostShells is the closed list of login shells for a host session.
+var hostShells = map[agentv1.TerminalShell][]string{
+	agentv1.TerminalShell_TERMINAL_SHELL_SH:   {"/bin/sh", "-l"},
+	agentv1.TerminalShell_TERMINAL_SHELL_BASH: {"/bin/bash", "-l"},
+}
+
 // Process is a running shell with a terminal.
 type Process interface {
 	io.ReadWriteCloser

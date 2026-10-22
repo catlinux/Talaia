@@ -16,6 +16,7 @@ import (
 const (
 	sessionA = "11111111-1111-4111-8111-111111111111"
 	sessionB = "22222222-2222-4222-8222-222222222222"
+	sessionC = "33333333-3333-4333-8333-333333333333"
 )
 
 // fakeProcess is a shell the test drives: it writes the output into output and
@@ -100,6 +101,35 @@ func (b *fakeBackend) Start(_ context.Context, container string, shell []string,
 	return b.process, b.privileged, nil
 }
 
+// fakeHostBackend is the host shell of the test.
+type fakeHostBackend struct {
+	process    *fakeProcess
+	newProcess func() *fakeProcess
+	err        error
+
+	mu      sync.Mutex
+	shells  [][]string
+	started int
+}
+
+func (b *fakeHostBackend) Start(_ context.Context, shell []string, cols, rows uint32) (Process, error) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	b.started += 1
+	b.shells = append(b.shells, append([]string(nil), shell...))
+	if b.err != nil {
+		return nil, b.err
+	}
+	process := b.process
+	if b.newProcess != nil {
+		process = b.newProcess()
+	}
+	if process == nil {
+		process = newFakeProcess()
+	}
+	return process, nil
+}
+
 // collector gathers what the agent sends.
 type collector struct{ messages chan *agentv1.AgentMsg }
 
@@ -147,6 +177,13 @@ func openCommand(id, container string, shell agentv1.TerminalShell) *agentv1.Cor
 	}}}
 }
 
+func openHostCommand(id, container string, shell agentv1.TerminalShell) *agentv1.CoreMsg {
+	return &agentv1.CoreMsg{Cmd: &agentv1.CoreMsg_TerminalOpen{TerminalOpen: &agentv1.TerminalOpen{
+		SessionId: id, Container: container, Shell: shell, Cols: 100, Rows: 30,
+		Target: agentv1.TerminalTarget_TERMINAL_TARGET_HOST,
+	}}}
+}
+
 func inputCommand(id string, data []byte) *agentv1.CoreMsg {
 	return &agentv1.CoreMsg{Cmd: &agentv1.CoreMsg_TerminalInput{TerminalInput: &agentv1.TerminalInput{SessionId: id, Data: data}}}
 }
@@ -164,6 +201,19 @@ func openSession(t *testing.T, m *Manager, out *collector, id string) *agentv1.T
 	got := out.next(t).GetTerminalOpened()
 	if got == nil || got.GetError() != "" {
 		t.Fatalf("session did not open: %v", got)
+	}
+	return got
+}
+
+// openHostSession starts a host session and waits until it runs.
+func openHostSession(t *testing.T, m *Manager, out *collector, id string) *agentv1.TerminalOpened {
+	t.Helper()
+	if !m.Handle(context.Background(), openHostCommand(id, "", agentv1.TerminalShell_TERMINAL_SHELL_SH), out.emit) {
+		t.Fatal("the host open command was not handled")
+	}
+	got := out.next(t).GetTerminalOpened()
+	if got == nil || got.GetError() != "" {
+		t.Fatalf("host session did not open: %v", got)
 	}
 	return got
 }
@@ -285,6 +335,95 @@ func TestFailedStartFreesTheSlot(t *testing.T) {
 		t.Errorf("answer = %v", got)
 	}
 	waitFor(t, func() bool { return m.Count() == 0 })
+}
+
+func TestHostShellsAreLoginShells(t *testing.T) {
+	for shell, want := range map[agentv1.TerminalShell][]string{
+		agentv1.TerminalShell_TERMINAL_SHELL_SH:   {"/bin/sh", "-l"},
+		agentv1.TerminalShell_TERMINAL_SHELL_BASH: {"/bin/bash", "-l"},
+	} {
+		got := hostShells[shell]
+		if len(got) != len(want) || got[0] != want[0] || got[1] != want[1] {
+			t.Errorf("host shell %s = %v, want %v", shell, got, want)
+		}
+	}
+}
+
+func TestHostSessionIsPrivilegedAndUsesALoginShell(t *testing.T) {
+	host := &fakeHostBackend{process: newFakeProcess()}
+	containers := &fakeBackend{process: newFakeProcess()}
+	m := New(containers, testLimits()).WithHost(host, 2)
+	out := newCollector()
+
+	got := openHostSession(t, m, out, sessionA)
+	if !got.GetPrivileged() || got.GetSessionId() != sessionA {
+		t.Errorf("opened = %v", got)
+	}
+	host.mu.Lock()
+	shells := append([][]string(nil), host.shells...)
+	host.mu.Unlock()
+	if len(shells) != 1 || len(shells[0]) != 2 || shells[0][0] != "/bin/sh" || shells[0][1] != "-l" {
+		t.Errorf("host shell = %v, want /bin/sh -l", shells)
+	}
+	if len(containers.started) != 0 {
+		t.Errorf("a host session reached Docker: %v", containers.started)
+	}
+	m.Handle(context.Background(), closeCommand(sessionA), out.emit)
+	out.closedMessage(t)
+}
+
+func TestHostSessionRefusals(t *testing.T) {
+	host := &fakeHostBackend{newProcess: newFakeProcess}
+	containers := &fakeBackend{process: newFakeProcess()}
+	limits := Limits{MaxSessions: 4, Idle: time.Hour, MaxDuration: time.Hour, Chunk: 16, Tick: time.Second}
+	out := newCollector()
+
+	t.Run("disabled", func(t *testing.T) {
+		m := New(containers, limits)
+		m.Handle(context.Background(), openHostCommand(sessionA, "", agentv1.TerminalShell_TERMINAL_SHELL_SH), out.emit)
+		if got := out.next(t).GetTerminalOpened(); !strings.Contains(got.GetError(), "disabled") {
+			t.Errorf("answer = %v", got)
+		}
+	})
+
+	t.Run("container not empty", func(t *testing.T) {
+		m := New(containers, limits).WithHost(host, 2)
+		m.Handle(context.Background(), openHostCommand(sessionA, "web", agentv1.TerminalShell_TERMINAL_SHELL_SH), out.emit)
+		if got := out.next(t).GetTerminalOpened(); !strings.Contains(got.GetError(), "invalid request") {
+			t.Errorf("answer = %v", got)
+		}
+		host.mu.Lock()
+		started := host.started
+		host.mu.Unlock()
+		if started != 0 {
+			t.Errorf("a refused host session started a shell")
+		}
+	})
+
+	t.Run("third host session", func(t *testing.T) {
+		m := New(containers, limits).WithHost(host, 2)
+		openHostSession(t, m, out, sessionA)
+		openHostSession(t, m, out, sessionB)
+		m.Handle(context.Background(), openHostCommand(sessionC, "", agentv1.TerminalShell_TERMINAL_SHELL_SH), out.emit)
+		if got := out.next(t).GetTerminalOpened(); !strings.Contains(got.GetError(), "too many host terminal sessions") {
+			t.Errorf("answer = %v", got)
+		}
+		m.CloseAll()
+		for range 2 {
+			out.closedMessage(t)
+		}
+	})
+
+	t.Run("container sessions still fit", func(t *testing.T) {
+		m := New(containers, limits).WithHost(host, 2)
+		openHostSession(t, m, out, sessionA)
+		openHostSession(t, m, out, sessionB)
+		openSession(t, m, out, sessionC)
+		m.CloseAll()
+		for range 3 {
+			out.closedMessage(t)
+		}
+	})
 }
 
 func TestIdleAndMaxDuration(t *testing.T) {

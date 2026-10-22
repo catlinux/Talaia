@@ -332,7 +332,7 @@ Copies and forks must keep this attribution and link to https://github.com/catli
 | Familjen Grotesk (font) | The Familjen Grotesk Project Authors | OFL-1.1 | https://github.com/Familjen-Sthlm/Familjen-Grotesk |
 | IBM Plex Sans (font) | IBM Corp. | OFL-1.1 | https://github.com/IBM/plex |
 | JetBrains Mono (font) | The JetBrains Mono Project Authors | OFL-1.1 | https://github.com/JetBrains/JetBrainsMono |
-| 40 Go modules linked into the binaries | Their respective authors | MIT, BSD-3-Clause, ISC, Apache-2.0 | [CREDITS.md](CREDITS.md) |
+| 41 Go modules linked into the binaries | Their respective authors | MIT, BSD-3-Clause, ISC, Apache-2.0 | [CREDITS.md](CREDITS.md) |
 | 40 npm packages bundled into the web panel | Their respective authors | MIT, ISC | [CREDITS.md](CREDITS.md) |
 
 The license text and copyright notice of each component is in [THIRD-PARTY-NOTICES.txt](THIRD-PARTY-NOTICES.txt).

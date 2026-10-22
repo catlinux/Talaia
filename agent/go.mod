@@ -5,6 +5,7 @@ go 1.26.0
 require (
 	connectrpc.com/connect/v2 v2.0.1
 	github.com/catlinux/Talaia/proto v0.0.0-00010101000000-000000000000
+	github.com/creack/pty v1.1.24
 	github.com/pelletier/go-toml/v2 v2.4.3
 	github.com/shirou/gopsutil/v4 v4.26.9
 	google.golang.org/protobuf v1.36.12

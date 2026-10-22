@@ -13,6 +13,12 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+## [0.3.15] - 2026-10-22
+
+### Añadido
+
+- El agente puede abrir un shell de root en el propio servidor (todavía sin acceso desde el panel): un shell de login de una lista cerrada (`bash` o `sh`) en un pseudo-terminal local con entorno limpio, los mismos límites que las terminales de contenedor más un máximo de 2 sesiones de host, y se mata todo el grupo de procesos al acabar la sesión. Se puede desactivar con `[terminal] host = false` en `agent.toml` (o `TALAIA_AGENT_TERMINAL_HOST`) y el agente lo informa en su inventario. Dependencia nueva: `github.com/creack/pty` (MIT).
+
 ## [0.3.14] - 2026-10-22
 
 ### Añadido
@@ -310,7 +316,8 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
   `.gitattributes` y `.gitignore`.
 - Licencia WNCL-1.0 aplicada: archivo `LICENSE` y sección de créditos en los README.
 
-[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.3.14...HEAD
+[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.3.15...HEAD
+[0.3.15]: https://github.com/catlinux/Talaia/releases/tag/v0.3.15
 [0.3.14]: https://github.com/catlinux/Talaia/releases/tag/v0.3.14
 [0.3.13]: https://github.com/catlinux/Talaia/releases/tag/v0.3.13
 [0.3.12]: https://github.com/catlinux/Talaia/releases/tag/v0.3.12

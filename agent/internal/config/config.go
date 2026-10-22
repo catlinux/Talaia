@@ -35,6 +35,8 @@ type Config struct {
 	InsecureDev     bool
 	CertDir         string
 	EnrollTokenFile string
+	// HostTerminal enables root shells on the server itself.
+	HostTerminal bool
 }
 
 // fileConfig mirrors the TOML document. Pointer fields tell an absent key apart
@@ -46,6 +48,9 @@ type fileConfig struct {
 	InsecureDev     *bool   `toml:"insecure_dev"`
 	CertDir         *string `toml:"cert_dir"`
 	EnrollTokenFile *string `toml:"enroll_token_file"`
+	Terminal        struct {
+		Host *bool `toml:"host"`
+	} `toml:"terminal"`
 }
 
 var logLevels = map[string]slog.Level{
@@ -75,6 +80,7 @@ func load(lookup func(string) (string, bool), defaultPath string) (Config, error
 		LogLevel:        DefaultLogLevel,
 		CertDir:         DefaultCertDir,
 		EnrollTokenFile: DefaultEnrollTokenFile,
+		HostTerminal:    true,
 	}
 	coreURLSet := false
 
@@ -111,6 +117,13 @@ func load(lookup func(string) (string, bool), defaultPath string) (Config, error
 	}
 	if value, ok := lookup("TALAIA_AGENT_ENROLL_TOKEN_FILE"); ok {
 		cfg.EnrollTokenFile = value
+	}
+	if value, ok := lookup("TALAIA_AGENT_TERMINAL_HOST"); ok {
+		host, err := parseBool("terminal host", value)
+		if err != nil {
+			return Config{}, err
+		}
+		cfg.HostTerminal = host
 	}
 
 	if err := cfg.validate(coreURLSet); err != nil {
@@ -154,18 +167,25 @@ func applyFile(cfg *Config, path string, explicit bool, coreURLSet *bool) error 
 	if file.EnrollTokenFile != nil {
 		cfg.EnrollTokenFile = *file.EnrollTokenFile
 	}
+	if file.Terminal.Host != nil {
+		cfg.HostTerminal = *file.Terminal.Host
+	}
 	return nil
 }
 
 // parseInsecureDev accepts 1/true and 0/false.
 func parseInsecureDev(value string) (bool, error) {
+	return parseBool("insecure_dev", value)
+}
+
+func parseBool(name, value string) (bool, error) {
 	switch strings.ToLower(strings.TrimSpace(value)) {
 	case "1", "true":
 		return true, nil
 	case "0", "false":
 		return false, nil
 	default:
-		return false, fmt.Errorf("invalid insecure_dev value %q (expected 1 or true)", value)
+		return false, fmt.Errorf("invalid %s value %q (expected 1 or true)", name, value)
 	}
 }
 

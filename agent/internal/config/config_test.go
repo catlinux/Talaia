@@ -14,6 +14,8 @@ func lookupFrom(env map[string]string) func(string) (string, bool) {
 	}
 }
 
+func stringPtr(value string) *string { return &value }
+
 func TestLoad(t *testing.T) {
 	const fingerprint = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
 
@@ -42,6 +44,7 @@ ca_fingerprint = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcd
 				CertDir:         DefaultCertDir,
 				EnrollTokenFile: DefaultEnrollTokenFile,
 				InsecureDev:     true,
+				HostTerminal:    true,
 			},
 		},
 		{
@@ -53,6 +56,22 @@ ca_fingerprint = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcd
 				CAFingerprint:   fingerprint,
 				CertDir:         DefaultCertDir,
 				EnrollTokenFile: DefaultEnrollTokenFile,
+				HostTerminal:    true,
+			},
+		},
+		{
+			name: "file disables the host terminal",
+			file: stringPtr(`
+core_url = "https://core.example.com"
+[terminal]
+host = false
+`),
+			want: Config{
+				CoreURL:         "https://core.example.com",
+				LogLevel:        DefaultLogLevel,
+				CertDir:         DefaultCertDir,
+				EnrollTokenFile: DefaultEnrollTokenFile,
+				HostTerminal:    false,
 			},
 		},
 		{
@@ -71,7 +90,27 @@ ca_fingerprint = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcd
 				CAFingerprint:   fingerprint,
 				CertDir:         "/tmp/certs",
 				EnrollTokenFile: "/tmp/enroll.token",
+				HostTerminal:    true,
 			},
+		},
+		{
+			name: "environment disables the host terminal",
+			env: map[string]string{
+				"TALAIA_CORE_URL":            "https://core.example.com",
+				"TALAIA_AGENT_TERMINAL_HOST": "false",
+			},
+			want: Config{
+				CoreURL:         "https://core.example.com",
+				LogLevel:        DefaultLogLevel,
+				CertDir:         DefaultCertDir,
+				EnrollTokenFile: DefaultEnrollTokenFile,
+				HostTerminal:    false,
+			},
+		},
+		{
+			name:    "invalid terminal host is an error",
+			env:     map[string]string{"TALAIA_CORE_URL": "https://core.example.com", "TALAIA_AGENT_TERMINAL_HOST": "maybe"},
+			wantErr: "invalid terminal host",
 		},
 		{
 			name:     "missing explicit file is an error",

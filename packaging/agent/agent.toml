@@ -10,3 +10,8 @@
 
 # Log level: debug, info, warn or error.
 log_level = "info"
+
+# Allow root shells on the server itself from the panel. Set to false to report
+# host_terminal = false and refuse them.
+[terminal]
+host = true

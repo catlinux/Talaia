@@ -61,3 +61,15 @@ func TestApplyAptSummaryLeavesTheInventoryUnsetWithoutApt(t *testing.T) {
 		t.Errorf("inventory apt = %+v, want nil", inventory.GetApt())
 	}
 }
+
+func TestApplyInventorySetsHostTerminal(t *testing.T) {
+	inventory := &agentv1.Inventory{}
+	applyInventory(inventory, nil, true)
+	if !inventory.GetHostTerminal() {
+		t.Error("host_terminal = false, want true")
+	}
+	applyInventory(inventory, nil, false)
+	if inventory.GetHostTerminal() {
+		t.Error("host_terminal = true, want false")
+	}
+}

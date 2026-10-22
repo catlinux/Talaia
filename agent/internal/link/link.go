@@ -12,6 +12,7 @@ import (
 	"math/rand/v2"
 	"net/http"
 	"net/url"
+	"runtime"
 	"sync/atomic"
 	"time"
 
@@ -58,6 +59,8 @@ type Link struct {
 	aptOps jobs.AptOperations
 	// terminals runs the interactive shells; its sessions end with each stream.
 	terminals *terminal.Manager
+	// hostTerminal reports whether this agent accepts host terminal sessions.
+	hostTerminal bool
 	// stats samples the running containers; nil leaves it out.
 	stats ContainerStatsSource
 
@@ -115,6 +118,11 @@ func newLink(
 	if checker != nil {
 		aptOps = jobs.NewAptManager(jobs.AptManagerOptions{Checker: checker})
 	}
+	hostTerminal := cfg.HostTerminal && runtime.GOOS == "linux"
+	terminals := terminal.New(terminal.NewDockerBackend(), terminal.DefaultLimits())
+	if hostTerminal {
+		terminals = terminals.WithHost(terminal.NewHostBackend(), 2)
+	}
 
 	return &Link{
 		cfg:               cfg,
@@ -124,7 +132,8 @@ func newLink(
 		jobs:              newExecutor(cfg, identity, checker, aptOps),
 		apt:               checker,
 		aptOps:            aptOps,
-		terminals:         terminal.New(terminal.NewDockerBackend(), terminal.DefaultLimits()),
+		terminals:         terminals,
+		hostTerminal:      hostTerminal,
 		HeartbeatInterval: 10 * time.Second,
 		MetricsInterval:   15 * time.Second,
 		InventoryInterval: 60 * time.Second,
@@ -193,7 +202,7 @@ func (l *Link) session(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("collect inventory: %w", err)
 	}
-	applyAptSummary(inventory, l.apt)
+	applyInventory(inventory, l.apt, l.hostTerminal)
 	if err := stream.Send(inventoryMsg(inventory)); err != nil {
 		return fmt.Errorf("send inventory: %w", err)
 	}
@@ -244,7 +253,7 @@ func (l *Link) session(ctx context.Context) error {
 			slog.Warn("collect inventory", "error", err)
 			return nil
 		}
-		applyAptSummary(current, l.apt)
+		applyInventory(current, l.apt, l.hostTerminal)
 		if inventoryUnchanged(current, sentInventory) {
 			return nil
 		}
@@ -376,6 +385,14 @@ func withoutContainerStatus(inventory *agentv1.Inventory) *agentv1.Inventory {
 
 func inventoryMsg(inventory *agentv1.Inventory) *agentv1.AgentMsg {
 	return &agentv1.AgentMsg{Msg: &agentv1.AgentMsg_Inventory{Inventory: inventory}}
+}
+
+// applyInventory copies the optional summaries into an inventory message.
+func applyInventory(inventory *agentv1.Inventory, checker *apt.Checker, hostTerminal bool) {
+	applyAptSummary(inventory, checker)
+	if inventory != nil {
+		inventory.HostTerminal = hostTerminal
+	}
 }
 
 // applyAptSummary copies the last apt snapshot into the inventory message.
