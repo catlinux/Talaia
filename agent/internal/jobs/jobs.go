@@ -6,6 +6,7 @@ package jobs
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"strings"
 	"sync"
@@ -68,6 +69,8 @@ type Executor struct {
 	updates Updater
 	// apt is nil until WithApt sets it.
 	apt AptStatusReader
+	// aptOps is nil until WithAptOperations sets it.
+	aptOps AptOperations
 
 	mu       sync.Mutex
 	finished map[string]*agentv1.JobEvent
@@ -96,6 +99,12 @@ func (e *Executor) WithResources(manager ResourceManager) *Executor {
 	return e
 }
 
+// WithAptOperations lets the executor run apt upgrades and host reboots.
+func (e *Executor) WithAptOperations(manager AptOperations) *Executor {
+	e.aptOps = manager
+	return e
+}
+
 // Handle starts the command carried by msg, if it carries one, and reports
 // whether it did. The job runs in its own goroutine; emit is called from it, so
 // it must be safe for concurrent use.
@@ -105,7 +114,8 @@ func (e *Executor) Handle(ctx context.Context, msg *agentv1.CoreMsg, emit func(*
 	list, remove := msg.GetListResources(), msg.GetRemoveResources()
 	updateCommand := msg.GetAgentUpdate()
 	aptStatus := msg.GetAptStatus()
-	if action == nil && logs == nil && write == nil && stackAction == nil && read == nil && adopt == nil && list == nil && remove == nil && updateCommand == nil && aptStatus == nil {
+	aptUpgrade, hostReboot := msg.GetAptUpgrade(), msg.GetHostReboot()
+	if action == nil && logs == nil && write == nil && stackAction == nil && read == nil && adopt == nil && list == nil && remove == nil && updateCommand == nil && aptStatus == nil && aptUpgrade == nil && hostReboot == nil {
 		return false
 	}
 
@@ -206,6 +216,26 @@ func (e *Executor) Handle(ctx context.Context, msg *agentv1.CoreMsg, emit func(*
 				return "", errors.New("the apt status is too large")
 			}
 			return output, nil
+		})
+	case aptUpgrade != nil:
+		go e.execute(ctx, jobID, "apt upgrade", aptUpgradeTimeout, emit, func(ctx context.Context) (string, error) {
+			if !ValidJobID(jobID) {
+				return "", fmt.Errorf("invalid job id %q", jobID)
+			}
+			if e.aptOps == nil {
+				return "", errNoAptOperations
+			}
+			return e.aptOps.Upgrade(ctx, jobID, aptUpgrade.GetMode(), emit)
+		})
+	case hostReboot != nil:
+		go e.execute(ctx, jobID, "host reboot", hostRebootTimeout, emit, func(ctx context.Context) (string, error) {
+			if !ValidJobID(jobID) {
+				return "", fmt.Errorf("invalid job id %q", jobID)
+			}
+			if e.aptOps == nil {
+				return "", errNoAptOperations
+			}
+			return "", e.aptOps.Reboot(ctx, jobID, hostReboot.GetHostname())
 		})
 	default:
 		go e.execute(ctx, jobID, "stack read", jobTimeout, emit, func(ctx context.Context) (string, error) {

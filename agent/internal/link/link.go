@@ -53,6 +53,9 @@ type Link struct {
 	jobs *jobs.Executor
 	// apt keeps the pending package updates used by the inventory and the job.
 	apt *apt.Checker
+	// aptOps runs apt upgrades and host reboots, and resumes the units left by
+	// an earlier agent process.
+	aptOps jobs.AptOperations
 	// terminals runs the interactive shells; its sessions end with each stream.
 	terminals *terminal.Manager
 	// stats samples the running containers; nil leaves it out.
@@ -108,14 +111,19 @@ func newLink(
 ) *Link {
 	httpClient := &http.Client{Transport: transport}
 	rpcTransport := connecthttp.NewTransport(httpClient, cfg.CoreURL)
+	var aptOps jobs.AptOperations
+	if checker != nil {
+		aptOps = jobs.NewAptManager(jobs.AptManagerOptions{Checker: checker})
+	}
 
 	return &Link{
 		cfg:               cfg,
 		collector:         collector,
 		identity:          identity,
 		client:            agentv1connect.NewAgentHubClient(connect.NewClient(rpcTransport)),
-		jobs:              newExecutor(cfg, identity, checker),
+		jobs:              newExecutor(cfg, identity, checker, aptOps),
 		apt:               checker,
+		aptOps:            aptOps,
 		terminals:         terminal.New(terminal.NewDockerBackend(), terminal.DefaultLimits()),
 		HeartbeatInterval: 10 * time.Second,
 		MetricsInterval:   15 * time.Second,
@@ -203,6 +211,13 @@ func (l *Link) session(ctx context.Context) error {
 		case events <- msg:
 		case <-streamCtx.Done():
 		}
+	}
+
+	// Resume follows apt units that outlived an earlier agent process. It scans
+	// the state directory once; a later session only changes where progress is
+	// emitted.
+	if l.aptOps != nil {
+		l.aptOps.Resume(ctx, emit)
 	}
 
 	received := make(chan error, 1)
@@ -450,12 +465,14 @@ func jitter(backoff time.Duration) time.Duration {
 }
 
 // newExecutor builds the executor of a real agent: container actions, stacks,
-// Docker resources and agent updates, all on the local Docker.
-func newExecutor(cfg config.Config, identity *enroll.Identity, checker *apt.Checker) *jobs.Executor {
+// Docker resources, agent updates, apt and host operations, all on the local
+// Docker.
+func newExecutor(cfg config.Config, identity *enroll.Identity, checker *apt.Checker, aptOps jobs.AptOperations) *jobs.Executor {
 	docker := jobs.NewDockerActions()
 	return jobs.New(docker).
 		WithStacks(stacks.NewDefault().WithProjects(inventory.NewDocker())).
 		WithResources(docker).
 		WithUpdates(update.New(update.Options{CoreURL: cfg.CoreURL, Identity: identity})).
-		WithApt(checker)
+		WithApt(checker).
+		WithAptOperations(aptOps)
 }

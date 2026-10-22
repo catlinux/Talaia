@@ -100,6 +100,38 @@ func TestParseInst(t *testing.T) {
 	}
 }
 
+func TestSecurityPackagesComesFromAFreshSimulation(t *testing.T) {
+	runner := &fakeRunner{handler: func(name string, args []string) ([]byte, error) {
+		if name != "apt-get" {
+			return nil, errors.New("unexpected command")
+		}
+		return []byte(debian12Output), nil
+	}}
+	checker := New(Options{
+		Runner:   runner,
+		Root:     t.TempDir(),
+		AptGet:   "apt-get",
+		LookPath: func(string) (string, error) { return "", errors.New("not used") },
+	})
+
+	packages, err := checker.SecurityPackages(context.Background())
+	if err != nil {
+		t.Fatalf("SecurityPackages: %v", err)
+	}
+	if !reflect.DeepEqual(packages, []string{"libc6"}) {
+		t.Errorf("packages = %v, want [libc6]", packages)
+	}
+	if len(runner.calls) != 1 {
+		t.Fatalf("calls = %v, want one simulation", runner.calls)
+	}
+	args := runner.calls[0].args
+	for _, want := range []string{"-s", "Debug::NoLocking=1", "upgrade", "--with-new-pkgs"} {
+		if !containsArg(args, want) {
+			t.Errorf("args = %v, want %q", args, want)
+		}
+	}
+}
+
 func TestStatusIncludesPackagesHeldAndSummary(t *testing.T) {
 	now := time.Date(2026, 10, 22, 8, 0, 0, 0, time.UTC)
 	root := t.TempDir()

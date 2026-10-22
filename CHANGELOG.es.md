@@ -13,6 +13,12 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+## [0.3.6] - 2026-10-22
+
+### Añadido
+
+- El agente puede actualizar paquetes y reiniciar (todavía sin acceso desde el panel): `AptUpgrade` ejecuta `apt-get` en una unidad transitoria de systemd con un registro, de modo que una actualización sobrevive a un reinicio del agente y este informa del resultado al volver; los modos son *solo seguridad* (paquetes que calcula el propio agente) y *todo* (nunca elimina paquetes, conserva la configuración local); una sola operación de apt a la vez. `HostReboot` comprueba el nombre del servidor y reinicia cinco segundos después de informar del éxito.
+
 ## [0.3.5] - 2026-10-22
 
 ### Añadido
@@ -256,7 +262,8 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
   `.gitattributes` y `.gitignore`.
 - Licencia WNCL-1.0 aplicada: archivo `LICENSE` y sección de créditos en los README.
 
-[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.3.5...HEAD
+[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.3.6...HEAD
+[0.3.6]: https://github.com/catlinux/Talaia/releases/tag/v0.3.6
 [0.3.5]: https://github.com/catlinux/Talaia/releases/tag/v0.3.5
 [0.3.4]: https://github.com/catlinux/Talaia/releases/tag/v0.3.4
 [0.3.3]: https://github.com/catlinux/Talaia/releases/tag/v0.3.3

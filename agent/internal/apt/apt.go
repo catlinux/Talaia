@@ -177,6 +177,18 @@ func (c *Checker) Available() bool {
 	return c.aptGet != ""
 }
 
+// AptGetPath returns the apt-get binary this checker uses, or "" when the host
+// has none.
+func (c *Checker) AptGetPath() string {
+	return c.aptGet
+}
+
+// ValidPackageName reports whether name is a Debian package name the agent is
+// willing to pass to apt-get.
+func ValidPackageName(name string) bool {
+	return packageNameRE.MatchString(name)
+}
+
 // Summary returns a copy of the last summary, or nil until one is computed.
 func (c *Checker) Summary() *Summary {
 	c.mu.RLock()
@@ -221,6 +233,31 @@ func (c *Checker) Refresh(ctx context.Context) error {
 	}
 	_, err := c.collect(ctx, false)
 	return err
+}
+
+// SecurityPackages simulates an upgrade and returns the packages whose
+// candidate comes from a security archive. It is the list the SECURITY upgrade
+// installs: the core never sends package names. The simulation takes no lock.
+func (c *Checker) SecurityPackages(ctx context.Context) ([]string, error) {
+	if !c.Available() {
+		return nil, ErrUnavailable
+	}
+	output, err := c.run(ctx, c.aptGet, "-s", "-o", "Debug::NoLocking=1", "upgrade", "--with-new-pkgs")
+	if err != nil {
+		return nil, fmt.Errorf("simulate the apt upgrade: %w", err)
+	}
+
+	seen := make(map[string]bool)
+	names := []string{}
+	for _, pkg := range parseInst(output) {
+		if !pkg.Security || seen[pkg.Name] || !ValidPackageName(pkg.Name) {
+			continue
+		}
+		seen[pkg.Name] = true
+		names = append(names, pkg.Name)
+	}
+	sort.Strings(names)
+	return names, nil
 }
 
 // StatusJSON runs the full AptStatus query and returns its bounded JSON. With
