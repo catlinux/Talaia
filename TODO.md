@@ -87,7 +87,7 @@ of the current phase and the next one.
 
 - [x] Contract for apt, systemd, journald, reboot and the host terminal
 - [x] apt, read only: pending and security updates, held packages, "reboot required" (agent, core, Updates tab, fleet badges)
-- [ ] apt upgrade (all or security only) that survives an agent restart, and reboot with the server name typed
+- [x] apt upgrade (all or security only) that survives an agent restart, and reboot with the server name typed
 - [ ] systemd: enabled state, start/stop/restart/reload/enable/disable with confirmation, Services tab
 - [ ] journald: filters (unit, priority, boot, time, text) and follow, Logs tab
 - [ ] Host terminal: root shell with a fresh TOTP code, recording, red banner

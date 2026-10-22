@@ -1213,8 +1213,26 @@
   font-weight: 500;
 }
 
-.updates__check {
-  align-self: flex-start;
+.updates__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.updates__reboot-open {
+  padding: 6px 10px;
+  font-size: 0.8125rem;
+}
+
+.updates__notice {
+  margin: 0;
+  padding: 10px 14px;
+  border: 1px solid color-mix(in srgb, var(--warn) 40%, var(--line));
+  border-radius: var(--radius-sm);
+  background: var(--warn-soft);
+  font-size: 0.875rem;
 }
 
 .updates__body {
@@ -1433,13 +1451,111 @@
   font-size: 0.75rem;
 }
 
+/* ---------- Apt upgrade and reboot actions ---------- */
+
+.updates__progress {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--surface-2) 55%, transparent);
+}
+
+.updates__progress--failed {
+  border-color: color-mix(in srgb, var(--crit) 35%, var(--line));
+}
+
+.updates__log {
+  max-height: 320px;
+  margin: 0;
+  padding: 12px 14px;
+  overflow: auto;
+  border: 1px solid color-mix(in srgb, var(--code-key) 18%, transparent);
+  border-radius: 10px;
+  background: var(--code-bg);
+  color: var(--code-ink);
+  font-family: var(--f-mono);
+  font-size: 0.75rem;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.updates__reboot-actions {
+  display: flex;
+  margin-top: 8px;
+}
+
+.updates__warning {
+  margin: 0;
+  padding: 10px 12px;
+  border-left: 3px solid var(--warn);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  background: var(--warn-soft);
+  color: var(--ink);
+  font-size: 0.8125rem;
+}
+
+.updates__dialog-note {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.8125rem;
+}
+
+.updates__dialog-reasons {
+  margin: -4px 0 0;
+  padding-left: 18px;
+  color: var(--ink);
+  font-size: 0.8125rem;
+}
+
+.updates__field {
+  display: grid;
+  gap: 6px;
+}
+
+.updates__field-label {
+  color: var(--muted);
+  font-family: var(--f-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.updates__input {
+  padding: 9px 11px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--bg);
+  color: var(--ink);
+  font: inherit;
+  font-family: var(--f-mono);
+}
+
+.updates__input:focus-visible {
+  border-color: var(--accent);
+  outline-offset: 0;
+}
+
+.updates__hint {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
 @media (max-width: 560px) {
   .updates__body {
     padding: 14px;
   }
 
-  .updates__check {
+  .updates__actions {
     width: 100%;
+  }
+
+  .updates__actions .cbtn {
+    flex: 1 1 auto;
     justify-content: center;
   }
 

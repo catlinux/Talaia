@@ -16,6 +16,7 @@ export const sampleServers: Server[] = [
   {
     id: 'vps-web-01',
     name: 'vps-web-01',
+    hostname: 'vps-web-01',
     os: 'Debian 12',
     location: 'Hetzner FSN1',
     vcpu: 4,
@@ -44,6 +45,7 @@ export const sampleServers: Server[] = [
   {
     id: 'vps-db-01',
     name: 'vps-db-01',
+    hostname: 'vps-db-01',
     os: 'Debian 12',
     location: 'Hetzner FSN1',
     vcpu: 4,
@@ -73,6 +75,7 @@ export const sampleServers: Server[] = [
   {
     id: 'vps-mail',
     name: 'vps-mail',
+    hostname: 'vps-mail',
     os: 'Debian 13',
     location: 'OVH GRA',
     vcpu: 2,
@@ -95,6 +98,7 @@ export const sampleServers: Server[] = [
   {
     id: 'vps-dev',
     name: 'vps-dev',
+    hostname: 'vps-dev',
     os: 'Ubuntu 24.04',
     location: 'Hetzner HEL1',
     vcpu: 2,
@@ -116,6 +120,7 @@ export const sampleServers: Server[] = [
   {
     id: 'vps-backup',
     name: 'vps-backup',
+    hostname: 'vps-backup',
     os: 'Debian 12',
     location: 'Contabo',
     vcpu: 2,

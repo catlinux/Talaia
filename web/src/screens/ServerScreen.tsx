@@ -60,6 +60,7 @@ interface ServerScreenProps {
   server: {
     id: string
     name: string
+    hostname?: string
     agentUpdateManual?: boolean
     agentUpgradeCommand?: string
   }
@@ -474,7 +475,12 @@ export function ServerScreen({
       ) : null}
 
       {list !== null && list.connected ? (
-        <UpdatesSection aptApi={aptApi} serverId={server.id} pollMs={pollMs} />
+        <UpdatesSection
+          aptApi={aptApi}
+          serverId={server.id}
+          hostname={server.hostname ?? ''}
+          pollMs={pollMs}
+        />
       ) : null}
 
       {confirmingAgentUpdate ? (

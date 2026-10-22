@@ -13,6 +13,12 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+## [0.3.8] - 2026-10-22
+
+### Añadido
+
+- Actualizar y reiniciar desde el panel: la sección **Actualizaciones** tiene los botones **Actualizar seguridad** y **Actualizar todo** (con confirmación previa; nunca se eliminan paquetes, se conserva la configuración local y avisa si Docker se reiniciaría) con el registro de apt en vivo mientras corre, y una acción **Reiniciar** que pide escribir el nombre de host del servidor. En ca, es y en.
+
 ## [0.3.7] - 2026-10-22
 
 ### Añadido
@@ -268,7 +274,8 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
   `.gitattributes` y `.gitignore`.
 - Licencia WNCL-1.0 aplicada: archivo `LICENSE` y sección de créditos en los README.
 
-[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.3.7...HEAD
+[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.3.8...HEAD
+[0.3.8]: https://github.com/catlinux/Talaia/releases/tag/v0.3.8
 [0.3.7]: https://github.com/catlinux/Talaia/releases/tag/v0.3.7
 [0.3.6]: https://github.com/catlinux/Talaia/releases/tag/v0.3.6
 [0.3.5]: https://github.com/catlinux/Talaia/releases/tag/v0.3.5

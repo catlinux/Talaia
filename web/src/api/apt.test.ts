@@ -57,6 +57,79 @@ describe('apt API', () => {
     expect(init.body).toBe(JSON.stringify({ refresh: true }))
   })
 
+  it('queues an upgrade with the chosen mode', async () => {
+    const fetchImpl = vi.fn(() =>
+      Promise.resolve(
+        new Response(JSON.stringify({ job_id: 'job-up' }), {
+          status: 202,
+          headers: { 'Content-Type': 'application/json' },
+        }),
+      ),
+    )
+    const api = createAptApi(fetchImpl as unknown as typeof fetch)
+
+    await expect(api.upgrade('srv-1', 'security')).resolves.toBe('job-up')
+
+    const [path, init] = fetchImpl.mock.calls[0] as unknown as [string, RequestInit]
+    expect(path).toBe('/api/v1/servers/srv-1/apt/upgrade')
+    expect(init.method).toBe('POST')
+    expect(init.body).toBe(JSON.stringify({ mode: 'security', confirm: true }))
+  })
+
+  it('queues an all upgrade', async () => {
+    const fetchImpl = vi.fn(() =>
+      Promise.resolve(
+        new Response(JSON.stringify({ job_id: 'job-all' }), {
+          status: 202,
+          headers: { 'Content-Type': 'application/json' },
+        }),
+      ),
+    )
+    const api = createAptApi(fetchImpl as unknown as typeof fetch)
+
+    await expect(api.upgrade('srv-2', 'all')).resolves.toBe('job-all')
+
+    const [path, init] = fetchImpl.mock.calls[0] as unknown as [string, RequestInit]
+    expect(path).toBe('/api/v1/servers/srv-2/apt/upgrade')
+    expect(init.body).toBe(JSON.stringify({ mode: 'all', confirm: true }))
+  })
+
+  it('queues a reboot with the hostname as confirmation', async () => {
+    const fetchImpl = vi.fn(() =>
+      Promise.resolve(
+        new Response(JSON.stringify({ job_id: 'job-reboot' }), {
+          status: 202,
+          headers: { 'Content-Type': 'application/json' },
+        }),
+      ),
+    )
+    const api = createAptApi(fetchImpl as unknown as typeof fetch)
+
+    await expect(api.reboot('srv-1', 'vps-web-01')).resolves.toBe('job-reboot')
+
+    const [path, init] = fetchImpl.mock.calls[0] as unknown as [string, RequestInit]
+    expect(path).toBe('/api/v1/servers/srv-1/reboot')
+    expect(init.method).toBe('POST')
+    expect(init.body).toBe(JSON.stringify({ confirm: 'vps-web-01' }))
+  })
+
+  it('keeps the operation_in_progress code of a refused write', async () => {
+    const fetchImpl = vi.fn(() =>
+      Promise.resolve(
+        new Response(JSON.stringify({ error: { code: 'operation_in_progress' } }), {
+          status: 409,
+          headers: { 'Content-Type': 'application/json' },
+        }),
+      ),
+    )
+    const api = createAptApi(fetchImpl as unknown as typeof fetch)
+
+    await expect(api.upgrade('srv-1', 'all')).rejects.toMatchObject({
+      code: 'operation_in_progress',
+      status: 409,
+    })
+  })
+
   it('reads and parses the job output', async () => {
     const fetchImpl = vi.fn(() =>
       Promise.resolve(

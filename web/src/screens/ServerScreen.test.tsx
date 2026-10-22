@@ -14,6 +14,8 @@ const server = { id: 'srv-1', name: 'vps-web-01' }
 // pending keeps them focused on the behavior they check.
 const pendingAptApi: AptApi = {
   status: () => new Promise<string>(() => undefined),
+  upgrade: () => Promise.reject(new Error('unexpected apt upgrade')),
+  reboot: () => Promise.reject(new Error('unexpected reboot')),
   job: () => Promise.reject(new Error('unexpected apt job')),
 }
 
@@ -146,6 +148,8 @@ describe('ServerScreen', () => {
   it('renders the updates section of a connected server', async () => {
     const aptApi: AptApi = {
       status: vi.fn(() => Promise.resolve('apt-job')),
+      upgrade: vi.fn(() => Promise.resolve('apt-job')),
+      reboot: vi.fn(() => Promise.resolve('apt-job')),
       job: vi.fn(() =>
         Promise.resolve({
           id: 'apt-job',

@@ -19,5 +19,6 @@
   "targetNotOffered": "The commit offered for the update changed. Reload the page and try again.",
   "updateInProgress": "An update is already queued or running.",
   "hostHelperMissing": "The host update helper is not available, so the panel cannot update itself.",
+  "operationInProgress": "Another apt operation or reboot is already running for this server.",
   "updateCheckPending": "The update check has not finished yet. Try again in a moment."
 }

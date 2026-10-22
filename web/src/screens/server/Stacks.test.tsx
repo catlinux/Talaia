@@ -11,6 +11,8 @@ const server = { id: 'srv-1', name: 'vps-web-01' }
 
 const pendingAptApi: AptApi = {
   status: () => new Promise<string>(() => undefined),
+  upgrade: () => Promise.reject(new Error('unexpected apt upgrade')),
+  reboot: () => Promise.reject(new Error('unexpected reboot')),
   job: () => Promise.reject(new Error('unexpected apt job')),
 }
 

@@ -139,6 +139,7 @@ function toServer(server: apiServer, latestVersion: string, upgradeCommand: stri
   return {
     id: server.id,
     name: server.name,
+    hostname: live?.hostname ?? '',
     // The name of the system is only known while the agent is connected.
     os: live ? `${live.os_name} ${live.os_version}`.trim() : '',
     // Locations arrive with a later task: the card hides the field while empty.

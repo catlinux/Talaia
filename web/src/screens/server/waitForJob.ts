@@ -18,8 +18,9 @@ export class TimedOut extends Error {
 
 /**
  * waitForJob asks for the job every pollMs until it finishes and returns it.
- * It stops quietly (returns null) when alive() turns false, for example when the
- * screen was closed, and throws TimedOut after timeoutMs (giveUpAfter by default).
+ * onProgress receives every poll, including the last one. It stops quietly
+ * (returns null) when alive() turns false, for example when the screen was
+ * closed, and throws TimedOut after timeoutMs (giveUpAfter by default).
  */
 export async function waitForJob(
   api: JobReader,
@@ -27,6 +28,7 @@ export async function waitForJob(
   pollMs: number,
   alive: () => boolean,
   timeoutMs = giveUpAfter,
+  onProgress?: (job: Job) => void,
 ): Promise<Job | null> {
   const deadline = Date.now() + timeoutMs
   for (;;) {
@@ -35,6 +37,7 @@ export async function waitForJob(
       return null
     }
     const job = await api.job(jobId)
+    onProgress?.(job)
     if (job.state === 'succeeded' || job.state === 'failed') {
       return job
     }

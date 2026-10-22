@@ -18,6 +18,12 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.3.8] - 2026-10-22
+
+### Added
+
+- Update and reboot from the panel: the **Updates** section has **Update security** and **Update all** buttons (confirmation first; packages are never removed, local configuration is kept, a warning appears when Docker would restart) with the live apt log while it runs, and a **Reboot** action that needs the server hostname typed. In ca, es and en.
+
 ## [0.3.7] - 2026-10-22
 
 ### Added
@@ -268,7 +274,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.3.7...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.3.8...HEAD
+[0.3.8]: https://github.com/catlinux/Talaia/releases/tag/v0.3.8
 [0.3.7]: https://github.com/catlinux/Talaia/releases/tag/v0.3.7
 [0.3.6]: https://github.com/catlinux/Talaia/releases/tag/v0.3.6
 [0.3.5]: https://github.com/catlinux/Talaia/releases/tag/v0.3.5

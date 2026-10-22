@@ -96,6 +96,7 @@ describe('api fleet client', () => {
     expect(servers[0]).toEqual({
       id: '11111111-1111-1111-1111-111111111111',
       name: 'vps-web-01',
+      hostname: 'vps-web-01',
       os: 'Debian GNU/Linux 13',
       location: '',
       vcpu: 4,

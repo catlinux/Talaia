@@ -3,12 +3,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { AptApi, AptPackage } from '../../api/apt'
 import type { Job } from '../../api/containers'
+import { ApiError } from '../../api/http'
 import i18n from '../../i18n'
 import { UpdatesSection } from './UpdatesSection'
 
 const serverId = 'srv-1'
 
-function jestJob(output: string, extra: Partial<Job> = {}): Job {
+function jobFor(output: string, extra: Partial<Job> = {}): Job {
   return { id: 'apt-job', state: 'succeeded', message: '', output, ...extra }
 }
 
@@ -48,12 +49,22 @@ const security: AptPackage = {
   security: true,
 }
 
+const docker: AptPackage = {
+  name: 'docker-ce',
+  current: '5:27.0.0-1',
+  candidate: '5:27.0.1-1',
+  origin: 'Docker:13/stable',
+  security: false,
+}
+
 /** fakeApi answers the initial and the refresh jobs by id. */
 function fakeApi(initial: Job, refreshed?: Job) {
   const api = {
     status: vi.fn((_serverId: string, refresh = false) =>
       Promise.resolve(refresh ? 'refresh' : 'initial'),
     ),
+    upgrade: vi.fn(() => Promise.resolve('upgrade')),
+    reboot: vi.fn(() => Promise.resolve('reboot')),
     job: vi.fn((id: string) => {
       if (id === 'refresh' && refreshed) return Promise.resolve(refreshed)
       return Promise.resolve(initial)
@@ -62,8 +73,8 @@ function fakeApi(initial: Job, refreshed?: Job) {
   return api satisfies AptApi
 }
 
-function renderSection(api: AptApi) {
-  render(<UpdatesSection aptApi={api} serverId={serverId} pollMs={1} />)
+function renderSection(api: AptApi, hostname = 'vps-web-01') {
+  render(<UpdatesSection aptApi={api} serverId={serverId} hostname={hostname} pollMs={1} />)
 }
 
 describe('apt updates section', () => {
@@ -78,6 +89,8 @@ describe('apt updates section', () => {
   it('shows a loading state while the agent answers', () => {
     const api: AptApi = {
       status: () => new Promise<string>(() => undefined),
+      upgrade: () => Promise.reject(new Error('unexpected apt upgrade')),
+      reboot: () => Promise.reject(new Error('unexpected reboot')),
       job: () => Promise.reject(new Error('unexpected job')),
     }
     renderSection(api)
@@ -87,7 +100,7 @@ describe('apt updates section', () => {
 
   it('lists security packages first and shows times, held packages and reboot reasons', async () => {
     const api = fakeApi(
-      jestJob(
+      jobFor(
         aptOutput([normal, security], {
           held: ['linux-image-amd64'],
           rebootRequired: true,
@@ -120,16 +133,20 @@ describe('apt updates section', () => {
   })
 
   it('shows the empty state when everything is up to date', async () => {
-    const api = fakeApi(jestJob(aptOutput([])))
+    const api = fakeApi(jobFor(aptOutput([])))
     renderSection(api)
 
     expect(await screen.findByText('Everything is up to date.')).toBeTruthy()
     expect(screen.getByText('0 updates, 0 security')).toBeTruthy()
+    expect(screen.queryByRole('button', { name: /Update security/ })).toBeNull()
+    expect(screen.queryByRole('button', { name: /Update all/ })).toBeNull()
+    expect(screen.getByRole('button', { name: 'Reboot' })).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'Reboot now' })).toBeNull()
   })
 
   it('shows the message of a failed job', async () => {
     const api = fakeApi(
-      jestJob('', {
+      jobFor('', {
         state: 'failed',
         message: 'apt: another apt process holds the lock',
       }),
@@ -150,8 +167,10 @@ describe('apt updates section', () => {
       status: vi.fn((_serverId: string, refresh = false) =>
         Promise.resolve(refresh ? 'refresh' : 'initial'),
       ),
+      upgrade: () => Promise.reject(new Error('unexpected apt upgrade')),
+      reboot: () => Promise.reject(new Error('unexpected reboot')),
       job: vi.fn((id: string) =>
-        id === 'refresh' ? refreshJob : Promise.resolve(jestJob(aptOutput([security]))),
+        id === 'refresh' ? refreshJob : Promise.resolve(jobFor(aptOutput([security]))),
       ),
     }
     renderSection(api)
@@ -164,12 +183,188 @@ describe('apt updates section', () => {
     expect((checking as HTMLButtonElement).disabled).toBe(true)
     expect(screen.getAllByText('Checking for updates…').length).toBeGreaterThan(1)
 
-    finishRefresh(jestJob(aptOutput([normal, security])))
+    finishRefresh(jobFor(aptOutput([normal, security])))
     expect(await screen.findByText('2 updates, 1 security')).toBeTruthy()
     await waitFor(() =>
       expect(
         (screen.getByRole('button', { name: 'Check now' }) as HTMLButtonElement).disabled,
       ).toBe(false),
+    )
+  })
+
+  it('asks before upgrading security and shows the live log until the list reloads', async () => {
+    const initialJob = jobFor(aptOutput([normal, security]))
+    let pendingCalls = 0
+    let resolveRunning!: (job: Job) => void
+    let resolveFinal!: (job: Job) => void
+    const api: AptApi = {
+      status: vi.fn(() => Promise.resolve('initial')),
+      upgrade: vi.fn(() => Promise.resolve('upgrade-job')),
+      reboot: () => Promise.reject(new Error('unexpected reboot')),
+      job: vi.fn((id: string) => {
+        if (id === 'initial') return Promise.resolve(initialJob)
+        if (id !== 'upgrade-job') return Promise.reject(new Error('unexpected job'))
+        pendingCalls += 1
+        if (pendingCalls === 1) {
+          return new Promise<Job>((resolve) => {
+            resolveRunning = resolve
+          })
+        }
+        return new Promise<Job>((resolve) => {
+          resolveFinal = resolve
+        })
+      }),
+    }
+    renderSection(api)
+
+    expect(await screen.findByText('2 updates, 1 security')).toBeTruthy()
+    const updateSecurity = screen.getByRole('button', { name: 'Update security (1)' })
+    fireEvent.click(updateSecurity)
+    expect(screen.getByRole('dialog')).toBeTruthy()
+    expect(screen.getByText('Update the security packages?')).toBeTruthy()
+    expect(api.upgrade).not.toHaveBeenCalled()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+    expect(screen.queryByRole('dialog')).toBeNull()
+    expect(api.upgrade).not.toHaveBeenCalled()
+
+    fireEvent.click(updateSecurity)
+    fireEvent.click(screen.getByRole('button', { name: 'Start the upgrade' }))
+    await waitFor(() => expect(api.upgrade).toHaveBeenCalledWith(serverId, 'security'))
+    await waitFor(() => expect(api.job).toHaveBeenCalledWith('upgrade-job'))
+
+    resolveRunning({
+      id: 'upgrade-job',
+      state: 'running',
+      message: '',
+      output: 'Reading package lists...\n',
+    })
+    expect(await screen.findByText(/Reading package lists/)).toBeTruthy()
+    expect((screen.getByRole('button', { name: 'Check now' }) as HTMLButtonElement).disabled).toBe(
+      true,
+    )
+    expect(
+      (screen.getByRole('button', { name: 'Update security (1)' }) as HTMLButtonElement).disabled,
+    ).toBe(true)
+    expect((screen.getByRole('button', { name: 'Reboot' }) as HTMLButtonElement).disabled).toBe(
+      true,
+    )
+
+    resolveFinal({
+      id: 'upgrade-job',
+      state: 'succeeded',
+      message: '',
+      output: 'Reading package lists...\nDone\n',
+    })
+    expect(await screen.findByText('The upgrade finished.')).toBeTruthy()
+    expect(screen.getByRole('log').textContent).toContain('Done')
+    await waitFor(() => expect(api.status).toHaveBeenCalledTimes(2))
+    await waitFor(() =>
+      expect(
+        (screen.getByRole('button', { name: 'Update security (1)' }) as HTMLButtonElement).disabled,
+      ).toBe(false),
+    )
+  })
+
+  it('warns about Docker and held packages in the all dialog', async () => {
+    const api = fakeApi(jobFor(aptOutput([security, docker], { held: ['linux-image-amd64'] })))
+    renderSection(api)
+
+    expect(await screen.findByText('2 updates, 1 security')).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Update all (2)' }))
+
+    expect(screen.getByText('Update all packages?')).toBeTruthy()
+    expect(
+      screen.getByText(/Docker will restart and so will your containers: docker-ce/),
+    ).toBeTruthy()
+    expect(screen.getByText('1 held package stays at its current version.')).toBeTruthy()
+    expect(api.upgrade).not.toHaveBeenCalled()
+  })
+
+  it('shows a failed upgrade with its message and log', async () => {
+    const initialJob = jobFor(aptOutput([security]))
+    const api: AptApi = {
+      status: vi.fn(() => Promise.resolve('initial')),
+      upgrade: vi.fn(() => Promise.resolve('upgrade-job')),
+      reboot: () => Promise.reject(new Error('unexpected reboot')),
+      job: vi.fn((id: string) =>
+        id === 'upgrade-job'
+          ? Promise.resolve(
+              jobFor('E: Could not get lock /var/lib/dpkg/lock-frontend\n', {
+                id: 'upgrade-job',
+                state: 'failed',
+                message: 'apt-get exited with status 100',
+              }),
+            )
+          : Promise.resolve(initialJob),
+      ),
+    }
+    renderSection(api)
+
+    expect(await screen.findByText('1 update, 1 security')).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Update security (1)' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Start the upgrade' }))
+
+    expect(
+      await screen.findByText('The upgrade failed: apt-get exited with status 100'),
+    ).toBeTruthy()
+    expect(screen.getByRole('log').textContent).toContain('Could not get lock')
+  })
+
+  it('requires the exact hostname before enabling reboot', async () => {
+    const initialJob = jobFor(
+      aptOutput([security], {
+        rebootRequired: true,
+        rebootReasons: ['A newer kernel is installed.'],
+      }),
+    )
+    const api: AptApi = {
+      status: vi.fn(() => Promise.resolve('initial')),
+      upgrade: () => Promise.reject(new Error('unexpected upgrade')),
+      reboot: vi.fn(() => Promise.resolve('reboot-job')),
+      job: vi.fn((id: string) =>
+        id === 'reboot-job'
+          ? Promise.resolve(jobFor('', { id: 'reboot-job', state: 'succeeded' }))
+          : Promise.resolve(initialJob),
+      ),
+    }
+    renderSection(api)
+
+    expect(await screen.findByText('1 update, 1 security')).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Reboot now' })).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Reboot' }))
+
+    expect(screen.getByText('Reboot the server?')).toBeTruthy()
+    expect(
+      within(screen.getByRole('dialog')).getByText('A newer kernel is installed.'),
+    ).toBeTruthy()
+    const confirm = screen.getByRole('button', { name: 'Reboot the server' }) as HTMLButtonElement
+    expect(confirm.disabled).toBe(true)
+
+    const input = screen.getByLabelText('Type the hostname to confirm')
+    fireEvent.change(input, { target: { value: 'other-server' } })
+    expect(confirm.disabled).toBe(true)
+    expect(api.reboot).not.toHaveBeenCalled()
+
+    fireEvent.change(input, { target: { value: '  VPS-WEB-01 ' } })
+    expect(confirm.disabled).toBe(false)
+    fireEvent.click(confirm)
+
+    await waitFor(() => expect(api.reboot).toHaveBeenCalledWith(serverId, 'vps-web-01'))
+    expect(await screen.findByText('Rebooting… the server will reconnect by itself.')).toBeTruthy()
+  })
+
+  it('shows a readable error when another apt operation is running', async () => {
+    const api = fakeApi(jobFor(aptOutput([security])))
+    api.upgrade.mockRejectedValueOnce(new ApiError('operation_in_progress', 409))
+    renderSection(api)
+
+    expect(await screen.findByText('1 update, 1 security')).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Update security (1)' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Start the upgrade' }))
+
+    expect((await screen.findByRole('alert')).textContent).toBe(
+      'Another apt operation or reboot is already running for this server.',
     )
   })
 })

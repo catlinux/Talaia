@@ -37,6 +37,7 @@ const errorKeys: Record<ApiErrorCode, string> = {
   not_found: 'notFound',
   target_not_offered: 'targetNotOffered',
   update_in_progress: 'updateInProgress',
+  operation_in_progress: 'operationInProgress',
   host_helper_missing: 'hostHelperMissing',
   update_check_pending: 'updateCheckPending',
   internal: 'generic',

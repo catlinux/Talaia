@@ -19,5 +19,6 @@
   "targetNotOffered": "El commit ofert per a l'actualització ha canviat. Recarrega la pàgina i torna-ho a provar.",
   "updateInProgress": "Ja hi ha una actualització en cua o en marxa.",
   "hostHelperMissing": "L'ajudant d'actualització de l'amfitrió no està disponible, així que el panell no es pot actualitzar sol.",
+  "operationInProgress": "Ja hi ha una altra operació d'apt o un reinici en marxa en aquest servidor.",
   "updateCheckPending": "La comprovació d'actualitzacions encara no ha acabat. Torna-ho a provar d'aquí a un moment."
 }

@@ -11,6 +11,9 @@ export interface AptPackage {
   security: boolean
 }
 
+/** AptUpgradeMode is the kind of upgrade the core can ask for. */
+export type AptUpgradeMode = 'security' | 'all'
+
 /** AptStatus is the output of an apt status job. */
 export interface AptStatus {
   packages: AptPackage[]
@@ -26,6 +29,10 @@ export interface AptStatus {
 export interface AptApi {
   /** status returns the id of the job that answers with AptStatus. */
   status(serverId: string, refresh?: boolean): Promise<string>
+  /** upgrade starts an upgrade; the agent computes the package list. */
+  upgrade(serverId: string, mode: AptUpgradeMode): Promise<string>
+  /** reboot asks the agent to reboot; the hostname is its confirmation. */
+  reboot(serverId: string, hostname: string): Promise<string>
   job(id: string): Promise<Job>
 }
 
@@ -82,6 +89,20 @@ export function createAptApi(fetchImpl?: typeof fetch): AptApi {
       const body = await http.post<{ job_id: string }>(
         `/api/v1/servers/${encodeURIComponent(serverId)}/apt/status`,
         { refresh },
+      )
+      return body.job_id
+    },
+    upgrade: async (serverId, mode) => {
+      const body = await http.post<{ job_id: string }>(
+        `/api/v1/servers/${encodeURIComponent(serverId)}/apt/upgrade`,
+        { mode, confirm: true },
+      )
+      return body.job_id
+    },
+    reboot: async (serverId, hostname) => {
+      const body = await http.post<{ job_id: string }>(
+        `/api/v1/servers/${encodeURIComponent(serverId)}/reboot`,
+        { confirm: hostname },
       )
       return body.job_id
     },
