@@ -7,7 +7,7 @@ Thank you for your interest in Talaia. The project is created and maintained by
 
 ## Before you start
 
-- Read the [README](README.md), the [roadmap](ROADMAP.md) and the [license](LICENSE) (WNCL-1.0).
+- Read the [README](README.md), the [roadmap](ROADMAP.md) and the [license](LICENSE) (WNCL-TP-1.0).
 - Talaia is in an early phase. Work that is not in the current phase of the roadmap will probably not be
   accepted yet. If you have an idea, open an issue first.
 

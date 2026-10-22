@@ -13,6 +13,17 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+## [0.3.1] - 2026-10-22
+
+### Cambiado
+
+- **Licencia cambiada a WNCL-TP-1.0.** Cubre solo el material propio de Talaia y deja claro que los componentes de terceros conservan su licencia. Las condiciones de Talaia no cambian: uso, estudio, modificación y distribución gratis con fines no comerciales; venderlo o el uso comercial requieren permiso por escrito. La pantalla Acerca de y el paquete del agente muestran el nuevo identificador.
+
+### Añadido
+
+- `CREDITS.md` y `CREDITS.es.md` listan cada componente de terceros de los binarios y del panel web (40 módulos Go, 40 paquetes npm y 3 fuentes OFL) con versión, licencia y enlace.
+- `THIRD-PARTY-NOTICES.txt` con el texto de la licencia y el aviso de copyright de cada componente, generado por `scripts/third-party-notices.mjs`. Se instala con el paquete del agente (`/usr/share/doc/talaia-agent/`) y va en la imagen del core (`/usr/share/doc/talaia/`), junto con `LICENSE`, y el CI falla si está desfasado.
+
 ## [0.3.0] - 2026-10-22
 
 ### Cambiado
@@ -221,7 +232,8 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
   `.gitattributes` y `.gitignore`.
 - Licencia WNCL-1.0 aplicada: archivo `LICENSE` y sección de créditos en los README.
 
-[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.3.0...HEAD
+[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.3.1...HEAD
+[0.3.1]: https://github.com/catlinux/Talaia/releases/tag/v0.3.1
 [0.3.0]: https://github.com/catlinux/Talaia/releases/tag/v0.3.0
 [0.2.15]: https://github.com/catlinux/Talaia/releases/tag/v0.2.15
 [0.2.14]: https://github.com/catlinux/Talaia/releases/tag/v0.2.14

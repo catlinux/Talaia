@@ -69,6 +69,7 @@ COPY agent ./agent
 COPY VERSION ./VERSION
 COPY scripts/build-deb.sh ./scripts/build-deb.sh
 COPY packaging/agent ./packaging/agent
+COPY LICENSE THIRD-PARTY-NOTICES.txt ./
 
 ARG VERSION=""
 RUN version="${VERSION:-$(cat VERSION)}" && mkdir -p /out && \
@@ -86,6 +87,8 @@ COPY --from=web /build/web/dist /usr/share/talaia/web
 # install.sh and the agent packages, served at /install.sh and /agent/*.deb.
 COPY --from=agentpkg /out /usr/share/talaia/dist
 COPY packaging/install.sh /usr/share/talaia/dist/install.sh
+# The binary and the panel bundle third-party code whose licenses require their notices.
+COPY LICENSE THIRD-PARTY-NOTICES.txt /usr/share/doc/talaia/
 
 # The nonroot user (uid 65532) owns the data volume; compose prepares it.
 USER nonroot

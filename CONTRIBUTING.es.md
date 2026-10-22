@@ -7,7 +7,7 @@ que tiene la decisión final sobre cada cambio.
 
 ## Antes de empezar
 
-- Lee el [README](README.es.md), la [hoja de ruta](ROADMAP.es.md) y la [licencia](LICENSE) (WNCL-1.0).
+- Lee el [README](README.es.md), la [hoja de ruta](ROADMAP.es.md) y la [licencia](LICENSE) (WNCL-TP-1.0).
 - Talaia está en una fase temprana. Es probable que todavía no se acepte trabajo que no forme parte de la
   fase actual de la hoja de ruta. Si tienes una idea, abre primero una incidencia.
 

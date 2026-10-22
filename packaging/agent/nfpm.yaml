@@ -9,9 +9,19 @@ maintainer: CatLinux <marc.catlinux@gmail.com>
 description: Talaia agent; manages one Debian server for the Talaia control panel.
 homepage: https://github.com/catlinux/Talaia
 section: admin
-license: WNCL-1.0
+license: WNCL-TP-1.0
 
 contents:
+  - src: ../../LICENSE
+    dst: /usr/share/doc/talaia-agent/LICENSE
+    file_info:
+      mode: 0644
+
+  - src: ../../THIRD-PARTY-NOTICES.txt
+    dst: /usr/share/doc/talaia-agent/THIRD-PARTY-NOTICES.txt
+    file_info:
+      mode: 0644
+
   - src: ../../dist/talaia-agent
     dst: /usr/bin/talaia-agent
     file_info:

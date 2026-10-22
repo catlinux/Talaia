@@ -28,8 +28,10 @@ TypeScript), `cli/` (`talaiactl`), `proto/` (shared contract). Details:
   If you are unsure of a Catalan or Spanish translation, write your best version and flag it in the
   report. See [docs/en/i18n.md](docs/en/i18n.md).
 - **Docs:** if you change documentation, change both the English and Spanish versions.
-- **License (WNCL-1.0):** never write, edit or remove `LICENSE`, license headers, copyright notices or
+- **License (WNCL-TP-1.0):** never write, edit or remove `LICENSE`, license headers, copyright notices or
   the in-app attribution "Talaia — created by CatLinux". Headers are added by the maintainer's script.
+  After adding, removing or upgrading a dependency, run `node scripts/third-party-notices.mjs` and update
+  `CREDITS.md` and `CREDITS.es.md` (CI fails if `THIRD-PARTY-NOTICES.txt` is out of date).
 - **Tests:** new logic comes with tests. Run the tests of the component you touched before reporting.
 - **Line endings:** LF only. Shell scripts start with `#!/usr/bin/env bash`.
 - **No secrets:** no real tokens, keys, IPs or hostnames. Use `example.com` and `192.0.2.x`.

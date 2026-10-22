@@ -110,6 +110,13 @@ jobs:
         run: pnpm format
       - name: Test
         run: pnpm test
+      - name: Set up Go
+        uses: actions/setup-go@v7.0.0
+        with:
+          go-version-file: core/go.mod
+          cache-dependency-path: core/go.sum
+      - name: Check that the third-party notices are up to date
+        run: node ../scripts/third-party-notices.mjs --check
 
   i18n:
     name: i18n
@@ -220,6 +227,7 @@ jobs:
           for arch in amd64 arm64; do
             curl -fs --cacert "$RUNNER_TEMP/ca.pem" -o "$RUNNER_TEMP/agent_$arch.deb" "$url/agent/talaia-agent_$arch.deb"
             dpkg-deb --info "$RUNNER_TEMP/agent_$arch.deb" | grep -q "Architecture: $arch"
+            dpkg-deb --contents "$RUNNER_TEMP/agent_$arch.deb" | grep -q '/usr/share/doc/talaia-agent/THIRD-PARTY-NOTICES.txt'
           done
       - name: token create prints the install command
         working-directory: packaging/core

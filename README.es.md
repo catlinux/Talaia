@@ -16,7 +16,7 @@
 <p align="center">
   <img alt="Versión" src="https://img.shields.io/badge/versi%C3%B3n-0.0.1-0B7285">
   <img alt="Estado" src="https://img.shields.io/badge/estado-fase%20de%20dise%C3%B1o-B86E00">
-  <img alt="Licencia" src="https://img.shields.io/badge/licencia-WNCL--1.0-56666F">
+  <img alt="Licencia" src="https://img.shields.io/badge/licencia-WNCL--TP--1.0-56666F">
   <img alt="Idiomas" src="https://img.shields.io/badge/i18n-ca%20%C2%B7%20es%20%C2%B7%20en-0B7285">
 </p>
 
@@ -323,10 +323,20 @@ No informes de vulnerabilidades en incidencias públicas. Consulta [SECURITY.es.
 **Talaia** está desarrollado y mantenido por **CatLinux**.
 Copyright (C) 2026 CatLinux.
 
-Licencia [WNCL-1.0](LICENSE): puedes usarlo, estudiarlo, modificarlo y compartirlo gratis con fines no comerciales. Venderlo o cualquier uso comercial requiere permiso por escrito.
+Licencia [WNCL-TP-1.0](LICENSE): puedes usarlo, estudiarlo, modificarlo y compartirlo gratis con fines no comerciales. Venderlo o cualquier uso comercial requiere permiso por escrito. Solo cubre el material propio; los componentes de terceros conservan su licencia.
 
 Las copias y los forks deben conservar esta atribución y enlazar a https://github.com/catlinux/Talaia.
 
 ### Material de terceros
 
-Este proyecto no contiene material de terceros.
+| Componente | Autor | Licencia | Enlace |
+| --- | --- | --- | --- |
+| Familjen Grotesk (fuente) | The Familjen Grotesk Project Authors | OFL-1.1 | https://github.com/Familjen-Sthlm/Familjen-Grotesk |
+| IBM Plex Sans (fuente) | IBM Corp. | OFL-1.1 | https://github.com/IBM/plex |
+| JetBrains Mono (fuente) | The JetBrains Mono Project Authors | OFL-1.1 | https://github.com/JetBrains/JetBrainsMono |
+| 40 módulos Go enlazados en los binarios | Sus respectivos autores | MIT, BSD-3-Clause, ISC, Apache-2.0 | [CREDITS.es.md](CREDITS.es.md) |
+| 40 paquetes npm incluidos en el panel web | Sus respectivos autores | MIT, ISC | [CREDITS.es.md](CREDITS.es.md) |
+
+El texto de la licencia y el aviso de copyright de cada componente están en [THIRD-PARTY-NOTICES.txt](THIRD-PARTY-NOTICES.txt).
+
+Créditos completos: [CREDITS.es.md](CREDITS.es.md).

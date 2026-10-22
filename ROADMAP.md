@@ -42,7 +42,7 @@ Prepare the ground so that everything else goes fast.
 - Web panel skeleton, design tokens, light/dark theme
 - **i18n set up from the start**: i18next in the web panel, go-i18n in Go, `ca`/`es`/`en` locale files
   and a CI check that fails if a key is missing in any language
-- Maintainer's WNCL-1.0 license script integrated in CI
+- Maintainer's WNCL-TP-1.0 license script integrated in CI
 - Two disposable test VPS (Debian 12 and Debian 13)
 - Open decisions closed: PostgreSQL + TimescaleDB, React, Go 1.26, Node.js 24 LTS + pnpm
 

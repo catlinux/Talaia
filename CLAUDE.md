@@ -36,7 +36,8 @@ anything:
    require explicit approval from the maintainer **in the current conversation**.
 2. **Authorship.** Commits are authored as `CatLinux`. Do not change `user.name`/`user.email`. Never
    remove or alter copyright notices, `LICENSE`, or the in-app attribution "Talaia — created by CatLinux".
-3. **License: WNCL-1.0.** The `LICENSE` file and the license headers are applied **only with the
+3. **License: WNCL-TP-1.0** (own material only; third-party components keep their licenses, listed in
+   `CREDITS.md` and `THIRD-PARTY-NOTICES.txt`). The `LICENSE` file and the license headers are applied **only with the
    maintainer's script**. Never write, edit or translate the license text or headers by hand. When new
    source files are added, remind the maintainer to run the script (or run it if they have told you how).
 4. **Stay inside the current phase.** Do not implement features of later phases. Put new ideas under

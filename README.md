@@ -16,7 +16,7 @@
 <p align="center">
   <img alt="Version" src="https://img.shields.io/badge/version-0.0.1-0B7285">
   <img alt="Status" src="https://img.shields.io/badge/status-design%20phase-B86E00">
-  <img alt="License" src="https://img.shields.io/badge/license-WNCL--1.0-56666F">
+  <img alt="License" src="https://img.shields.io/badge/license-WNCL--TP--1.0-56666F">
   <img alt="Languages" src="https://img.shields.io/badge/i18n-ca%20%C2%B7%20es%20%C2%B7%20en-0B7285">
 </p>
 
@@ -321,10 +321,20 @@ Do not report vulnerabilities in public issues. See [SECURITY.md](SECURITY.md).
 **Talaia** is developed and maintained by **CatLinux**.
 Copyright (C) 2026 CatLinux.
 
-Licensed under [WNCL-1.0](LICENSE): free to use, study, modify and share for non-commercial purposes. Selling or any commercial use requires written permission.
+Licensed under [WNCL-TP-1.0](LICENSE): free to use, study, modify and share for non-commercial purposes. Selling or any commercial use requires written permission. It covers only original material; third-party components keep their own licenses.
 
 Copies and forks must keep this attribution and link to https://github.com/catlinux/Talaia.
 
 ### Third-party material
 
-This project contains no third-party material.
+| Component | Author | License | Link |
+| --- | --- | --- | --- |
+| Familjen Grotesk (font) | The Familjen Grotesk Project Authors | OFL-1.1 | https://github.com/Familjen-Sthlm/Familjen-Grotesk |
+| IBM Plex Sans (font) | IBM Corp. | OFL-1.1 | https://github.com/IBM/plex |
+| JetBrains Mono (font) | The JetBrains Mono Project Authors | OFL-1.1 | https://github.com/JetBrains/JetBrainsMono |
+| 40 Go modules linked into the binaries | Their respective authors | MIT, BSD-3-Clause, ISC, Apache-2.0 | [CREDITS.md](CREDITS.md) |
+| 40 npm packages bundled into the web panel | Their respective authors | MIT, ISC | [CREDITS.md](CREDITS.md) |
+
+The license text and copyright notice of each component is in [THIRD-PARTY-NOTICES.txt](THIRD-PARTY-NOTICES.txt).
+
+Full credits: [CREDITS.md](CREDITS.md).

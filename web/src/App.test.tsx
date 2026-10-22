@@ -66,7 +66,7 @@ describe('App', () => {
 
     expect(currentTitle()).toBe(aboutTitles.en)
     expect(screen.getByText(ATTRIBUTION)).toBeTruthy()
-    expect(screen.getByRole('link', { name: 'WNCL-1.0' }).getAttribute('href')).toBe(
+    expect(screen.getByRole('link', { name: 'WNCL-TP-1.0' }).getAttribute('href')).toBe(
       'https://github.com/catlinux/Talaia',
     )
 

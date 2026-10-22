@@ -6,7 +6,7 @@ import logoMarkup from '../assets/logo.svg?raw'
 export const ATTRIBUTION = 'Talaia — created by CatLinux'
 
 const AUTHOR = 'CatLinux'
-const LICENSE_ID = 'WNCL-1.0'
+const LICENSE_ID = 'WNCL-TP-1.0'
 const LICENSE_URL = 'https://github.com/catlinux/Talaia'
 
 export function About() {
