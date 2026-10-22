@@ -13,6 +13,12 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+## [0.3.12] - 2026-10-22
+
+### Añadido
+
+- El agente lee el registro del sistema (journald) con filtros (servicio, prioridad, rango de fechas, arranque, búsqueda de texto literal) y un cursor para seguir las líneas nuevas (todavía sin acceso desde el panel). El texto de búsqueda siempre se escapa y nada pasa por un shell.
+
 ## [0.3.11] - 2026-10-22
 
 ### Añadido
@@ -292,7 +298,8 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
   `.gitattributes` y `.gitignore`.
 - Licencia WNCL-1.0 aplicada: archivo `LICENSE` y sección de créditos en los README.
 
-[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.3.11...HEAD
+[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.3.12...HEAD
+[0.3.12]: https://github.com/catlinux/Talaia/releases/tag/v0.3.12
 [0.3.11]: https://github.com/catlinux/Talaia/releases/tag/v0.3.11
 [0.3.10]: https://github.com/catlinux/Talaia/releases/tag/v0.3.10
 [0.3.9]: https://github.com/catlinux/Talaia/releases/tag/v0.3.9

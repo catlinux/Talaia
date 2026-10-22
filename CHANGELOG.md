@@ -18,6 +18,12 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.3.12] - 2026-10-22
+
+### Added
+
+- The agent reads the system journal with filters (service, priority, time range, boot, literal text search) and a cursor to follow new lines (not reachable from the panel yet). The search text is always escaped and nothing is run through a shell.
+
 ## [0.3.11] - 2026-10-22
 
 ### Added
@@ -292,7 +298,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.3.11...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.3.12...HEAD
+[0.3.12]: https://github.com/catlinux/Talaia/releases/tag/v0.3.12
 [0.3.11]: https://github.com/catlinux/Talaia/releases/tag/v0.3.11
 [0.3.10]: https://github.com/catlinux/Talaia/releases/tag/v0.3.10
 [0.3.9]: https://github.com/catlinux/Talaia/releases/tag/v0.3.9

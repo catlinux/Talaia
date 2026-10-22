@@ -73,6 +73,8 @@ type Executor struct {
 	aptOps AptOperations
 	// services is nil until WithServices sets it.
 	services ServiceManager
+	// journal is nil until WithJournal sets it.
+	journal JournalReader
 
 	mu       sync.Mutex
 	finished map[string]*agentv1.JobEvent
@@ -113,6 +115,12 @@ func (e *Executor) WithServices(manager ServiceManager) *Executor {
 	return e
 }
 
+// WithJournal lets the executor read the systemd journal.
+func (e *Executor) WithJournal(reader JournalReader) *Executor {
+	e.journal = reader
+	return e
+}
+
 // Handle starts the command carried by msg, if it carries one, and reports
 // whether it did. The job runs in its own goroutine; emit is called from it, so
 // it must be safe for concurrent use.
@@ -124,7 +132,8 @@ func (e *Executor) Handle(ctx context.Context, msg *agentv1.CoreMsg, emit func(*
 	aptStatus := msg.GetAptStatus()
 	aptUpgrade, hostReboot := msg.GetAptUpgrade(), msg.GetHostReboot()
 	serviceAction := msg.GetServiceAction()
-	if action == nil && logs == nil && write == nil && stackAction == nil && read == nil && adopt == nil && list == nil && remove == nil && updateCommand == nil && aptStatus == nil && aptUpgrade == nil && hostReboot == nil && serviceAction == nil {
+	readJournal := msg.GetReadJournal()
+	if action == nil && logs == nil && write == nil && stackAction == nil && read == nil && adopt == nil && list == nil && remove == nil && updateCommand == nil && aptStatus == nil && aptUpgrade == nil && hostReboot == nil && serviceAction == nil && readJournal == nil {
 		return false
 	}
 
@@ -252,6 +261,13 @@ func (e *Executor) Handle(ctx context.Context, msg *agentv1.CoreMsg, emit func(*
 				return "", errNoServices
 			}
 			return e.services.Do(ctx, serviceAction.GetUnit(), serviceAction.GetAction())
+		})
+	case readJournal != nil:
+		go e.execute(ctx, jobID, "read journal", journalTimeout, emit, func(ctx context.Context) (string, error) {
+			if e.journal == nil {
+				return "", errNoJournal
+			}
+			return e.journal.Read(ctx, readJournal)
 		})
 	default:
 		go e.execute(ctx, jobID, "stack read", jobTimeout, emit, func(ctx context.Context) (string, error) {

@@ -465,8 +465,7 @@ func jitter(backoff time.Duration) time.Duration {
 }
 
 // newExecutor builds the executor of a real agent: container actions, stacks,
-// Docker resources, agent updates, apt and host operations, all on the local
-// Docker.
+// Docker resources, agent updates, apt and host operations, and the journal.
 func newExecutor(cfg config.Config, identity *enroll.Identity, checker *apt.Checker, aptOps jobs.AptOperations) *jobs.Executor {
 	docker := jobs.NewDockerActions()
 	return jobs.New(docker).
@@ -475,5 +474,6 @@ func newExecutor(cfg config.Config, identity *enroll.Identity, checker *apt.Chec
 		WithUpdates(update.New(update.Options{CoreURL: cfg.CoreURL, Identity: identity})).
 		WithApt(checker).
 		WithAptOperations(aptOps).
-		WithServices(jobs.NewServiceManager(nil))
+		WithServices(jobs.NewServiceManager(nil)).
+		WithJournal(jobs.NewJournalReader(nil))
 }
