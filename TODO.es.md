@@ -77,7 +77,7 @@ tareas concretas de la fase actual y de la siguiente.
 
 ## Fase 2 · Lo que queda (ver `.agents/plans/fase2/`)
 
-- [ ] Terminal en contenedor, paso 6 (lo que falta): prueba con un Docker real en el Debian (la documentación está en `docs/es/seguridad.md`)
+- [x] Terminal en contenedor, paso 6 (lo que falta): prueba con un Docker real en el Debian (la documentación está en `docs/es/seguridad.md`)
 - [ ] Terminal en contenedor, paso 7: revisión final de seguridad de todo el diff (Opus)
 - [x] Pantalla de stack (maqueta 3), registros en directo (`-f`) y una nota fija en el editor de stacks: un compose se ejecuta como root en el servidor
 - [ ] Un stack adoptado cuya carpeta ha desaparecido se queda como una entrada rota: detectarlo y ofrecer **Dejar de gestionar** (o limpiar el registro) en el panel; encontrado en la prueba real del 22-10-2026
