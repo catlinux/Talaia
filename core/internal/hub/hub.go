@@ -106,6 +106,8 @@ type AgentInfo struct {
 	RunningContainers int
 	ComposeProjects   int
 	Services          int
+	// ServiceList is the last list of systemd units the agent reported.
+	ServiceList []*agentv1.SystemdUnit
 	// ContainerList is the last list of containers the agent reported.
 	ContainerList []*agentv1.Container
 	// ManagedStacks are the stacks Talaia manages on the server, sorted.
@@ -160,6 +162,7 @@ func (info *AgentInfo) applyInventory(inventory *agentv1.Inventory) {
 	info.RunningContainers = running
 	info.ComposeProjects = len(inventory.GetComposeProjects())
 	info.Services = len(inventory.GetServices())
+	info.ServiceList = inventory.GetServices()
 	info.ContainerList = inventory.GetContainers()
 	info.ManagedStacks = inventory.GetManagedStacks()
 	info.AdoptedStacks = inventory.GetAdoptedStacks()

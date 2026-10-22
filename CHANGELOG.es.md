@@ -13,6 +13,12 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+## [0.3.10] - 2026-10-22
+
+### Añadido
+
+- El core lista los servicios de systemd de un servidor (`GET /api/v1/servers/{id}/services`) y ejecuta `start`, `stop`, `restart`, `reload`, `enable` o `disable` sobre uno (`POST …/services/{unit}/actions`; parar, reiniciar y desactivar exigen `confirm`; solo servicios que el agente informó; el servicio del agente no se puede parar desde el panel). Auditado como `service_<acción>`. Todavía sin acceso desde el panel.
+
 ## [0.3.9] - 2026-10-22
 
 ### Añadido
@@ -280,7 +286,8 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
   `.gitattributes` y `.gitignore`.
 - Licencia WNCL-1.0 aplicada: archivo `LICENSE` y sección de créditos en los README.
 
-[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.3.9...HEAD
+[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.3.10...HEAD
+[0.3.10]: https://github.com/catlinux/Talaia/releases/tag/v0.3.10
 [0.3.9]: https://github.com/catlinux/Talaia/releases/tag/v0.3.9
 [0.3.8]: https://github.com/catlinux/Talaia/releases/tag/v0.3.8
 [0.3.7]: https://github.com/catlinux/Talaia/releases/tag/v0.3.7

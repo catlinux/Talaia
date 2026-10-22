@@ -45,6 +45,8 @@ func jobTimeout(kind string) time.Duration {
 		return 60*time.Minute + margin
 	case hostRebootKind:
 		return time.Minute + margin
+	case serviceActionKind:
+		return 90*time.Second + margin
 	default:
 		return 90*time.Second + margin
 	}

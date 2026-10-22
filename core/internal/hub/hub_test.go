@@ -540,6 +540,14 @@ func TestServeTracksTheInventoryFacts(t *testing.T) {
 	first.GetInventory().ManagedStacks = []string{"blog", "wiki"}
 	first.GetInventory().AdoptedStacks = []string{"wiki"}
 	first.GetInventory().BrokenStacks = []string{"wiki"}
+	first.GetInventory().Services = []*agentv1.SystemdUnit{{
+		Name:          "docker.service",
+		Description:   "Docker",
+		LoadState:     "loaded",
+		ActiveState:   "active",
+		SubState:      "running",
+		UnitFileState: "enabled",
+	}}
 	checkedAt := time.Date(2026, 10, 22, 9, 0, 0, 0, time.UTC)
 	listsAt := checkedAt.Add(-time.Hour)
 	first.GetInventory().Apt = &agentv1.AptSummary{
@@ -558,6 +566,8 @@ func TestServeTracksTheInventoryFacts(t *testing.T) {
 		info.Kernel != "6.12.0-amd64" || info.Arch != "amd64" ||
 		info.CPUCount != 4 || info.MemTotalBytes != 8<<30 ||
 		len(info.AdoptedStacks) != 1 || len(info.BrokenStacks) != 1 || info.BrokenStacks[0] != "wiki" ||
+		info.Services != 1 || len(info.ServiceList) != 1 ||
+		info.ServiceList[0].GetUnitFileState() != "enabled" ||
 		!info.AptKnown || info.AptUpgradable != 3 || info.AptSecurity != 1 || !info.RebootRequired ||
 		!info.AptCheckedAt.Equal(checkedAt) || !info.AptListsUpdatedAt.Equal(listsAt) || !info.HostTerminal {
 		t.Fatalf("inventory facts = %+v, want the first inventory", info)
