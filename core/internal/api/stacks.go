@@ -6,11 +6,13 @@ import (
 	"net/http"
 	"regexp"
 	"slices"
+	"sort"
 	"strings"
 
 	"github.com/go-chi/chi/v5"
 
 	"github.com/catlinux/Talaia/core/internal/hub"
+	"github.com/catlinux/Talaia/core/internal/rbac"
 	agentv1 "github.com/catlinux/Talaia/proto/gen/go"
 )
 
@@ -69,15 +71,154 @@ func NewStacksHandler(deps ContainerDeps) http.Handler {
 			Broken:    []string{},
 			Adoptable: []string{},
 		}
+		effective, hasEffective := effectiveFromRequest(r)
+		if !hasEffective {
+			w.Header().Set("Cache-Control", "no-store")
+			writeJSON(w, http.StatusOK, response)
+			return
+		}
+		base, err := targetFromRequest(r, targetServer)
+		if err != nil {
+			internal(w, "build stack list target", err)
+			return
+		}
 		if ok {
-			response.Stacks = append(response.Stacks, agent.ManagedStacks...)
-			response.Adopted = append(response.Adopted, agent.AdoptedStacks...)
-			response.Broken = append(response.Broken, agent.BrokenStacks...)
-			response.Adoptable = append(response.Adoptable, adoptableProjects(agent)...)
+			for _, name := range agent.ManagedStacks {
+				if !stackVisible(effective, base, name) {
+					continue
+				}
+				response.Stacks = append(response.Stacks, name)
+			}
+			for _, name := range agent.AdoptedStacks {
+				if !stackVisible(effective, base, name) {
+					continue
+				}
+				response.Adopted = append(response.Adopted, name)
+			}
+			for _, name := range agent.BrokenStacks {
+				if !stackVisible(effective, base, name) {
+					continue
+				}
+				response.Broken = append(response.Broken, name)
+			}
+			for _, name := range adoptableProjects(agent) {
+				if !stackVisible(effective, base, name) {
+					continue
+				}
+				response.Adoptable = append(response.Adoptable, name)
+			}
 		}
 		w.Header().Set("Cache-Control", "no-store")
 		writeJSON(w, http.StatusOK, response)
 	})
+}
+
+func stackVisible(effective rbac.Effective, base rbac.Target, name string) bool {
+	base.Stack = name
+	return effective.Can(rbac.PermStackView, base)
+}
+
+// AllStack is one stack in GET /api/v1/stacks.
+type AllStack struct {
+	ServerID   string `json:"server_id"`
+	ServerName string `json:"server_name"`
+	Name       string `json:"name"`
+	// State is "managed", "adopted" or "broken".
+	State string `json:"state"`
+}
+
+type allStacksResponse struct {
+	Stacks []AllStack `json:"stacks"`
+}
+
+// NewAllStacksHandler returns GET /api/v1/stacks. It lists the stacks of every
+// connected server the caller can see. The handler filters with the effective
+// permissions resolved by requireRoute.
+func NewAllStacksHandler(deps ContainerDeps) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		effective, hasEffective := effectiveFromRequest(r)
+		response := allStacksResponse{Stacks: []AllStack{}}
+		if !hasEffective {
+			writeJSON(w, http.StatusOK, response)
+			return
+		}
+
+		names := map[string]string{}
+		groups := map[string]string{}
+		if deps.Servers != nil {
+			servers, err := deps.Servers.ListServers(r.Context())
+			if err != nil {
+				internal(w, "list servers for stacks", err)
+				return
+			}
+			for _, server := range servers {
+				names[server.ID] = server.Name
+				groups[server.ID] = server.GroupID
+			}
+		}
+
+		seen := map[string]bool{}
+		for _, agent := range connectedAgents(deps.Agents) {
+			serverID := agent.ServerID
+			serverName := names[serverID]
+			if serverID == "" {
+				serverID = devServerPrefix + agent.Hostname
+				serverName = agent.Hostname
+			}
+			if serverName == "" {
+				serverName = agent.Hostname
+			}
+			if !effective.CanSeeServer(serverID, groups[serverID]) {
+				continue
+			}
+			for name, state := range stackStates(agent) {
+				base := rbac.Target{ServerID: serverID, GroupID: groups[serverID], Stack: name}
+				if !effective.Can(rbac.PermStackView, base) {
+					continue
+				}
+				key := serverID + "\x00" + name
+				if seen[key] {
+					continue
+				}
+				seen[key] = true
+				response.Stacks = append(response.Stacks, AllStack{
+					ServerID: serverID, ServerName: serverName, Name: name, State: state,
+				})
+			}
+		}
+
+		sort.Slice(response.Stacks, func(i, j int) bool {
+			if response.Stacks[i].ServerName != response.Stacks[j].ServerName {
+				return response.Stacks[i].ServerName < response.Stacks[j].ServerName
+			}
+			if response.Stacks[i].ServerID != response.Stacks[j].ServerID {
+				return response.Stacks[i].ServerID < response.Stacks[j].ServerID
+			}
+			return response.Stacks[i].Name < response.Stacks[j].Name
+		})
+		writeJSON(w, http.StatusOK, response)
+	})
+}
+
+func connectedAgents(agents LiveAgents) []hub.AgentInfo {
+	if agents == nil {
+		return nil
+	}
+	return agents.Connected()
+}
+
+func stackStates(agent hub.AgentInfo) map[string]string {
+	states := map[string]string{}
+	for _, name := range agent.ManagedStacks {
+		states[name] = "managed"
+	}
+	for _, name := range agent.AdoptedStacks {
+		states[name] = "adopted"
+	}
+	for _, name := range agent.BrokenStacks {
+		states[name] = "broken"
+	}
+	return states
 }
 
 type stackWriteRequest struct {

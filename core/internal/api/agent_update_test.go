@@ -490,7 +490,7 @@ func TestServersAgentUpdateAvailability(t *testing.T) {
 		Agents:   fakeAgents{agents: agents},
 		Packages: AgentPackages{Version: "1.2.3", DistDir: dir},
 	}
-	full := RequireFull(NewServersHandler(deps))
+	full := RequireFull(withAdminEffective(NewServersHandler(deps)))
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		full.ServeHTTP(w, r.WithContext(withSession(r.Context(), Session{
 			User:  store.User{ID: "user-1", Username: "admin"},
@@ -533,7 +533,7 @@ func TestServersAgentLatestVersionIsEmptyWithoutASemverCore(t *testing.T) {
 		Agents:   fakeAgents{},
 		Packages: AgentPackages{Version: "dev", DistDir: t.TempDir()},
 	}
-	handler := NewServersHandler(deps)
+	handler := withAdminEffective(NewServersHandler(deps))
 	recorder := httptest.NewRecorder()
 	handler.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/api/v1/servers", nil))
 	if recorder.Code != http.StatusOK {

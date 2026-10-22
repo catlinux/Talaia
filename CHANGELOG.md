@@ -18,6 +18,12 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.4.3] - 2026-10-23
+
+### Added
+
+- Lists are filtered by permission (servers, containers, stacks), `GET /api/v1/stacks` lists the visible stacks of all servers, `GET /api/v1/me` returns the user and their effective permissions for the panel, and a job can only be read by its creator or an administrator. The audit log entries carry the actor id and scope. A test with a user who only has one stack checks every route and finds nothing else reachable.
+
 ## [0.4.2] - 2026-10-23
 
 ### Added
@@ -393,7 +399,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.4.2...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.4.3...HEAD
+[0.4.3]: https://github.com/catlinux/Talaia/releases/tag/v0.4.3
 [0.4.2]: https://github.com/catlinux/Talaia/releases/tag/v0.4.2
 [0.4.1]: https://github.com/catlinux/Talaia/releases/tag/v0.4.1
 [0.4.0]: https://github.com/catlinux/Talaia/releases/tag/v0.4.0

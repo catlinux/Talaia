@@ -85,7 +85,7 @@ func fullRouter(t *testing.T) http.Handler {
 		AgentPackages:      AgentPackages{},
 		AgentUpdates:       &AgentUpdateDeps{Agents: agents, Servers: servers},
 		Enrollment:         &EnrollmentTokenDeps{},
-		Containers:         &ContainerDeps{Agents: agents},
+		Containers:         &ContainerDeps{Agents: agents, Servers: servers},
 		Terminal:           NewTerminalDeps(TerminalDeps{}),
 		System:             &SystemDeps{},
 		Authz:              NewAuthorizer(AuthorizerDeps{}),

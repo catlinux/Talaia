@@ -311,3 +311,27 @@ func TestAuditEndpointRequiresAFullSession(t *testing.T) {
 		t.Errorf("full = %d, want 200", recorder.Code)
 	}
 }
+
+func TestAuditHandlerExposesActorIDAndScope(t *testing.T) {
+	reader := &fakeAuditReader{page: []store.AuditEntry{{
+		ID: "entry-1", At: time.Now(), Actor: "admin", ActorID: "user-1",
+		Action: "authz_denied", Result: "denied",
+		Details: map[string]any{"permission": "host.reboot"},
+		Scope:   map[string]any{"type": "server", "server_id": "srv-1"},
+	}}}
+	recorder := getAudit(t, NewAuditHandler(AuditDeps{Entries: reader}), "", "")
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200", recorder.Code)
+	}
+	var body auditResponse
+	if err := json.Unmarshal(recorder.Body.Bytes(), &body); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if len(body.Entries) != 1 {
+		t.Fatalf("entries = %+v", body.Entries)
+	}
+	entry := body.Entries[0]
+	if entry.ActorID != "user-1" || entry.Scope["type"] != "server" || entry.Scope["server_id"] != "srv-1" {
+		t.Fatalf("entry = %+v", entry)
+	}
+}

@@ -2,11 +2,14 @@ package api
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 
 	"github.com/catlinux/Talaia/core/internal/hub"
+	"github.com/catlinux/Talaia/core/internal/rbac"
 	"github.com/catlinux/Talaia/core/internal/store"
 	agentv1 "github.com/catlinux/Talaia/proto/gen/go"
 )
@@ -227,5 +230,72 @@ func TestReadStackReturnsTheFilesInTheJobOutput(t *testing.T) {
 
 	if got := panel.post(t, stackPath(serverID, "ghost", "/read"), map[string]any{}).StatusCode; got != http.StatusNotFound {
 		t.Errorf("unmanaged stack status = %d, want 404", got)
+	}
+}
+
+func TestAllStacksFiltersByVisibleStack(t *testing.T) {
+	servers := stubServers{byID: map[string]store.Server{
+		"a": {ID: "a", Name: "Server A", GroupID: "ga"},
+		"b": {ID: "b", Name: "Server B", GroupID: "gb"},
+	}}
+	agents := fakeAgents{agents: []hub.AgentInfo{
+		func() hub.AgentInfo {
+			agent := agentWithStacks("a", "web", "db")
+			agent.AdoptedStacks = []string{"db"}
+			return agent
+		}(),
+		agentWithStacks("b", "web"),
+	}}
+	session := Session{User: store.User{ID: "u1", Username: "alice"}, Stage: store.StageFull}
+
+	tests := []struct {
+		name      string
+		effective rbac.Effective
+		want      []AllStack
+	}{
+		{
+			name: "admin",
+			effective: rbac.Resolve([]rbac.Binding{{
+				Scope: rbac.Scope{Type: rbac.ScopeOrganization}, Role: rbac.RoleAdmin,
+			}}),
+			want: []AllStack{
+				{ServerID: "a", ServerName: "Server A", Name: "db", State: "adopted"},
+				{ServerID: "a", ServerName: "Server A", Name: "web", State: "managed"},
+				{ServerID: "b", ServerName: "Server B", Name: "web", State: "managed"},
+			},
+		},
+		{
+			name: "stack only",
+			effective: rbac.Resolve([]rbac.Binding{{
+				Scope: rbac.Scope{Type: rbac.ScopeStack, ServerID: "a", Name: "web"},
+				Role:  rbac.RoleAppOperator,
+			}}),
+			want: []AllStack{{ServerID: "a", ServerName: "Server A", Name: "web", State: "managed"}},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			handler := NewAllStacksHandler(ContainerDeps{Agents: agents, Servers: servers})
+			request := httptest.NewRequest(http.MethodGet, "/api/v1/stacks", nil)
+			request = request.WithContext(withEffective(withSession(context.Background(), session), test.effective))
+			recorder := httptest.NewRecorder()
+			handler.ServeHTTP(recorder, request)
+			if recorder.Code != http.StatusOK {
+				t.Fatalf("status = %d, want 200", recorder.Code)
+			}
+			var body allStacksResponse
+			if err := json.NewDecoder(recorder.Body).Decode(&body); err != nil {
+				t.Fatalf("decode stacks: %v", err)
+			}
+			if len(body.Stacks) != len(test.want) {
+				t.Fatalf("stacks = %+v, want %+v", body.Stacks, test.want)
+			}
+			for i := range test.want {
+				if body.Stacks[i] != test.want[i] {
+					t.Errorf("stack %d = %+v, want %+v", i, body.Stacks[i], test.want[i])
+				}
+			}
+		})
 	}
 }

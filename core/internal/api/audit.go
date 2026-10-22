@@ -45,10 +45,12 @@ type auditEntryResponse struct {
 	ID      string         `json:"id"`
 	At      string         `json:"at"`
 	Actor   string         `json:"actor"`
+	ActorID string         `json:"actor_id,omitempty"`
 	Action  string         `json:"action"`
 	IP      string         `json:"ip"`
 	Result  string         `json:"result"`
 	Details map[string]any `json:"details"`
+	Scope   map[string]any `json:"scope,omitempty"`
 }
 
 type auditResponse struct {
@@ -92,10 +94,12 @@ func NewAuditHandler(deps AuditDeps) http.Handler {
 				ID:      entry.ID,
 				At:      entry.At.UTC().Format(time.RFC3339),
 				Actor:   entry.Actor,
+				ActorID: entry.ActorID,
 				Action:  entry.Action,
 				IP:      entry.IP,
 				Result:  entry.Result,
 				Details: entry.Details,
+				Scope:   entry.Scope,
 			})
 		}
 

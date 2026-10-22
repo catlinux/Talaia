@@ -12,6 +12,7 @@ import (
 	"github.com/go-chi/chi/v5"
 
 	"github.com/catlinux/Talaia/core/internal/hub"
+	"github.com/catlinux/Talaia/core/internal/rbac"
 	"github.com/catlinux/Talaia/core/internal/store"
 )
 
@@ -82,7 +83,22 @@ func deleteServer(handler http.Handler, id, body string, token string) *httptest
 // serversHandler mounts the endpoint the way the router does: behind the session
 // middleware and RequireFull.
 func serversHandler(st *store.Store, clock *testClock, deps ServerDeps) http.Handler {
-	return Sessions(SessionDeps{Store: st, Now: clock.Now})(RequireFull(NewServersHandler(deps)))
+	return Sessions(SessionDeps{Store: st, Now: clock.Now})(RequireFull(withAdminEffective(NewServersHandler(deps))))
+}
+
+// adminTestEffective stands in for the authorizer of a handler test that does
+// not mount the whole router.
+func adminTestEffective() rbac.Effective {
+	return rbac.Resolve([]rbac.Binding{{
+		Scope: rbac.Scope{Type: rbac.ScopeOrganization},
+		Role:  rbac.RoleAdmin,
+	}})
+}
+
+func withAdminEffective(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		next.ServeHTTP(w, r.WithContext(withEffective(r.Context(), adminTestEffective())))
+	})
 }
 
 // getServers calls the endpoint with the session cookie, if any.

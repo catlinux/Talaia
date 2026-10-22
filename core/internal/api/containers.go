@@ -86,6 +86,8 @@ type ContainerDeps struct {
 	Dispatcher CommandDispatcher
 	Jobs       JobStore
 	Audit      Auditor
+	// Servers supplies names and group ids for the cross-server stack list.
+	Servers ServerLister
 }
 
 type containerEntry struct {
@@ -127,11 +129,25 @@ func NewContainersHandler(deps ContainerDeps) http.Handler {
 		agent, ok := connectedAgent(deps.Agents, chi.URLParam(r, "serverID"))
 
 		response := containersResponse{Containers: []containerEntry{}}
+		effective, hasEffective := effectiveFromRequest(r)
+		if !hasEffective {
+			w.Header().Set("Cache-Control", "no-store")
+			writeJSON(w, http.StatusOK, response)
+			return
+		}
+		base, err := targetFromRequest(r, targetServer)
+		if err != nil {
+			internal(w, "build container list target", err)
+			return
+		}
 		if ok {
 			response.Connected = true
 			response.DockerAvailable = agent.DockerAvailable
 			fresh := !agent.StatsAt.IsZero() && time.Since(agent.StatsAt) < statsFreshness
 			for _, container := range agent.ContainerList {
+				if !containerVisible(effective, base, container) {
+					continue
+				}
 				entry := containerEntry{
 					ID:             container.GetId(),
 					Name:           container.GetName(),
@@ -157,6 +173,21 @@ func NewContainersHandler(deps ContainerDeps) http.Handler {
 		w.Header().Set("Cache-Control", "no-store")
 		writeJSON(w, http.StatusOK, response)
 	})
+}
+
+func containerVisible(effective rbac.Effective, base rbac.Target, container *agentv1.Container) bool {
+	target := rbac.Target{
+		ServerID:  base.ServerID,
+		GroupID:   base.GroupID,
+		Stack:     container.GetComposeProject(),
+		Container: container.GetName(),
+	}
+	if effective.Can(rbac.PermContainerView, target) {
+		return true
+	}
+	// A container-scoped binding may name the container by its short id.
+	target.Container = container.GetId()
+	return effective.Can(rbac.PermContainerView, target)
 }
 
 type containerActionRequest struct {
@@ -257,6 +288,18 @@ func NewJobHandler(deps ContainerDeps) http.Handler {
 			slog.Error("get job", "job_id", id, "error", err)
 			writeError(w, http.StatusInternalServerError, "internal")
 			return
+		}
+		session, ok := sessionFromContext(r.Context())
+		if !ok {
+			writeError(w, http.StatusNotFound, "not_found")
+			return
+		}
+		if job.CreatedBy != session.User.Username {
+			effective, hasEffective := effectiveFromRequest(r)
+			if !hasEffective || !effective.Can(rbac.PermUsersManage, rbac.Target{}) {
+				writeError(w, http.StatusNotFound, "not_found")
+				return
+			}
 		}
 
 		// A job nobody finished is closed here, so the interface never waits for

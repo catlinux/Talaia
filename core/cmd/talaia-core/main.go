@@ -341,7 +341,7 @@ func serve() error {
 		}
 		agentHub := hub.New(st)
 		agentHub.SetJobEvents(api.JobRecorder{Jobs: st})
-		panel.Containers = &api.ContainerDeps{Agents: agentHub, Dispatcher: agentHub, Jobs: st, Audit: st}
+		panel.Containers = &api.ContainerDeps{Agents: agentHub, Dispatcher: agentHub, Jobs: st, Audit: st, Servers: st}
 
 		// Terminal sessions: the ones an earlier run left open are closed first.
 		if err := terminal.CloseOrphans(context.Background(), st); err != nil {

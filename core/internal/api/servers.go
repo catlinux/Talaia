@@ -117,6 +117,7 @@ type liveApt struct {
 // session middleware and RequireFull, so only a full session reaches it.
 func NewServersHandler(deps ServerDeps) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		effective, _ := effectiveFromRequest(r)
 		servers, err := deps.Servers.ListServers(r.Context())
 		if err != nil {
 			slog.Error("list servers", "error", err)
@@ -134,6 +135,9 @@ func NewServersHandler(deps ServerDeps) http.Handler {
 
 		entries := make([]serverEntry, 0, len(servers)+len(agents))
 		for _, server := range servers {
+			if !effective.CanSeeServer(server.ID, server.GroupID) {
+				continue
+			}
 			entry := serverEntry{
 				ID:      server.ID,
 				Name:    server.Name,
@@ -166,9 +170,13 @@ func NewServersHandler(deps ServerDeps) http.Handler {
 			if agent.ServerID != "" {
 				continue
 			}
+			devID := devServerPrefix + agent.Hostname
+			if !effective.CanSeeServer(devID, "") {
+				continue
+			}
 			_, available := deps.Packages.ForAgent(agent)
 			entries = append(entries, serverEntry{
-				ID:                   devServerPrefix + agent.Hostname,
+				ID:                   devID,
 				Name:                 agent.Hostname,
 				Connected:            true,
 				Live:                 liveOf(agent),

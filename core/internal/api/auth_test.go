@@ -175,12 +175,24 @@ func newTestPanel(t *testing.T, options ...panelOption) *testPanel {
 	terminalConfig.FlushEvery = 20 * time.Millisecond
 	terminals := terminal.New(st, terminalAgent, st, box, terminalConfig)
 	router := NewRouter(RouterDeps{
-		DB:       st,
-		WebDir:   settings.webDir,
-		Security: SecurityConfig{TLS: true, Origins: []string{testOrigin}},
-		Session:  SessionDeps{Store: st, Now: clock.Now, IdleTimeout: settings.idleTimeout},
-		Servers:  st,
-		Agents:   agents,
+		DB:                 st,
+		WebDir:             settings.webDir,
+		Security:           SecurityConfig{TLS: true, Origins: []string{testOrigin}},
+		Session:            SessionDeps{Store: st, Now: clock.Now, IdleTimeout: settings.idleTimeout},
+		Servers:            st,
+		Agents:             agents,
+		ServerRemover:      st,
+		ServerDisconnector: &fakeDisconnect{},
+		ServerAudit:        st,
+		AuditLog:           st,
+		AgentUpdates: &AgentUpdateDeps{
+			Agents:     agents,
+			Dispatcher: dispatcher,
+			Jobs:       st,
+			Audit:      st,
+			Servers:    st,
+		},
+		System: &SystemDeps{},
 		Authz: NewAuthorizer(AuthorizerDeps{
 			Bindings: st,
 			Servers:  st,
@@ -196,6 +208,7 @@ func newTestPanel(t *testing.T, options ...panelOption) *testPanel {
 			Dispatcher: dispatcher,
 			Jobs:       st,
 			Audit:      st,
+			Servers:    st,
 		},
 		Enrollment: &EnrollmentTokenDeps{
 			Tokens:        st,

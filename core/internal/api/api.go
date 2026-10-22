@@ -82,6 +82,10 @@ func NewRouter(deps RouterDeps) http.Handler {
 				Packages:   deps.AgentPackages,
 			}
 			registerRoute(r, deps.Authz, http.MethodGet, "/servers", NewServersHandler(serverDeps))
+			registerRoute(r, deps.Authz, http.MethodGet, "/me", NewMeHandler(MeDeps{
+				Servers: deps.Servers,
+				Agents:  deps.Agents,
+			}))
 			registerRoute(r, deps.Authz, http.MethodGet, "/audit", NewAuditHandler(AuditDeps{Entries: deps.AuditLog}))
 			if deps.AgentUpdates != nil {
 				registerRoute(r, deps.Authz, http.MethodPost, "/servers/{serverID}/agent/update",
@@ -129,6 +133,8 @@ func NewRouter(deps RouterDeps) http.Handler {
 					NewResourcesListHandler(*deps.Containers))
 				registerRoute(r, deps.Authz, http.MethodPost, "/servers/{serverID}/resources/remove",
 					NewResourcesRemoveHandler(*deps.Containers))
+				registerRoute(r, deps.Authz, http.MethodGet, "/stacks",
+					NewAllStacksHandler(*deps.Containers))
 				registerRoute(r, deps.Authz, http.MethodGet, "/servers/{serverID}/stacks",
 					NewStacksHandler(*deps.Containers))
 				registerRoute(r, deps.Authz, http.MethodPut, "/servers/{serverID}/stacks/{name}",

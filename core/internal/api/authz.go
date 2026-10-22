@@ -100,6 +100,8 @@ type routePermission struct {
 // Patterns are relative to /api/v1, matching the registration in api.go.
 var routePerms = map[routeKey]routePermission{
 	{http.MethodGet, "/servers"}:                                             {mode: permAny},
+	{http.MethodGet, "/me"}:                                                  {mode: permAny},
+	{http.MethodGet, "/stacks"}:                                              {mode: permAny},
 	{http.MethodGet, "/audit"}:                                               {mode: permExact, permission: rbac.PermAuditView, target: targetOrganization},
 	{http.MethodPost, "/servers/{serverID}/agent/update"}:                    {mode: permExact, permission: rbac.PermServerAgentUpdate, target: targetServer},
 	{http.MethodPost, "/agents/update-all"}:                                  {mode: permExact, permission: rbac.PermServerAgentUpdate, target: targetOrganization},
@@ -193,6 +195,20 @@ func (a *Authorizer) requireRoute(route routePermission, next http.Handler) http
 		}
 		next.ServeHTTP(w, r)
 	})
+}
+
+// effectiveFromRequest returns the permissions already resolved by requireRoute.
+func effectiveFromRequest(r *http.Request) (rbac.Effective, bool) {
+	state, ok := r.Context().Value(effectiveKey{}).(*effectiveState)
+	if !ok || !state.loaded || state.err != nil {
+		return rbac.Effective{}, false
+	}
+	return state.effective, true
+}
+
+// withEffective is used by handler tests that bypass the router middleware.
+func withEffective(ctx context.Context, effective rbac.Effective) context.Context {
+	return context.WithValue(ctx, effectiveKey{}, &effectiveState{effective: effective, loaded: true})
 }
 
 // authorize is the body-dependent check handlers use after requireRoute.

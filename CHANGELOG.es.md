@@ -13,6 +13,12 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+## [0.4.3] - 2026-10-23
+
+### Añadido
+
+- Las listas se filtran por permisos (servidores, contenedores, stacks), `GET /api/v1/stacks` lista los stacks visibles de todos los servidores, `GET /api/v1/me` devuelve el usuario y sus permisos efectivos para el panel, y un trabajo solo lo puede leer su creador o un administrador. Las entradas de auditoría llevan el id del actor y el ámbito. Una prueba con un usuario que solo tiene un stack recorre todas las rutas y comprueba que no alcanza nada más.
+
 ## [0.4.2] - 2026-10-23
 
 ### Añadido
@@ -393,7 +399,8 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
   `.gitattributes` y `.gitignore`.
 - Licencia WNCL-1.0 aplicada: archivo `LICENSE` y sección de créditos en los README.
 
-[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.4.2...HEAD
+[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.4.3...HEAD
+[0.4.3]: https://github.com/catlinux/Talaia/releases/tag/v0.4.3
 [0.4.2]: https://github.com/catlinux/Talaia/releases/tag/v0.4.2
 [0.4.1]: https://github.com/catlinux/Talaia/releases/tag/v0.4.1
 [0.4.0]: https://github.com/catlinux/Talaia/releases/tag/v0.4.0
