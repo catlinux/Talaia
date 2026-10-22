@@ -1918,7 +1918,7 @@
 .journal__toolbar {
   display: flex;
   flex-wrap: wrap;
-  align-items: flex-end;
+  align-items: flex-start;
   gap: 10px 14px;
   padding: 16px 18px;
   border: 1px solid var(--line);
@@ -1977,7 +1977,8 @@
   flex-wrap: wrap;
   gap: 8px;
   margin-left: auto;
-  align-self: flex-end;
+  /* Level with the inputs: skip the label row (font size x line height + gap). */
+  margin-top: calc(0.6875rem * 1.5 + 4px);
 }
 
 .journal__message {

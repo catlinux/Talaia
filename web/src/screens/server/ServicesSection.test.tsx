@@ -16,7 +16,15 @@ function unit(
   subState: string,
   unitFileState: string,
 ): ServiceUnit {
-  return { name, description, loadState: 'loaded', activeState, subState, unitFileState }
+  return {
+    name,
+    description,
+    loadState: 'loaded',
+    activeState,
+    subState,
+    unitFileState,
+    canReload: true,
+  }
 }
 
 const initialServices: ServiceUnit[] = [
@@ -231,6 +239,19 @@ describe('systemd services section', () => {
       'Failed: Job for docker.service failed',
     )
     await waitFor(() => expect(api.list).toHaveBeenCalledTimes(2))
+  })
+
+  it('offers Reload only to units that support it', async () => {
+    const { api } = fakeServices({
+      initial: updateUnit(initialServices, 'ssh.service', { canReload: false }),
+    })
+    renderSection(api)
+    await screen.findByText('6 services')
+
+    expect(within(rowFor('ssh.service')).queryByRole('button', { name: 'Reload' })).toBeNull()
+    expect(
+      within(rowFor('talaia-agent.service')).getByRole('button', { name: 'Reload' }),
+    ).toBeTruthy()
   })
 
   it('protects the agent service and hides enable/disable for static states', async () => {

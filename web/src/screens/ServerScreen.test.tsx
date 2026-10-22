@@ -291,6 +291,7 @@ describe('ServerScreen', () => {
             activeState: 'active',
             subState: 'running',
             unitFileState: 'enabled',
+            canReload: true,
           } satisfies ServiceUnit,
         ]),
       ),

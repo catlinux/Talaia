@@ -35,6 +35,7 @@ type serviceEntry struct {
 	ActiveState   string `json:"active_state"`
 	SubState      string `json:"sub_state"`
 	UnitFileState string `json:"unit_file_state"`
+	CanReload     bool   `json:"can_reload"`
 }
 
 type servicesResponse struct {
@@ -66,6 +67,7 @@ func NewServicesHandler(deps ContainerDeps) http.Handler {
 				ActiveState:   service.GetActiveState(),
 				SubState:      service.GetSubState(),
 				UnitFileState: service.GetUnitFileState(),
+				CanReload:     service.GetCanReload(),
 			})
 		}
 		sort.Slice(services, func(i, j int) bool { return services[i].Name < services[j].Name })

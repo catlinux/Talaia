@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 
 import { type AptApi, type AptStatus, type AptUpgradeMode, parseAptStatus } from '../../api/apt'
 import { isSignedOut } from '../../api/http'
+import type { AptSummary } from '../../api/types'
 import { errorMessage } from '../../auth/AuthGate'
 import { formatRelativeTime } from '../fleet/format'
 import { TimedOut, waitForJob } from './waitForJob'
@@ -26,6 +27,8 @@ interface UpdatesSectionProps {
   serverId: string
   hostname: string
   pollMs: number
+  /** onSummary receives the counts of every status read, so the tab badge stays current. */
+  onSummary?: (summary: AptSummary) => void
 }
 
 type StatusState =
@@ -78,7 +81,13 @@ function sortPackages(packages: AptStatus['packages']): AptStatus['packages'] {
  * confirmed upgrade and reboot operations. The section asks for the list once
  * on mount and again after every operation.
  */
-export function UpdatesSection({ aptApi, serverId, hostname, pollMs }: UpdatesSectionProps) {
+export function UpdatesSection({
+  aptApi,
+  serverId,
+  hostname,
+  pollMs,
+  onSummary,
+}: UpdatesSectionProps) {
   const { t, i18n } = useTranslation(['server', 'errors'])
   const language = i18n.resolvedLanguage ?? i18n.language
   const [state, setState] = useState<StatusState>({ status: 'loading' })
@@ -135,6 +144,13 @@ export function UpdatesSection({ aptApi, serverId, hostname, pollMs }: UpdatesSe
           return
         }
         setState({ status: 'ready', data })
+        onSummary?.({
+          upgradable: data.packages.length,
+          security: data.packages.filter((pkg) => pkg.security).length,
+          rebootRequired: data.rebootRequired,
+          checkedAt: data.checkedAt,
+          listsUpdatedAt: data.listsUpdatedAt,
+        })
       } catch (error) {
         if (!alive.current || isSignedOut(error)) return
         setState({
@@ -146,7 +162,7 @@ export function UpdatesSection({ aptApi, serverId, hostname, pollMs }: UpdatesSe
         if (alive.current) setRefreshing(false)
       }
     },
-    [aptApi, pollMs, serverId, t],
+    [aptApi, onSummary, pollMs, serverId, t],
   )
 
   useEffect(() => {

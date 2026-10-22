@@ -2531,6 +2531,7 @@ type SystemdUnit struct {
 	ActiveState   string                 `protobuf:"bytes,4,opt,name=active_state,json=activeState,proto3" json:"active_state,omitempty"`         // active | inactive | failed ...
 	SubState      string                 `protobuf:"bytes,5,opt,name=sub_state,json=subState,proto3" json:"sub_state,omitempty"`                  // running | exited | dead | failed ...
 	UnitFileState string                 `protobuf:"bytes,6,opt,name=unit_file_state,json=unitFileState,proto3" json:"unit_file_state,omitempty"` // enabled | disabled | static | masked ...; empty if unknown
+	CanReload     bool                   `protobuf:"varint,7,opt,name=can_reload,json=canReload,proto3" json:"can_reload,omitempty"`              // systemd CanReload: the unit accepts a reload
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2605,6 +2606,13 @@ func (x *SystemdUnit) GetUnitFileState() string {
 		return x.UnitFileState
 	}
 	return ""
+}
+
+func (x *SystemdUnit) GetCanReload() bool {
+	if x != nil {
+		return x.CanReload
+	}
+	return false
 }
 
 // ContainerStats is the resource use of the running containers at one instant.
@@ -3431,7 +3439,7 @@ const file_agent_proto_rawDesc = "" +
 	"workingDir\x12!\n" +
 	"\fconfig_files\x18\x03 \x03(\tR\vconfigFiles\x12'\n" +
 	"\x0fcontainer_count\x18\x04 \x01(\rR\x0econtainerCount\x12#\n" +
-	"\rrunning_count\x18\x05 \x01(\rR\frunningCount\"\xca\x01\n" +
+	"\rrunning_count\x18\x05 \x01(\rR\frunningCount\"\xe9\x01\n" +
 	"\vSystemdUnit\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12 \n" +
 	"\vdescription\x18\x02 \x01(\tR\vdescription\x12\x1d\n" +
@@ -3439,7 +3447,9 @@ const file_agent_proto_rawDesc = "" +
 	"load_state\x18\x03 \x01(\tR\tloadState\x12!\n" +
 	"\factive_state\x18\x04 \x01(\tR\vactiveState\x12\x1b\n" +
 	"\tsub_state\x18\x05 \x01(\tR\bsubState\x12&\n" +
-	"\x0funit_file_state\x18\x06 \x01(\tR\runitFileState\"\x81\x01\n" +
+	"\x0funit_file_state\x18\x06 \x01(\tR\runitFileState\x12\x1d\n" +
+	"\n" +
+	"can_reload\x18\a \x01(\bR\tcanReload\"\x81\x01\n" +
 	"\x0eContainerStats\x129\n" +
 	"\n" +
 	"sampled_at\x18\x01 \x01(\v2\x1a.google.protobuf.TimestampR\tsampledAt\x124\n" +

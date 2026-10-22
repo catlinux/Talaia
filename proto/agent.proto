@@ -339,6 +339,7 @@ message SystemdUnit {
   string active_state = 4; // active | inactive | failed ...
   string sub_state = 5;    // running | exited | dead | failed ...
   string unit_file_state = 6; // enabled | disabled | static | masked ...; empty if unknown
+  bool can_reload = 7;     // systemd CanReload: the unit accepts a reload
 }
 
 // ContainerStats is the resource use of the running containers at one instant.

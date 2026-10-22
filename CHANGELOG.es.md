@@ -13,6 +13,15 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+## [0.3.22] - 2026-10-22
+
+### Corregido
+
+- La barra de filtros del Journal queda alineada: los campos con texto de ayuda debajo ya no desplazan sus entradas más abajo que las demás.
+- **Reload** solo se ofrece a los servicios que lo admiten (`CanReload` de systemd, que el agente informa como `can_reload`), en lugar de fallar con «Job type reload is not applicable».
+- La insignia de la pestaña **Actualizaciones** sigue la última lectura del estado (tras *Comprobar ahora* o una actualización) en lugar de las cifras cargadas al abrir la pantalla.
+- El registro en vivo de una actualización de apt muestra las líneas según las escribe apt-get (salida por líneas) en lugar de quedarse vacío durante minutos.
+
 ## [0.3.21] - 2026-10-22
 
 ### Corregido
@@ -360,7 +369,8 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
   `.gitattributes` y `.gitignore`.
 - Licencia WNCL-1.0 aplicada: archivo `LICENSE` y sección de créditos en los README.
 
-[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.3.21...HEAD
+[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.3.22...HEAD
+[0.3.22]: https://github.com/catlinux/Talaia/releases/tag/v0.3.22
 [0.3.21]: https://github.com/catlinux/Talaia/releases/tag/v0.3.21
 [0.3.20]: https://github.com/catlinux/Talaia/releases/tag/v0.3.20
 [0.3.19]: https://github.com/catlinux/Talaia/releases/tag/v0.3.19

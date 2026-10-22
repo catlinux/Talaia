@@ -12,6 +12,7 @@ export interface ServiceUnit {
   activeState: string
   subState: string
   unitFileState: string
+  canReload: boolean
 }
 
 /** ServiceState is the output of a service action job. */
@@ -38,6 +39,7 @@ interface apiServiceUnit {
   active_state?: string
   sub_state?: string
   unit_file_state?: string
+  can_reload?: boolean
 }
 
 interface apiServices {
@@ -87,6 +89,7 @@ export function createServicesApi(fetchImpl?: typeof fetch): ServicesApi {
         activeState: service.active_state ?? '',
         subState: service.sub_state ?? '',
         unitFileState: service.unit_file_state ?? '',
+        canReload: service.can_reload ?? false,
       }))
     },
     action: async (serverId, unit, action, confirm) => {

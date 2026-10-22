@@ -16,6 +16,7 @@ describe('services API', () => {
                 active_state: 'active',
                 sub_state: 'running',
                 unit_file_state: 'enabled',
+                can_reload: true,
               },
             ],
           }),
@@ -33,6 +34,7 @@ describe('services API', () => {
         activeState: 'active',
         subState: 'running',
         unitFileState: 'enabled',
+        canReload: true,
       },
     ])
 

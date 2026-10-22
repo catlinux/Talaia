@@ -433,7 +433,7 @@ export function ServicesSection({ api, serverId, pollMs, onLoaded }: ServicesSec
                         </button>
                       </>
                     ) : null}
-                    {active ? (
+                    {active && service.canReload ? (
                       <button
                         type="button"
                         className="cbtn services__action"

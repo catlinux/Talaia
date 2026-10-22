@@ -3,6 +3,7 @@ package inventory
 import (
 	"context"
 	"errors"
+	"strings"
 	"testing"
 )
 
@@ -33,10 +34,23 @@ const systemdUnitFilesJSON = `[
   {"unit_file":"ssh.service","state":"static"}
 ]`
 
+const canReloadShow = `Id=docker.service
+CanReload=yes
+
+Id=nginx.service
+CanReload=no
+
+Id=ssh.service
+CanReload=yes
+`
+
 func TestSystemdUnits(t *testing.T) {
 	runner := &fakeRunner{handler: func(_ string, args []string) ([]byte, error) {
 		if len(args) > 0 && args[0] == "list-unit-files" {
 			return []byte(systemdUnitFilesJSON), nil
+		}
+		if len(args) > 0 && args[0] == "show" {
+			return []byte(canReloadShow), nil
 		}
 		return []byte(systemdJSON), nil
 	}}
@@ -65,8 +79,16 @@ func TestSystemdUnits(t *testing.T) {
 		t.Errorf("last unit = %+v", units[2])
 	}
 
-	if len(runner.calls) != 2 {
-		t.Fatalf("systemctl calls = %d, want 2", len(runner.calls))
+	if !units[0].GetCanReload() || units[1].GetCanReload() || !units[2].GetCanReload() {
+		t.Errorf("can_reload = %v, %v, %v, want true, false, true", units[0].GetCanReload(), units[1].GetCanReload(), units[2].GetCanReload())
+	}
+
+	if len(runner.calls) != 3 {
+		t.Fatalf("systemctl calls = %d, want 3", len(runner.calls))
+	}
+	wantShow := []string{"systemctl", "show", "-p", "Id,CanReload", "--", "docker.service", "nginx.service", "ssh.service"}
+	if strings.Join(runner.calls[2], " ") != strings.Join(wantShow, " ") {
+		t.Fatalf("systemctl show args = %v, want %v", runner.calls[2], wantShow)
 	}
 	want := []string{"systemctl", "list-units", "--type=service", "--all", "--no-pager", "--output=json"}
 	if len(runner.calls[0]) != len(want) {
@@ -78,13 +100,8 @@ func TestSystemdUnits(t *testing.T) {
 		}
 	}
 	wantFiles := []string{"systemctl", "list-unit-files", "--type=service", "--no-pager", "--output=json"}
-	if len(runner.calls[1]) != len(wantFiles) {
+	if strings.Join(runner.calls[1], " ") != strings.Join(wantFiles, " ") {
 		t.Fatalf("systemctl unit-file args = %v, want %v", runner.calls[1], wantFiles)
-	}
-	for i := range wantFiles {
-		if runner.calls[1][i] != wantFiles[i] {
-			t.Fatalf("systemctl unit-file args = %v, want %v", runner.calls[1], wantFiles)
-		}
 	}
 }
 

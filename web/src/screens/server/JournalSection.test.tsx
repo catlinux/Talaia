@@ -127,6 +127,7 @@ describe('journal section', () => {
       activeState: 'active',
       subState: 'running',
       unitFileState: 'enabled',
+      canReload: true,
     }
     const servicesApi: ServicesApi = {
       list: vi.fn(() => Promise.resolve([unit])),

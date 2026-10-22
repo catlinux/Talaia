@@ -35,6 +35,7 @@ const (
 	maxAptLogAge         = 30 * 24 * time.Hour
 	aptUnitPrefix        = "talaia-apt-"
 	aptRebootUnit        = "talaia-reboot"
+	stdbufPath           = "/usr/bin/stdbuf"
 	aptJobIDPattern      = `^[A-Za-z0-9-]{1,64}$`
 )
 
@@ -509,6 +510,9 @@ func (m *AptManager) startUnit(ctx context.Context, unit, logPath string, mode a
 		"--setenv=DEBIAN_FRONTEND=noninteractive",
 		"--setenv=LC_ALL=C",
 		"--",
+		// Line-buffered output: apt-get writes to a file, which is block-buffered
+		// by default and would hide the progress from the panel for minutes.
+		stdbufPath, "-oL", "-eL",
 		m.aptGet,
 		"-y",
 		"-o", "Dpkg::Options::=--force-confdef",

@@ -241,6 +241,7 @@ export function ServerScreen({
   const [activeTab, setActiveTab] = useState<ServerTab>(() => readStoredTab(server.id))
   // The services list is only read in its tab; keeping the last result lets the
   // tab badge and the overview keep working after switching away.
+  const [liveApt, setLiveApt] = useState<AptSummary | null>(null)
   const [knownServices, setKnownServices] = useState<ServiceUnit[] | null>(null)
   // The managed stack whose screen is open, if any.
   const [openStack, setOpenStack] = useState<{
@@ -404,7 +405,7 @@ export function ServerScreen({
   const hostTerminalConnected = serverInfo?.connected ?? list?.connected ?? false
   const canUpdateAgent =
     serverInfo !== null && serverInfo.connected && serverInfo.agentUpdateAvailable && !updatingAgent
-  const apt = server.apt
+  const apt = liveApt ?? server.apt
   const failedServices =
     knownServices === null
       ? null
@@ -781,6 +782,7 @@ export function ServerScreen({
               serverId={server.id}
               hostname={server.hostname ?? ''}
               pollMs={pollMs}
+              onSummary={setLiveApt}
             />
           ) : null}
         </div>

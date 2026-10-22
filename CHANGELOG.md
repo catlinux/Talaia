@@ -18,6 +18,15 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.3.22] - 2026-10-22
+
+### Fixed
+
+- The Journal filter bar is aligned: the fields with a help text below no longer push their inputs lower than the others.
+- **Reload** is offered only to services that support it (systemd `CanReload`, reported by the agent as `can_reload`), instead of failing with "Job type reload is not applicable".
+- The badge of the **Updates** tab follows the last status read (after *Check now* or an upgrade) instead of the figures loaded when the screen opened.
+- The live log of an apt upgrade shows lines as apt-get writes them (line-buffered output) instead of staying empty for minutes.
+
 ## [0.3.21] - 2026-10-22
 
 ### Fixed
@@ -360,7 +369,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.3.21...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.3.22...HEAD
+[0.3.22]: https://github.com/catlinux/Talaia/releases/tag/v0.3.22
 [0.3.21]: https://github.com/catlinux/Talaia/releases/tag/v0.3.21
 [0.3.20]: https://github.com/catlinux/Talaia/releases/tag/v0.3.20
 [0.3.19]: https://github.com/catlinux/Talaia/releases/tag/v0.3.19

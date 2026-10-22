@@ -171,8 +171,8 @@ func TestUpgradeCommandLineForEachMode(t *testing.T) {
 			}
 			for i, arg := range call.args {
 				if arg == "--" {
-					if i+1 >= len(call.args) || call.args[i+1] != "apt-get" {
-						t.Errorf("args after -- = %v, want apt-get", call.args[i:])
+					if i+3 >= len(call.args) || call.args[i+1] != stdbufPath || call.args[i+2] != "-oL" || call.args[i+3] != "-eL" || call.args[i+4] != "apt-get" {
+						t.Errorf("args after -- = %v, want stdbuf -oL -eL apt-get", call.args[i:])
 					}
 					break
 				}

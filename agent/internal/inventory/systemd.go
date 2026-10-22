@@ -85,6 +85,14 @@ func (s *Systemd) Units(ctx context.Context) []*agentv1.SystemdUnit {
 
 	fileStates := s.unitFileStates(ctx)
 
+	names := make([]string, 0, len(raw))
+	for _, unit := range raw {
+		if strings.HasSuffix(unit.Unit, ".service") {
+			names = append(names, unit.Unit)
+		}
+	}
+	reloadable := s.reloadableUnits(ctx, names)
+
 	units := make([]*agentv1.SystemdUnit, 0, len(raw))
 	for _, unit := range raw {
 		if !strings.HasSuffix(unit.Unit, ".service") {
@@ -103,10 +111,39 @@ func (s *Systemd) Units(ctx context.Context) []*agentv1.SystemdUnit {
 			ActiveState:   unit.Active,
 			SubState:      unit.Sub,
 			UnitFileState: state,
+			CanReload:     reloadable[unit.Unit],
 		})
 	}
 	sort.Slice(units, func(i, j int) bool { return units[i].GetName() < units[j].GetName() })
 	return units
+}
+
+// reloadableUnits asks systemd which units accept a reload (CanReload=yes) in a
+// single call. A failure leaves every unit without Reload.
+func (s *Systemd) reloadableUnits(ctx context.Context, names []string) map[string]bool {
+	if len(names) == 0 {
+		return nil
+	}
+	args := append([]string{"show", "-p", "Id,CanReload", "--"}, names...)
+	output, err := s.runner.Output(ctx, "systemctl", args...)
+	if err != nil {
+		slog.Debug("read systemd CanReload", "error", err)
+		return nil
+	}
+	reloadable := make(map[string]bool)
+	id := ""
+	for _, line := range strings.Split(string(output), "\n") {
+		key, value, ok := strings.Cut(strings.TrimSpace(line), "=")
+		switch {
+		case !ok:
+			id = ""
+		case key == "Id":
+			id = value
+		case key == "CanReload" && id != "":
+			reloadable[id] = value == "yes"
+		}
+	}
+	return reloadable
 }
 
 // unitFileStates reads the enabled/disabled/masked state of the unit files. A
