@@ -18,6 +18,12 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.3.18] - 2026-10-22
+
+### Added
+
+- The core serves the audit log, read only: `GET /api/v1/audit` returns the newest events first with a cursor (`next`/`before`) and filters by action (exact or prefix such as `service_*`), server and user. Reading it is not audited. Not in the panel yet.
+
 ## [0.3.17] - 2026-10-22
 
 ### Added
@@ -328,7 +334,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.3.17...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.3.18...HEAD
+[0.3.18]: https://github.com/catlinux/Talaia/releases/tag/v0.3.18
 [0.3.17]: https://github.com/catlinux/Talaia/releases/tag/v0.3.17
 [0.3.16]: https://github.com/catlinux/Talaia/releases/tag/v0.3.16
 [0.3.15]: https://github.com/catlinux/Talaia/releases/tag/v0.3.15

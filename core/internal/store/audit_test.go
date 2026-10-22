@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"testing"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 // auditAction returns an action no other test uses and schedules the removal of
@@ -129,5 +131,180 @@ func TestAppendAuditValidatesItsInput(t *testing.T) {
 	}
 	if _, err := s.ListAudit(ctx, 0); err == nil {
 		t.Error("expected an error for a non-positive limit")
+	}
+}
+
+// insertAuditAt adds an event with an explicit time, which AppendAudit cannot
+// set. The tests use it to create rows that share a timestamp.
+func insertAuditAt(t *testing.T, s *Store, at time.Time, actor, action string, details map[string]any) string {
+	t.Helper()
+
+	var id string
+	if err := s.pool.QueryRow(context.Background(),
+		`INSERT INTO audit_event (at, actor, action, result, details)
+		 VALUES ($1, $2, $3, 'success', $4)
+		 RETURNING id`,
+		at, actor, action, details).Scan(&id); err != nil {
+		t.Fatalf("insert audit event: %v", err)
+	}
+	return id
+}
+
+func TestListAuditPagePaginatesWithoutGapsOrDuplicates(t *testing.T) {
+	s := newTestStore(t)
+	ctx := context.Background()
+
+	action := auditAction(t, s)
+	at := time.Date(2026, 10, 22, 9, 0, 0, 0, time.UTC)
+	want := make(map[string]bool, 5)
+	for i := 0; i < 5; i++ {
+		id := insertAuditAt(t, s, at, "admin", action, map[string]any{"index": float64(i)})
+		want[id] = true
+	}
+
+	seen := make(map[string]bool, len(want))
+	var before *AuditCursor
+	pages := 0
+	for {
+		entries, err := s.ListAuditPage(ctx, AuditFilter{
+			Before: before,
+			Limit:  2,
+			Action: action,
+		})
+		if err != nil {
+			t.Fatalf("list audit page %d: %v", pages+1, err)
+		}
+		pages++
+		for _, entry := range entries {
+			if seen[entry.ID] {
+				t.Fatalf("entry %s appears twice", entry.ID)
+			}
+			seen[entry.ID] = true
+			if !entry.At.Equal(at) {
+				t.Errorf("at = %v, want %v", entry.At, at)
+			}
+		}
+		if len(entries) < 2 {
+			break
+		}
+		last := entries[len(entries)-1]
+		before = &AuditCursor{At: last.At, ID: last.ID}
+	}
+
+	if pages != 3 {
+		t.Errorf("pages = %d, want 3", pages)
+	}
+	if len(seen) != len(want) {
+		t.Fatalf("entries = %d, want %d", len(seen), len(want))
+	}
+	for id := range want {
+		if !seen[id] {
+			t.Errorf("entry %s was skipped", id)
+		}
+	}
+}
+
+func TestListAuditPageFilters(t *testing.T) {
+	s := newTestStore(t)
+	ctx := context.Background()
+
+	base := fmt.Sprintf("test.filter.%d", time.Now().UnixNano())
+	t.Cleanup(func() {
+		_, _ = s.pool.Exec(context.Background(),
+			`DELETE FROM audit_event WHERE action LIKE $1`, base+"%")
+	})
+
+	serverOne := uuid.NewString()
+	serverTwo := uuid.NewString()
+	actorOne := "audit-one-" + fmt.Sprint(time.Now().UnixNano())
+	actorTwo := "audit-two-" + fmt.Sprint(time.Now().UnixNano())
+	at := time.Date(2026, 10, 22, 10, 0, 0, 0, time.UTC)
+	events := []struct {
+		actor   string
+		action  string
+		details map[string]any
+	}{
+		{actor: actorOne, action: base + "_one", details: map[string]any{"server_id": serverOne}},
+		{actor: actorOne, action: base + "_two", details: map[string]any{"server_id": serverTwo}},
+		{actor: actorTwo, action: base + "Xone", details: map[string]any{"server_id": serverOne}},
+		{actor: actorTwo, action: base + "%one", details: map[string]any{"server_id": serverTwo}},
+	}
+	for i, event := range events {
+		insertAuditAt(t, s, at.Add(time.Duration(i)*time.Second), event.actor, event.action, event.details)
+	}
+
+	tests := []struct {
+		name   string
+		filter AuditFilter
+		want   int
+	}{
+		{
+			name:   "exact action",
+			filter: AuditFilter{Action: base + "_one"},
+			want:   1,
+		},
+		{
+			name:   "action prefix escapes underscore",
+			filter: AuditFilter{Action: base + "_*"},
+			want:   2,
+		},
+		{
+			name:   "action prefix escapes percent",
+			filter: AuditFilter{Action: base + "%*"},
+			want:   1,
+		},
+		{
+			name:   "server",
+			filter: AuditFilter{ServerID: serverOne},
+			want:   2,
+		},
+		{
+			name:   "actor",
+			filter: AuditFilter{Actor: actorTwo},
+			want:   2,
+		},
+		{
+			name:   "filters combine",
+			filter: AuditFilter{Action: base + "_*", Actor: actorOne, ServerID: serverOne},
+			want:   1,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.filter.Limit = 50
+			entries, err := s.ListAuditPage(ctx, tt.filter)
+			if err != nil {
+				t.Fatalf("list audit page: %v", err)
+			}
+			if len(entries) != tt.want {
+				t.Fatalf("entries = %d, want %d", len(entries), tt.want)
+			}
+		})
+	}
+}
+
+func TestListAuditPageLimits(t *testing.T) {
+	s := newTestStore(t)
+	ctx := context.Background()
+
+	tests := []struct {
+		name    string
+		limit   int
+		wantErr bool
+	}{
+		{name: "default", limit: 0},
+		{name: "smallest", limit: 1},
+		{name: "largest", limit: MaxAuditLimit},
+		{name: "negative", limit: -1, wantErr: true},
+		{name: "too large", limit: MaxAuditLimit + 1, wantErr: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := s.ListAuditPage(ctx, AuditFilter{Limit: tt.limit})
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
 	}
 }

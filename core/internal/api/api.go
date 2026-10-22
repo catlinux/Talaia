@@ -35,6 +35,8 @@ type RouterDeps struct {
 	ServerDisconnector ServerDisconnector
 	// ServerAudit records server administration events; nil skips them.
 	ServerAudit Auditor
+	// AuditLog reads the audit log for GET /api/v1/audit; nil answers 500.
+	AuditLog AuditReader
 	// AgentPackages describes the agent packages the core can offer in GET
 	// /api/v1/servers and in the update endpoints.
 	AgentPackages AgentPackages
@@ -78,6 +80,7 @@ func NewRouter(deps RouterDeps) http.Handler {
 				Packages:   deps.AgentPackages,
 			}
 			r.Get("/servers", NewServersHandler(serverDeps).ServeHTTP)
+			r.Get("/audit", NewAuditHandler(AuditDeps{Entries: deps.AuditLog}).ServeHTTP)
 			if deps.AgentUpdates != nil {
 				r.Post("/servers/{serverID}/agent/update", NewAgentUpdateHandler(*deps.AgentUpdates).ServeHTTP)
 				r.Post("/agents/update-all", NewAgentUpdateAllHandler(*deps.AgentUpdates).ServeHTTP)

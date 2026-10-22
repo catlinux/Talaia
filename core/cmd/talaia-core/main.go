@@ -145,6 +145,7 @@ func newCoreRouter(st *store.Store, agents api.LiveAgents, options panelOptions)
 		ServerRemover:      st,
 		ServerDisconnector: disconnector,
 		ServerAudit:        st,
+		AuditLog:           st,
 		AgentPackages:      packages,
 		AgentUpdates:       agentUpdates,
 		Enrollment:         options.Enrollment,
