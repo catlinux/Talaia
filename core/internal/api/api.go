@@ -52,6 +52,8 @@ type RouterDeps struct {
 	Terminal *TerminalDeps
 	// System enables the version and update endpoints; nil leaves them out.
 	System *SystemDeps
+	// Authz enforces the permissions of the protected API. Nil fails closed.
+	Authz *Authorizer
 }
 
 // NewRouter returns the HTTP handler of the core: the health endpoint, the
@@ -79,49 +81,76 @@ func NewRouter(deps RouterDeps) http.Handler {
 				Audit:      deps.ServerAudit,
 				Packages:   deps.AgentPackages,
 			}
-			r.Get("/servers", NewServersHandler(serverDeps).ServeHTTP)
-			r.Get("/audit", NewAuditHandler(AuditDeps{Entries: deps.AuditLog}).ServeHTTP)
+			registerRoute(r, deps.Authz, http.MethodGet, "/servers", NewServersHandler(serverDeps))
+			registerRoute(r, deps.Authz, http.MethodGet, "/audit", NewAuditHandler(AuditDeps{Entries: deps.AuditLog}))
 			if deps.AgentUpdates != nil {
-				r.Post("/servers/{serverID}/agent/update", NewAgentUpdateHandler(*deps.AgentUpdates).ServeHTTP)
-				r.Post("/agents/update-all", NewAgentUpdateAllHandler(*deps.AgentUpdates).ServeHTTP)
+				registerRoute(r, deps.Authz, http.MethodPost, "/servers/{serverID}/agent/update",
+					NewAgentUpdateHandler(*deps.AgentUpdates))
+				registerRoute(r, deps.Authz, http.MethodPost, "/agents/update-all",
+					NewAgentUpdateAllHandler(*deps.AgentUpdates))
 			}
 			if deps.ServerRemover != nil {
-				r.Delete("/servers/{serverID}", NewServerRemoveHandler(serverDeps).ServeHTTP)
+				registerRoute(r, deps.Authz, http.MethodDelete, "/servers/{serverID}",
+					NewServerRemoveHandler(serverDeps))
 			}
 			if deps.Containers != nil {
-				r.Get("/servers/{serverID}/containers", NewContainersHandler(*deps.Containers).ServeHTTP)
-				r.Post("/servers/{serverID}/containers/{container}/actions", NewContainerActionHandler(*deps.Containers).ServeHTTP)
-				r.Post("/servers/{serverID}/containers/{container}/logs", NewContainerLogsHandler(*deps.Containers).ServeHTTP)
-				r.Post("/servers/{serverID}/journal", NewJournalHandler(*deps.Containers).ServeHTTP)
-				r.Post("/servers/{serverID}/apt/status", NewAptStatusHandler(*deps.Containers).ServeHTTP)
-				r.Post("/servers/{serverID}/apt/upgrade", NewAptUpgradeHandler(*deps.Containers).ServeHTTP)
-				r.Post("/servers/{serverID}/reboot", NewHostRebootHandler(*deps.Containers).ServeHTTP)
-				r.Get("/servers/{serverID}/services", NewServicesHandler(*deps.Containers).ServeHTTP)
-				r.Post("/servers/{serverID}/services/{unit}/actions", NewServiceActionHandler(*deps.Containers).ServeHTTP)
-				r.Get("/jobs/{jobID}", NewJobHandler(*deps.Containers).ServeHTTP)
+				registerRoute(r, deps.Authz, http.MethodGet, "/servers/{serverID}/containers",
+					NewContainersHandler(*deps.Containers))
+				registerRoute(r, deps.Authz, http.MethodPost, "/servers/{serverID}/containers/{container}/actions",
+					NewContainerActionHandler(*deps.Containers))
+				registerRoute(r, deps.Authz, http.MethodPost, "/servers/{serverID}/containers/{container}/logs",
+					NewContainerLogsHandler(*deps.Containers))
+				registerRoute(r, deps.Authz, http.MethodPost, "/servers/{serverID}/journal",
+					NewJournalHandler(*deps.Containers))
+				registerRoute(r, deps.Authz, http.MethodPost, "/servers/{serverID}/apt/status",
+					NewAptStatusHandler(*deps.Containers))
+				registerRoute(r, deps.Authz, http.MethodPost, "/servers/{serverID}/apt/upgrade",
+					NewAptUpgradeHandler(*deps.Containers))
+				registerRoute(r, deps.Authz, http.MethodPost, "/servers/{serverID}/reboot",
+					NewHostRebootHandler(*deps.Containers))
+				registerRoute(r, deps.Authz, http.MethodGet, "/servers/{serverID}/services",
+					NewServicesHandler(*deps.Containers))
+				registerRoute(r, deps.Authz, http.MethodPost, "/servers/{serverID}/services/{unit}/actions",
+					NewServiceActionHandler(*deps.Containers))
+				registerRoute(r, deps.Authz, http.MethodGet, "/jobs/{jobID}",
+					NewJobHandler(*deps.Containers))
 				if deps.Terminal != nil {
 					deps.Terminal.TOTP = authHandler
 					deps.Terminal.Limiter = authHandler.deps.Limiter
 					deps.Terminal.Audit = authHandler.deps.Store
-					r.Post("/servers/{serverID}/containers/{container}/terminal", NewTerminalOpenHandler(deps.Terminal).ServeHTTP)
-					r.Post("/servers/{serverID}/terminal", NewHostTerminalOpenHandler(deps.Terminal).ServeHTTP)
-					r.Get("/terminal/{sessionID}/ws", NewTerminalSocketHandler(deps.Terminal).ServeHTTP)
+					registerRoute(r, deps.Authz, http.MethodPost, "/servers/{serverID}/containers/{container}/terminal",
+						NewTerminalOpenHandler(deps.Terminal))
+					registerRoute(r, deps.Authz, http.MethodPost, "/servers/{serverID}/terminal",
+						NewHostTerminalOpenHandler(deps.Terminal))
+					registerRoute(r, deps.Authz, http.MethodGet, "/terminal/{sessionID}/ws",
+						NewTerminalSocketHandler(deps.Terminal))
 				}
-				r.Post("/servers/{serverID}/resources/list", NewResourcesListHandler(*deps.Containers).ServeHTTP)
-				r.Post("/servers/{serverID}/resources/remove", NewResourcesRemoveHandler(*deps.Containers).ServeHTTP)
-				r.Get("/servers/{serverID}/stacks", NewStacksHandler(*deps.Containers).ServeHTTP)
-				r.Put("/servers/{serverID}/stacks/{name}", NewStackWriteHandler(*deps.Containers).ServeHTTP)
-				r.Post("/servers/{serverID}/stacks/{name}/read", NewStackReadHandler(*deps.Containers).ServeHTTP)
-				r.Post("/servers/{serverID}/stacks/{name}/adopt", NewStackAdoptHandler(*deps.Containers).ServeHTTP)
-				r.Post("/servers/{serverID}/stacks/{name}/actions", NewStackActionHandler(*deps.Containers).ServeHTTP)
+				registerRoute(r, deps.Authz, http.MethodPost, "/servers/{serverID}/resources/list",
+					NewResourcesListHandler(*deps.Containers))
+				registerRoute(r, deps.Authz, http.MethodPost, "/servers/{serverID}/resources/remove",
+					NewResourcesRemoveHandler(*deps.Containers))
+				registerRoute(r, deps.Authz, http.MethodGet, "/servers/{serverID}/stacks",
+					NewStacksHandler(*deps.Containers))
+				registerRoute(r, deps.Authz, http.MethodPut, "/servers/{serverID}/stacks/{name}",
+					NewStackWriteHandler(*deps.Containers))
+				registerRoute(r, deps.Authz, http.MethodPost, "/servers/{serverID}/stacks/{name}/read",
+					NewStackReadHandler(*deps.Containers))
+				registerRoute(r, deps.Authz, http.MethodPost, "/servers/{serverID}/stacks/{name}/adopt",
+					NewStackAdoptHandler(*deps.Containers))
+				registerRoute(r, deps.Authz, http.MethodPost, "/servers/{serverID}/stacks/{name}/actions",
+					NewStackActionHandler(*deps.Containers))
 			}
 			if deps.Enrollment != nil {
-				r.Post("/servers/enrollment-tokens", NewEnrollmentTokenHandler(*deps.Enrollment).ServeHTTP)
+				registerRoute(r, deps.Authz, http.MethodPost, "/servers/enrollment-tokens",
+					NewEnrollmentTokenHandler(*deps.Enrollment))
 			}
 			if deps.System != nil {
-				r.Get("/system/version", NewSystemVersionHandler(*deps.System).ServeHTTP)
-				r.Post("/system/check", NewSystemCheckHandler(*deps.System).ServeHTTP)
-				r.Post("/system/update", NewSystemUpdateHandler(*deps.System).ServeHTTP)
+				registerRoute(r, deps.Authz, http.MethodGet, "/system/version",
+					NewSystemVersionHandler(*deps.System))
+				registerRoute(r, deps.Authz, http.MethodPost, "/system/check",
+					NewSystemCheckHandler(*deps.System))
+				registerRoute(r, deps.Authz, http.MethodPost, "/system/update",
+					NewSystemUpdateHandler(*deps.System))
 			}
 		})
 	})

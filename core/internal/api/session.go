@@ -111,6 +111,9 @@ func loadSession(r *http.Request, st *store.Store, token string, at time.Time, i
 		}
 		return Session{}, false
 	}
+	if !user.DisabledAt.IsZero() {
+		return Session{}, false
+	}
 
 	return Session{ID: session.ID, User: user, Stage: session.Stage}, true
 }

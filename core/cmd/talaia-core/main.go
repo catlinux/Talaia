@@ -152,6 +152,12 @@ func newCoreRouter(st *store.Store, agents api.LiveAgents, options panelOptions)
 		Containers:         options.Containers,
 		Terminal:           options.Terminal,
 		System:             options.System,
+		Authz: api.NewAuthorizer(api.AuthorizerDeps{
+			Bindings: st,
+			Servers:  st,
+			Agents:   agents,
+			Audit:    st,
+		}),
 		Auth: api.AuthDeps{
 			Store:          st,
 			Box:            options.Box,

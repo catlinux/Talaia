@@ -12,6 +12,7 @@ import (
 	"github.com/go-chi/chi/v5"
 
 	"github.com/catlinux/Talaia/core/internal/hub"
+	"github.com/catlinux/Talaia/core/internal/rbac"
 	"github.com/catlinux/Talaia/core/internal/store"
 	agentv1 "github.com/catlinux/Talaia/proto/gen/go"
 )
@@ -191,6 +192,17 @@ func NewContainerActionHandler(deps ContainerDeps) http.Handler {
 		if action == agentv1.ContainerActionType_CONTAINER_ACTION_TYPE_REMOVE && !request.Confirm {
 			writeError(w, http.StatusBadRequest, "confirmation_required")
 			return
+		}
+		if action == agentv1.ContainerActionType_CONTAINER_ACTION_TYPE_REMOVE {
+			target, err := targetFromRequest(r, targetContainer)
+			if err != nil {
+				internal(w, "build container target", err)
+				return
+			}
+			if !authorize(r, rbac.PermContainerRemove, target) {
+				denyRequest(w, r, rbac.PermContainerRemove, target, http.StatusForbidden, "forbidden")
+				return
+			}
 		}
 
 		agent, connected := connectedAgent(deps.Agents, serverID)

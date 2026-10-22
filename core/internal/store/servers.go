@@ -33,6 +33,7 @@ const tokenPrefix = "tl_enr_"
 type Server struct {
 	ID             string
 	Name           string
+	GroupID        string
 	CertSerial     string
 	PrevCertSerial string
 	CertNotAfter   time.Time
@@ -239,7 +240,7 @@ func (s *Store) GetServer(ctx context.Context, id string) (Server, error) {
 
 // serverColumns is the SELECT list of the server queries. Keeping it in one
 // place keeps scanServer in step with them.
-const serverColumns = `id, name, cert_serial, prev_cert_serial, cert_not_after, created_at, last_seen, revoked_at, removed_at`
+const serverColumns = `id, name, COALESCE(group_id::text, ''), cert_serial, prev_cert_serial, cert_not_after, created_at, last_seen, revoked_at, removed_at`
 
 // rowScanner is what pgx.Row and pgx.Rows have in common.
 type rowScanner interface {
@@ -258,7 +259,7 @@ func scanServer(row rowScanner) (Server, error) {
 		removedAt      *time.Time
 	)
 
-	err := row.Scan(&server.ID, &server.Name, &certSerial, &prevCertSerial, &certNotAfter,
+	err := row.Scan(&server.ID, &server.Name, &server.GroupID, &certSerial, &prevCertSerial, &certNotAfter,
 		&server.CreatedAt, &lastSeen, &revokedAt, &removedAt)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return Server{}, ErrNotFound

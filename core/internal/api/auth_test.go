@@ -179,6 +179,14 @@ func newTestPanel(t *testing.T, options ...panelOption) *testPanel {
 		WebDir:   settings.webDir,
 		Security: SecurityConfig{TLS: true, Origins: []string{testOrigin}},
 		Session:  SessionDeps{Store: st, Now: clock.Now, IdleTimeout: settings.idleTimeout},
+		Servers:  st,
+		Agents:   agents,
+		Authz: NewAuthorizer(AuthorizerDeps{
+			Bindings: st,
+			Servers:  st,
+			Agents:   agents,
+			Audit:    st,
+		}),
 		Terminal: NewTerminalDeps(TerminalDeps{
 			Agents: agents, Terminals: terminals, Sessions: st, Origins: []string{testOrigin},
 			CheckInterval: 50 * time.Millisecond, TicketTTL: settings.ticketTTL,

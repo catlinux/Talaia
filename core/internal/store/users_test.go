@@ -72,6 +72,14 @@ func TestCreateUserAndFindIt(t *testing.T) {
 	if byName.ID != user.ID {
 		t.Errorf("id by username = %q, want %q", byName.ID, user.ID)
 	}
+
+	bindings, err := s.ListRoleBindings(ctx, SubjectUser, user.ID)
+	if err != nil {
+		t.Fatalf("list setup bindings: %v", err)
+	}
+	if len(bindings) != 1 || bindings[0].ScopeType != ScopeOrganization || bindings[0].Role != RoleAdmin {
+		t.Fatalf("setup bindings = %+v, want an organization admin binding", bindings)
+	}
 }
 
 func TestCreateUserAllowsOnlyOneUser(t *testing.T) {

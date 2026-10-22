@@ -147,6 +147,37 @@ func TestSessionsMiddlewareLeavesBadSessionsAnonymous(t *testing.T) {
 				return token
 			},
 		},
+		{
+			name: "disabled user",
+			setup: func(t *testing.T, st *store.Store, clock *testClock, _ string) string {
+				ctx := context.Background()
+				admin, err := st.GetUserByUsername(ctx, "admin")
+				if err != nil {
+					t.Fatalf("get admin: %v", err)
+				}
+				other, err := st.CreateUserFull(ctx, "other-admin", testPasswordHash, "", "")
+				if err != nil {
+					t.Fatalf("create second admin: %v", err)
+				}
+				if _, err := st.CreateRoleBinding(ctx, store.RoleBinding{
+					SubjectType: store.SubjectUser, SubjectID: other.ID,
+					ScopeType: store.ScopeOrganization, Role: store.RoleAdmin, CreatedBy: "test",
+				}); err != nil {
+					t.Fatalf("create second admin binding: %v", err)
+				}
+				if err := st.DisableUser(ctx, admin.ID); err != nil {
+					t.Fatalf("disable admin: %v", err)
+				}
+				// Create a live session after the revocation: only the disabled
+				// flag can explain why it is rejected.
+				token := auth.NewSessionToken()
+				if _, err := st.CreateSession(ctx, admin.ID, auth.HashToken(token), store.StageFull,
+					clock.Now().Add(fullSessionTTL), "192.0.2.10", "test"); err != nil {
+					t.Fatalf("create disabled session: %v", err)
+				}
+				return token
+			},
+		},
 	}
 
 	for _, tt := range tests {

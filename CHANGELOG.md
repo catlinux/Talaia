@@ -18,6 +18,12 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.4.2] - 2026-10-23
+
+### Added
+
+- Permissions are now enforced on every API route: each route declares its permission in one table (a test fails if a route has none), a user only sees servers, stacks and containers their assignments reach (404 otherwise, 403 when visible but not allowed), every denial is audited as `authz_denied`, and reading a stack's compose file needs the edit permission. Disabled users lose their session. The first administrator created at setup gets the organization admin role.
+
 ## [0.4.1] - 2026-10-22
 
 ### Added
@@ -387,7 +393,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.4.1...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.4.2...HEAD
+[0.4.2]: https://github.com/catlinux/Talaia/releases/tag/v0.4.2
 [0.4.1]: https://github.com/catlinux/Talaia/releases/tag/v0.4.1
 [0.4.0]: https://github.com/catlinux/Talaia/releases/tag/v0.4.0
 [0.3.23]: https://github.com/catlinux/Talaia/releases/tag/v0.3.23

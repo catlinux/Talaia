@@ -612,3 +612,36 @@ func TestListServers(t *testing.T) {
 		}
 	}
 }
+
+func TestServerGroupIsStoredAndRead(t *testing.T) {
+	s := newTestStore(t)
+	ctx := context.Background()
+	serverID, err := s.CreateServer(ctx, testName(t, s))
+	if err != nil {
+		t.Fatalf("create server: %v", err)
+	}
+	group, err := s.CreateGroup(ctx, "grp-"+testName(t, s))
+	if err != nil {
+		t.Fatalf("create group: %v", err)
+	}
+	t.Cleanup(func() {
+		_, _ = s.pool.Exec(context.Background(), `DELETE FROM server_group WHERE id::text = $1`, group.ID)
+	})
+	if err := s.SetServerGroup(ctx, serverID, group.ID); err != nil {
+		t.Fatalf("set server group: %v", err)
+	}
+	server, err := s.GetServer(ctx, serverID)
+	if err != nil {
+		t.Fatalf("get server: %v", err)
+	}
+	if server.GroupID != group.ID {
+		t.Fatalf("group id = %q, want %q", server.GroupID, group.ID)
+	}
+	if err := s.SetServerGroup(ctx, serverID, ""); err != nil {
+		t.Fatalf("clear server group: %v", err)
+	}
+	server, err = s.GetServer(ctx, serverID)
+	if err != nil || server.GroupID != "" {
+		t.Fatalf("cleared server group = %#v, %v", server, err)
+	}
+}

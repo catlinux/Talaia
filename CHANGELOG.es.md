@@ -13,6 +13,12 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+## [0.4.2] - 2026-10-23
+
+### Añadido
+
+- Los permisos se aplican ya en todas las rutas de la API: cada ruta declara su permiso en una única tabla (una prueba falla si alguna no lo tiene), cada usuario solo ve los servidores, stacks y contenedores que sus asignaciones alcanzan (404 si no, 403 si lo ve pero no puede), cada denegación se audita como `authz_denied` y leer el compose de un stack exige el permiso de edición. Los usuarios desactivados pierden su sesión. El primer administrador creado en la instalación recibe el rol de administrador de la organización.
+
 ## [0.4.1] - 2026-10-22
 
 ### Añadido
@@ -387,7 +393,8 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
   `.gitattributes` y `.gitignore`.
 - Licencia WNCL-1.0 aplicada: archivo `LICENSE` y sección de créditos en los README.
 
-[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.4.1...HEAD
+[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.4.2...HEAD
+[0.4.2]: https://github.com/catlinux/Talaia/releases/tag/v0.4.2
 [0.4.1]: https://github.com/catlinux/Talaia/releases/tag/v0.4.1
 [0.4.0]: https://github.com/catlinux/Talaia/releases/tag/v0.4.0
 [0.3.23]: https://github.com/catlinux/Talaia/releases/tag/v0.3.23

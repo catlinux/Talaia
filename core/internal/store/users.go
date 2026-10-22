@@ -53,8 +53,14 @@ func (s *Store) CreateUser(ctx context.Context, username, passwordHash string) (
 		return "", errors.New("password hash is required")
 	}
 
+	tx, err := s.pool.Begin(ctx)
+	if err != nil {
+		return "", fmt.Errorf("begin create user: %w", err)
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+
 	var id string
-	err := s.pool.QueryRow(ctx,
+	err = tx.QueryRow(ctx,
 		`INSERT INTO app_user (username, password_hash)
 		 SELECT $1, $2
 		 WHERE NOT EXISTS (SELECT 1 FROM app_user)
@@ -68,6 +74,15 @@ func (s *Store) CreateUser(ctx context.Context, username, passwordHash string) (
 			return "", ErrUserExists
 		}
 		return "", fmt.Errorf("create user: %w", err)
+	}
+
+	if _, err := tx.Exec(ctx,
+		`INSERT INTO role_binding (subject_type, subject_id, scope_type, role, created_by)
+		 VALUES ('user', $1, 'organization', 'admin', 'setup')`, id); err != nil {
+		return "", fmt.Errorf("create the setup admin binding: %w", err)
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return "", fmt.Errorf("commit create user: %w", err)
 	}
 	return id, nil
 }

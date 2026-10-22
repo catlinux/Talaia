@@ -93,6 +93,12 @@ func newSystemPanel(t *testing.T, deps SystemDeps) *testPanel {
 		Security: SecurityConfig{TLS: true, Origins: []string{testOrigin}},
 		Session:  SessionDeps{Store: st, Now: clock.Now},
 		System:   &deps,
+		Authz: NewAuthorizer(AuthorizerDeps{
+			Bindings: st,
+			Servers:  st,
+			Agents:   fakeAgents{},
+			Audit:    st,
+		}),
 		Auth: AuthDeps{
 			Store:        st,
 			Box:          box,

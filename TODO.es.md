@@ -103,6 +103,7 @@ tareas concretas de la fase actual y de la siguiente.
 - [ ] Inicio de sesión OIDC para usuarios existentes (correo verificado), con segundo factor igualmente
 - [ ] Panel: pantalla Usuarios y permisos (maqueta 5), claves de API, ajustes OIDC, lista y descarga de grabaciones de terminal
 - [x] Grabación de sesiones de terminal (hecha en las fases 2 y 3)
+- [ ] Tras una actualización, el panel sigue mostrando la versión anterior: que se recargue solo (o avise de que hay que recargar) cuando el core se reinicie con una versión nueva
 - [ ] Docs EN/ES, revisión de seguridad (Opus), prueba real con un segundo usuario, cierre en 0.5.0
 
 ## Bloque de operación (decidido el 2026-10-20, antes de cerrar la fase 2)
