@@ -891,7 +891,10 @@
 /* xterm paints inside this box; the colours come from the code tokens. */
 .terminal__screen {
   min-width: 0;
-  min-height: 340px;
+  box-sizing: border-box;
+  /* A height of its own, not one that follows the content: the terminal fits its
+     rows to this box, so a box that grew with them would make them grow for ever. */
+  height: clamp(340px, 60vh, 720px);
   padding: 10px 12px;
   overflow: hidden;
   border: 1px solid color-mix(in srgb, var(--code-key) 18%, transparent);

@@ -57,6 +57,7 @@ class FakeSocket implements SocketLike {
   onerror: ((event: Event) => void) | null = null
   sent: (string | Blob | BufferSource)[] = []
   closed = false
+  readyState = 1
   send(data: string | Blob | BufferSource) {
     this.sent.push(data)
   }
@@ -144,6 +145,60 @@ describe('TerminalPanel', () => {
     act(() => socket.receiveBytes([104, 105]))
     expect(Array.from(terminals[0]?.written[0] ?? [])).toEqual([104, 105])
     expect(screen.getByText('Recording')).toBeTruthy()
+  })
+
+  it('tells the core only about real size changes and nothing once the socket is closed', async () => {
+    let observed: ((entries: unknown[]) => void) | null = null
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        constructor(callback: (entries: unknown[]) => void) {
+          observed = callback
+        }
+        observe() {}
+        disconnect() {}
+      },
+    )
+    vi.stubGlobal('requestAnimationFrame', (callback: () => void) => {
+      queueMicrotask(callback)
+      return 1
+    })
+    vi.stubGlobal('cancelAnimationFrame', () => {})
+
+    const { api, socket } = fakeApi()
+    renderPanel(api)
+    fireEvent.click(screen.getByRole('button', { name: 'Open the terminal' }))
+    await waitFor(() => expect(api.connect).toHaveBeenCalled())
+    act(() => socket.open())
+    const resizes = () =>
+      socket.sent.filter((message) => typeof message === 'string' && message.includes('"resize"'))
+    const afterOpen = resizes().length
+
+    // The same box and the same rows: nothing to say.
+    const box = (width: number, height: number) => [{ contentRect: { width, height } }]
+    const fire = (width: number, height: number) =>
+      act(async () => {
+        observed?.(box(width, height))
+        await Promise.resolve()
+      })
+    await fire(800, 400)
+    await fire(800, 400)
+    expect(resizes().length).toBeLessThanOrEqual(afterOpen)
+
+    // A different number of rows is sent once.
+    const term = terminals[0]
+    if (term === undefined) throw new Error('no terminal')
+    term.rows = 40
+    await fire(800, 500)
+    expect(resizes().length).toBe(afterOpen + 1)
+
+    // Once the socket is closed, neither resizes nor keys go out any more.
+    const sentBefore = socket.sent.length
+    socket.readyState = 3
+    term.rows = 50
+    await fire(800, 600)
+    term.type('x')
+    expect(socket.sent.length).toBe(sentBefore)
   })
 
   it('splits a long paste into messages the core accepts', async () => {

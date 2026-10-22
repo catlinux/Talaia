@@ -14,6 +14,8 @@ export interface TerminalSession {
 
 /** SocketLike is the part of WebSocket the terminal uses, so tests can replace it. */
 export interface SocketLike {
+  /** readyState is that of a WebSocket; a test double may leave it out. */
+  readyState?: number
   binaryType: BinaryType
   onopen: ((event: Event) => void) | null
   onmessage: ((event: MessageEvent) => void) | null

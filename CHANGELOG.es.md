@@ -13,6 +13,12 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+## [0.2.13] - 2026-10-22
+
+### Corregido
+
+- Terminal de contenedor: en algunos navegadores la terminal crecía sin fin y luego dejaba de aceptar teclas, con miles de errores «WebSocket is already in CLOSING or CLOSED state» en la consola. La caja de la terminal tiene ahora una altura propia (ya no sigue a su contenido), el redimensionado solo se envía cuando cambian de verdad las filas o columnas y nunca por una conexión cerrada, y el tamaño deja de vigilarse cuando la sesión termina.
+
 ## [0.2.12] - 2026-10-22
 
 ### Cambiado
@@ -193,7 +199,8 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
   `.gitattributes` y `.gitignore`.
 - Licencia WNCL-1.0 aplicada: archivo `LICENSE` y sección de créditos en los README.
 
-[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.2.12...HEAD
+[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.2.13...HEAD
+[0.2.13]: https://github.com/catlinux/Talaia/releases/tag/v0.2.13
 [0.2.12]: https://github.com/catlinux/Talaia/releases/tag/v0.2.12
 [0.2.11]: https://github.com/catlinux/Talaia/releases/tag/v0.2.11
 [0.2.10]: https://github.com/catlinux/Talaia/releases/tag/v0.2.10

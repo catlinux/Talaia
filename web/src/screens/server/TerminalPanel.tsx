@@ -34,6 +34,14 @@ const maxKeystrokes = 4096
 
 const encoder = new TextEncoder()
 
+/** webSocketOpen is the readyState of an open WebSocket. */
+const webSocketOpen = 1
+
+/** isOpen tells whether the socket can still send; a fake without readyState counts as open. */
+function isOpen(socket: SocketLike): boolean {
+  return socket.readyState === undefined || socket.readyState === webSocketOpen
+}
+
 /** sendKeystrokes sends what was typed or pasted, in messages the core accepts. */
 function sendKeystrokes(socket: SocketLike, text: string): void {
   const bytes = encoder.encode(text)
@@ -108,22 +116,46 @@ export function TerminalPanel({ api, serverId, container, onClose }: TerminalPan
     term.open(screen.current)
     fit.fit()
 
+    // The last size sent: the core only needs to hear about a real change.
+    let sentCols = 0
+    let sentRows = 0
     const sendResize = () => {
-      if (socket === null || !ready) return
+      if (socket === null || !ready || finished || !isOpen(socket)) return
+      if (term.cols === sentCols && term.rows === sentRows) return
+      sentCols = term.cols
+      sentRows = term.rows
       socket.send(JSON.stringify({ type: 'resize', cols: term.cols, rows: term.rows }))
     }
-    const observer = new ResizeObserver(() => {
-      fit.fit()
-      sendResize()
+    // One fit per frame, and only when the box really changed size: a fit that
+    // changes the box would otherwise call itself again.
+    let frame = 0
+    let boxWidth = 0
+    let boxHeight = 0
+    const observer = new ResizeObserver((entries) => {
+      const box = entries[entries.length - 1]?.contentRect
+      if (box !== undefined && box.width === boxWidth && box.height === boxHeight) return
+      if (box !== undefined) {
+        boxWidth = box.width
+        boxHeight = box.height
+      }
+      if (frame !== 0) return
+      frame = requestAnimationFrame(() => {
+        frame = 0
+        if (finished) return
+        fit.fit()
+        sendResize()
+      })
     })
     observer.observe(screen.current)
 
     const input = term.onData((data) => {
-      if (socket !== null && ready && !finished) sendKeystrokes(socket, data)
+      if (socket !== null && ready && !finished && isOpen(socket)) sendKeystrokes(socket, data)
     })
 
     const end = (text: string) => {
       finished = true
+      ready = false
+      observer.disconnect()
       if (alive) setPhase({ kind: 'ended', text })
     }
 
@@ -163,6 +195,7 @@ export function TerminalPanel({ api, serverId, container, onClose }: TerminalPan
 
     return () => {
       alive = false
+      if (frame !== 0) cancelAnimationFrame(frame)
       observer.disconnect()
       input.dispose()
       if (socket !== null) {

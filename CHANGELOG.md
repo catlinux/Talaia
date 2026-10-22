@@ -18,6 +18,12 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.2.13] - 2026-10-22
+
+### Fixed
+
+- Container terminal: on some browsers the terminal grew without end and then stopped taking keys, with thousands of "WebSocket is already in CLOSING or CLOSED state" errors in the console. The terminal box now has a height of its own (it no longer follows its content), a resize is sent only when the number of rows or columns really changes and never through a closed connection, and the size is no longer watched once the session ended.
+
 ## [0.2.12] - 2026-10-22
 
 ### Changed
@@ -193,7 +199,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.2.12...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.2.13...HEAD
+[0.2.13]: https://github.com/catlinux/Talaia/releases/tag/v0.2.13
 [0.2.12]: https://github.com/catlinux/Talaia/releases/tag/v0.2.12
 [0.2.11]: https://github.com/catlinux/Talaia/releases/tag/v0.2.11
 [0.2.10]: https://github.com/catlinux/Talaia/releases/tag/v0.2.10
