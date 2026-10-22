@@ -140,6 +140,25 @@ export function TerminalPanel({
     term.open(screen.current)
     fit.fit()
 
+    // Ctrl+C copies when text is selected (otherwise it stays the interrupt) and
+    // Ctrl+V / Ctrl+Shift+C / Ctrl+Shift+V work as in a browser. Returning false
+    // keeps the key from reaching the shell; the native paste event still fires.
+    term.attachCustomKeyEventHandler((event) => {
+      if (event.type !== 'keydown' || !(event.ctrlKey || event.metaKey) || event.altKey) {
+        return true
+      }
+      const key = event.key.toLowerCase()
+      if (key === 'v') return false
+      if (key === 'c' && (event.shiftKey || term.hasSelection())) {
+        event.preventDefault()
+        if (term.hasSelection()) {
+          void navigator.clipboard?.writeText(term.getSelection()).catch(() => undefined)
+        }
+        return false
+      }
+      return true
+    })
+
     // The last size sent: the core only needs to hear about a real change.
     let sentCols = 0
     let sentRows = 0

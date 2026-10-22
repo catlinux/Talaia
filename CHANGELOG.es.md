@@ -13,6 +13,12 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+## [0.3.23] - 2026-10-22
+
+### Corregido
+
+- Terminal: Ctrl+C copia el texto seleccionado (sin selección sigue siendo la interrupción), Ctrl+V pega, y Ctrl+Shift+C / Ctrl+Shift+V siempre copian y pegan. Antes solo funcionaba el menú contextual.
+
 ## [0.3.22] - 2026-10-22
 
 ### Corregido
@@ -369,7 +375,8 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
   `.gitattributes` y `.gitignore`.
 - Licencia WNCL-1.0 aplicada: archivo `LICENSE` y sección de créditos en los README.
 
-[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.3.22...HEAD
+[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.3.23...HEAD
+[0.3.23]: https://github.com/catlinux/Talaia/releases/tag/v0.3.23
 [0.3.22]: https://github.com/catlinux/Talaia/releases/tag/v0.3.22
 [0.3.21]: https://github.com/catlinux/Talaia/releases/tag/v0.3.21
 [0.3.20]: https://github.com/catlinux/Talaia/releases/tag/v0.3.20

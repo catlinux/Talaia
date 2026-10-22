@@ -15,6 +15,8 @@ const { terminals, FakeTerminal } = vi.hoisted(() => {
     rows = 30
     written: Uint8Array[] = []
     disposed = false
+    selection = ''
+    keyHandler: ((event: KeyboardEvent) => boolean) | null = null
     private dataListener: ((data: string) => void) | null = null
 
     constructor() {
@@ -23,6 +25,15 @@ const { terminals, FakeTerminal } = vi.hoisted(() => {
     loadAddon() {}
     open() {}
     focus() {}
+    attachCustomKeyEventHandler(handler: (event: KeyboardEvent) => boolean) {
+      this.keyHandler = handler
+    }
+    hasSelection() {
+      return this.selection !== ''
+    }
+    getSelection() {
+      return this.selection
+    }
     write(data: Uint8Array) {
       this.written.push(data)
     }
@@ -170,6 +181,31 @@ describe('TerminalPanel', () => {
     act(() => socket.receiveBytes([104, 105]))
     expect(Array.from(terminals[0]?.written[0] ?? [])).toEqual([104, 105])
     expect(screen.getByText('Recording')).toBeTruthy()
+  })
+
+  it('copies with Ctrl+C only when text is selected and lets Ctrl+V paste', async () => {
+    const writeText = vi.fn(() => Promise.resolve())
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true })
+    const { api } = fakeApi()
+    renderPanel(api)
+    fireEvent.click(screen.getByRole('button', { name: 'Open the terminal' }))
+    await waitFor(() => expect(api.open).toHaveBeenCalled())
+
+    const term = terminals[0]
+    const key = (init: KeyboardEventInit) =>
+      new KeyboardEvent('keydown', { ...init, cancelable: true })
+
+    // No selection: Ctrl+C is still the interrupt and reaches the shell.
+    expect(term?.keyHandler?.(key({ key: 'c', ctrlKey: true }))).toBe(true)
+    expect(writeText).not.toHaveBeenCalled()
+
+    term!.selection = 'copied text'
+    expect(term?.keyHandler?.(key({ key: 'c', ctrlKey: true }))).toBe(false)
+    expect(writeText).toHaveBeenCalledWith('copied text')
+
+    // Paste is left to the browser's paste event.
+    expect(term?.keyHandler?.(key({ key: 'v', ctrlKey: true }))).toBe(false)
+    expect(term?.keyHandler?.(key({ key: 'a', ctrlKey: true }))).toBe(true)
   })
 
   it('tells the core only about real size changes and nothing once the socket is closed', async () => {

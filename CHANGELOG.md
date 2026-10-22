@@ -18,6 +18,12 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.3.23] - 2026-10-22
+
+### Fixed
+
+- Terminal: Ctrl+C copies the selected text (without a selection it is still the interrupt), Ctrl+V pastes, and Ctrl+Shift+C / Ctrl+Shift+V always copy and paste. Before, only the context menu worked.
+
 ## [0.3.22] - 2026-10-22
 
 ### Fixed
@@ -369,7 +375,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.3.22...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.3.23...HEAD
+[0.3.23]: https://github.com/catlinux/Talaia/releases/tag/v0.3.23
 [0.3.22]: https://github.com/catlinux/Talaia/releases/tag/v0.3.22
 [0.3.21]: https://github.com/catlinux/Talaia/releases/tag/v0.3.21
 [0.3.20]: https://github.com/catlinux/Talaia/releases/tag/v0.3.20
