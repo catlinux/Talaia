@@ -88,6 +88,7 @@ func NewRouter(deps RouterDeps) http.Handler {
 				r.Get("/servers/{serverID}/containers", NewContainersHandler(*deps.Containers).ServeHTTP)
 				r.Post("/servers/{serverID}/containers/{container}/actions", NewContainerActionHandler(*deps.Containers).ServeHTTP)
 				r.Post("/servers/{serverID}/containers/{container}/logs", NewContainerLogsHandler(*deps.Containers).ServeHTTP)
+				r.Post("/servers/{serverID}/journal", NewJournalHandler(*deps.Containers).ServeHTTP)
 				r.Post("/servers/{serverID}/apt/status", NewAptStatusHandler(*deps.Containers).ServeHTTP)
 				r.Post("/servers/{serverID}/apt/upgrade", NewAptUpgradeHandler(*deps.Containers).ServeHTTP)
 				r.Post("/servers/{serverID}/reboot", NewHostRebootHandler(*deps.Containers).ServeHTTP)

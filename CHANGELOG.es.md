@@ -13,6 +13,12 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+## [0.3.13] - 2026-10-22
+
+### Añadido
+
+- El core lee el registro del sistema de un servidor (`POST /api/v1/servers/{id}/journal`) con filtros validados: servicio, prioridad, rango de fechas, arranque, búsqueda de texto y un cursor para seguir. La auditoría anota que se leyó, nunca el texto buscado ni las líneas. Todavía sin acceso desde el panel.
+
 ## [0.3.12] - 2026-10-22
 
 ### Añadido
@@ -298,7 +304,8 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
   `.gitattributes` y `.gitignore`.
 - Licencia WNCL-1.0 aplicada: archivo `LICENSE` y sección de créditos en los README.
 
-[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.3.12...HEAD
+[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.3.13...HEAD
+[0.3.13]: https://github.com/catlinux/Talaia/releases/tag/v0.3.13
 [0.3.12]: https://github.com/catlinux/Talaia/releases/tag/v0.3.12
 [0.3.11]: https://github.com/catlinux/Talaia/releases/tag/v0.3.11
 [0.3.10]: https://github.com/catlinux/Talaia/releases/tag/v0.3.10

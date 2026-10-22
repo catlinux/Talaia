@@ -47,6 +47,8 @@ func jobTimeout(kind string) time.Duration {
 		return time.Minute + margin
 	case serviceActionKind:
 		return 90*time.Second + margin
+	case journalReadKind:
+		return time.Minute + margin
 	default:
 		return 90*time.Second + margin
 	}

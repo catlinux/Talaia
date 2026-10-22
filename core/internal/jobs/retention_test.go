@@ -24,19 +24,52 @@ func (f *fakePurger) PurgeFinishedJobs(_ context.Context, kind string, olderThan
 func TestPurgeLoopRunsAtStartAndEveryInterval(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	purger := &fakePurger{calls: make(chan purgeCall, 4)}
+	purger := &fakePurger{calls: make(chan purgeCall, 16)}
 
 	go PurgeLoop(ctx, purger, 15*time.Minute, 10*time.Millisecond)
 
-	for index := 0; index < 2; index++ {
+	for cycle := 0; cycle < 2; cycle++ {
+		seen := make(map[string]time.Duration, len(retainedKinds))
+		for index := 0; index < len(retainedKinds); index++ {
+			select {
+			case call := <-purger.calls:
+				seen[call.kind] = call.olderThan
+			case <-time.After(time.Second):
+				t.Fatalf("purge %d did not run", cycle+1)
+			}
+		}
+		for _, kind := range retainedKinds {
+			if seen[kind] != 15*time.Minute {
+				t.Errorf("cycle %d purged %s with retention %s, want 15m", cycle+1, kind, seen[kind])
+			}
+		}
+	}
+}
+
+func TestPurgeLoopPurgesJournalReadJobs(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	purger := &fakePurger{calls: make(chan purgeCall, 4)}
+
+	go PurgeLoop(ctx, purger, 15*time.Minute, time.Hour)
+
+	seen := make(map[string]bool)
+	for index := 0; index < len(retainedKinds); index++ {
 		select {
 		case call := <-purger.calls:
-			if call.kind != ContainerLogsKind || call.olderThan != 15*time.Minute {
-				t.Errorf("call = %+v", call)
+			seen[call.kind] = true
+			if call.olderThan != 15*time.Minute {
+				t.Errorf("retention for %s = %s, want 15m", call.kind, call.olderThan)
 			}
 		case <-time.After(time.Second):
-			t.Fatalf("purge %d did not run", index+1)
+			t.Fatal("the initial purge did not run")
 		}
+	}
+	if !seen[JournalReadKind] {
+		t.Error("journal_read jobs are not purged")
+	}
+	if !seen[ContainerLogsKind] {
+		t.Error("container_logs jobs are not purged")
 	}
 }
 
