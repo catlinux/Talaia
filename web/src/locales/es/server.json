@@ -257,6 +257,71 @@
     "held": "Paquetes retenidos ({{count}})",
     "heldHint": "Los paquetes retenidos se quedan en la versión actual hasta que se desbloquean en el servidor."
   },
+  "services": {
+    "title": "Servicios",
+    "count_one": "{{count}} servicio",
+    "count_other": "{{count}} servicios",
+    "refresh": "Actualizar",
+    "loading": "Leyendo los servicios…",
+    "search": "Buscar servicios",
+    "searchPlaceholder": "Nombre o descripción",
+    "filterLabel": "Filtrar por estado",
+    "filterCount": "{{label}} ({{count}})",
+    "filters": {
+      "all": "Todos",
+      "active": "Activos",
+      "failed": "Fallidos",
+      "inactive": "Inactivos"
+    },
+    "empty": "Ningún servicio coincide con el filtro.",
+    "unknown": "Desconocido",
+    "state": {
+      "active": "Activo",
+      "failed": "Fallido",
+      "inactive": "Inactivo",
+      "activating": "Iniciando",
+      "deactivating": "Deteniendo",
+      "reloading": "Recargando",
+      "unknown": "Desconocido"
+    },
+    "fileState": {
+      "enabled": "Habilitado",
+      "disabled": "Deshabilitado",
+      "static": "Estático",
+      "masked": "Enmascarado",
+      "alias": "Alias",
+      "indirect": "Indirecto",
+      "generated": "Generado",
+      "transient": "Transitorio"
+    },
+    "action": {
+      "start": "Iniciar",
+      "stop": "Detener",
+      "restart": "Reiniciar",
+      "reload": "Recargar",
+      "enable": "Habilitar",
+      "disable": "Deshabilitar"
+    },
+    "working": "Trabajando…",
+    "done": "Hecho",
+    "failed": "Ha fallado: {{message}}",
+    "invalid": "El agente ha devuelto un estado inesperado.",
+    "loadError": "No se han podido cargar los servicios: {{message}}",
+    "selfManaged": "Talaia actualiza este servicio con la actualización del agente.",
+    "accessWarning": "Puedes perder el acceso a este servidor.",
+    "confirm": {
+      "stopTitle": "¿Detener {{unit}}?",
+      "stopBody": "El servicio se detiene y las cosas que dependen de él pueden dejar de responder.",
+      "restartTitle": "¿Reiniciar {{unit}}?",
+      "restartBody": "El servicio se detiene y vuelve a arrancar; las cosas que dependen de él pueden interrumpirse.",
+      "disableTitle": "¿Deshabilitar {{unit}}?",
+      "disableBody": "El servicio no se iniciará automáticamente después del próximo arranque.",
+      "stopYes": "Detener el servicio",
+      "restartYes": "Reiniciar el servicio",
+      "disableYes": "Deshabilitar el servicio",
+      "cancel": "Cancelar"
+    }
+  },
   "stack": {
     "back": "Volver al servidor",
     "breadcrumb": "Ruta de navegación",

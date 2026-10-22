@@ -20,5 +20,6 @@
   "updateInProgress": "An update is already queued or running.",
   "hostHelperMissing": "The host update helper is not available, so the panel cannot update itself.",
   "operationInProgress": "Another apt operation or reboot is already running for this server.",
+  "selfManagement": "Talaia cannot manage its own agent service. Update the agent instead.",
   "updateCheckPending": "The update check has not finished yet. Try again in a moment."
 }

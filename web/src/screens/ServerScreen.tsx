@@ -16,6 +16,7 @@ import {
   type ServerSummary,
   type ServersApi,
 } from '../api/servers'
+import { createServicesApi, type ServicesApi } from '../api/services'
 import { createTerminalApi, type TerminalApi } from '../api/terminal'
 import { errorMessage } from '../auth/AuthGate'
 import {
@@ -31,6 +32,7 @@ import { formatBytes, formatPercent } from './fleet/format'
 import { LogsPanel } from './server/LogsPanel'
 import { ManualUpgrade } from './server/ManualUpgrade'
 import { ResourcesSection } from './server/ResourcesSection'
+import { ServicesSection } from './server/ServicesSection'
 import { StackScreen } from './server/StackScreen'
 import { StacksSection } from './server/StacksSection'
 import { UpdatesSection } from './server/UpdatesSection'
@@ -55,6 +57,7 @@ const defaultApi = createContainersApi()
 const defaultTerminalApi = createTerminalApi()
 const defaultServersApi = createServersApi()
 const defaultAptApi = createAptApi()
+const defaultServicesApi = createServicesApi()
 
 interface ServerScreenProps {
   server: {
@@ -72,6 +75,8 @@ interface ServerScreenProps {
   serversApi?: ServersApi
   /** aptApi reads the pending package updates; the panel uses the real one. */
   aptApi?: AptApi
+  /** servicesApi lists systemd services and runs actions; the panel uses the real one. */
+  servicesApi?: ServicesApi
   /** pollMs overrides the job polling interval, for the tests. */
   pollMs?: number
 }
@@ -142,6 +147,7 @@ export function ServerScreen({
   terminalApi = defaultTerminalApi,
   serversApi = defaultServersApi,
   aptApi = defaultAptApi,
+  servicesApi = defaultServicesApi,
   pollMs = pollEvery,
 }: ServerScreenProps) {
   const { t } = useTranslation(['server', 'errors'])
@@ -405,6 +411,10 @@ export function ServerScreen({
           onChanged={() => void load()}
           onOpenStack={(name, adopted, broken) => setOpenStack({ name, adopted, broken })}
         />
+      ) : null}
+
+      {list !== null && list.connected ? (
+        <ServicesSection api={servicesApi} serverId={server.id} pollMs={pollMs} />
       ) : null}
 
       {containers.length > 0 ? (

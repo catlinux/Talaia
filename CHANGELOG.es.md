@@ -13,6 +13,12 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+## [0.3.11] - 2026-10-22
+
+### Añadido
+
+- Servicios en el panel: la pantalla de servidor tiene una sección **Servicios** con búsqueda, filtros (activos, fallidos, inactivos), el estado y si arrancan al inicio, y las acciones iniciar, parar, reiniciar, recargar, activar y desactivar (parar, reiniciar y desactivar preguntan antes, con un aviso más fuerte para servicios que pueden cortarte el acceso como SSH, Docker o la red). El servicio del agente no tiene acciones de parada. En ca, es y en.
+
 ## [0.3.10] - 2026-10-22
 
 ### Añadido
@@ -286,7 +292,8 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
   `.gitattributes` y `.gitignore`.
 - Licencia WNCL-1.0 aplicada: archivo `LICENSE` y sección de créditos en los README.
 
-[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.3.10...HEAD
+[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.3.11...HEAD
+[0.3.11]: https://github.com/catlinux/Talaia/releases/tag/v0.3.11
 [0.3.10]: https://github.com/catlinux/Talaia/releases/tag/v0.3.10
 [0.3.9]: https://github.com/catlinux/Talaia/releases/tag/v0.3.9
 [0.3.8]: https://github.com/catlinux/Talaia/releases/tag/v0.3.8

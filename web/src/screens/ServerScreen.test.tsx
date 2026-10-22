@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { AptApi } from '../api/apt'
 import type { Container, ContainerList, ContainersApi, Job } from '../api/containers'
 import { ApiError } from '../api/http'
+import type { ServiceUnit, ServicesApi } from '../api/services'
 import { AgentUpdateError, type ServerSummary, type ServersApi } from '../api/servers'
 import i18n from '../i18n'
 import { ServerScreen } from './ServerScreen'
@@ -17,6 +18,12 @@ const pendingAptApi: AptApi = {
   upgrade: () => Promise.reject(new Error('unexpected apt upgrade')),
   reboot: () => Promise.reject(new Error('unexpected reboot')),
   job: () => Promise.reject(new Error('unexpected apt job')),
+}
+
+const pendingServicesApi: ServicesApi = {
+  list: () => new Promise<ServiceUnit[]>(() => undefined),
+  action: () => Promise.reject(new Error('unexpected service action')),
+  job: () => Promise.reject(new Error('unexpected service job')),
 }
 
 /** serverSummary builds the server list entry the screen loads. */
@@ -101,12 +108,14 @@ function renderScreen(
   onBack = () => undefined,
   serversApi: ServersApi = serversApiWith([serverSummary()]),
   aptApi: AptApi = pendingAptApi,
+  servicesApi: ServicesApi = pendingServicesApi,
 ) {
   render(
     <ServerScreen
       server={server}
       api={api}
       aptApi={aptApi}
+      servicesApi={servicesApi}
       serversApi={serversApi}
       onBack={onBack}
       pollMs={1}
@@ -171,6 +180,36 @@ describe('ServerScreen', () => {
     expect(await screen.findByRole('heading', { level: 2, name: 'Updates' })).toBeTruthy()
     expect(await screen.findByText('Everything is up to date.')).toBeTruthy()
     expect(aptApi.status).toHaveBeenCalledWith('srv-1', false)
+  })
+
+  it('renders the services section of a connected server', async () => {
+    const servicesApi: ServicesApi = {
+      list: vi.fn(() =>
+        Promise.resolve([
+          {
+            name: 'docker.service',
+            description: 'Docker',
+            loadState: 'loaded',
+            activeState: 'active',
+            subState: 'running',
+            unitFileState: 'enabled',
+          } satisfies ServiceUnit,
+        ]),
+      ),
+      action: () => Promise.reject(new Error('unexpected service action')),
+      job: () => Promise.reject(new Error('unexpected service job')),
+    }
+    renderScreen(
+      apiWith(listOf(container())),
+      undefined,
+      serversApiWith([serverSummary()]),
+      pendingAptApi,
+      servicesApi,
+    )
+
+    expect(await screen.findByRole('heading', { level: 2, name: 'Services' })).toBeTruthy()
+    expect(await screen.findByText('1 service')).toBeTruthy()
+    expect(screen.getByRole('heading', { level: 3, name: 'docker.service' })).toBeTruthy()
   })
 
   it('explains an offline agent, a missing Docker and an empty server', async () => {
@@ -456,7 +495,11 @@ describe('ServerScreen', () => {
     expect(api.logs).toHaveBeenCalledWith('srv-1', 'web')
     expect(screen.getByRole('region', { name: 'Logs of web' })).toBeTruthy()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Refresh' }))
+    fireEvent.click(
+      within(screen.getByRole('region', { name: 'Logs of web' })).getByRole('button', {
+        name: 'Refresh',
+      }),
+    )
     await waitFor(() => expect(api.logs).toHaveBeenCalledTimes(2))
 
     fireEvent.click(screen.getByRole('button', { name: 'Close' }))

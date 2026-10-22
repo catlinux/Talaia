@@ -257,6 +257,71 @@
     "held": "Held packages ({{count}})",
     "heldHint": "Held packages stay at their current version until they are unheld on the server."
   },
+  "services": {
+    "title": "Services",
+    "count_one": "{{count}} service",
+    "count_other": "{{count}} services",
+    "refresh": "Refresh",
+    "loading": "Reading the services…",
+    "search": "Search services",
+    "searchPlaceholder": "Name or description",
+    "filterLabel": "Filter by state",
+    "filterCount": "{{label}} ({{count}})",
+    "filters": {
+      "all": "All",
+      "active": "Active",
+      "failed": "Failed",
+      "inactive": "Inactive"
+    },
+    "empty": "No services match the filter.",
+    "unknown": "Unknown",
+    "state": {
+      "active": "Active",
+      "failed": "Failed",
+      "inactive": "Inactive",
+      "activating": "Starting",
+      "deactivating": "Stopping",
+      "reloading": "Reloading",
+      "unknown": "Unknown"
+    },
+    "fileState": {
+      "enabled": "Enabled",
+      "disabled": "Disabled",
+      "static": "Static",
+      "masked": "Masked",
+      "alias": "Alias",
+      "indirect": "Indirect",
+      "generated": "Generated",
+      "transient": "Transient"
+    },
+    "action": {
+      "start": "Start",
+      "stop": "Stop",
+      "restart": "Restart",
+      "reload": "Reload",
+      "enable": "Enable",
+      "disable": "Disable"
+    },
+    "working": "Working…",
+    "done": "Done",
+    "failed": "Failed: {{message}}",
+    "invalid": "The agent returned an unexpected state.",
+    "loadError": "The services could not be loaded: {{message}}",
+    "selfManaged": "Talaia updates this service with the agent update.",
+    "accessWarning": "You may lose access to this server.",
+    "confirm": {
+      "stopTitle": "Stop {{unit}}?",
+      "stopBody": "The service stops and the things that depend on it may stop working.",
+      "restartTitle": "Restart {{unit}}?",
+      "restartBody": "The service stops and starts again; the things that depend on it may be interrupted.",
+      "disableTitle": "Disable {{unit}}?",
+      "disableBody": "The service will not start automatically after the next boot.",
+      "stopYes": "Stop the service",
+      "restartYes": "Restart the service",
+      "disableYes": "Disable the service",
+      "cancel": "Cancel"
+    }
+  },
   "stack": {
     "back": "Back to the server",
     "breadcrumb": "Breadcrumb",

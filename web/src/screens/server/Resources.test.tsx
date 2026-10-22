@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { AptApi } from '../../api/apt'
 import type { ContainersApi, Job, ResourceItem, ResourceKind } from '../../api/containers'
 import type { ServersApi } from '../../api/servers'
+import type { ServiceUnit, ServicesApi } from '../../api/services'
 import i18n from '../../i18n'
 import { ServerScreen } from '../ServerScreen'
 
@@ -15,6 +16,12 @@ const pendingAptApi: AptApi = {
   upgrade: () => Promise.reject(new Error('unexpected apt upgrade')),
   reboot: () => Promise.reject(new Error('unexpected reboot')),
   job: () => Promise.reject(new Error('unexpected apt job')),
+}
+
+const pendingServicesApi: ServicesApi = {
+  list: () => new Promise<ServiceUnit[]>(() => undefined),
+  action: () => Promise.reject(new Error('unexpected service action')),
+  job: () => Promise.reject(new Error('unexpected service job')),
 }
 
 const images: ResourceItem[] = [
@@ -86,6 +93,7 @@ function renderScreen(api: ContainersApi) {
       server={server}
       api={api}
       aptApi={pendingAptApi}
+      servicesApi={pendingServicesApi}
       serversApi={serversApi}
       onBack={() => undefined}
       pollMs={1}

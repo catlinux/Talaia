@@ -257,6 +257,71 @@
     "held": "Paquets retinguts ({{count}})",
     "heldHint": "Els paquets retinguts es queden a la versió actual fins que es desbloquegen al servidor."
   },
+  "services": {
+    "title": "Serveis",
+    "count_one": "{{count}} servei",
+    "count_other": "{{count}} serveis",
+    "refresh": "Actualitza",
+    "loading": "Llegint els serveis…",
+    "search": "Cerca serveis",
+    "searchPlaceholder": "Nom o descripció",
+    "filterLabel": "Filtra per estat",
+    "filterCount": "{{label}} ({{count}})",
+    "filters": {
+      "all": "Tots",
+      "active": "Actius",
+      "failed": "Fallits",
+      "inactive": "Inactius"
+    },
+    "empty": "Cap servei coincideix amb el filtre.",
+    "unknown": "Desconegut",
+    "state": {
+      "active": "Actiu",
+      "failed": "Fallit",
+      "inactive": "Inactiu",
+      "activating": "S'està iniciant",
+      "deactivating": "S'està aturant",
+      "reloading": "S'està recarregant",
+      "unknown": "Desconegut"
+    },
+    "fileState": {
+      "enabled": "Habilitat",
+      "disabled": "Deshabilitat",
+      "static": "Estàtic",
+      "masked": "Emmascarat",
+      "alias": "Àlies",
+      "indirect": "Indirecte",
+      "generated": "Generat",
+      "transient": "Transitori"
+    },
+    "action": {
+      "start": "Inicia",
+      "stop": "Atura",
+      "restart": "Reinicia",
+      "reload": "Recarrega",
+      "enable": "Habilita",
+      "disable": "Deshabilita"
+    },
+    "working": "Treballant…",
+    "done": "Fet",
+    "failed": "Ha fallat: {{message}}",
+    "invalid": "L'agent ha retornat un estat inesperat.",
+    "loadError": "No s'han pogut carregar els serveis: {{message}}",
+    "selfManaged": "Talaia actualitza aquest servei amb l'actualització de l'agent.",
+    "accessWarning": "Pots perdre l'accés a aquest servidor.",
+    "confirm": {
+      "stopTitle": "Aturar {{unit}}?",
+      "stopBody": "El servei s'atura i les coses que en depenen es poden deixar de respondre.",
+      "restartTitle": "Reiniciar {{unit}}?",
+      "restartBody": "El servei s'atura i torna a arrencar; les coses que en depenen es poden interrompre.",
+      "disableTitle": "Deshabilitar {{unit}}?",
+      "disableBody": "El servei no s'iniciarà automàticament després del proper arrencament.",
+      "stopYes": "Atura el servei",
+      "restartYes": "Reinicia el servei",
+      "disableYes": "Deshabilita el servei",
+      "cancel": "Cancel·la"
+    }
+  },
   "stack": {
     "back": "Torna al servidor",
     "breadcrumb": "Ruta de navegació",

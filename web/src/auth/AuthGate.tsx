@@ -38,6 +38,7 @@ const errorKeys: Record<ApiErrorCode, string> = {
   target_not_offered: 'targetNotOffered',
   update_in_progress: 'updateInProgress',
   operation_in_progress: 'operationInProgress',
+  self_management: 'selfManagement',
   host_helper_missing: 'hostHelperMissing',
   update_check_pending: 'updateCheckPending',
   internal: 'generic',

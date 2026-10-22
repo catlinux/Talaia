@@ -88,7 +88,7 @@ tareas concretas de la fase actual y de la siguiente.
 - [x] Contrato para apt, systemd, journald, reinicio y terminal del host
 - [x] apt, solo lectura: actualizaciones pendientes y de seguridad, paquetes retenidos, «reinicio necesario» (agente, core, pestaña Actualizaciones, insignias en Flota)
 - [x] Actualizar con apt (todo o solo seguridad) de forma que sobreviva a un reinicio del agente, y reiniciar escribiendo el nombre del servidor
-- [ ] systemd: estado de activación, iniciar/parar/reiniciar/recargar/activar/desactivar con confirmación, pestaña Servicios
+- [x] systemd: estado de activación, iniciar/parar/reiniciar/recargar/activar/desactivar con confirmación, pestaña Servicios
 - [ ] journald: filtros (unidad, prioridad, arranque, fechas, texto) y seguimiento, pestaña Registros
 - [ ] Terminal del host: shell de root con un código TOTP nuevo, grabación y franja roja
 - [ ] Pantalla de servidor con pestañas y resumen (maqueta 2) y pantalla de auditoría

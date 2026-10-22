@@ -7,6 +7,7 @@ import type { AptApi } from './api/apt'
 import type { AuthApi } from './api/auth'
 import { createMockFleetClient } from './api/client'
 import type { ContainersApi } from './api/containers'
+import type { ServiceUnit, ServicesApi } from './api/services'
 import type { SystemApi } from './api/system'
 import i18n from './i18n'
 import { ATTRIBUTION } from './screens/About'
@@ -33,6 +34,12 @@ const pendingAptApi: AptApi = {
   upgrade: () => Promise.reject(new Error('unexpected apt upgrade')),
   reboot: () => Promise.reject(new Error('unexpected reboot')),
   job: () => Promise.reject(new Error('unexpected apt job')),
+}
+
+const pendingServicesApi: ServicesApi = {
+  list: () => new Promise<ServiceUnit[]>(() => undefined),
+  action: () => Promise.reject(new Error('unexpected service action')),
+  job: () => Promise.reject(new Error('unexpected service job')),
 }
 
 /** renderApp mounts the panel behind an authenticated gate. */
@@ -207,6 +214,7 @@ describe('App', () => {
           client={createMockFleetClient()}
           containersApi={containersApi}
           aptApi={pendingAptApi}
+          servicesApi={pendingServicesApi}
         />
       </AuthGate>,
     )

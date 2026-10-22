@@ -24,6 +24,7 @@ export type ApiErrorCode =
   | 'target_not_offered'
   | 'update_in_progress'
   | 'operation_in_progress'
+  | 'self_management'
   | 'host_helper_missing'
   | 'update_check_pending'
   | 'internal'
@@ -48,6 +49,7 @@ const knownCodes: readonly ApiErrorCode[] = [
   'target_not_offered',
   'update_in_progress',
   'operation_in_progress',
+  'self_management',
   'host_helper_missing',
   'update_check_pending',
   'internal',

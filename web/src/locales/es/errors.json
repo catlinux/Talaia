@@ -20,5 +20,6 @@
   "updateInProgress": "Ya hay una actualización en cola o en marcha.",
   "hostHelperMissing": "El ayudante de actualización del host no está disponible, así que el panel no puede actualizarse solo.",
   "operationInProgress": "Ya hay otra operación de apt o un reinicio en marcha en este servidor.",
+  "selfManagement": "Talaia no puede gestionar su propio servicio de agente. Actualiza el agente.",
   "updateCheckPending": "La comprobación de actualizaciones aún no ha terminado. Vuelve a probar en un momento."
 }
