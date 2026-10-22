@@ -13,6 +13,12 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+## [0.3.9] - 2026-10-22
+
+### Añadido
+
+- El agente informa de si cada servicio está activado y puede iniciar, parar, reiniciar, recargar, activar o desactivar un servicio (todavía sin acceso desde el panel). Se niega a pararse, reiniciarse o desactivarse a sí mismo.
+
 ## [0.3.8] - 2026-10-22
 
 ### Añadido
@@ -274,7 +280,8 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
   `.gitattributes` y `.gitignore`.
 - Licencia WNCL-1.0 aplicada: archivo `LICENSE` y sección de créditos en los README.
 
-[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.3.8...HEAD
+[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.3.9...HEAD
+[0.3.9]: https://github.com/catlinux/Talaia/releases/tag/v0.3.9
 [0.3.8]: https://github.com/catlinux/Talaia/releases/tag/v0.3.8
 [0.3.7]: https://github.com/catlinux/Talaia/releases/tag/v0.3.7
 [0.3.6]: https://github.com/catlinux/Talaia/releases/tag/v0.3.6

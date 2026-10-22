@@ -18,6 +18,12 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.3.9] - 2026-10-22
+
+### Added
+
+- The agent reports whether each service is enabled and can start, stop, restart, reload, enable or disable a service (not reachable from the panel yet). It refuses to stop, restart or disable itself.
+
 ## [0.3.8] - 2026-10-22
 
 ### Added
@@ -274,7 +280,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.3.8...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.3.9...HEAD
+[0.3.9]: https://github.com/catlinux/Talaia/releases/tag/v0.3.9
 [0.3.8]: https://github.com/catlinux/Talaia/releases/tag/v0.3.8
 [0.3.7]: https://github.com/catlinux/Talaia/releases/tag/v0.3.7
 [0.3.6]: https://github.com/catlinux/Talaia/releases/tag/v0.3.6

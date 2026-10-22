@@ -474,5 +474,6 @@ func newExecutor(cfg config.Config, identity *enroll.Identity, checker *apt.Chec
 		WithResources(docker).
 		WithUpdates(update.New(update.Options{CoreURL: cfg.CoreURL, Identity: identity})).
 		WithApt(checker).
-		WithAptOperations(aptOps)
+		WithAptOperations(aptOps).
+		WithServices(jobs.NewServiceManager(nil))
 }
