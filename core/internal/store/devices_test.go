@@ -91,41 +91,62 @@ func TestTrustedDeviceLifecycle(t *testing.T) {
 	}
 }
 
-func TestTrustedDeviceFailuresDisableIt(t *testing.T) {
+func TestTrustedDevicePINAttemptsAreBounded(t *testing.T) {
 	s := newTestStore(t)
 	ctx := context.Background()
 	user := newTestUser(t, s)
 	device := newTrustedDevice(t, s, user.ID, "laptop")
 
-	for failures := 1; failures <= maxTestPINFailures; failures++ {
-		got, err := s.RecordPINFail(ctx, device.ID, maxTestPINFailures)
+	for attempt := 1; attempt <= maxTestPINFailures; attempt++ {
+		got, err := s.ReservePINAttempt(ctx, device.ID, maxTestPINFailures)
 		if err != nil {
-			t.Fatalf("failure %d: %v", failures, err)
+			t.Fatalf("attempt %d: %v", attempt, err)
 		}
-		if got != failures {
-			t.Errorf("failures = %d, want %d", got, failures)
+		if got != attempt {
+			t.Errorf("attempts = %d, want %d", got, attempt)
 		}
 	}
+	// No attempt is left: not even a correct PIN may be checked any more.
+	if _, err := s.ReservePINAttempt(ctx, device.ID, maxTestPINFailures); !errors.Is(err, ErrNotFound) {
+		t.Errorf("reserve past the limit = %v, want ErrNotFound", err)
+	}
 
-	// The fifth failure removes the PIN and the device.
+	// The handler disables the device; a disabled device has no attempts.
+	if err := s.DeleteTrustedDevice(ctx, user.ID, device.ID); err != nil {
+		t.Fatal(err)
+	}
 	if _, err := s.GetTrustedDeviceByTokenHash(ctx, device.TokenHash); !errors.Is(err, ErrNotFound) {
 		t.Errorf("disabled device is still usable by token: %v", err)
 	}
-	if _, err := s.GetTrustedDevice(ctx, user.ID, device.ID); !errors.Is(err, ErrNotFound) {
-		t.Errorf("disabled device is still listed by id: %v", err)
+	if _, err := s.ReservePINAttempt(ctx, device.ID, maxTestPINFailures); !errors.Is(err, ErrNotFound) {
+		t.Errorf("reserve on a disabled device = %v, want ErrNotFound", err)
 	}
-	if err := s.TouchTrustedDevice(ctx, device.ID, time.Now()); !errors.Is(err, ErrNotFound) {
-		t.Errorf("touch disabled device = %v, want ErrNotFound", err)
+}
+
+func TestTrustedDevicePINAttemptsUnderConcurrency(t *testing.T) {
+	s := newTestStore(t)
+	ctx := context.Background()
+	user := newTestUser(t, s)
+	device := newTrustedDevice(t, s, user.ID, "laptop")
+
+	const requests = 40
+	results := make(chan error, requests)
+	for range requests {
+		go func() {
+			_, err := s.ReservePINAttempt(ctx, device.ID, maxTestPINFailures)
+			results <- err
+		}()
 	}
-	if _, err := s.RecordPINFail(ctx, device.ID, maxTestPINFailures); !errors.Is(err, ErrNotFound) {
-		t.Errorf("record failure on disabled device = %v, want ErrNotFound", err)
+	granted := 0
+	for range requests {
+		if err := <-results; err == nil {
+			granted++
+		} else if !errors.Is(err, ErrNotFound) {
+			t.Errorf("reserve: %v", err)
+		}
 	}
-	list, err := s.ListTrustedDevices(ctx, user.ID)
-	if err != nil {
-		t.Fatalf("list: %v", err)
-	}
-	if len(list) != 0 {
-		t.Errorf("disabled devices are listed: %+v", list)
+	if granted != maxTestPINFailures {
+		t.Errorf("granted %d attempts out of %d parallel requests, want %d", granted, requests, maxTestPINFailures)
 	}
 }
 
@@ -137,21 +158,21 @@ func TestTrustedDeviceTouchResetsFailures(t *testing.T) {
 	user := newTestUser(t, s)
 	device := newTrustedDevice(t, s, user.ID, "laptop")
 
-	if _, err := s.RecordPINFail(ctx, device.ID, maxTestPINFailures); err != nil {
+	if _, err := s.ReservePINAttempt(ctx, device.ID, maxTestPINFailures); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := s.RecordPINFail(ctx, device.ID, maxTestPINFailures); err != nil {
+	if _, err := s.ReservePINAttempt(ctx, device.ID, maxTestPINFailures); err != nil {
 		t.Fatal(err)
 	}
 	if err := s.TouchTrustedDevice(ctx, device.ID, time.Now()); err != nil {
 		t.Fatal(err)
 	}
-	failures, err := s.RecordPINFail(ctx, device.ID, maxTestPINFailures)
+	failures, err := s.ReservePINAttempt(ctx, device.ID, maxTestPINFailures)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if failures != 1 {
-		t.Errorf("failures after a success = %d, want 1", failures)
+		t.Errorf("attempts after a success = %d, want 1", failures)
 	}
 }
 
@@ -272,10 +293,10 @@ func TestCompleteDeviceMFA(t *testing.T) {
 	ctx := context.Background()
 	user := newTestUser(t, s)
 	device := newTrustedDevice(t, s, user.ID, "laptop")
-	if _, err := s.RecordPINFail(ctx, device.ID, maxTestPINFailures); err != nil {
+	if _, err := s.ReservePINAttempt(ctx, device.ID, maxTestPINFailures); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := s.RecordPINFail(ctx, device.ID, maxTestPINFailures); err != nil {
+	if _, err := s.ReservePINAttempt(ctx, device.ID, maxTestPINFailures); err != nil {
 		t.Fatal(err)
 	}
 

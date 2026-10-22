@@ -13,6 +13,10 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+### Seguridad
+
+- Entrada con PIN: el intento se cuenta ahora antes de comprobar el PIN, en una sola sentencia junto con su límite, así que peticiones enviadas a la vez no pueden probar más de cinco PIN por dispositivo de confianza (antes, peticiones en paralelo desde varias direcciones podían comprobarse todas antes de que el contador desactivara el dispositivo). Encontrado en la revisión de seguridad que cierra la fase 2, que cubrió también las passkeys, la actualización de agentes y la terminal de contenedor sin otros hallazgos.
+
 ## [0.2.15] - 2026-10-22
 
 ### Corregido

@@ -178,28 +178,30 @@ func (s *Store) TouchTrustedDevice(ctx context.Context, id string, now time.Time
 	return nil
 }
 
-// RecordPINFail counts a wrong PIN and disables the device at maxFailures. It
-// returns the new count. A removed or unknown device is ErrNotFound.
-func (s *Store) RecordPINFail(ctx context.Context, id string, maxFailures int) (int, error) {
-	if maxFailures <= 0 {
-		return 0, errors.New("max failures must be positive")
+// ReservePINAttempt counts a PIN attempt before the PIN is checked, so that
+// requests sent at the same time cannot test more PINs than maxAttempts: the
+// count and its limit are checked in one statement. It returns the new count. A
+// device that is removed, unknown or out of attempts is ErrNotFound. A correct
+// PIN resets the count (TouchTrustedDevice); the caller disables the device
+// when the attempt that reached the limit was wrong.
+func (s *Store) ReservePINAttempt(ctx context.Context, id string, maxAttempts int) (int, error) {
+	if maxAttempts <= 0 {
+		return 0, errors.New("max attempts must be positive")
 	}
 
-	var failures int
+	var attempts int
 	err := s.pool.QueryRow(ctx,
 		`UPDATE trusted_device
-		 SET failed_pins = failed_pins + 1,
-		     pin_hash = CASE WHEN failed_pins + 1 >= $2 THEN NULL ELSE pin_hash END,
-		     removed_at = CASE WHEN failed_pins + 1 >= $2 THEN now() ELSE removed_at END
-		 WHERE id = $1 AND removed_at IS NULL
-		 RETURNING failed_pins`, id, maxFailures).Scan(&failures)
+		 SET failed_pins = failed_pins + 1
+		 WHERE id = $1 AND removed_at IS NULL AND pin_hash IS NOT NULL AND failed_pins < $2
+		 RETURNING failed_pins`, id, maxAttempts).Scan(&attempts)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return 0, ErrNotFound
 	}
 	if err != nil {
-		return 0, fmt.Errorf("record pin failure: %w", err)
+		return 0, fmt.Errorf("reserve a pin attempt: %w", err)
 	}
-	return failures, nil
+	return attempts, nil
 }
 
 // CompleteDeviceMFA records that the device just passed the second factor and

@@ -18,6 +18,10 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+### Security
+
+- PIN sign-in: an attempt is now counted before the PIN is checked, in one statement with its limit, so requests sent at the same time cannot test more than five PINs per trusted device (before, parallel requests from several addresses could all be checked before the counter disabled the device). Found in the security review that closes phase 2, which also covered passkeys, agent updates and the container terminal without other findings.
+
 ## [0.2.15] - 2026-10-22
 
 ### Fixed

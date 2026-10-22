@@ -334,30 +334,43 @@ func (h *authHandler) pinLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	now := h.now()
+	if user.LockedUntil.After(now) {
+		auth.DummyVerify(request.PIN)
+		h.audit(r, user.Username, "login_pin_failed", "failure", map[string]any{"reason": "locked"})
+		writeError(w, http.StatusUnauthorized, "invalid_credentials")
+		return
+	}
+
+	// The attempt is counted before the PIN is checked: parallel requests cannot
+	// test more PINs than the limit.
+	attempts, err := h.deps.Store.ReservePINAttempt(r.Context(), device.ID, maxPINFailures)
+	if errors.Is(err, store.ErrNotFound) {
+		auth.DummyVerify(request.PIN)
+		h.audit(r, user.Username, "login_pin_failed", "failure", map[string]any{"reason": "no_attempts_left"})
+		writeError(w, http.StatusUnauthorized, "invalid_credentials")
+		return
+	}
+	if err != nil {
+		internal(w, "reserve a pin attempt", err)
+		return
+	}
+
 	valid, err := auth.VerifyPassword(device.PinHash, request.PIN)
 	if err != nil {
 		slog.Error("verify pin", "device_id", device.ID, "error", err)
 		writeError(w, http.StatusInternalServerError, "internal")
 		return
 	}
-
-	now := h.now()
-	locked := user.LockedUntil.After(now)
 	if !valid {
-		if !locked {
-			if _, err := h.deps.Store.RecordPINFail(r.Context(), device.ID, maxPINFailures); err != nil &&
+		h.audit(r, user.Username, "login_pin_failed", "failure", map[string]any{"reason": "wrong_pin"})
+		if attempts >= maxPINFailures {
+			// The last attempt was wrong: the PIN of this device is gone.
+			if err := h.deps.Store.DeleteTrustedDevice(r.Context(), user.ID, device.ID); err != nil &&
 				!errors.Is(err, store.ErrNotFound) {
-				slog.Warn("record pin failure", "device_id", device.ID, "error", err)
+				slog.Warn("disable trusted device", "device_id", device.ID, "error", err)
 			}
-			h.audit(r, user.Username, "login_pin_failed", "failure", map[string]any{"reason": "wrong_pin"})
-		} else {
-			h.audit(r, user.Username, "login_pin_failed", "failure", map[string]any{"reason": "locked"})
 		}
-		writeError(w, http.StatusUnauthorized, "invalid_credentials")
-		return
-	}
-	if locked {
-		h.audit(r, user.Username, "login_pin_failed", "failure", map[string]any{"reason": "locked"})
 		writeError(w, http.StatusUnauthorized, "invalid_credentials")
 		return
 	}
