@@ -229,7 +229,9 @@ func TestUpdateHappyPath(t *testing.T) {
 	}
 	wantArgs := []string{
 		"--unit=talaia-agent-upgrade", "--collect", "--no-block",
-		"apt-get", "install", "-y", "--reinstall", target,
+		"apt-get", "install", "-y",
+		"-o", "Dpkg::Options::=--force-confdef", "-o", "Dpkg::Options::=--force-confold",
+		"--reinstall", target,
 	}
 	if !slices.Equal(call[0].args, wantArgs) {
 		t.Errorf("runner args = %v, want %v", call[0].args, wantArgs)

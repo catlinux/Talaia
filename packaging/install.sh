@@ -211,8 +211,10 @@ esac
 
 echo "installing the talaia-agent package"
 # --reinstall makes the same version install again, which an upgrade of a build
-# with the same version number needs.
-apt-get install -y --reinstall "$deb_file"
+# with the same version number needs. The conffile options keep the edited
+# /etc/talaia/agent.toml without asking, also when no terminal is attached.
+apt-get install -y -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confold \
+    --reinstall "$deb_file"
 
 if [ "$upgrade" -eq 1 ]; then
     if [ ! -f "$CONFIG" ]; then
@@ -225,17 +227,17 @@ if [ "$upgrade" -eq 1 ]; then
     exit 0
 fi
 
-# Write core_url and ca_fingerprint into the configuration, replacing previous values.
+# Write core_url and ca_fingerprint into the configuration, replacing previous
+# values. They go first: in TOML a key after a [table] header belongs to that
+# table, so appending them would hide them inside [terminal].
 mkdir -p /etc/talaia /var/lib/talaia
-if [ -f "$CONFIG" ]; then
-    grep -v -E '^[[:space:]]*#?[[:space:]]*(core_url|ca_fingerprint)[[:space:]]*=' "$CONFIG" > "$CONFIG.new" || true
-else
-    : > "$CONFIG.new"
-fi
-printf 'core_url = "%s"
-' "$core_url" >> "$CONFIG.new"
-printf 'ca_fingerprint = "%s"
-' "$ca_fingerprint" >> "$CONFIG.new"
+{
+    printf 'core_url = "%s"\n' "$core_url"
+    printf 'ca_fingerprint = "%s"\n' "$ca_fingerprint"
+    if [ -f "$CONFIG" ]; then
+        grep -v -E '^[[:space:]]*#?[[:space:]]*(core_url|ca_fingerprint)[[:space:]]*=' "$CONFIG" || true
+    fi
+} > "$CONFIG.new"
 mv "$CONFIG.new" "$CONFIG"
 chmod 0600 "$CONFIG"
 

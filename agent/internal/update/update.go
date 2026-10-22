@@ -230,7 +230,11 @@ func (u *Updater) Update(ctx context.Context, version, sha256Hex string) (messag
 
 	if err := u.runner.Run(ctx, "systemd-run",
 		"--unit=talaia-agent-upgrade", "--collect", "--no-block",
-		"apt-get", "install", "-y", "--reinstall", target); err != nil {
+		// /etc/talaia/agent.toml is a conffile the installer edits: without a
+		// terminal a conffile question would leave the package half configured.
+		"apt-get", "install", "-y",
+		"-o", "Dpkg::Options::=--force-confdef", "-o", "Dpkg::Options::=--force-confold",
+		"--reinstall", target); err != nil {
 		return "", fmt.Errorf("start the agent installation: %w", err)
 	}
 	return fmt.Sprintf("update to %s started; the agent will restart", version), nil

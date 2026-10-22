@@ -75,6 +75,17 @@ host = false
 			},
 		},
 		{
+			// An installer that appends core_url after the [terminal] header
+			// hides it inside that table.
+			name: "core_url inside the terminal table",
+			file: stringPtr(`
+[terminal]
+host = true
+core_url = "https://core.example.com"
+`),
+			wantErr: "must come before the [terminal] line",
+		},
+		{
 			name: "environment overrides file",
 			file: &fromFile,
 			env: map[string]string{

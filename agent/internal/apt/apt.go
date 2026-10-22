@@ -59,7 +59,8 @@ func (ExecRunner) Output(ctx context.Context, name string, args ...string) ([]by
 		}
 		environ = append(environ, value)
 	}
-	command.Env = append(environ, "LC_ALL=C")
+	environ = append(environ, "LC_ALL=C")
+	command.Env = environ
 
 	output, err := command.Output()
 	if err != nil {

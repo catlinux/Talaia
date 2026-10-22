@@ -50,6 +50,10 @@ type fileConfig struct {
 	EnrollTokenFile *string `toml:"enroll_token_file"`
 	Terminal        struct {
 		Host *bool `toml:"host"`
+		// Top-level keys written after the [terminal] header land here; they are
+		// only read to say so instead of failing with "core_url is not set".
+		CoreURL       *string `toml:"core_url"`
+		CAFingerprint *string `toml:"ca_fingerprint"`
 	} `toml:"terminal"`
 }
 
@@ -166,6 +170,9 @@ func applyFile(cfg *Config, path string, explicit bool, coreURLSet *bool) error 
 	}
 	if file.EnrollTokenFile != nil {
 		cfg.EnrollTokenFile = *file.EnrollTokenFile
+	}
+	if file.Terminal.CoreURL != nil || file.Terminal.CAFingerprint != nil {
+		return fmt.Errorf("config file %s: core_url and ca_fingerprint must come before the [terminal] line", path)
 	}
 	if file.Terminal.Host != nil {
 		cfg.HostTerminal = *file.Terminal.Host
