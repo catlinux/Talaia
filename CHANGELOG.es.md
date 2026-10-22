@@ -13,6 +13,12 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+## [0.3.0] - 2026-10-22
+
+### Cambiado
+
+- **Fase 2 (contenedores y stacks) cerrada.** Contenedores, stacks con el editor de Compose, adopción de proyectos en marcha, imágenes/volúmenes/redes con limpieza, registros en directo, la pantalla de stack y la terminal de contenedor grabada se probaron en dos servidores reales; la revisión de seguridad de la fase está hecha. El roadmap marca las fases 0 a 2 como hechas y la fase 3 (servidor completo) es la siguiente.
+
 ### Seguridad
 
 - Entrada con PIN: el intento se cuenta ahora antes de comprobar el PIN, en una sola sentencia junto con su límite, así que peticiones enviadas a la vez no pueden probar más de cinco PIN por dispositivo de confianza (antes, peticiones en paralelo desde varias direcciones podían comprobarse todas antes de que el contador desactivara el dispositivo). Encontrado en la revisión de seguridad que cierra la fase 2, que cubrió también las passkeys, la actualización de agentes y la terminal de contenedor sin otros hallazgos.
@@ -215,7 +221,8 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
   `.gitattributes` y `.gitignore`.
 - Licencia WNCL-1.0 aplicada: archivo `LICENSE` y sección de créditos en los README.
 
-[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.2.15...HEAD
+[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/catlinux/Talaia/releases/tag/v0.3.0
 [0.2.15]: https://github.com/catlinux/Talaia/releases/tag/v0.2.15
 [0.2.14]: https://github.com/catlinux/Talaia/releases/tag/v0.2.14
 [0.2.13]: https://github.com/catlinux/Talaia/releases/tag/v0.2.13

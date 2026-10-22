@@ -16,10 +16,10 @@ Semana 0    2        6          11         16      19      22           28      
 
 | Fase | Nombre | Semanas | Versión | Estado |
 |---|---|---|---|---|
-| — | Definición del proyecto y documentación | — | 0.0.x | 🟡 En curso |
-| 0 | Cimientos | 1–2 | 0.1.0 | ⚪ Pendiente |
-| 1 | Agente, conexión e inventario | 3–6 | 0.2.0 | ⚪ Pendiente |
-| 2 | Contenedores y stacks | 7–11 | 0.3.0 | ⚪ Pendiente |
+| — | Definición del proyecto y documentación | — | 0.0.x | 🟢 Terminada |
+| 0 | Cimientos | 1–2 | 0.1.0 | 🟢 Terminada |
+| 1 | Agente, conexión e inventario | 3–6 | 0.2.0 | 🟢 Terminada |
+| 2 | Contenedores y stacks | 7–11 | 0.3.0 | 🟢 Terminada |
 | 3 | Servidor entero (**MVP**) | 12–16 | 0.4.0 | ⚪ Pendiente |
 | 4 | Usuarios, permisos y auditoría | 17–19 | 0.5.0 | ⚪ Pendiente |
 | 5 | Monitorización y alertas | 20–22 | 0.6.0 | ⚪ Pendiente |
