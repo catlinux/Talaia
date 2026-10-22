@@ -13,6 +13,12 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+## [0.3.19] - 2026-10-22
+
+### Añadido
+
+- La pantalla de servidor se organiza ahora en pestañas: **Resumen** (medidores de CPU, memoria y disco, una lista *Necesita atención* que salta a la pestaña adecuada —reinicio necesario, actualizaciones de seguridad, disco lleno, servicios fallidos, actualización del agente— y los datos de la máquina), **Contenedores**, **Servicios**, **Registros** y **Actualizaciones**, con insignias de recuento. Pantalla nueva de **Auditoría** con todas las acciones registradas, de la más nueva a la más antigua, filtros por grupo de acciones y usuario, detalles y *Cargar más*. En ca, es y en.
+
 ## [0.3.18] - 2026-10-22
 
 ### Añadido
@@ -334,7 +340,8 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
   `.gitattributes` y `.gitignore`.
 - Licencia WNCL-1.0 aplicada: archivo `LICENSE` y sección de créditos en los README.
 
-[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.3.18...HEAD
+[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.3.19...HEAD
+[0.3.19]: https://github.com/catlinux/Talaia/releases/tag/v0.3.19
 [0.3.18]: https://github.com/catlinux/Talaia/releases/tag/v0.3.18
 [0.3.17]: https://github.com/catlinux/Talaia/releases/tag/v0.3.17
 [0.3.16]: https://github.com/catlinux/Talaia/releases/tag/v0.3.16

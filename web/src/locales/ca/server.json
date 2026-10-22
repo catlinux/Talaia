@@ -419,5 +419,50 @@
       "deploy": "Desplega",
       "pull": "Actualitza les imatges"
     }
+  },
+  "tabs": {
+    "label": "Seccions del servidor",
+    "overview": "Resum",
+    "containers": "Contenidors",
+    "services": "Serveis",
+    "logs": "Registres",
+    "updates": "Actualitzacions",
+    "failedBadge": "{{count}} fallits"
+  },
+  "overview": {
+    "unknown": "desconegut",
+    "gaugesLabel": "Ús del servidor",
+    "attention": {
+      "title": "Necessita atenció",
+      "reboot": "Cal reiniciar el servidor després de les actualitzacions.",
+      "security_one": "Hi ha {{count}} actualització de seguretat pendent.",
+      "security_other": "Hi ha {{count}} actualitzacions de seguretat pendents.",
+      "disk": "El disc és al {{percent}}.",
+      "services_one": "Hi ha {{count}} servei que ha fallat. Revisa'l abans que vagi a pitjor.",
+      "services_other": "Hi ha {{count}} serveis que han fallat. Revisa'ls abans que vagin a pitjor.",
+      "agent": "Hi ha una versió nova de l'agent.",
+      "goUpdates": "Obre les actualitzacions",
+      "goContainers": "Obre els contenidors",
+      "goServices": "Obre els serveis"
+    },
+    "facts": {
+      "title": "Dades",
+      "os": "Sistema operatiu",
+      "kernel": "Kernel",
+      "arch": "Arquitectura",
+      "cpus": "CPU",
+      "memory": "Memòria",
+      "network": "Xarxa",
+      "containers": "Contenidors",
+      "services": "Serveis",
+      "agent": "Agent",
+      "docker": "Docker",
+      "uptime": "Temps actiu"
+    },
+    "networkValue": "{{rx}} entrada / {{tx}} sortida",
+    "containersValue": "{{running}} de {{total}} en marxa",
+    "uptimeDays": "{{days}} d {{hours}} h",
+    "uptimeHours": "{{hours}} h {{minutes}} min",
+    "uptimeMinutes": "{{minutes}} min"
   }
 }

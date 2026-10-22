@@ -44,6 +44,20 @@ export interface Server {
   agentUpgradeCommand: string
   /** hostTerminal is true when the connected agent accepts root host sessions. */
   hostTerminal?: boolean
+  /** The machine facts below are absent while the server is offline. */
+  kernel?: string
+  arch?: string
+  runningContainers?: number
+  services?: number
+  memUsedBytes?: number
+  memTotalBytes?: number
+  diskUsedBytes?: number
+  diskTotalBytes?: number
+  netRxBytes?: number
+  netTxBytes?: number
+  dockerVersion?: string
+  /** uptimeSeconds is absent while the agent does not report it. */
+  uptimeSeconds?: number
   /** apt is absent when the agent did not report an apt summary. */
   apt?: AptSummary
 }

@@ -3,6 +3,7 @@ import LanguageDetector from 'i18next-browser-languagedetector'
 import { initReactI18next } from 'react-i18next'
 
 import caAbout from '../locales/ca/about.json'
+import caAudit from '../locales/ca/audit.json'
 import caAuth from '../locales/ca/auth.json'
 import caCommon from '../locales/ca/common.json'
 import caErrors from '../locales/ca/errors.json'
@@ -10,6 +11,7 @@ import caFleet from '../locales/ca/fleet.json'
 import caServer from '../locales/ca/server.json'
 import caSettings from '../locales/ca/settings.json'
 import enAbout from '../locales/en/about.json'
+import enAudit from '../locales/en/audit.json'
 import enAuth from '../locales/en/auth.json'
 import enCommon from '../locales/en/common.json'
 import enErrors from '../locales/en/errors.json'
@@ -17,6 +19,7 @@ import enFleet from '../locales/en/fleet.json'
 import enServer from '../locales/en/server.json'
 import enSettings from '../locales/en/settings.json'
 import esAbout from '../locales/es/about.json'
+import esAudit from '../locales/es/audit.json'
 import esAuth from '../locales/es/auth.json'
 import esCommon from '../locales/es/common.json'
 import esErrors from '../locales/es/errors.json'
@@ -39,6 +42,7 @@ void i18n
       ca: {
         common: caCommon,
         about: caAbout,
+        audit: caAudit,
         fleet: caFleet,
         server: caServer,
         settings: caSettings,
@@ -48,6 +52,7 @@ void i18n
       es: {
         common: esCommon,
         about: esAbout,
+        audit: esAudit,
         fleet: esFleet,
         server: esServer,
         settings: esSettings,
@@ -57,6 +62,7 @@ void i18n
       en: {
         common: enCommon,
         about: enAbout,
+        audit: enAudit,
         fleet: enFleet,
         server: enServer,
         settings: enSettings,
@@ -66,7 +72,7 @@ void i18n
     },
     supportedLngs: [...supportedLanguages],
     fallbackLng: 'en',
-    ns: ['common', 'about', 'fleet', 'server', 'settings', 'auth', 'errors'],
+    ns: ['common', 'about', 'audit', 'fleet', 'server', 'settings', 'auth', 'errors'],
     defaultNS: 'common',
     load: 'languageOnly',
     initAsync: false,

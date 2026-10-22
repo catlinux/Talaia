@@ -140,7 +140,9 @@ function renderScreen(
   aptApi: AptApi = pendingAptApi,
   servicesApi: ServicesApi = pendingServicesApi,
   journalApi: JournalApi = pendingJournalApi,
+  tab = 'containers',
 ) {
+  sessionStorage.setItem(`talaia.serverTab.${server.id}`, tab)
   render(
     <ServerScreen
       server={server}
@@ -162,6 +164,62 @@ describe('ServerScreen', () => {
 
   afterEach(() => {
     cleanup()
+  })
+
+  it('shows the overview by default and mounts only its panel', async () => {
+    renderScreen(
+      apiWith(listOf(container())),
+      undefined,
+      serversApiWith([serverSummary()]),
+      pendingAptApi,
+      pendingServicesApi,
+      pendingJournalApi,
+      'overview',
+    )
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'vps-web-01' })).toBeTruthy()
+    const overview = screen.getByRole('tab', { name: 'Overview' })
+    expect(overview.getAttribute('aria-selected')).toBe('true')
+    expect(screen.getByRole('tabpanel', { name: 'Overview' })).toBeTruthy()
+    expect(screen.getByRole('heading', { level: 2, name: 'Facts' })).toBeTruthy()
+    expect(screen.queryByRole('tabpanel', { name: 'Containers' })).toBeNull()
+    expect(screen.queryByRole('heading', { name: 'Stacks' })).toBeNull()
+  })
+
+  it('switches tabs with the keyboard and keeps only the active panel', async () => {
+    renderScreen(
+      apiWith(listOf(container())),
+      undefined,
+      serversApiWith([serverSummary()]),
+      pendingAptApi,
+      pendingServicesApi,
+      pendingJournalApi,
+      'overview',
+    )
+    const overview = screen.getByRole('tab', { name: 'Overview' })
+    overview.focus()
+    fireEvent.keyDown(overview, { key: 'ArrowRight' })
+
+    const containers = screen.getByRole('tab', { name: 'Containers' })
+    expect(containers.getAttribute('aria-selected')).toBe('true')
+    expect(await screen.findByRole('tabpanel', { name: 'Containers' })).toBeTruthy()
+    expect(screen.queryByRole('tabpanel', { name: 'Overview' })).toBeNull()
+    expect(await screen.findByRole('list', { name: 'Containers' })).toBeTruthy()
+  })
+
+  it('remembers the last tab of a server in sessionStorage', async () => {
+    renderScreen(
+      apiWith(listOf(container())),
+      undefined,
+      serversApiWith([serverSummary()]),
+      pendingAptApi,
+      pendingServicesApi,
+      pendingJournalApi,
+      'services',
+    )
+
+    expect(screen.getByRole('tab', { name: 'Services' }).getAttribute('aria-selected')).toBe('true')
+    expect(sessionStorage.getItem('talaia.serverTab.srv-1')).toBe('services')
   })
 
   it('lists the containers of the server, stacks together and running first', async () => {
@@ -207,7 +265,15 @@ describe('ServerScreen', () => {
         }),
       ),
     }
-    renderScreen(apiWith(listOf(container())), undefined, serversApiWith([serverSummary()]), aptApi)
+    renderScreen(
+      apiWith(listOf(container())),
+      undefined,
+      serversApiWith([serverSummary()]),
+      aptApi,
+      pendingServicesApi,
+      pendingJournalApi,
+      'updates',
+    )
 
     expect(await screen.findByRole('heading', { level: 2, name: 'Updates' })).toBeTruthy()
     expect(await screen.findByText('Everything is up to date.')).toBeTruthy()
@@ -237,6 +303,8 @@ describe('ServerScreen', () => {
       serversApiWith([serverSummary()]),
       pendingAptApi,
       servicesApi,
+      pendingJournalApi,
+      'services',
     )
 
     expect(await screen.findByRole('heading', { level: 2, name: 'Services' })).toBeTruthy()

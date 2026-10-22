@@ -29,6 +29,8 @@ interface ServicesSectionProps {
   api: ServicesApi
   serverId: string
   pollMs: number
+  /** onLoaded reports the list so the tab badge and the overview can use it. */
+  onLoaded?: (services: ServiceUnit[]) => void
 }
 
 type Filter = 'all' | 'active' | 'failed' | 'inactive'
@@ -108,7 +110,7 @@ function applyState(
  * on them. Stop, restart and disable ask first; nothing is sent before the
  * person confirms.
  */
-export function ServicesSection({ api, serverId, pollMs }: ServicesSectionProps) {
+export function ServicesSection({ api, serverId, pollMs, onLoaded }: ServicesSectionProps) {
   const { t } = useTranslation(['server', 'errors'])
   const [state, setState] = useState<ListState>({ status: 'loading' })
   const [filter, setFilter] = useState<Filter>('all')
@@ -155,6 +157,12 @@ export function ServicesSection({ api, serverId, pollMs }: ServicesSectionProps)
       void load(false)
     })
   }, [load])
+
+  useEffect(() => {
+    if (state.status === 'ready') {
+      onLoaded?.(state.services)
+    }
+  }, [onLoaded, state])
 
   const refresh = () => {
     setActionError(null)

@@ -94,6 +94,7 @@ const serversApi: ServersApi = {
 }
 
 function renderScreen(api: ContainersApi) {
+  sessionStorage.setItem(`talaia.serverTab.${server.id}`, 'containers')
   render(
     <ServerScreen
       server={server}

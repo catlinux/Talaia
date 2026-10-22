@@ -419,5 +419,50 @@
       "deploy": "Desplegar",
       "pull": "Actualizar imágenes"
     }
+  },
+  "tabs": {
+    "label": "Secciones del servidor",
+    "overview": "Resumen",
+    "containers": "Contenedores",
+    "services": "Servicios",
+    "logs": "Registros",
+    "updates": "Actualizaciones",
+    "failedBadge": "{{count}} fallidos"
+  },
+  "overview": {
+    "unknown": "desconocido",
+    "gaugesLabel": "Uso del servidor",
+    "attention": {
+      "title": "Necesita atención",
+      "reboot": "Hay que reiniciar el servidor después de las actualizaciones.",
+      "security_one": "Hay {{count}} actualización de seguridad pendiente.",
+      "security_other": "Hay {{count}} actualizaciones de seguridad pendientes.",
+      "disk": "El disco está al {{percent}}.",
+      "services_one": "Hay {{count}} servicio que ha fallado. Revísalo antes de que vaya a peor.",
+      "services_other": "Hay {{count}} servicios que han fallado. Revísalos antes de que vayan a peor.",
+      "agent": "Hay una versión nueva del agente.",
+      "goUpdates": "Abrir actualizaciones",
+      "goContainers": "Abrir contenedores",
+      "goServices": "Abrir servicios"
+    },
+    "facts": {
+      "title": "Datos",
+      "os": "Sistema operativo",
+      "kernel": "Kernel",
+      "arch": "Arquitectura",
+      "cpus": "CPU",
+      "memory": "Memoria",
+      "network": "Red",
+      "containers": "Contenedores",
+      "services": "Servicios",
+      "agent": "Agente",
+      "docker": "Docker",
+      "uptime": "Tiempo activo"
+    },
+    "networkValue": "{{rx}} entrada / {{tx}} salida",
+    "containersValue": "{{running}} de {{total}} en marcha",
+    "uptimeDays": "{{days}} d {{hours}} h",
+    "uptimeHours": "{{hours}} h {{minutes}} min",
+    "uptimeMinutes": "{{minutes}} min"
   }
 }

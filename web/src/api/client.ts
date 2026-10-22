@@ -52,6 +52,8 @@ interface apiLiveAgent {
   compose_projects: number
   services: number
   host_terminal?: boolean
+  docker_version?: string
+  uptime_seconds?: number
   seen_at: string
   apt?: {
     upgradable: number
@@ -161,6 +163,18 @@ function toServer(server: apiServer, latestVersion: string, upgradeCommand: stri
     agentUpdateManual: server.agent_update_manual ?? false,
     agentUpgradeCommand: upgradeCommand,
     hostTerminal: live?.host_terminal ?? false,
+    kernel: live?.kernel ?? '',
+    arch: live?.arch ?? '',
+    runningContainers: live?.running_containers ?? 0,
+    services: live?.services ?? 0,
+    memUsedBytes: live?.mem_used_bytes ?? 0,
+    memTotalBytes: live?.mem_total_bytes ?? 0,
+    diskUsedBytes: live?.disk_used_bytes ?? 0,
+    diskTotalBytes: live?.disk_total_bytes ?? 0,
+    netRxBytes: live?.net_rx_bytes ?? 0,
+    netTxBytes: live?.net_tx_bytes ?? 0,
+    dockerVersion: live?.docker_version ?? '',
+    uptimeSeconds: live?.uptime_seconds ?? 0,
     ...(live?.apt
       ? {
           apt: {

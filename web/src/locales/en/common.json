@@ -16,6 +16,7 @@
     "label": "Main navigation",
     "fleet": "Fleet",
     "settings": "Settings",
+    "audit": "Audit",
     "about": "About"
   }
 }

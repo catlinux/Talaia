@@ -1,9 +1,10 @@
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { App } from './App'
 import { AuthGate } from './auth/AuthGate'
 import type { AptApi } from './api/apt'
+import type { AuditApi } from './api/audit'
 import type { AuthApi } from './api/auth'
 import { createMockFleetClient } from './api/client'
 import type { ContainersApi } from './api/containers'
@@ -18,6 +19,7 @@ const settingsTitles = { ca: 'Configuració', es: 'Ajustes', en: 'Settings' } as
 const aboutTitles = { ca: 'Sobre Talaia', es: 'Acerca de Talaia', en: 'About Talaia' } as const
 const navFleet = { ca: 'Flota', es: 'Flota', en: 'Fleet' } as const
 const navSettings = { ca: 'Configuració', es: 'Ajustes', en: 'Settings' } as const
+const navAudit = { ca: 'Auditoria', es: 'Auditoría', en: 'Audit' } as const
 const navAbout = { ca: 'Sobre', es: 'Acerca de', en: 'About' } as const
 
 /** signedInApi is the authentication API of an already verified session. */
@@ -49,10 +51,10 @@ const pendingJournalApi: JournalApi = {
 }
 
 /** renderApp mounts the panel behind an authenticated gate. */
-function renderApp(systemApi?: SystemApi) {
+function renderApp(systemApi?: SystemApi, auditApi?: AuditApi) {
   render(
     <AuthGate api={signedInApi}>
-      <App client={createMockFleetClient()} systemApi={systemApi} />
+      <App client={createMockFleetClient()} systemApi={systemApi} auditApi={auditApi} />
     </AuthGate>,
   )
 }
@@ -64,6 +66,7 @@ function currentTitle(): string {
 describe('App', () => {
   beforeEach(async () => {
     localStorage.clear()
+    sessionStorage.clear()
     await i18n.changeLanguage('en')
   })
 
@@ -153,12 +156,26 @@ describe('App', () => {
       within(nav)
         .getAllByRole('button')
         .map((button) => button.textContent),
-    ).toEqual([navFleet.en, navSettings.en, navAbout.en])
+    ).toEqual([navFleet.en, navSettings.en, navAudit.en, navAbout.en])
 
     fireEvent.click(screen.getByRole('button', { name: navSettings.en }))
 
     expect(currentTitle()).toBe(settingsTitles.en)
     expect(await screen.findByText('1.2.3')).toBeTruthy()
+  })
+
+  it('navigates to the Audit screen', async () => {
+    const auditApi: AuditApi = {
+      list: vi.fn(() => Promise.resolve({ entries: [], next: '' })),
+    }
+    renderApp(undefined, auditApi)
+    await screen.findByText('vps-web-01')
+
+    fireEvent.click(screen.getByRole('button', { name: navAudit.en }))
+
+    expect(currentTitle()).toBe(navAudit.en)
+    expect(await screen.findByText('There are no events for these filters.')).toBeTruthy()
+    expect(auditApi.list).toHaveBeenCalled()
   })
 
   it('keeps the attribution text in every language', async () => {
@@ -226,6 +243,7 @@ describe('App', () => {
       </AuthGate>,
     )
 
+    sessionStorage.setItem('talaia.serverTab.vps-web-01', 'containers')
     fireEvent.click(await screen.findByRole('button', { name: 'vps-web-01' }))
 
     expect(await screen.findByText('shop-web-1')).toBeTruthy()

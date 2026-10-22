@@ -419,5 +419,50 @@
       "deploy": "Deploy",
       "pull": "Pull"
     }
+  },
+  "tabs": {
+    "label": "Server sections",
+    "overview": "Overview",
+    "containers": "Containers",
+    "services": "Services",
+    "logs": "Logs",
+    "updates": "Updates",
+    "failedBadge": "{{count}} failed"
+  },
+  "overview": {
+    "unknown": "unknown",
+    "gaugesLabel": "Server use",
+    "attention": {
+      "title": "Needs attention",
+      "reboot": "A reboot is required after the updates.",
+      "security_one": "{{count}} security update is pending.",
+      "security_other": "{{count}} security updates are pending.",
+      "disk": "Disk is at {{percent}}.",
+      "services_one": "{{count}} service has failed. Check it before it gets worse.",
+      "services_other": "{{count}} services have failed. Check them before it gets worse.",
+      "agent": "A newer agent is available.",
+      "goUpdates": "Open updates",
+      "goContainers": "Open containers",
+      "goServices": "Open services"
+    },
+    "facts": {
+      "title": "Facts",
+      "os": "Operating system",
+      "kernel": "Kernel",
+      "arch": "Architecture",
+      "cpus": "CPUs",
+      "memory": "Memory",
+      "network": "Network",
+      "containers": "Containers",
+      "services": "Services",
+      "agent": "Agent",
+      "docker": "Docker",
+      "uptime": "Uptime"
+    },
+    "networkValue": "{{rx}} in / {{tx}} out",
+    "containersValue": "{{running}} of {{total}} running",
+    "uptimeDays": "{{days}} d {{hours}} h",
+    "uptimeHours": "{{hours}} h {{minutes}} min",
+    "uptimeMinutes": "{{minutes}} min"
   }
 }

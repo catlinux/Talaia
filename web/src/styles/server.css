@@ -2115,3 +2115,225 @@
     grid-column: 1 / -1;
   }
 }
+
+/* ---------- Server tabs ---------- */
+
+.serverscreen,
+.server-tabpanel,
+.overview,
+.overview__gauges,
+.overview__attention,
+.overview__facts {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.server-tabs {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 2px;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--line);
+  scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
+}
+
+.server-tabs__tab {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.server-tabs__tab:hover {
+  color: var(--ink);
+}
+
+.server-tabs__tab--on {
+  border-bottom-color: var(--accent);
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.server-tabs__badge {
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--muted);
+  font-family: var(--f-mono);
+  font-size: 0.6875rem;
+  font-weight: 500;
+}
+
+.server-tabs__badge--alert {
+  background: var(--crit-soft);
+  color: var(--crit);
+}
+
+.server-tabpanel {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+/* ---------- Overview ---------- */
+
+.overview {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.overview__gauges {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px 22px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow-1);
+}
+
+.overview__gauges > * {
+  min-width: 0;
+}
+
+/* The overview has more width for its values than a fleet card: keep the
+   "used / total" text on one line and let the bar take the remaining space. */
+.overview__gauges .meter {
+  grid-template-columns: 42px minmax(0, 1fr) auto;
+  min-width: 0;
+}
+
+.overview__gauges .meter__value {
+  white-space: nowrap;
+}
+
+.overview__gauges .meter__track {
+  min-width: 0;
+}
+
+.overview__title {
+  margin: 0 0 12px;
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.overview__attention {
+  padding: 16px 18px;
+  border: 1px solid color-mix(in srgb, var(--warn) 45%, var(--line));
+  border-radius: var(--radius);
+  background: var(--warn-soft);
+}
+
+.overview__attention-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.overview__attention-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  min-width: 0;
+  padding: 8px 0;
+  border-top: 1px solid color-mix(in srgb, var(--warn) 25%, transparent);
+  font-size: 0.875rem;
+}
+
+.overview__attention-item > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.overview__attention-item .cbtn {
+  flex: 0 0 auto;
+}
+
+.overview__attention-item:first-child {
+  border-top: 0;
+}
+
+.overview__facts {
+  padding: 16px 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow-1);
+}
+
+.overview__fact-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 12px 22px;
+  margin: 0;
+}
+
+.overview__fact {
+  min-width: 0;
+}
+
+.overview__fact dt {
+  color: var(--muted);
+  font-family: var(--f-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.overview__fact dd {
+  margin: 2px 0 0;
+  font-family: var(--f-mono);
+  font-size: 0.8125rem;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 860px) {
+  .overview__gauges {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 720px) {
+  .overview__attention,
+  .overview__facts {
+    padding: 14px;
+  }
+}
+
+@media (max-width: 640px) {
+  .overview__gauges {
+    gap: 14px;
+    padding: 14px;
+  }
+
+  .overview__attention-item {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .overview__attention-item .cbtn {
+    width: 100%;
+    justify-content: center;
+  }
+}

@@ -121,7 +121,7 @@ Ejecutor por defecto: AgentRelay. Marca ✅ al terminar.
 | 10 ✅ | journald en core + panel: API y pestaña Registros con filtros y seguir | `core/internal/api/journal.go`, `web/src/screens/server/JournalSection.tsx`, locales | pruebas; capturas | AgentRelay · medio |
 | 11 ✅ | Terminal del host en el agente (PTY, límites, opción `host`) | `agent/internal/terminal/host.go`, `agent/internal/config/**` | pruebas: shell fuera de lista, límite de 2, cierre mata el grupo; prueba real | AgentRelay · alto |
 | 12 ✅ | Terminal del host en core + panel (TOTP al abrir, grabación, franja roja) | `core/internal/api/terminal*.go`, `core/internal/terminal/**`, `web/src/screens/server/TerminalPanel.tsx` | pruebas: sin código o código reutilizado → rechazo; grabación exportable | AgentRelay · alto |
-| 13 | Pantalla de servidor con pestañas y Resumen (maqueta 2) y pantalla de auditoría | `web/src/screens/ServerScreen.tsx`, `web/src/screens/settings/**`, `core/internal/api/audit.go` | capturas; pruebas | AgentRelay · medio |
+| 13 ✅ | Pantalla de servidor con pestañas y Resumen (maqueta 2) y pantalla de auditoría | `web/src/screens/ServerScreen.tsx`, `web/src/screens/settings/**`, `core/internal/api/audit.go` | capturas; pruebas | AgentRelay · medio |
 | 14 | Documentación EN+ES (`docs/*/` servidor, seguridad), **revisión de seguridad de la fase (Opus)**, semana de prueba real y cierre 0.4.0 | `docs/**`, ROADMAP, TODO | criterio de la fase cumplido con el mantenedor | Opus + mantenedor |
 
 ## Cómo seguir

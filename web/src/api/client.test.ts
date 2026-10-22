@@ -13,6 +13,8 @@ interface LiveOverrides {
   containers?: number
   compose_projects?: number
   host_terminal?: boolean
+  docker_version?: string
+  uptime_seconds?: number
   seen_at?: string
   apt?: {
     upgradable: number
@@ -117,6 +119,18 @@ describe('api fleet client', () => {
       agentUpdateManual: false,
       agentUpgradeCommand: '',
       hostTerminal: false,
+      kernel: '6.12.0-amd64',
+      arch: 'amd64',
+      runningContainers: 2,
+      services: 5,
+      memUsedBytes: 2 * 1024 ** 3,
+      memTotalBytes: 8 * 1024 ** 3,
+      diskUsedBytes: 20 * 1024 ** 3,
+      diskTotalBytes: 100 * 1024 ** 3,
+      netRxBytes: 11,
+      netTxBytes: 22,
+      dockerVersion: '',
+      uptimeSeconds: 0,
     })
   })
 

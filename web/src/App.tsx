@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import type { AptApi } from './api/apt'
+import type { AuditApi } from './api/audit'
 import type { FleetClient } from './api/client'
 import type { ContainersApi } from './api/containers'
 import type { JournalApi } from './api/journal'
@@ -9,16 +10,17 @@ import type { ServicesApi } from './api/services'
 import type { SystemApi } from './api/system'
 import type { Server } from './api/types'
 import { About } from './screens/About'
+import { Audit } from './screens/Audit'
 import { Fleet } from './screens/Fleet'
 import { ServerScreen } from './screens/ServerScreen'
 import { Settings } from './screens/Settings'
 import { useAuth } from './auth/AuthGate'
-import { FleetIcon, GearIcon, InfoIcon, SignOutIcon } from './components/icons'
+import { AuditIcon, FleetIcon, GearIcon, InfoIcon, SignOutIcon } from './components/icons'
 import { LanguageSelector } from './components/LanguageSelector'
 import { Logo } from './components/Logo'
 import { ThemeToggle } from './theme/ThemeToggle'
 
-type Screen = 'fleet' | 'settings' | 'about'
+type Screen = 'fleet' | 'settings' | 'audit' | 'about'
 
 interface AppProps {
   /** Data source of the fleet screen. Tests inject their own client. */
@@ -33,6 +35,8 @@ interface AppProps {
   journalApi?: JournalApi
   /** Version and update API of the settings screen. Tests inject their own. */
   systemApi?: SystemApi
+  /** Audit API of the audit screen. Tests inject their own. */
+  auditApi?: AuditApi
 }
 
 /** initials returns up to two letters to draw the avatar of the signed-in user. */
@@ -47,6 +51,7 @@ export function App({
   servicesApi,
   journalApi,
   systemApi,
+  auditApi,
 }: AppProps) {
   const { t } = useTranslation(['common', 'auth'])
   const auth = useAuth()
@@ -86,6 +91,18 @@ export function App({
           >
             <GearIcon />
             {t('nav.settings')}
+          </button>
+          <button
+            type="button"
+            className={screen === 'audit' ? 'side__link side__link--active' : 'side__link'}
+            aria-current={screen === 'audit' ? 'page' : undefined}
+            onClick={() => {
+              setScreen('audit')
+              setOpenServer(null)
+            }}
+          >
+            <AuditIcon />
+            {t('nav.audit')}
           </button>
           <button
             type="button"
@@ -130,6 +147,8 @@ export function App({
             <About />
           ) : screen === 'settings' ? (
             <Settings api={systemApi} />
+          ) : screen === 'audit' ? (
+            <Audit api={auditApi} />
           ) : openServer !== null ? (
             <ServerScreen
               server={openServer}

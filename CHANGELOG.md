@@ -18,6 +18,12 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.3.19] - 2026-10-22
+
+### Added
+
+- The server screen is now organised in tabs: **Overview** (CPU, memory and disk gauges, a *Needs attention* list that jumps to the right tab — reboot required, security updates, full disk, failed services, agent update — and the facts of the machine), **Containers**, **Services**, **Logs** and **Updates**, with count badges. New **Audit** screen with every recorded action, newest first, filters by group of actions and user, details and *Load more*. In ca, es and en.
+
 ## [0.3.18] - 2026-10-22
 
 ### Added
@@ -334,7 +340,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.3.18...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.3.19...HEAD
+[0.3.19]: https://github.com/catlinux/Talaia/releases/tag/v0.3.19
 [0.3.18]: https://github.com/catlinux/Talaia/releases/tag/v0.3.18
 [0.3.17]: https://github.com/catlinux/Talaia/releases/tag/v0.3.17
 [0.3.16]: https://github.com/catlinux/Talaia/releases/tag/v0.3.16

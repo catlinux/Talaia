@@ -91,7 +91,7 @@ tareas concretas de la fase actual y de la siguiente.
 - [x] systemd: estado de activación, iniciar/parar/reiniciar/recargar/activar/desactivar con confirmación, pestaña Servicios
 - [x] journald: filtros (unidad, prioridad, arranque, fechas, texto) y seguimiento, pestaña Registros
 - [x] Terminal del host: shell de root con un código TOTP nuevo, grabación y franja roja
-- [ ] Pantalla de servidor con pestañas y resumen (maqueta 2) y pantalla de auditoría
+- [x] Pantalla de servidor con pestañas y resumen (maqueta 2) y pantalla de auditoría
 - [ ] Documentación EN/ES, revisión de seguridad (Opus), una semana sin SSH y cierre en 0.4.0
 
 ## Bloque de operación (decidido el 2026-10-20, antes de cerrar la fase 2)
