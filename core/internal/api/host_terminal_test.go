@@ -138,6 +138,28 @@ func TestHostTerminalRequiresConfirmTOTPAndCapability(t *testing.T) {
 	if code := apiCodeOf(t, response); code != "code_invalid" {
 		t.Errorf("code = %q, want code_invalid", code)
 	}
+	entries, err := r.panel.store.ListAudit(context.Background(), 20)
+	if err != nil {
+		t.Fatalf("list audit: %v", err)
+	}
+	denied := false
+	for _, entry := range entries {
+		if entry.Action != "host_terminal_denied" {
+			continue
+		}
+		denied = true
+		if entry.Result != "failure" || entry.Details["server_id"] != r.serverID {
+			t.Errorf("denied entry = %+v", entry)
+		}
+		for _, value := range entry.Details {
+			if value == wrong {
+				t.Errorf("the audit entry holds the code: %+v", entry)
+			}
+		}
+	}
+	if !denied {
+		t.Error("a wrong host terminal code was not audited")
+	}
 
 	// The agent can report that host terminals are disabled.
 	r.setHostTerminal(false)

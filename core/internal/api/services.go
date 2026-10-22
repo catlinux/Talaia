@@ -2,6 +2,7 @@ package api
 
 import (
 	"net/http"
+	"net/url"
 	"regexp"
 	"sort"
 	"strings"
@@ -80,14 +81,16 @@ func NewServicesHandler(deps ContainerDeps) http.Handler {
 func NewServiceActionHandler(deps ContainerDeps) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		serverID := chi.URLParam(r, "serverID")
-		unit := chi.URLParam(r, "unit")
+		// chi routes on the escaped path, so an instance such as getty@tty1.service
+		// arrives as getty%40tty1.service.
+		unit, unescapeErr := url.PathUnescape(chi.URLParam(r, "unit"))
 
 		var request serviceActionRequest
 		if err := decodeJSON(w, r, &request); err != nil {
 			writeError(w, http.StatusBadRequest, "invalid_request")
 			return
 		}
-		if !validServiceUnit(unit) {
+		if unescapeErr != nil || !validServiceUnit(unit) {
 			writeError(w, http.StatusBadRequest, "invalid_request")
 			return
 		}

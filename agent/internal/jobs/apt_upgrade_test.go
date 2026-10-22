@@ -389,7 +389,10 @@ func TestAptUpgradeHasOneOperationAtATime(t *testing.T) {
 
 	cancel()
 	select {
-	case <-done:
+	case err := <-done:
+		if !errors.Is(err, context.Canceled) {
+			t.Errorf("first upgrade error = %v, want %v", err, context.Canceled)
+		}
 	case <-time.After(2 * time.Second):
 		t.Fatal("the first upgrade did not stop")
 	}
@@ -438,6 +441,90 @@ func TestHostReboot(t *testing.T) {
 			t.Errorf("error = %v, want a schedule failure", err)
 		}
 	})
+}
+
+const unitRunning = "ActiveState=active\nSubState=running\nResult=\nExecMainStatus=0\n"
+
+// waitGone waits until the state file of jobID is removed, which happens when
+// the follower of its unit has reported the result.
+func waitGone(t *testing.T, manager *AptManager, jobID string) {
+	t.Helper()
+	deadline := time.Now().Add(2 * time.Second)
+	for time.Now().Before(deadline) {
+		if _, err := os.Stat(manager.statePath(jobID)); errors.Is(err, os.ErrNotExist) {
+			return
+		}
+		time.Sleep(5 * time.Millisecond)
+	}
+	t.Fatalf("the state file of %s was not removed", jobID)
+}
+
+// A reboot must never interrupt dpkg: while an upgrade left by an earlier agent
+// process may still run, the reboot is refused and that unit is followed.
+func TestRebootWaitsForAnUpgradeLeftOnDisk(t *testing.T) {
+	var finished atomic.Bool
+	runner := &systemRecorder{onOutput: func(string, []string) ([]byte, error) {
+		if finished.Load() {
+			return []byte(unitSucceeded), nil
+		}
+		return []byte(unitRunning), nil
+	}}
+	manager := newUpgradeManager(t, newUpgradeChecker(t, noSecuritySimulation), runner)
+	if err := manager.ensureDir(); err != nil {
+		t.Fatal(err)
+	}
+	state := aptUpgradeState{JobID: "job-left-1", Unit: "talaia-apt-jobleft1", Mode: "ALL", StartedAt: time.Now().UTC()}
+	if err := manager.writeState(state); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := manager.Reboot(context.Background(), "job-reboot-left", "vps-web-01"); !errors.Is(err, errAptBusy) {
+		t.Fatalf("Reboot during an upgrade = %v, want errAptBusy", err)
+	}
+	if _, ran := runner.first("systemd-run"); ran {
+		t.Fatal("a reboot was scheduled during an upgrade")
+	}
+
+	finished.Store(true)
+	waitGone(t, manager, state.JobID)
+	deadline := time.Now().Add(2 * time.Second)
+	for {
+		err := manager.Reboot(context.Background(), "job-reboot-after", "vps-web-01")
+		if err == nil {
+			break
+		}
+		if !errors.Is(err, errAptBusy) || time.Now().After(deadline) {
+			t.Fatalf("Reboot after the upgrade = %v", err)
+		}
+		time.Sleep(5 * time.Millisecond)
+	}
+}
+
+// An upgrade that outlives its job keeps the apt lock until apt-get ends.
+func TestUpgradeKeepsTheLockAfterItsTimeLimit(t *testing.T) {
+	var finished atomic.Bool
+	runner := &systemRecorder{onOutput: func(string, []string) ([]byte, error) {
+		if finished.Load() {
+			return []byte(unitSucceeded), nil
+		}
+		return []byte(unitRunning), nil
+	}}
+	manager := newUpgradeManager(t, newUpgradeChecker(t, noSecuritySimulation), runner)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Millisecond)
+	defer cancel()
+	// Progress is discarded: nothing reads it in this test.
+	discard := func(*agentv1.AgentMsg) {}
+	_, err := manager.Upgrade(ctx, "job-slow-1", agentv1.AptUpgradeMode_APT_UPGRADE_MODE_ALL, discard)
+	if err == nil || !strings.Contains(err.Error(), "still running") {
+		t.Fatalf("Upgrade past its time limit = %v, want a still running error", err)
+	}
+	if err := manager.Reboot(context.Background(), "job-reboot-slow", "vps-web-01"); !errors.Is(err, errAptBusy) {
+		t.Fatalf("Reboot while apt-get runs = %v, want errAptBusy", err)
+	}
+
+	finished.Store(true)
+	waitGone(t, manager, "job-slow-1")
 }
 
 func nextFinalEvent(t *testing.T, out *collector) *agentv1.JobEvent {

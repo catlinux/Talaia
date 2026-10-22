@@ -102,6 +102,7 @@ func NewRouter(deps RouterDeps) http.Handler {
 				if deps.Terminal != nil {
 					deps.Terminal.TOTP = authHandler
 					deps.Terminal.Limiter = authHandler.deps.Limiter
+					deps.Terminal.Audit = authHandler.deps.Store
 					r.Post("/servers/{serverID}/containers/{container}/terminal", NewTerminalOpenHandler(deps.Terminal).ServeHTTP)
 					r.Post("/servers/{serverID}/terminal", NewHostTerminalOpenHandler(deps.Terminal).ServeHTTP)
 					r.Get("/terminal/{sessionID}/ws", NewTerminalSocketHandler(deps.Terminal).ServeHTTP)

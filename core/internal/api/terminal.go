@@ -76,6 +76,8 @@ type TerminalDeps struct {
 	TOTP TOTPVerifier
 	// Limiter is the shared TOTP and login rate limiter.
 	Limiter *RateLimiter
+	// Audit records refused host terminal codes; the router wires the auth store.
+	Audit Auditor
 	// Origins are the browser origins allowed to open a WebSocket.
 	Origins []string
 	// Now and CheckInterval can be replaced by the tests.

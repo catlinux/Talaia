@@ -204,6 +204,29 @@ func TestServiceActionSendsEachAction(t *testing.T) {
 	}
 }
 
+// The panel escapes units with encodeURIComponent, which turns "@" into "%40".
+func TestServiceActionAcceptsAnEscapedInstance(t *testing.T) {
+	panel, serverID := newServicesPanel(t)
+	connectServicesAgent(panel, serverID, []*agentv1.SystemdUnit{
+		systemdUnit("getty@tty1.service", "Getty", "active", "running", "enabled"),
+	})
+
+	path := "/api/v1/servers/" + serverID + "/services/getty%40tty1.service/actions"
+	response := panel.post(t, path, map[string]any{"action": "restart", "confirm": true})
+	if response.StatusCode != http.StatusAccepted {
+		t.Fatalf("status = %d, want 202", response.StatusCode)
+	}
+	sent := panel.dispatcher.sent()
+	if len(sent) != 1 || sent[0].GetServiceAction().GetUnit() != "getty@tty1.service" {
+		t.Fatalf("sent = %v, want a restart of getty@tty1.service", sent)
+	}
+
+	escaped := "/api/v1/servers/" + serverID + "/services/..%2Fdocker.service/actions"
+	if response := panel.post(t, escaped, map[string]any{"action": "start"}); response.StatusCode != http.StatusBadRequest {
+		t.Errorf("an escaped path separator: status = %d, want 400", response.StatusCode)
+	}
+}
+
 func TestValidServiceUnit(t *testing.T) {
 	tests := []struct {
 		unit string

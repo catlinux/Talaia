@@ -124,6 +124,10 @@ Ejecutor por defecto: AgentRelay. Marca ✅ al terminar.
 | 13 ✅ | Pantalla de servidor con pestañas y Resumen (maqueta 2) y pantalla de auditoría | `web/src/screens/ServerScreen.tsx`, `web/src/screens/settings/**`, `core/internal/api/audit.go` | capturas; pruebas | AgentRelay · medio |
 | 14 | Documentación EN+ES (`docs/*/` servidor, seguridad), **revisión de seguridad de la fase (Opus)**, semana de prueba real y cierre 0.4.0 | `docs/**`, ROADMAP, TODO | criterio de la fase cumplido con el mantenedor | Opus + mantenedor |
 
+## Revisión de seguridad (Opus, 2026-10-22)
+
+Hecha sobre `11713e4..41e296f` y los arreglos posteriores. Hallazgos, todos corregidos en 0.3.21: (1) un reinicio podía empezar en mitad de dpkg si una actualización superaba el límite del trabajo o la dejaba un proceso anterior del agente (ahora el agente mantiene el bloqueo y sigue la unidad); (2) el resultado de un trabajo se perdía si el canal se reconectaba mientras corría (cola de eventos de trabajo en el enlace); (3) las instancias `nombre@instancia.service` no se podían gestionar por el escape de `@`; (4) los códigos TOTP erróneos de la terminal del host no se auditaban. El CI encontró además que el instalador escondía `core_url` dentro de `[terminal]` y la revisión, que cambiar el conffile `agent.toml` habría parado dpkg en la actualización desde el panel. Sin hallazgos en: verificación TOTP (guardia atómica), validación de unidades, argv de journalctl y escape de la búsqueda, SQL de auditoría, panel (sin HTML inyectado).
+
 ## Cómo seguir
 
 `/clear` → `/model sonnet` → «ejecuta el paso 2 de `.agents/plans/fase3/fase3.PLAN.md`» (orquestar con AgentRelay y

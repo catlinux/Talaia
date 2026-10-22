@@ -148,6 +148,9 @@ type AptManager struct {
 	emit     func(*agentv1.AgentMsg)
 	resumeMu sync.Mutex
 	resumed  bool
+	// baseCtx lives as long as the agent process; units that outlive a job are
+	// followed with it. Resume sets it.
+	baseCtx context.Context
 }
 
 // NewAptManager returns an apt manager with the production defaults filled in.
@@ -226,7 +229,18 @@ func (m *AptManager) Upgrade(ctx context.Context, jobID string, mode agentv1.Apt
 	if !m.aptMu.TryLock() {
 		return "", errAptBusy
 	}
-	defer m.aptMu.Unlock()
+	if m.adoptPendingLocked() {
+		// An upgrade of an earlier process is still running: it is followed now.
+		return "", errAptBusy
+	}
+	// The lock goes to a follower when apt-get outlives the job; otherwise it is
+	// released here.
+	handedOver := false
+	defer func() {
+		if !handedOver {
+			m.aptMu.Unlock()
+		}
+	}()
 	m.setEmit(emit)
 
 	var packages []string
@@ -266,8 +280,18 @@ func (m *AptManager) Upgrade(ctx context.Context, jobID string, mode agentv1.Apt
 
 	output, err := m.poll(ctx, jobID, unit, logPath)
 	if err != nil && ctx.Err() != nil {
-		// The unit outlives this context. Keep the state file so a later
-		// process can report its result.
+		if errors.Is(ctx.Err(), context.DeadlineExceeded) {
+			// apt-get is still running. Keep the lock until it ends, so no reboot
+			// or second upgrade can start in the middle of dpkg.
+			handedOver = true
+			go func() {
+				defer m.aptMu.Unlock()
+				m.followLocked(m.base(), state)
+			}()
+			return output, fmt.Errorf("apt-get is still running after the time limit; the agent reports the result when it ends: %w", err)
+		}
+		// The agent is stopping: the unit outlives it and the state file lets
+		// the next process report its result.
 		return output, err
 	}
 	_ = os.Remove(m.statePath(jobID))
@@ -282,6 +306,10 @@ func (m *AptManager) Reboot(ctx context.Context, jobID, hostname string) error {
 		return fmt.Errorf("invalid job id %q", jobID)
 	}
 	if !m.aptMu.TryLock() {
+		return errAptBusy
+	}
+	if m.adoptPendingLocked() {
+		// Never reboot while an upgrade left by an earlier process may be in dpkg.
 		return errAptBusy
 	}
 	defer m.aptMu.Unlock()
@@ -305,6 +333,9 @@ func (m *AptManager) Reboot(ctx context.Context, jobID, hostname string) error {
 func (m *AptManager) Resume(ctx context.Context, emit func(*agentv1.AgentMsg)) {
 	m.setEmit(emit)
 	m.resumeMu.Lock()
+	if m.baseCtx == nil {
+		m.baseCtx = ctx
+	}
 	if m.resumed {
 		m.resumeMu.Unlock()
 		return
@@ -346,11 +377,66 @@ func (m *AptManager) Resume(ctx context.Context, emit func(*agentv1.AgentMsg)) {
 // event. A cancelled context leaves the state file for the next process.
 func (m *AptManager) resumeOne(ctx context.Context, state aptUpgradeState) {
 	if !m.aptMu.TryLock() {
+		// The next apt command adopts it (adoptPendingLocked).
 		slog.Warn("another apt operation is running; leaving the apt job for later", "job_id", state.JobID)
 		return
 	}
 	defer m.aptMu.Unlock()
+	m.followLocked(ctx, state)
+}
 
+// adoptPendingLocked looks for a unit an earlier job left on disk. If there is
+// one, it hands the apt lock, which the caller holds, to a goroutine that
+// follows that unit and reports true: the caller must then not unlock.
+func (m *AptManager) adoptPendingLocked() bool {
+	state, ok := m.firstPendingState()
+	if !ok {
+		return false
+	}
+	go func() {
+		defer m.aptMu.Unlock()
+		m.followLocked(m.base(), state)
+	}()
+	return true
+}
+
+// firstPendingState returns a valid state file of an unfinished upgrade.
+func (m *AptManager) firstPendingState() (aptUpgradeState, bool) {
+	entries, err := os.ReadDir(m.dir)
+	if err != nil {
+		return aptUpgradeState{}, false
+	}
+	for _, entry := range entries {
+		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".json") {
+			continue
+		}
+		jobID := strings.TrimSuffix(entry.Name(), ".json")
+		if !ValidJobID(jobID) {
+			continue
+		}
+		state, err := m.readState(jobID)
+		if err != nil || state.JobID != jobID || !strings.HasPrefix(state.Unit, aptUnitPrefix) {
+			continue
+		}
+		return state, true
+	}
+	return aptUpgradeState{}, false
+}
+
+// base is the context units are followed with after their job ended.
+func (m *AptManager) base() context.Context {
+	m.resumeMu.Lock()
+	defer m.resumeMu.Unlock()
+	if m.baseCtx != nil {
+		return m.baseCtx
+	}
+	return context.Background()
+}
+
+// followLocked polls a unit until it ends and reports its final event. The
+// caller holds the apt lock. A cancelled context leaves the state file for the
+// next process.
+func (m *AptManager) followLocked(ctx context.Context, state aptUpgradeState) {
 	output, err := m.poll(ctx, state.JobID, state.Unit, m.logPath(state.JobID))
 	if ctx.Err() != nil {
 		return

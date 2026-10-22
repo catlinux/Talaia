@@ -13,6 +13,20 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+## [0.3.21] - 2026-10-22
+
+### Corregido
+
+- Una instalación nueva del agente ya no se queda sin conectar: el instalador escribía `core_url` y `ca_fingerprint` al final de `/etc/talaia/agent.toml` y, tras la nueva tabla `[terminal]`, quedaban escondidos dentro de ella. Ahora van al principio, el `agent.toml` del paquete vuelve a su contenido anterior y el agente avisa claramente si esas claves están dentro de `[terminal]`. Lo detectó la prueba de instalación del CI.
+- Instalar o actualizar el paquete del agente (desde el panel o con la orden de instalación) conserva el `/etc/talaia/agent.toml` editado sin preguntar. Antes, un cambio de ese archivo en un paquete nuevo habría parado dpkg con una pregunta que nadie puede contestar y el agente habría quedado a medio instalar.
+- El resultado de un trabajo llega al core aunque el canal con el core se haya perdido y reconectado mientras corría (una actualización de apt puede tardar). Antes, el core lo daba por en curso hasta su tiempo límite.
+- Las acciones de servicio funcionan con instancias como `getty@tty1.service`: se rechazaba la `@` que el panel escapa en la dirección.
+
+### Seguridad
+
+- Un reinicio ya no puede empezar en mitad de una actualización de apt. Si una actualización supera el tiempo límite de su trabajo, o un proceso anterior del agente dejó una en marcha, el agente mantiene el bloqueo de apt y sigue la unidad hasta que `apt-get` termina; hasta entonces un reinicio u otra actualización se rechazan con el mensaje *another apt operation is running*. Encontrado en la revisión de seguridad de la fase 3.
+- Un código TOTP erróneo al abrir una terminal del host queda ahora en la auditoría como `host_terminal_denied` (nunca el código). Encontrado en la misma revisión, que también cubrió la terminal del host, las acciones de servicio, la búsqueda en el journal y la auditoría sin otros hallazgos.
+
 ## [0.3.20] - 2026-10-22
 
 ### Añadido
@@ -346,7 +360,8 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
   `.gitattributes` y `.gitignore`.
 - Licencia WNCL-1.0 aplicada: archivo `LICENSE` y sección de créditos en los README.
 
-[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.3.20...HEAD
+[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.3.21...HEAD
+[0.3.21]: https://github.com/catlinux/Talaia/releases/tag/v0.3.21
 [0.3.20]: https://github.com/catlinux/Talaia/releases/tag/v0.3.20
 [0.3.19]: https://github.com/catlinux/Talaia/releases/tag/v0.3.19
 [0.3.18]: https://github.com/catlinux/Talaia/releases/tag/v0.3.18

@@ -199,8 +199,7 @@ servidor (`sudo apt purge talaia-agent`) antes de ejecutar de nuevo la orden de 
 La pantalla del servidor añade actualizaciones apt y reinicio, control de servicios, lectura del journal y
 una terminal de root grabada en el anfitrión. No necesita otro servicio. El agente usa las herramientas del
 sistema de arriba e informa de lo que puede hacer. Las terminales del anfitrión están activadas por defecto
-en Linux. Para
-apagarlas en un servidor, añade esto a `/etc/talaia/agent.toml`:
+en Linux. Para apagarlas en un servidor, añade esto a `/etc/talaia/agent.toml`:
 
 ```toml
 [terminal]

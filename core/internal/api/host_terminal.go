@@ -7,6 +7,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
+	"github.com/catlinux/Talaia/core/internal/store"
 	"github.com/catlinux/Talaia/core/internal/terminal"
 )
 
@@ -61,6 +62,16 @@ func NewHostTerminalOpenHandler(deps *TerminalDeps) http.Handler {
 		}
 		if err := deps.TOTP.VerifyCode(r.Context(), session.User, request.Code); err != nil {
 			if errors.Is(err, errInvalidCode) {
+				// A wrong code here means someone holds a full session and is
+				// guessing the second factor: leave a trace, never the code.
+				if deps.Audit != nil {
+					if auditErr := deps.Audit.AppendAudit(r.Context(), store.AuditEvent{
+						Actor: session.User.Username, Action: "host_terminal_denied", IP: clientIP(r),
+						Result: "failure", Details: map[string]any{"server_id": serverID, "reason": "code_invalid"},
+					}); auditErr != nil {
+						slog.Error("append audit event", "action", "host_terminal_denied", "error", auditErr)
+					}
+				}
 				writeError(w, http.StatusForbidden, "code_invalid")
 				return
 			}

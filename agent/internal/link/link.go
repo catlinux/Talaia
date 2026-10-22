@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"net/url"
 	"runtime"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -63,6 +64,15 @@ type Link struct {
 	hostTerminal bool
 	// stats samples the running containers; nil leaves it out.
 	stats ContainerStatsSource
+
+	// Job events do not belong to the stream that carried the command: an apt
+	// upgrade can outlive several reconnects. They wait in jobQueue and the
+	// stream that is open sends them; a final event that could not be sent stays
+	// for the next stream.
+	jobMu       sync.Mutex
+	jobQueue    []*agentv1.AgentMsg
+	jobAttached bool
+	jobSignal   chan struct{}
 
 	// Intervals and backoff bounds are fields so tests can use milliseconds.
 	HeartbeatInterval time.Duration
@@ -143,6 +153,7 @@ func newLink(
 		BackoffBase:       time.Second,
 		BackoffMax:        60 * time.Second,
 		now:               time.Now,
+		jobSignal:         make(chan struct{}, 1),
 	}
 }
 
@@ -222,11 +233,18 @@ func (l *Link) session(ctx context.Context) error {
 		}
 	}
 
+	l.attachJobs()
+	defer l.detachJobs()
+	// Final events of jobs that ended while there was no stream go out first.
+	if _, err := l.sendJobEvents(stream); err != nil {
+		return err
+	}
+
 	// Resume follows apt units that outlived an earlier agent process. It scans
 	// the state directory once; a later session only changes where progress is
 	// emitted.
 	if l.aptOps != nil {
-		l.aptOps.Resume(ctx, emit)
+		l.aptOps.Resume(ctx, l.emitJob)
 	}
 
 	received := make(chan error, 1)
@@ -281,9 +299,15 @@ func (l *Link) session(ctx context.Context) error {
 			if err := stream.Send(event); err != nil {
 				return fmt.Errorf("send job event: %w", err)
 			}
+
+		case <-l.jobSignal:
+			finished, err := l.sendJobEvents(stream)
+			if err != nil {
+				return err
+			}
 			// A finished job probably changed the containers: tell the core now
 			// instead of at the next tick.
-			if jobFinished(event) {
+			if finished {
 				if err := sendInventoryIfChanged(); err != nil {
 					return err
 				}
@@ -358,8 +382,96 @@ func (l *Link) receive(ctx context.Context, stream agentv1connect.AgentHubConnec
 		if l.terminals != nil && l.terminals.Handle(ctx, msg, emit) {
 			continue
 		}
-		l.jobs.Handle(ctx, msg, emit)
+		l.jobs.Handle(ctx, msg, l.emitJob)
 	}
+}
+
+// maxQueuedJobEvents bounds the job events waiting to be sent. Progress events
+// are dropped first: only the final event of a job matters to the core.
+const maxQueuedJobEvents = 256
+
+// emitJob queues a job event for the stream that is open now or, for a final
+// event, the next one. It never blocks, so a job never waits for the network.
+func (l *Link) emitJob(msg *agentv1.AgentMsg) {
+	l.jobMu.Lock()
+	if !l.jobAttached && !jobFinished(msg) {
+		// Progress without a stream is stale by the time one opens.
+		l.jobMu.Unlock()
+		return
+	}
+	l.jobQueue = append(l.jobQueue, msg)
+	if len(l.jobQueue) > maxQueuedJobEvents {
+		l.jobQueue = dropOldestProgress(l.jobQueue)
+	}
+	l.jobMu.Unlock()
+
+	select {
+	case l.jobSignal <- struct{}{}:
+	default:
+	}
+}
+
+// dropOldestProgress removes the oldest progress event, or the oldest event
+// when they are all final.
+func dropOldestProgress(queue []*agentv1.AgentMsg) []*agentv1.AgentMsg {
+	for i, msg := range queue {
+		if !jobFinished(msg) {
+			return append(queue[:i], queue[i+1:]...)
+		}
+	}
+	return queue[1:]
+}
+
+// sendJobEvents sends the queued job events and reports whether one of them
+// ended a job. When a send fails the unsent final events go back to the queue
+// for the next stream.
+func (l *Link) sendJobEvents(stream agentv1connect.AgentHubConnectClientStream) (bool, error) {
+	l.jobMu.Lock()
+	queue := l.jobQueue
+	l.jobQueue = nil
+	l.jobMu.Unlock()
+
+	finished := false
+	for i, msg := range queue {
+		if err := stream.Send(msg); err != nil {
+			l.requeueFinal(queue[i:])
+			return finished, fmt.Errorf("send job event: %w", err)
+		}
+		finished = finished || jobFinished(msg)
+	}
+	return finished, nil
+}
+
+func (l *Link) requeueFinal(unsent []*agentv1.AgentMsg) {
+	l.jobMu.Lock()
+	defer l.jobMu.Unlock()
+	kept := make([]*agentv1.AgentMsg, 0, len(unsent)+len(l.jobQueue))
+	for _, msg := range unsent {
+		if jobFinished(msg) {
+			kept = append(kept, msg)
+		}
+	}
+	l.jobQueue = append(kept, l.jobQueue...)
+}
+
+func (l *Link) attachJobs() {
+	l.jobMu.Lock()
+	defer l.jobMu.Unlock()
+	l.jobAttached = true
+}
+
+// detachJobs keeps only the final events for the next stream.
+func (l *Link) detachJobs() {
+	l.jobMu.Lock()
+	defer l.jobMu.Unlock()
+	l.jobAttached = false
+	kept := l.jobQueue[:0]
+	for _, msg := range l.jobQueue {
+		if jobFinished(msg) {
+			kept = append(kept, msg)
+		}
+	}
+	l.jobQueue = kept
 }
 
 // inventoryUnchanged compares two inventories ignoring the human-readable

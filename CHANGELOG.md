@@ -18,6 +18,20 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.3.21] - 2026-10-22
+
+### Fixed
+
+- A fresh agent install no longer fails to connect: the installer wrote `core_url` and `ca_fingerprint` at the end of `/etc/talaia/agent.toml`, which after the new `[terminal]` table hid them inside it. They now go at the top, the packaged `agent.toml` is back to its previous content, and the agent says clearly when those keys are inside `[terminal]`. Found by the CI install test.
+- Installing or updating the agent package (from the panel or with the install command) keeps the edited `/etc/talaia/agent.toml` without asking. Before, a change of that file in a new package would have stopped dpkg at a question nobody can answer and left the agent half installed.
+- The result of a job reaches the core even when the stream to the core was lost and reconnected while it ran (an apt upgrade can take long). Before, the core kept the job as running until its time limit.
+- Service actions work for instances such as `getty@tty1.service`: the `@` the panel escapes in the address was rejected.
+
+### Security
+
+- A reboot can no longer start in the middle of an apt upgrade. If an upgrade outlives its job time limit, or an earlier agent process left one running, the agent keeps the apt lock and follows the unit until `apt-get` ends; until then a reboot or another upgrade is refused with *another apt operation is running*. Found in the security review of phase 3.
+- A wrong TOTP code when opening a host terminal is now recorded in the audit log as `host_terminal_denied` (never the code). Found in the same review, which also covered the host terminal, service actions, the journal search and the audit log without other findings.
+
 ## [0.3.20] - 2026-10-22
 
 ### Added
@@ -346,7 +360,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.3.20...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.3.21...HEAD
+[0.3.21]: https://github.com/catlinux/Talaia/releases/tag/v0.3.21
 [0.3.20]: https://github.com/catlinux/Talaia/releases/tag/v0.3.20
 [0.3.19]: https://github.com/catlinux/Talaia/releases/tag/v0.3.19
 [0.3.18]: https://github.com/catlinux/Talaia/releases/tag/v0.3.18
