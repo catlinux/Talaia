@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { AptApi } from '../../api/apt'
 import type { ContainersApi, Job, ResourceItem, ResourceKind } from '../../api/containers'
+import type { JournalApi } from '../../api/journal'
 import type { ServersApi } from '../../api/servers'
 import type { ServiceUnit, ServicesApi } from '../../api/services'
 import i18n from '../../i18n'
@@ -22,6 +23,11 @@ const pendingServicesApi: ServicesApi = {
   list: () => new Promise<ServiceUnit[]>(() => undefined),
   action: () => Promise.reject(new Error('unexpected service action')),
   job: () => Promise.reject(new Error('unexpected service job')),
+}
+
+const pendingJournalApi: JournalApi = {
+  read: () => new Promise<string>(() => undefined),
+  job: () => Promise.reject(new Error('unexpected journal job')),
 }
 
 const images: ResourceItem[] = [
@@ -94,6 +100,7 @@ function renderScreen(api: ContainersApi) {
       api={api}
       aptApi={pendingAptApi}
       servicesApi={pendingServicesApi}
+      journalApi={pendingJournalApi}
       serversApi={serversApi}
       onBack={() => undefined}
       pollMs={1}

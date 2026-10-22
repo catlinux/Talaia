@@ -322,6 +322,65 @@
       "cancel": "Cancel"
     }
   },
+  "journal": {
+    "title": "Journal",
+    "intro": "Systemd journal entries from the server. Search the last lines or follow new ones.",
+    "unit": "Unit",
+    "unitPlaceholder": "All units",
+    "unitHint": "Choose a reported service or type a unit name.",
+    "priority": "Priority",
+    "priorities": {
+      "all": "All",
+      "err": "Errors and worse (err=3)",
+      "warning": "Warnings and worse (warning=4)",
+      "notice": "Notices and worse (5)",
+      "info": "Info (6)",
+      "debug": "Debug (7)"
+    },
+    "boot": "Boot",
+    "boots": {
+      "all": "All boots",
+      "current": "This boot",
+      "previous": "Previous boot"
+    },
+    "range": "Time range",
+    "ranges": {
+      "all": "All time",
+      "15m": "Last 15 min",
+      "1h": "Last 1 h",
+      "24h": "Last 24 h",
+      "7d": "Last 7 days",
+      "custom": "Custom"
+    },
+    "since": "From",
+    "until": "To",
+    "rangeInvalid": "The end of the range must be after its start.",
+    "search": "Search",
+    "searchPlaceholder": "Plain text, not a regular expression",
+    "searchHint": "The text is matched literally; it is not a regular expression.",
+    "lines": "Lines",
+    "follow": "Follow",
+    "live": "Live",
+    "download": "Download",
+    "loading": "Reading the journal…",
+    "empty": "No entries for these filters.",
+    "error": "The journal could not be read: {{message}}",
+    "invalid": "The agent returned an unexpected answer.",
+    "note": "The newest entries are at the bottom. Follow asks for new entries every 3 seconds.",
+    "noteLive": "Following new entries every 3 seconds.",
+    "followNeedsNoUntil": "Follow needs an open-ended range: remove the end time.",
+    "content": "Journal entries",
+    "priorityLevels": {
+      "emerg": "emerg",
+      "alert": "alert",
+      "crit": "critical",
+      "err": "err",
+      "warning": "warning",
+      "notice": "notice",
+      "info": "info",
+      "debug": "debug"
+    }
+  },
   "stack": {
     "back": "Back to the server",
     "breadcrumb": "Breadcrumb",

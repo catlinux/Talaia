@@ -10,6 +10,7 @@ import {
   type ContainersApi,
 } from '../api/containers'
 import { isSignedOut } from '../api/http'
+import { createJournalApi, type JournalApi } from '../api/journal'
 import {
   AgentUpdateError,
   createServersApi,
@@ -30,6 +31,7 @@ import {
 } from '../components/icons'
 import { formatBytes, formatPercent } from './fleet/format'
 import { LogsPanel } from './server/LogsPanel'
+import { JournalSection } from './server/JournalSection'
 import { ManualUpgrade } from './server/ManualUpgrade'
 import { ResourcesSection } from './server/ResourcesSection'
 import { ServicesSection } from './server/ServicesSection'
@@ -58,6 +60,7 @@ const defaultTerminalApi = createTerminalApi()
 const defaultServersApi = createServersApi()
 const defaultAptApi = createAptApi()
 const defaultServicesApi = createServicesApi()
+const defaultJournalApi = createJournalApi()
 
 interface ServerScreenProps {
   server: {
@@ -77,6 +80,8 @@ interface ServerScreenProps {
   aptApi?: AptApi
   /** servicesApi lists systemd services and runs actions; the panel uses the real one. */
   servicesApi?: ServicesApi
+  /** journalApi reads the systemd journal; the panel uses the real one. */
+  journalApi?: JournalApi
   /** pollMs overrides the job polling interval, for the tests. */
   pollMs?: number
 }
@@ -148,6 +153,7 @@ export function ServerScreen({
   serversApi = defaultServersApi,
   aptApi = defaultAptApi,
   servicesApi = defaultServicesApi,
+  journalApi = defaultJournalApi,
   pollMs = pollEvery,
 }: ServerScreenProps) {
   const { t } = useTranslation(['server', 'errors'])
@@ -415,6 +421,15 @@ export function ServerScreen({
 
       {list !== null && list.connected ? (
         <ServicesSection api={servicesApi} serverId={server.id} pollMs={pollMs} />
+      ) : null}
+
+      {list !== null && list.connected ? (
+        <JournalSection
+          api={journalApi}
+          servicesApi={servicesApi}
+          serverId={server.id}
+          pollMs={pollMs}
+        />
       ) : null}
 
       {containers.length > 0 ? (

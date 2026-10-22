@@ -322,6 +322,65 @@
       "cancel": "Cancelar"
     }
   },
+  "journal": {
+    "title": "Registro del sistema",
+    "intro": "Entradas del journal de systemd del servidor. Busca las últimas líneas o sigue las nuevas.",
+    "unit": "Unidad",
+    "unitPlaceholder": "Todas las unidades",
+    "unitHint": "Elige un servicio informado o escribe el nombre de una unidad.",
+    "priority": "Prioridad",
+    "priorities": {
+      "all": "Todas",
+      "err": "Errores y peor (err=3)",
+      "warning": "Avisos y peor (warning=4)",
+      "notice": "Noticias y peor (5)",
+      "info": "Información (6)",
+      "debug": "Depuración (7)"
+    },
+    "boot": "Arranque",
+    "boots": {
+      "all": "Todos los arranques",
+      "current": "Este arranque",
+      "previous": "El arranque anterior"
+    },
+    "range": "Intervalo de tiempo",
+    "ranges": {
+      "all": "Todo el tiempo",
+      "15m": "Últimos 15 min",
+      "1h": "Última hora",
+      "24h": "Últimas 24 h",
+      "7d": "Últimos 7 días",
+      "custom": "Personalizado"
+    },
+    "since": "Desde",
+    "until": "Hasta",
+    "rangeInvalid": "El final del intervalo debe ser posterior al inicio.",
+    "search": "Buscar",
+    "searchPlaceholder": "Texto plano, no una expresión regular",
+    "searchHint": "El texto se compara literalmente; no es una expresión regular.",
+    "lines": "Líneas",
+    "follow": "Seguir",
+    "live": "En directo",
+    "download": "Descargar",
+    "loading": "Leyendo el registro…",
+    "empty": "No hay entradas para estos filtros.",
+    "error": "No se pudo leer el registro: {{message}}",
+    "invalid": "El agente devolvió una respuesta inesperada.",
+    "note": "Las entradas más recientes están al final. Seguir pide entradas nuevas cada 3 segundos.",
+    "noteLive": "Siguiendo las entradas nuevas cada 3 segundos.",
+    "followNeedsNoUntil": "Para seguir hace falta un intervalo abierto: quita la hora final.",
+    "content": "Entradas del registro",
+    "priorityLevels": {
+      "emerg": "emerg",
+      "alert": "alerta",
+      "crit": "crítico",
+      "err": "error",
+      "warning": "aviso",
+      "notice": "noticia",
+      "info": "información",
+      "debug": "depuración"
+    }
+  },
   "stack": {
     "back": "Volver al servidor",
     "breadcrumb": "Ruta de navegación",

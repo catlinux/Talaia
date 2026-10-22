@@ -7,6 +7,7 @@ import type { AptApi } from './api/apt'
 import type { AuthApi } from './api/auth'
 import { createMockFleetClient } from './api/client'
 import type { ContainersApi } from './api/containers'
+import type { JournalApi } from './api/journal'
 import type { ServiceUnit, ServicesApi } from './api/services'
 import type { SystemApi } from './api/system'
 import i18n from './i18n'
@@ -40,6 +41,11 @@ const pendingServicesApi: ServicesApi = {
   list: () => new Promise<ServiceUnit[]>(() => undefined),
   action: () => Promise.reject(new Error('unexpected service action')),
   job: () => Promise.reject(new Error('unexpected service job')),
+}
+
+const pendingJournalApi: JournalApi = {
+  read: () => new Promise<string>(() => undefined),
+  job: () => Promise.reject(new Error('unexpected journal job')),
 }
 
 /** renderApp mounts the panel behind an authenticated gate. */
@@ -215,6 +221,7 @@ describe('App', () => {
           containersApi={containersApi}
           aptApi={pendingAptApi}
           servicesApi={pendingServicesApi}
+          journalApi={pendingJournalApi}
         />
       </AuthGate>,
     )

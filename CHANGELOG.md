@@ -18,6 +18,12 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.3.14] - 2026-10-22
+
+### Added
+
+- Journal in the panel: the server screen has a **Journal** section with filters (service, priority, boot, time range, text search), a **Follow** mode that brings new lines every few seconds, highlighting of the searched text and a download button. In ca, es and en.
+
 ## [0.3.13] - 2026-10-22
 
 ### Added
@@ -304,7 +310,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.3.13...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.3.14...HEAD
+[0.3.14]: https://github.com/catlinux/Talaia/releases/tag/v0.3.14
 [0.3.13]: https://github.com/catlinux/Talaia/releases/tag/v0.3.13
 [0.3.12]: https://github.com/catlinux/Talaia/releases/tag/v0.3.12
 [0.3.11]: https://github.com/catlinux/Talaia/releases/tag/v0.3.11

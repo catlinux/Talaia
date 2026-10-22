@@ -13,6 +13,12 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+## [0.3.14] - 2026-10-22
+
+### Añadido
+
+- Registro del sistema en el panel: la pantalla de servidor tiene una sección **Registro del sistema** con filtros (servicio, prioridad, arranque, rango de fechas, búsqueda de texto), un modo **Seguir** que trae las líneas nuevas cada pocos segundos, resaltado del texto buscado y un botón de descarga. En ca, es y en.
+
 ## [0.3.13] - 2026-10-22
 
 ### Añadido
@@ -304,7 +310,8 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
   `.gitattributes` y `.gitignore`.
 - Licencia WNCL-1.0 aplicada: archivo `LICENSE` y sección de créditos en los README.
 
-[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.3.13...HEAD
+[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.3.14...HEAD
+[0.3.14]: https://github.com/catlinux/Talaia/releases/tag/v0.3.14
 [0.3.13]: https://github.com/catlinux/Talaia/releases/tag/v0.3.13
 [0.3.12]: https://github.com/catlinux/Talaia/releases/tag/v0.3.12
 [0.3.11]: https://github.com/catlinux/Talaia/releases/tag/v0.3.11

@@ -322,6 +322,65 @@
       "cancel": "Cancel·la"
     }
   },
+  "journal": {
+    "title": "Registre del sistema",
+    "intro": "Entrades del journal de systemd del servidor. Cerca les últimes línies o segueix-ne de noves.",
+    "unit": "Unitat",
+    "unitPlaceholder": "Totes les unitats",
+    "unitHint": "Tria un servei informat o escriu el nom d'una unitat.",
+    "priority": "Prioritat",
+    "priorities": {
+      "all": "Totes",
+      "err": "Errors i pitjor (err=3)",
+      "warning": "Avisos i pitjor (warning=4)",
+      "notice": "Notícies i pitjor (5)",
+      "info": "Informació (6)",
+      "debug": "Depuració (7)"
+    },
+    "boot": "Arrencada",
+    "boots": {
+      "all": "Totes les arrencades",
+      "current": "Aquesta arrencada",
+      "previous": "L'arrencada anterior"
+    },
+    "range": "Interval de temps",
+    "ranges": {
+      "all": "Tot el temps",
+      "15m": "Últims 15 min",
+      "1h": "Última hora",
+      "24h": "Últimes 24 h",
+      "7d": "Últims 7 dies",
+      "custom": "Personalitzat"
+    },
+    "since": "Des de",
+    "until": "Fins a",
+    "rangeInvalid": "El final de l'interval ha de ser posterior a l'inici.",
+    "search": "Cerca",
+    "searchPlaceholder": "Text pla, no una expressió regular",
+    "searchHint": "El text es compara literalment; no és una expressió regular.",
+    "lines": "Línies",
+    "follow": "Segueix",
+    "live": "En directe",
+    "download": "Descarrega",
+    "loading": "Llegint el registre…",
+    "empty": "No hi ha entrades per a aquests filtres.",
+    "error": "No s'ha pogut llegir el registre: {{message}}",
+    "invalid": "L'agent ha retornat una resposta inesperada.",
+    "note": "Les entrades més noves són al final. Seguir demana entrades noves cada 3 segons.",
+    "noteLive": "Seguint les entrades noves cada 3 segons.",
+    "followNeedsNoUntil": "Per seguir cal un interval obert: treu l'hora final.",
+    "content": "Entrades del registre",
+    "priorityLevels": {
+      "emerg": "emerg",
+      "alert": "alerta",
+      "crit": "crític",
+      "err": "error",
+      "warning": "avís",
+      "notice": "notícia",
+      "info": "informació",
+      "debug": "depuració"
+    }
+  },
   "stack": {
     "back": "Torna al servidor",
     "breadcrumb": "Ruta de navegació",
