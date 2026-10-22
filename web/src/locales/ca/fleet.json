@@ -58,7 +58,12 @@
     "lastSeen": "Vist per últim cop {{time}}",
     "agentVersion": "Agent {{version}}",
     "updateAvailable": "Actualització disponible",
-    "manualUpdate": "Actualització manual"
+    "manualUpdate": "Actualització manual",
+    "updatesBadge_one": "{{count}} actualització",
+    "updatesBadge_other": "{{count}} actualitzacions",
+    "securityBadge_one": "{{count}} actualització de seguretat",
+    "securityBadge_other": "{{count}} actualitzacions de seguretat",
+    "rebootBadge": "Cal reiniciar"
   },
   "activity": {
     "title": "Activitat",

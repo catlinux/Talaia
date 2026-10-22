@@ -200,6 +200,33 @@
     "copied": "Copiada",
     "docs": "Consulta la guia d'instal·lació per als passos manuals."
   },
+  "updates": {
+    "title": "Actualitzacions",
+    "intro": "Actualitzacions de paquets pendents que ha trobat l'agent. Talaia només les llegeix: des d'aquí no s'instal·la res.",
+    "summary_one": "{{count}} actualització, {{security}} de seguretat",
+    "summary_other": "{{count}} actualitzacions, {{security}} de seguretat",
+    "checked": "Darrera comprovació",
+    "listed": "Llistes de paquets actualitzades",
+    "unknown": "desconegut",
+    "rebootTitle": "Cal reiniciar",
+    "rebootBody": "Algunes actualitzacions només s'apliquen després de reiniciar el servidor.",
+    "check": "Comprova ara",
+    "checking": "Comprovant actualitzacions…",
+    "loading": "Llegint les actualitzacions…",
+    "error": "No s'han pogut llegir les actualitzacions: {{message}}",
+    "invalid": "L'agent ha retornat una resposta inesperada.",
+    "empty": "Tot està al dia.",
+    "columns": {
+      "package": "Paquet",
+      "version": "Versió",
+      "origin": "Origen",
+      "security": "Seguretat"
+    },
+    "new": "nou",
+    "securityBadge": "Seguretat",
+    "held": "Paquets retinguts ({{count}})",
+    "heldHint": "Els paquets retinguts es queden a la versió actual fins que es desbloquegen al servidor."
+  },
   "stack": {
     "back": "Torna al servidor",
     "breadcrumb": "Ruta de navegació",

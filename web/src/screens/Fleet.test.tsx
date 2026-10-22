@@ -147,6 +147,39 @@ describe('Fleet', () => {
     expect(screen.queryByText('Update available')).toBeNull()
   })
 
+  it('shows the apt update, security and reboot badges', async () => {
+    render(
+      <Fleet
+        client={clientReturning(() =>
+          Promise.resolve([
+            server({
+              apt: {
+                upgradable: 4,
+                security: 2,
+                rebootRequired: true,
+                checkedAt: '2026-10-19T11:30:00Z',
+                listsUpdatedAt: '2026-10-19T09:00:00Z',
+              },
+            }),
+          ]),
+        )}
+      />,
+    )
+
+    const updates = await screen.findByText('4 updates')
+    expect(updates.className).toContain('server__apt--security')
+    expect(screen.getByText('2 security updates')).toBeTruthy()
+    expect(screen.getByText('Reboot required')).toBeTruthy()
+  })
+
+  it('shows no apt badges when the agent did not report apt data', async () => {
+    render(<Fleet client={clientReturning(() => Promise.resolve([server()]))} />)
+
+    expect(await screen.findByText('vps-web-01')).toBeTruthy()
+    expect(screen.queryByText('4 updates')).toBeNull()
+    expect(screen.queryByText('Reboot required')).toBeNull()
+  })
+
   it('explains how to add a server when the fleet is empty', async () => {
     render(<Fleet client={clientReturning(() => Promise.resolve([]))} />)
 

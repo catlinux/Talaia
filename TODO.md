@@ -86,7 +86,7 @@ of the current phase and the next one.
 ## Phase 3 · Whole server (0.4.0, see `.agents/plans/fase3/fase3.PLAN.md`)
 
 - [x] Contract for apt, systemd, journald, reboot and the host terminal
-- [ ] apt, read only: pending and security updates, held packages, "reboot required" (agent, core, Updates tab, fleet badges)
+- [x] apt, read only: pending and security updates, held packages, "reboot required" (agent, core, Updates tab, fleet badges)
 - [ ] apt upgrade (all or security only) that survives an agent restart, and reboot with the server name typed
 - [ ] systemd: enabled state, start/stop/restart/reload/enable/disable with confirmation, Services tab
 - [ ] journald: filters (unit, priority, boot, time, text) and follow, Logs tab

@@ -1,7 +1,12 @@
-import type { ContainersApi, Job } from '../../api/containers'
+import type { Job } from '../../api/containers'
 
 /** giveUpAfter is how long a screen waits for a job before it stops. */
 export const giveUpAfter = 120_000
+
+/** JobReader is the part of an API that reads the progress of a job. */
+export interface JobReader {
+  job(id: string): Promise<Job>
+}
 
 /** TimedOut is thrown when a job does not finish in time. */
 export class TimedOut extends Error {
@@ -14,15 +19,16 @@ export class TimedOut extends Error {
 /**
  * waitForJob asks for the job every pollMs until it finishes and returns it.
  * It stops quietly (returns null) when alive() turns false, for example when the
- * screen was closed, and throws TimedOut after giveUpAfter.
+ * screen was closed, and throws TimedOut after timeoutMs (giveUpAfter by default).
  */
 export async function waitForJob(
-  api: ContainersApi,
+  api: JobReader,
   jobId: string,
   pollMs: number,
   alive: () => boolean,
+  timeoutMs = giveUpAfter,
 ): Promise<Job | null> {
-  const deadline = Date.now() + giveUpAfter
+  const deadline = Date.now() + timeoutMs
   for (;;) {
     await new Promise((resolve) => setTimeout(resolve, pollMs))
     if (!alive()) {

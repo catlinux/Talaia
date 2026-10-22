@@ -1,6 +1,7 @@
 import { lazy, Suspense, useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 
+import { createAptApi, type AptApi } from '../api/apt'
 import {
   createContainersApi,
   type Container,
@@ -32,6 +33,7 @@ import { ManualUpgrade } from './server/ManualUpgrade'
 import { ResourcesSection } from './server/ResourcesSection'
 import { StackScreen } from './server/StackScreen'
 import { StacksSection } from './server/StacksSection'
+import { UpdatesSection } from './server/UpdatesSection'
 import { TimedOut, waitForJob } from './server/waitForJob'
 import { UseGauge } from './server/UseGauge'
 
@@ -52,6 +54,7 @@ const TerminalPanel = lazy(() =>
 const defaultApi = createContainersApi()
 const defaultTerminalApi = createTerminalApi()
 const defaultServersApi = createServersApi()
+const defaultAptApi = createAptApi()
 
 interface ServerScreenProps {
   server: {
@@ -66,6 +69,8 @@ interface ServerScreenProps {
   terminalApi?: TerminalApi
   /** serversApi lists the server and updates its agent; the panel uses the real one. */
   serversApi?: ServersApi
+  /** aptApi reads the pending package updates; the panel uses the real one. */
+  aptApi?: AptApi
   /** pollMs overrides the job polling interval, for the tests. */
   pollMs?: number
 }
@@ -135,6 +140,7 @@ export function ServerScreen({
   api = defaultApi,
   terminalApi = defaultTerminalApi,
   serversApi = defaultServersApi,
+  aptApi = defaultAptApi,
   pollMs = pollEvery,
 }: ServerScreenProps) {
   const { t } = useTranslation(['server', 'errors'])
@@ -465,6 +471,10 @@ export function ServerScreen({
 
       {list !== null && list.connected && list.dockerAvailable ? (
         <ResourcesSection api={api} serverId={server.id} pollMs={pollMs} />
+      ) : null}
+
+      {list !== null && list.connected ? (
+        <UpdatesSection aptApi={aptApi} serverId={server.id} pollMs={pollMs} />
       ) : null}
 
       {confirmingAgentUpdate ? (

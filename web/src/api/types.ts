@@ -2,6 +2,17 @@
 
 export type ServerStatus = 'online' | 'offline' | 'warning' | 'critical'
 
+/** AptSummary is the pending-update summary a connected agent reports. */
+export interface AptSummary {
+  upgradable: number
+  security: number
+  rebootRequired: boolean
+  /** checkedAt is when the agent last simulated an upgrade, when known. */
+  checkedAt?: string
+  /** listsUpdatedAt is when apt last downloaded its package lists, when known. */
+  listsUpdatedAt?: string
+}
+
 export interface Server {
   id: string
   name: string
@@ -29,6 +40,8 @@ export interface Server {
   agentUpdateManual: boolean
   /** agentUpgradeCommand upgrades such an old agent once, by hand. */
   agentUpgradeCommand: string
+  /** apt is absent when the agent did not report an apt summary. */
+  apt?: AptSummary
 }
 
 /**

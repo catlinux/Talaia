@@ -13,6 +13,12 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+## [0.3.5] - 2026-10-22
+
+### Añadido
+
+- Actualizaciones en el panel (solo lectura): la pantalla de servidor tiene una sección **Actualizaciones** con los paquetes pendientes (primero los de seguridad), los retenidos, el motivo del reinicio, cuándo se actualizaron las listas y un botón **Comprobar ahora** que ejecuta `apt-get update`; las tarjetas de Flota muestran una insignia de actualizaciones (roja si hay de seguridad) y otra de **Reinicio necesario**. En ca, es y en.
+
 ## [0.3.4] - 2026-10-22
 
 ### Añadido
@@ -250,7 +256,8 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
   `.gitattributes` y `.gitignore`.
 - Licencia WNCL-1.0 aplicada: archivo `LICENSE` y sección de créditos en los README.
 
-[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.3.4...HEAD
+[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.3.5...HEAD
+[0.3.5]: https://github.com/catlinux/Talaia/releases/tag/v0.3.5
 [0.3.4]: https://github.com/catlinux/Talaia/releases/tag/v0.3.4
 [0.3.3]: https://github.com/catlinux/Talaia/releases/tag/v0.3.3
 [0.3.2]: https://github.com/catlinux/Talaia/releases/tag/v0.3.2

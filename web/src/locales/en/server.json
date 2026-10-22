@@ -200,6 +200,33 @@
     "copied": "Copied",
     "docs": "See the installation guide for the manual steps."
   },
+  "updates": {
+    "title": "Updates",
+    "intro": "Pending package updates the agent found. Talaia only reads them: nothing is installed from here.",
+    "summary_one": "{{count}} update, {{security}} security",
+    "summary_other": "{{count}} updates, {{security}} security",
+    "checked": "Last checked",
+    "listed": "Package lists updated",
+    "unknown": "unknown",
+    "rebootTitle": "A reboot is required",
+    "rebootBody": "Some updates only take effect after the server restarts.",
+    "check": "Check now",
+    "checking": "Checking for updates…",
+    "loading": "Reading the updates…",
+    "error": "The updates could not be read: {{message}}",
+    "invalid": "The agent returned an unexpected answer.",
+    "empty": "Everything is up to date.",
+    "columns": {
+      "package": "Package",
+      "version": "Version",
+      "origin": "Origin",
+      "security": "Security"
+    },
+    "new": "new",
+    "securityBadge": "Security",
+    "held": "Held packages ({{count}})",
+    "heldHint": "Held packages stay at their current version until they are unheld on the server."
+  },
   "stack": {
     "back": "Back to the server",
     "breadcrumb": "Breadcrumb",

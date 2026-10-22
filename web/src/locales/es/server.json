@@ -200,6 +200,33 @@
     "copied": "Copiado",
     "docs": "Consulta la guía de instalación para los pasos manuales."
   },
+  "updates": {
+    "title": "Actualizaciones",
+    "intro": "Actualizaciones de paquetes pendientes que ha encontrado el agente. Talaia solo las lee: desde aquí no se instala nada.",
+    "summary_one": "{{count}} actualización, {{security}} de seguridad",
+    "summary_other": "{{count}} actualizaciones, {{security}} de seguridad",
+    "checked": "Última comprobación",
+    "listed": "Listas de paquetes actualizadas",
+    "unknown": "desconocido",
+    "rebootTitle": "Es necesario reiniciar",
+    "rebootBody": "Algunas actualizaciones solo se aplican después de reiniciar el servidor.",
+    "check": "Comprobar ahora",
+    "checking": "Comprobando actualizaciones…",
+    "loading": "Leyendo las actualizaciones…",
+    "error": "No se han podido leer las actualizaciones: {{message}}",
+    "invalid": "El agente ha devuelto una respuesta inesperada.",
+    "empty": "Todo está al día.",
+    "columns": {
+      "package": "Paquete",
+      "version": "Versión",
+      "origin": "Origen",
+      "security": "Seguridad"
+    },
+    "new": "nuevo",
+    "securityBadge": "Seguridad",
+    "held": "Paquetes retenidos ({{count}})",
+    "heldHint": "Los paquetes retenidos se quedan en la versión actual hasta que se desbloquean en el servidor."
+  },
   "stack": {
     "back": "Volver al servidor",
     "breadcrumb": "Ruta de navegación",

@@ -13,6 +13,13 @@ interface LiveOverrides {
   containers?: number
   compose_projects?: number
   seen_at?: string
+  apt?: {
+    upgradable: number
+    security: number
+    reboot_required: boolean
+    checked_at?: string
+    lists_updated_at?: string
+  }
 }
 
 /** live builds the API live object of a connected agent. */
@@ -133,6 +140,40 @@ describe('api fleet client', () => {
 
     expect(server?.agentVersion).toBe('0.2.0')
     expect(server?.agentUpdateAvailable).toBe(true)
+  })
+
+  it('maps the apt summary the agent reports', async () => {
+    const { client } = clientFor([
+      serverEntry({
+        live: live({
+          apt: {
+            upgradable: 4,
+            security: 2,
+            reboot_required: true,
+            checked_at: '2026-10-19T11:30:00Z',
+            lists_updated_at: '2026-10-19T09:00:00Z',
+          },
+        }),
+      }),
+    ])
+
+    const [server] = await client.listServers()
+
+    expect(server?.apt).toEqual({
+      upgradable: 4,
+      security: 2,
+      rebootRequired: true,
+      checkedAt: '2026-10-19T11:30:00Z',
+      listsUpdatedAt: '2026-10-19T09:00:00Z',
+    })
+  })
+
+  it('leaves apt absent when the agent did not report it', async () => {
+    const { client } = clientFor([serverEntry()])
+
+    const [server] = await client.listServers()
+
+    expect(server?.apt).toBeUndefined()
   })
 
   it('marks a server over 75 percent as warning and over 90 as critical', async () => {

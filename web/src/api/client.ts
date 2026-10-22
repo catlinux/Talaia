@@ -52,6 +52,13 @@ interface apiLiveAgent {
   compose_projects: number
   services: number
   seen_at: string
+  apt?: {
+    upgradable: number
+    security: number
+    reboot_required: boolean
+    checked_at?: string | null
+    lists_updated_at?: string | null
+  }
 }
 
 /** apiServer is one entry of GET /api/v1/servers. */
@@ -151,6 +158,17 @@ function toServer(server: apiServer, latestVersion: string, upgradeCommand: stri
     agentUpdateAvailable: server.agent_update_available ?? false,
     agentUpdateManual: server.agent_update_manual ?? false,
     agentUpgradeCommand: upgradeCommand,
+    ...(live?.apt
+      ? {
+          apt: {
+            upgradable: live.apt.upgradable ?? 0,
+            security: live.apt.security ?? 0,
+            rebootRequired: live.apt.reboot_required ?? false,
+            checkedAt: live.apt.checked_at ?? undefined,
+            listsUpdatedAt: live.apt.lists_updated_at ?? undefined,
+          },
+        }
+      : {}),
   }
 }
 

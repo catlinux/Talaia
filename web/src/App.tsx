@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
+import type { AptApi } from './api/apt'
 import type { FleetClient } from './api/client'
 import type { ContainersApi } from './api/containers'
 import type { SystemApi } from './api/system'
@@ -22,6 +23,8 @@ interface AppProps {
   client?: FleetClient
   /** Container API of the server screen. Tests inject their own. */
   containersApi?: ContainersApi
+  /** Apt API of the server screen. Tests inject their own. */
+  aptApi?: AptApi
   /** Version and update API of the settings screen. Tests inject their own. */
   systemApi?: SystemApi
 }
@@ -31,7 +34,7 @@ function initials(username: string): string {
   return username.trim().slice(0, 2).toUpperCase()
 }
 
-export function App({ client, containersApi, systemApi }: AppProps) {
+export function App({ client, containersApi, aptApi, systemApi }: AppProps) {
   const { t } = useTranslation(['common', 'auth'])
   const auth = useAuth()
   const [screen, setScreen] = useState<Screen>('fleet')
@@ -118,6 +121,7 @@ export function App({ client, containersApi, systemApi }: AppProps) {
             <ServerScreen
               server={openServer}
               api={containersApi}
+              aptApi={aptApi}
               onBack={() => setOpenServer(null)}
             />
           ) : (

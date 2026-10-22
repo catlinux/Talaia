@@ -18,6 +18,12 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.3.5] - 2026-10-22
+
+### Added
+
+- Updates in the panel (read only): the server screen has an **Updates** section with the pending packages (security first), held packages, why a reboot is needed, when the lists were last updated and a **Check now** button that runs `apt-get update`; fleet cards show an updates badge (red when there are security updates) and a **Reboot required** badge. In ca, es and en.
+
 ## [0.3.4] - 2026-10-22
 
 ### Added
@@ -250,7 +256,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.3.4...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.3.5...HEAD
+[0.3.5]: https://github.com/catlinux/Talaia/releases/tag/v0.3.5
 [0.3.4]: https://github.com/catlinux/Talaia/releases/tag/v0.3.4
 [0.3.3]: https://github.com/catlinux/Talaia/releases/tag/v0.3.3
 [0.3.2]: https://github.com/catlinux/Talaia/releases/tag/v0.3.2

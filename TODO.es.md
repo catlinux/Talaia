@@ -86,7 +86,7 @@ tareas concretas de la fase actual y de la siguiente.
 ## Fase 3 · Servidor entero (0.4.0, ver `.agents/plans/fase3/fase3.PLAN.md`)
 
 - [x] Contrato para apt, systemd, journald, reinicio y terminal del host
-- [ ] apt, solo lectura: actualizaciones pendientes y de seguridad, paquetes retenidos, «reinicio necesario» (agente, core, pestaña Actualizaciones, insignias en Flota)
+- [x] apt, solo lectura: actualizaciones pendientes y de seguridad, paquetes retenidos, «reinicio necesario» (agente, core, pestaña Actualizaciones, insignias en Flota)
 - [ ] Actualizar con apt (todo o solo seguridad) de forma que sobreviva a un reinicio del agente, y reiniciar escribiendo el nombre del servidor
 - [ ] systemd: estado de activación, iniciar/parar/reiniciar/recargar/activar/desactivar con confirmación, pestaña Servicios
 - [ ] journald: filtros (unidad, prioridad, arranque, fechas, texto) y seguimiento, pestaña Registros

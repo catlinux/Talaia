@@ -61,6 +61,28 @@ export function ServerCard({ server, onOpen }: ServerCardProps) {
           ) : null}
         </p>
       ) : null}
+      {server.apt &&
+      (server.apt.upgradable > 0 || server.apt.security > 0 || server.apt.rebootRequired) ? (
+        <p className="server__badges">
+          {server.apt.upgradable > 0 ? (
+            <span
+              className={
+                server.apt.security > 0 ? 'server__apt server__apt--security' : 'server__apt'
+              }
+            >
+              {t('server.updatesBadge', { count: server.apt.upgradable })}
+            </span>
+          ) : null}
+          {server.apt.security > 0 ? (
+            <span className="server__apt-security">
+              {t('server.securityBadge', { count: server.apt.security })}
+            </span>
+          ) : null}
+          {server.apt.rebootRequired ? (
+            <span className="server__apt-reboot">{t('server.rebootBadge')}</span>
+          ) : null}
+        </p>
+      ) : null}
       <div className="server__meters">
         <Meter label={t('metric.cpu')} percent={server.cpuPercent} />
         <Meter label={t('metric.ram')} percent={server.memPercent} />

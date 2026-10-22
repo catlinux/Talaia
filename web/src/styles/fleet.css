@@ -742,3 +742,50 @@
     width: 100%;
   }
 }
+
+/* ---------- Apt badges on server cards ---------- */
+
+.server__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: -2px 0 0;
+}
+
+.server__apt,
+.server__apt-security,
+.server__apt-reboot {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font-family: var(--f-mono);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.server__apt {
+  border-color: var(--line);
+  background: var(--surface-2);
+  color: var(--muted);
+}
+
+.server__apt--security {
+  border-color: color-mix(in srgb, var(--crit) 35%, var(--line));
+  background: var(--crit-soft);
+  color: var(--crit);
+}
+
+.server__apt-security {
+  border-color: color-mix(in srgb, var(--crit) 30%, var(--line));
+  background: color-mix(in srgb, var(--crit-soft) 70%, transparent);
+  color: var(--crit);
+}
+
+.server__apt-reboot {
+  border-color: color-mix(in srgb, var(--warn) 35%, var(--line));
+  background: var(--warn-soft);
+  color: var(--warn);
+}

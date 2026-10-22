@@ -1,6 +1,7 @@
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { AptApi } from '../api/apt'
 import type { Container, ContainerList, ContainersApi, Job } from '../api/containers'
 import { ApiError } from '../api/http'
 import { AgentUpdateError, type ServerSummary, type ServersApi } from '../api/servers'
@@ -8,6 +9,13 @@ import i18n from '../i18n'
 import { ServerScreen } from './ServerScreen'
 
 const server = { id: 'srv-1', name: 'vps-web-01' }
+
+// The unrelated tests do not wait for the apt section; leaving its request
+// pending keeps them focused on the behavior they check.
+const pendingAptApi: AptApi = {
+  status: () => new Promise<string>(() => undefined),
+  job: () => Promise.reject(new Error('unexpected apt job')),
+}
 
 /** serverSummary builds the server list entry the screen loads. */
 function serverSummary(overrides: Partial<ServerSummary> = {}): ServerSummary {
@@ -90,9 +98,17 @@ function renderScreen(
   api: ContainersApi,
   onBack = () => undefined,
   serversApi: ServersApi = serversApiWith([serverSummary()]),
+  aptApi: AptApi = pendingAptApi,
 ) {
   render(
-    <ServerScreen server={server} api={api} serversApi={serversApi} onBack={onBack} pollMs={1} />,
+    <ServerScreen
+      server={server}
+      api={api}
+      aptApi={aptApi}
+      serversApi={serversApi}
+      onBack={onBack}
+      pollMs={1}
+    />,
   )
 }
 
@@ -125,6 +141,32 @@ describe('ServerScreen', () => {
     // The stack first (running before stopped), the standalone container last.
     expect(names).toEqual(['web', 'db', 'solo'])
     expect(screen.getAllByText('stack shop')).toHaveLength(2)
+  })
+
+  it('renders the updates section of a connected server', async () => {
+    const aptApi: AptApi = {
+      status: vi.fn(() => Promise.resolve('apt-job')),
+      job: vi.fn(() =>
+        Promise.resolve({
+          id: 'apt-job',
+          state: 'succeeded' as const,
+          message: '',
+          output: JSON.stringify({
+            packages: [],
+            held: [],
+            reboot_required: false,
+            reboot_reasons: [],
+            lists_updated_at: '',
+            checked_at: '2026-10-22T09:00:00Z',
+          }),
+        }),
+      ),
+    }
+    renderScreen(apiWith(listOf(container())), undefined, serversApiWith([serverSummary()]), aptApi)
+
+    expect(await screen.findByRole('heading', { level: 2, name: 'Updates' })).toBeTruthy()
+    expect(await screen.findByText('Everything is up to date.')).toBeTruthy()
+    expect(aptApi.status).toHaveBeenCalledWith('srv-1', false)
   })
 
   it('explains an offline agent, a missing Docker and an empty server', async () => {

@@ -33,6 +33,13 @@ export const sampleServers: Server[] = [
     agentUpdateAvailable: true,
     agentUpdateManual: false,
     agentUpgradeCommand: '',
+    apt: {
+      upgradable: 8,
+      security: 3,
+      rebootRequired: false,
+      checkedAt: minutesAgo(20),
+      listsUpdatedAt: hoursAgo(2),
+    },
   },
   {
     id: 'vps-db-01',
@@ -55,6 +62,13 @@ export const sampleServers: Server[] = [
     agentUpdateAvailable: false,
     agentUpdateManual: false,
     agentUpgradeCommand: '',
+    apt: {
+      upgradable: 2,
+      security: 0,
+      rebootRequired: false,
+      checkedAt: minutesAgo(35),
+      listsUpdatedAt: hoursAgo(4),
+    },
   },
   {
     id: 'vps-mail',
@@ -119,6 +133,13 @@ export const sampleServers: Server[] = [
     agentUpdateAvailable: false,
     agentUpdateManual: false,
     agentUpgradeCommand: '',
+    apt: {
+      upgradable: 3,
+      security: 1,
+      rebootRequired: true,
+      checkedAt: minutesAgo(50),
+      listsUpdatedAt: hoursAgo(6),
+    },
   },
   {
     id: 'rpi-casa',

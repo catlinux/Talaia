@@ -58,7 +58,12 @@
     "lastSeen": "Last seen {{time}}",
     "agentVersion": "Agent {{version}}",
     "updateAvailable": "Update available",
-    "manualUpdate": "Manual update"
+    "manualUpdate": "Manual update",
+    "updatesBadge_one": "{{count}} update",
+    "updatesBadge_other": "{{count}} updates",
+    "securityBadge_one": "{{count}} security update",
+    "securityBadge_other": "{{count}} security updates",
+    "rebootBadge": "Reboot required"
   },
   "activity": {
     "title": "Activity",

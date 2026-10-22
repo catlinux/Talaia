@@ -1,12 +1,19 @@
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { AptApi } from '../../api/apt'
 import type { ContainersApi, Job, ResourceItem, ResourceKind } from '../../api/containers'
 import type { ServersApi } from '../../api/servers'
 import i18n from '../../i18n'
 import { ServerScreen } from '../ServerScreen'
 
 const server = { id: 'srv-1', name: 'vps-web-01' }
+
+// The apt section is covered by its own tests; leave its request pending here.
+const pendingAptApi: AptApi = {
+  status: () => new Promise<string>(() => undefined),
+  job: () => Promise.reject(new Error('unexpected apt job')),
+}
 
 const images: ResourceItem[] = [
   { id: 'sha256:' + 'b'.repeat(64), tags: ['old:1.0'], size: 300_000_000, in_use: false },
@@ -76,6 +83,7 @@ function renderScreen(api: ContainersApi) {
     <ServerScreen
       server={server}
       api={api}
+      aptApi={pendingAptApi}
       serversApi={serversApi}
       onBack={() => undefined}
       pollMs={1}

@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import { App } from './App'
 import { AuthGate } from './auth/AuthGate'
+import type { AptApi } from './api/apt'
 import type { AuthApi } from './api/auth'
 import { createMockFleetClient } from './api/client'
 import type { ContainersApi } from './api/containers'
@@ -25,6 +26,11 @@ const signedInApi: AuthApi = {
   confirmTotpSetup: () => Promise.reject(new Error('the panel is already signed in')),
   verifyTotp: () => Promise.reject(new Error('the panel is already signed in')),
   logout: () => Promise.resolve(),
+}
+
+const pendingAptApi: AptApi = {
+  status: () => new Promise<string>(() => undefined),
+  job: () => Promise.reject(new Error('unexpected apt job')),
 }
 
 /** renderApp mounts the panel behind an authenticated gate. */
@@ -195,7 +201,11 @@ describe('App', () => {
     }
     render(
       <AuthGate api={signedInApi}>
-        <App client={createMockFleetClient()} containersApi={containersApi} />
+        <App
+          client={createMockFleetClient()}
+          containersApi={containersApi}
+          aptApi={pendingAptApi}
+        />
       </AuthGate>,
     )
 
