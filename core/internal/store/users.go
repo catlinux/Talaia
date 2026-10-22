@@ -24,6 +24,8 @@ var ErrUserExists = errors.New("user already exists")
 type User struct {
 	ID                string
 	Username          string
+	DisplayName       string
+	Email             string
 	PasswordHash      string
 	TOTPSecretEnc     []byte
 	TOTPEnabledAt     time.Time
@@ -32,11 +34,14 @@ type User struct {
 	LockedUntil       time.Time
 	PasswordChangedAt time.Time
 	CreatedAt         time.Time
+	DisabledAt        time.Time
+	OIDCSubject       string
 }
 
 // userColumns reads a user, normalising the nullable columns to Go zero values.
-const userColumns = `id, username, password_hash, totp_secret_enc, totp_enabled_at,
-	COALESCE(totp_last_step, 0), failed_attempts, locked_until, password_changed_at, created_at`
+const userColumns = `id, username, display_name, email, password_hash, totp_secret_enc, totp_enabled_at,
+	COALESCE(totp_last_step, 0), failed_attempts, locked_until, password_changed_at, created_at,
+	disabled_at, oidc_subject`
 
 // CreateUser inserts the administrator. This phase has a single user, so it
 // fails with ErrUserExists when any user exists or the name is taken.
@@ -67,6 +72,30 @@ func (s *Store) CreateUser(ctx context.Context, username, passwordHash string) (
 	return id, nil
 }
 
+// CreateUserFull inserts a user with the profile fields used by invitations. It
+// does not enforce the single-user rule of CreateUser, which remains reserved
+// for first-run setup. The caller supplies an already hashed password.
+func (s *Store) CreateUserFull(ctx context.Context, username, passwordHash, displayName, email string) (User, error) {
+	username = strings.TrimSpace(username)
+	if username == "" {
+		return User{}, errors.New("username is required")
+	}
+	if strings.TrimSpace(passwordHash) == "" {
+		return User{}, errors.New("password hash is required")
+	}
+	email = normalizeEmail(email)
+
+	user, err := queryUser(s.pool.QueryRow(ctx,
+		`INSERT INTO app_user (username, password_hash, display_name, email)
+		 VALUES ($1, $2, $3, NULLIF($4, ''))
+		 RETURNING `+userColumns,
+		username, passwordHash, strings.TrimSpace(displayName), email))
+	if err != nil {
+		return User{}, userInsertError(err)
+	}
+	return user, nil
+}
+
 // GetUser returns a user by id, or ErrNotFound.
 func (s *Store) GetUser(ctx context.Context, id string) (User, error) {
 	user, err := queryUser(s.pool.QueryRow(ctx, `SELECT `+userColumns+` FROM app_user WHERE id = $1`, id))
@@ -92,16 +121,20 @@ func (s *Store) GetUserByUsername(ctx context.Context, username string) (User, e
 }
 
 // queryUser scans one user row, returning ErrNotFound when there is none.
-func queryUser(row pgx.Row) (User, error) {
+func queryUser(row rowScanner) (User, error) {
 	var (
 		user        User
+		email       *string
 		secretEnc   []byte
 		enabledAt   *time.Time
 		lockedUntil *time.Time
+		disabledAt  *time.Time
+		oidcSubject *string
 	)
 
-	err := row.Scan(&user.ID, &user.Username, &user.PasswordHash, &secretEnc, &enabledAt,
-		&user.TOTPLastStep, &user.FailedAttempts, &lockedUntil, &user.PasswordChangedAt, &user.CreatedAt)
+	err := row.Scan(&user.ID, &user.Username, &user.DisplayName, &email, &user.PasswordHash,
+		&secretEnc, &enabledAt, &user.TOTPLastStep, &user.FailedAttempts, &lockedUntil,
+		&user.PasswordChangedAt, &user.CreatedAt, &disabledAt, &oidcSubject)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return User{}, ErrNotFound
 	}
@@ -109,9 +142,16 @@ func queryUser(row pgx.Row) (User, error) {
 		return User{}, err
 	}
 
+	if email != nil {
+		user.Email = *email
+	}
 	user.TOTPSecretEnc = secretEnc
 	user.TOTPEnabledAt = timeValue(enabledAt)
 	user.LockedUntil = timeValue(lockedUntil)
+	user.DisabledAt = timeValue(disabledAt)
+	if oidcSubject != nil {
+		user.OIDCSubject = *oidcSubject
+	}
 	return user, nil
 }
 

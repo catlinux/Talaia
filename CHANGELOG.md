@@ -18,6 +18,12 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-10-22
+
+### Added
+
+- Groundwork for users and permissions (not reachable yet): the `rbac` package (fixed roles, scope levels and inheritance from organization down to container, so a role bound to a stack never reaches the host) and migration 0012 with server groups, teams, role bindings, user fields, invitations, API keys and the audit actor/scope. The store refuses to remove, disable or demote the last active administrator, and disabling a user revokes their sessions, trusted devices and API keys in the same transaction.
+
 ## [0.4.0] - 2026-10-22
 
 ### Changed
@@ -381,7 +387,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.4.1...HEAD
+[0.4.1]: https://github.com/catlinux/Talaia/releases/tag/v0.4.1
 [0.4.0]: https://github.com/catlinux/Talaia/releases/tag/v0.4.0
 [0.3.23]: https://github.com/catlinux/Talaia/releases/tag/v0.3.23
 [0.3.22]: https://github.com/catlinux/Talaia/releases/tag/v0.3.22

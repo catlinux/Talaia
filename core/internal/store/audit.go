@@ -12,10 +12,12 @@ import (
 // passwords, codes or tokens.
 type AuditEvent struct {
 	Actor   string
+	ActorID string
 	Action  string
 	IP      string
 	Result  string
 	Details map[string]any
+	Scope   map[string]any
 }
 
 // AuditEntry is a stored audit event.
@@ -23,10 +25,12 @@ type AuditEntry struct {
 	ID      string
 	At      time.Time
 	Actor   string
+	ActorID string
 	Action  string
 	IP      string
 	Result  string
 	Details map[string]any
+	Scope   map[string]any
 }
 
 // AuditCursor is the position of an entry in the audit log: its time and id.
@@ -67,11 +71,15 @@ func (s *Store) AppendAudit(ctx context.Context, event AuditEvent) error {
 	if event.Details != nil {
 		details = event.Details
 	}
+	var scope any
+	if event.Scope != nil {
+		scope = event.Scope
+	}
 
 	if _, err := s.pool.Exec(ctx,
-		`INSERT INTO audit_event (actor, action, ip, result, details)
-		 VALUES ($1, $2, NULLIF($3, ''), $4, $5)`,
-		event.Actor, event.Action, event.IP, event.Result, details); err != nil {
+		`INSERT INTO audit_event (actor, actor_id, action, ip, result, details, scope)
+		 VALUES ($1, NULLIF($2, '')::uuid, $3, NULLIF($4, ''), $5, $6, $7)`,
+		event.Actor, event.ActorID, event.Action, event.IP, event.Result, details, scope); err != nil {
 		return fmt.Errorf("append audit event: %w", err)
 	}
 	return nil
@@ -84,7 +92,7 @@ func (s *Store) ListAudit(ctx context.Context, limit int) ([]AuditEntry, error) 
 	}
 
 	rows, err := s.pool.Query(ctx,
-		`SELECT id, at, actor, action, COALESCE(ip, ''), result, details
+		`SELECT id, at, actor, COALESCE(actor_id::text, ''), action, COALESCE(ip, ''), result, details, scope
 		 FROM audit_event
 		 ORDER BY at DESC, id DESC
 		 LIMIT $1`, limit)
@@ -98,8 +106,8 @@ func (s *Store) ListAudit(ctx context.Context, limit int) ([]AuditEntry, error) 
 	entries := make([]AuditEntry, 0, min(limit, 100))
 	for rows.Next() {
 		var entry AuditEntry
-		if err := rows.Scan(&entry.ID, &entry.At, &entry.Actor, &entry.Action,
-			&entry.IP, &entry.Result, &entry.Details); err != nil {
+		if err := rows.Scan(&entry.ID, &entry.At, &entry.Actor, &entry.ActorID,
+			&entry.Action, &entry.IP, &entry.Result, &entry.Details, &entry.Scope); err != nil {
 			return nil, fmt.Errorf("scan audit event: %w", err)
 		}
 		entries = append(entries, entry)
@@ -130,7 +138,7 @@ func (s *Store) ListAuditPage(ctx context.Context, filter AuditFilter) ([]AuditE
 	}
 
 	var query strings.Builder
-	query.WriteString(`SELECT id, at, actor, action, COALESCE(ip, ''), result, details
+	query.WriteString(`SELECT id, at, actor, COALESCE(actor_id::text, ''), action, COALESCE(ip, ''), result, details, scope
 		FROM audit_event
 		WHERE TRUE`)
 	if filter.Action != "" {
@@ -162,8 +170,8 @@ func (s *Store) ListAuditPage(ctx context.Context, filter AuditFilter) ([]AuditE
 	entries := make([]AuditEntry, 0, min(limit, 100))
 	for rows.Next() {
 		var entry AuditEntry
-		if err := rows.Scan(&entry.ID, &entry.At, &entry.Actor, &entry.Action,
-			&entry.IP, &entry.Result, &entry.Details); err != nil {
+		if err := rows.Scan(&entry.ID, &entry.At, &entry.Actor, &entry.ActorID,
+			&entry.Action, &entry.IP, &entry.Result, &entry.Details, &entry.Scope); err != nil {
 			return nil, fmt.Errorf("scan audit event: %w", err)
 		}
 		entries = append(entries, entry)

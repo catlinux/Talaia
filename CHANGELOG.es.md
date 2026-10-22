@@ -13,6 +13,12 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+## [0.4.1] - 2026-10-22
+
+### Añadido
+
+- Base de usuarios y permisos (aún no accesible): el paquete `rbac` (roles fijos, niveles de ámbito y herencia de organización a contenedor, de modo que un rol asignado a un stack nunca llega al host) y la migración 0012 con grupos de servidores, equipos, asignaciones de rol, campos de usuario, invitaciones, claves de API y el actor/ámbito de auditoría. El almacén impide quitar, desactivar o degradar al último administrador activo, y desactivar a un usuario revoca en la misma transacción sus sesiones, dispositivos de confianza y claves de API.
+
 ## [0.4.0] - 2026-10-22
 
 ### Cambiado
@@ -381,7 +387,8 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
   `.gitattributes` y `.gitignore`.
 - Licencia WNCL-1.0 aplicada: archivo `LICENSE` y sección de créditos en los README.
 
-[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.4.0...HEAD
+[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.4.1...HEAD
+[0.4.1]: https://github.com/catlinux/Talaia/releases/tag/v0.4.1
 [0.4.0]: https://github.com/catlinux/Talaia/releases/tag/v0.4.0
 [0.3.23]: https://github.com/catlinux/Talaia/releases/tag/v0.3.23
 [0.3.22]: https://github.com/catlinux/Talaia/releases/tag/v0.3.22
