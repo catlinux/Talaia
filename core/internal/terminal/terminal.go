@@ -1,8 +1,9 @@
 // Package terminal keeps the interactive shell sessions the panel opens in the
-// containers of the servers. A session is routed by the pair (server, session
-// id): the server is the one that authenticated the stream of the agent, so an
-// agent can only feed its own sessions. Every session is recorded, sealed with
-// the secrets key, and audited; a session that cannot be recorded does not run.
+// containers of the servers and, when the agent allows it, on the server itself.
+// A session is routed by the pair (server, session id): the server is the one
+// that authenticated the stream of the agent, so an agent can only feed its own
+// sessions. Every session is recorded, sealed with the secrets key, and audited;
+// a session that cannot be recorded does not run.
 package terminal
 
 import (
@@ -146,10 +147,16 @@ func New(st Store, dispatcher Dispatcher, audit Auditor, seal Sealer, cfg Config
 	}
 }
 
+// HostContainer is the sentinel container stored for a terminal on the server
+// itself. It cannot be a real container reference.
+const HostContainer = "@host"
+
 // OpenRequest is what the panel asks for.
 type OpenRequest struct {
 	ServerID  string
 	Container string
+	// Host opens a shell on the server itself; Container must then be empty.
+	Host bool
 	// Shell is "sh" or "bash".
 	Shell string
 	// Actor is the user; PanelSession the id of the session of the panel that
@@ -166,6 +173,7 @@ type Session struct {
 	id           string
 	serverID     string
 	container    string
+	host         bool
 	shell        string
 	actor        string
 	panelSession string
@@ -197,7 +205,8 @@ func (s *Session) Actor() string { return s.actor }
 // PanelSession returns the id of the panel session that opened it.
 func (s *Session) PanelSession() string { return s.panelSession }
 
-// Privileged reports that the container is as good as root on the host.
+// Privileged reports that the container is as good as root on the host, or that
+// the session itself is a host shell.
 func (s *Session) Privileged() bool { return s.privileged }
 
 // Output carries what the shell prints. It is closed when the session ends.
@@ -238,29 +247,37 @@ func (m *Manager) Open(ctx context.Context, req OpenRequest) (*Session, error) {
 		req.Rows = 24
 	}
 	shell, ok := map[string]agentv1.TerminalShell{"sh": agentv1.TerminalShell_TERMINAL_SHELL_SH, "bash": agentv1.TerminalShell_TERMINAL_SHELL_BASH}[req.Shell]
-	if !ok || !containerRef.MatchString(req.Container) || req.ServerID == "" || req.Actor == "" ||
-		req.Cols > 1000 || req.Rows > 1000 {
+	if !ok || req.ServerID == "" || req.Actor == "" || req.Cols > 1000 || req.Rows > 1000 {
+		return nil, ErrInvalidRequest
+	}
+	container := req.Container
+	if req.Host {
+		if req.Container != "" {
+			return nil, ErrInvalidRequest
+		}
+		container = HostContainer
+	} else if !containerRef.MatchString(req.Container) {
 		return nil, ErrInvalidRequest
 	}
 
-	key := req.ServerID + "|" + req.Actor + "|" + req.Container
+	key := req.ServerID + "|" + req.Actor + "|" + container
 	if err := m.reserve(req.ServerID, key); err != nil {
 		return nil, err
 	}
 	defer m.release(req.ServerID, key)
 
 	// The row comes first: without a place to record, nothing starts.
-	row, err := m.store.CreateTerminalSession(ctx, req.ServerID, req.Container, req.Shell, req.Actor)
+	row, err := m.store.CreateTerminalSession(ctx, req.ServerID, container, req.Shell, req.Actor)
 	if err != nil {
 		return nil, fmt.Errorf("the session cannot be recorded: %w", err)
 	}
 
 	now := m.now()
 	s := &Session{
-		m: m, id: row.ID, serverID: req.ServerID, container: req.Container, shell: req.Shell,
+		m: m, id: row.ID, serverID: req.ServerID, container: container, host: req.Host, shell: req.Shell,
 		actor: req.Actor, panelSession: req.PanelSession, ip: req.IP, started: now,
 		out: make(chan []byte, m.cfg.PendingOutput), done: make(chan struct{}), opened: make(chan *agentv1.TerminalOpened, 1),
-		rec: newRecorder(row.ID, m.seal, m.store, m.cfg.ChunkBytes, m.cfg.MaxRecordingBytes, now, req.Container, req.Shell, req.Cols, req.Rows),
+		rec: newRecorder(row.ID, m.seal, m.store, m.cfg.ChunkBytes, m.cfg.MaxRecordingBytes, now, container, req.Shell, req.Cols, req.Rows),
 	}
 	s.touch()
 
@@ -268,8 +285,15 @@ func (m *Manager) Open(ctx context.Context, req OpenRequest) (*Session, error) {
 	m.sessions[s.id] = s
 	m.mu.Unlock()
 
+	target := agentv1.TerminalTarget_TERMINAL_TARGET_UNSPECIFIED
+	containerField := req.Container
+	if req.Host {
+		target = agentv1.TerminalTarget_TERMINAL_TARGET_HOST
+		containerField = ""
+	}
 	open := &agentv1.CoreMsg{Cmd: &agentv1.CoreMsg_TerminalOpen{TerminalOpen: &agentv1.TerminalOpen{
-		SessionId: s.id, Container: req.Container, Shell: shell, Cols: req.Cols, Rows: req.Rows,
+		SessionId: s.id, Container: containerField, Shell: shell, Cols: req.Cols, Rows: req.Rows,
+		Target: target,
 	}}}
 	dispatchCtx, cancel := context.WithTimeout(ctx, m.cfg.InputTimeout)
 	err = m.dispatcher.DispatchWait(dispatchCtx, req.ServerID, open)
@@ -290,6 +314,10 @@ func (m *Manager) Open(ctx context.Context, req OpenRequest) (*Session, error) {
 			return nil, &OpenError{Message: answer.GetError()}
 		}
 		s.privileged = answer.GetPrivileged()
+		if req.Host {
+			// A host shell is root on the server whatever the agent says.
+			s.privileged = true
+		}
 	case <-timer.C:
 		s.finish(ReasonOpenFailed, 0, true)
 		<-s.done
@@ -308,7 +336,11 @@ func (m *Manager) Open(ctx context.Context, req OpenRequest) (*Session, error) {
 			slog.Warn("record that a terminal is privileged", "session", s.id, "error", err)
 		}
 	}
-	m.auditEvent(ctx, "terminal_open", s, map[string]any{"privileged": s.privileged, "shell": s.shell})
+	action := "terminal_open"
+	if s.host {
+		action = "host_terminal_open"
+	}
+	m.auditEvent(ctx, action, s, map[string]any{"privileged": s.privileged, "shell": s.shell})
 
 	recCtx, stopRecording := context.WithCancel(context.Background())
 	go func() {
@@ -474,9 +506,16 @@ func (s *Session) teardown(reason string, notifyAgent bool) {
 	if err := s.m.store.CloseTerminalSession(ctx, s.id, reason); err != nil {
 		slog.Error("close a terminal session", "session", s.id, "error", err)
 	}
-	s.m.auditEvent(ctx, "terminal_close", s, map[string]any{
+	s.m.auditEvent(ctx, closeAction(s), s, map[string]any{
 		"reason": reason, "duration_seconds": int(s.m.now().Sub(s.started).Seconds()),
 	})
+}
+
+func closeAction(s *Session) string {
+	if s.host {
+		return "host_terminal_close"
+	}
+	return "terminal_close"
 }
 
 // watch ends a session that is idle or lasted too long, in case the agent does
@@ -501,7 +540,12 @@ func (s *Session) watch() {
 }
 
 func (m *Manager) auditEvent(ctx context.Context, action string, s *Session, extra map[string]any) {
-	details := map[string]any{"server_id": s.serverID, "session_id": s.id, "container": s.container}
+	details := map[string]any{"server_id": s.serverID, "session_id": s.id}
+	if s.host {
+		details["host"] = true
+	} else {
+		details["container"] = s.container
+	}
 	for key, value := range extra {
 		details[key] = value
 	}

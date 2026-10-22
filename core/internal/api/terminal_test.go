@@ -84,13 +84,14 @@ func eventually(t *testing.T, condition func() bool) {
 type terminalRig struct {
 	panel    *testPanel
 	serverID string
+	secret   []byte
 }
 
 func newTerminalRig(t *testing.T, options ...panelOption) *terminalRig {
 	t.Helper()
 	panel := newTestPanel(t, options...)
 	panel.createUser(t, "admin", testPassword)
-	panel.enableTOTP(t, "admin", testPassword)
+	secret, _ := panel.enableTOTP(t, "admin", testPassword)
 	serverID := enrollTestServer(t, panel)
 	panel.agents.set(agentWithContainers(serverID))
 	// Sessions store their recording when they end: let them finish before the
@@ -100,17 +101,22 @@ func newTerminalRig(t *testing.T, options ...panelOption) *terminalRig {
 		defer cancel()
 		panel.terminals.Shutdown(ctx)
 	})
-	return &terminalRig{panel: panel, serverID: serverID}
+	return &terminalRig{panel: panel, serverID: serverID, secret: secret}
 }
 
 // open asks for a terminal and plays the agent that starts the shell.
 func (r *terminalRig) open(t *testing.T, client *http.Client, container string, body map[string]any) (*http.Response, string) {
 	t.Helper()
+	return r.openPath(t, client, terminalPath(r.serverID, container), body, true)
+}
+
+func (r *terminalRig) openPath(t *testing.T, client *http.Client, path string, body map[string]any, privileged bool) (*http.Response, string) {
+	t.Helper()
 	before := len(r.panel.terminalAgent.messages())
 	type result struct{ response *http.Response }
 	done := make(chan result, 1)
 	go func() {
-		done <- result{r.panel.do(t, client, http.MethodPost, terminalPath(r.serverID, container), body)}
+		done <- result{r.panel.do(t, client, http.MethodPost, path, body)}
 	}()
 
 	// Answer only when the core asked for a shell; a refusal answers by itself.
@@ -131,7 +137,7 @@ func (r *terminalRig) open(t *testing.T, client *http.Client, container string, 
 		return finished, id
 	}
 	if id != "" {
-		r.panel.terminals.TerminalOpened(r.serverID, &agentv1.TerminalOpened{SessionId: id, Privileged: true})
+		r.panel.terminals.TerminalOpened(r.serverID, &agentv1.TerminalOpened{SessionId: id, Privileged: privileged})
 	}
 	return (<-done).response, id
 }

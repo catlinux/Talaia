@@ -193,6 +193,10 @@ func request(serverID, container string) OpenRequest {
 	return OpenRequest{ServerID: serverID, Container: container, Shell: "sh", Actor: "admin", PanelSession: "panel-1", IP: "192.0.2.1", Cols: 100, Rows: 30}
 }
 
+func hostRequest(serverID string) OpenRequest {
+	return OpenRequest{ServerID: serverID, Shell: "sh", Host: true, Actor: "admin", PanelSession: "panel-1", IP: "192.0.2.1", Cols: 100, Rows: 30}
+}
+
 // openedID returns the id of the last session the core asked a server to open.
 func (r *rig) openedID(serverID string) string {
 	id := ""
@@ -336,6 +340,66 @@ func TestSessionOpensCarriesOutputAndIsRecorded(t *testing.T) {
 		if bytes.Contains(chunk.Sealed, []byte("hello")) {
 			t.Error("a chunk is stored unencrypted")
 		}
+	}
+}
+
+func TestHostSessionUsesTheHostSentinelAndIsAlwaysPrivileged(t *testing.T) {
+	r := newRig(t, nil)
+	s := r.open(t, hostRequest(serverOne), false)
+	if !s.Privileged() {
+		t.Error("a host session was not reported as privileged")
+	}
+	if row := r.st.row(s.ID()); row.Container != HostContainer {
+		t.Errorf("stored container = %q, want %q", row.Container, HostContainer)
+	}
+
+	var open *agentv1.TerminalOpen
+	for _, msg := range r.agents.messages(serverOne) {
+		if msg.GetTerminalOpen() != nil {
+			open = msg.GetTerminalOpen()
+		}
+	}
+	if open == nil || open.GetTarget() != agentv1.TerminalTarget_TERMINAL_TARGET_HOST || open.GetContainer() != "" {
+		t.Errorf("host open = %v", open)
+	}
+
+	if _, err := r.m.Open(context.Background(), hostRequest(serverOne)); !errors.Is(err, ErrSessionExists) {
+		t.Errorf("second host session = %v, want ErrSessionExists", err)
+	}
+	container := r.open(t, request(serverOne, "web"), false)
+	if container.Privileged() {
+		t.Error("a container session was made privileged by the host support")
+	}
+	container.Close(ReasonClosed)
+	waitDone(t, container)
+
+	s.Close(ReasonClosed)
+	waitDone(t, s)
+	if got := r.audit.actions(); got != "host_terminal_open,terminal_open,terminal_close,host_terminal_close" {
+		t.Errorf("audit = %s", got)
+	}
+	for _, event := range r.audit.events {
+		if event.Action != "host_terminal_open" {
+			continue
+		}
+		if event.Details["host"] != true {
+			t.Errorf("host audit details = %v", event.Details)
+		}
+		if _, hasContainer := event.Details["container"]; hasContainer {
+			t.Errorf("host audit holds a container: %v", event.Details)
+		}
+	}
+}
+
+func TestHostRequestRefusesAContainer(t *testing.T) {
+	r := newRig(t, nil)
+	req := hostRequest(serverOne)
+	req.Container = "web"
+	if _, err := r.m.Open(context.Background(), req); !errors.Is(err, ErrInvalidRequest) {
+		t.Errorf("Open = %v, want ErrInvalidRequest", err)
+	}
+	if len(r.st.sessions) != 0 || len(r.agents.messages(serverOne)) != 0 {
+		t.Error("an invalid host request reached the store or the agent")
 	}
 }
 

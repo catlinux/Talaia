@@ -59,11 +59,23 @@ type PanelSessions interface {
 	TouchSession(ctx context.Context, id string, now time.Time) error
 }
 
+// TOTPVerifier checks a six-digit code with the replay guard of the auth
+// handlers, so a code cannot be reused between login, password change and host
+// terminals.
+type TOTPVerifier interface {
+	VerifyCode(ctx context.Context, user store.User, code string) error
+}
+
 // TerminalDeps are the collaborators of the terminal endpoints.
 type TerminalDeps struct {
 	Agents    LiveAgents
 	Terminals TerminalService
 	Sessions  PanelSessions
+	// TOTP verifies the fresh code of a host terminal. The router wires the
+	// auth handler here.
+	TOTP TOTPVerifier
+	// Limiter is the shared TOTP and login rate limiter.
+	Limiter *RateLimiter
 	// Origins are the browser origins allowed to open a WebSocket.
 	Origins []string
 	// Now and CheckInterval can be replaced by the tests.

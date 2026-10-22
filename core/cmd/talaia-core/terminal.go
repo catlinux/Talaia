@@ -94,8 +94,12 @@ func terminalList(ctx context.Context, out io.Writer, lister sessionLister) erro
 		if session.Privileged {
 			note = "  root-equivalent"
 		}
+		container := session.Container
+		if container == terminal.HostContainer {
+			container = "host"
+		}
 		fmt.Fprintf(out, "%s  %s  %s  %s  %s  %s  %d bytes%s\n", session.ID, session.OpenedAt.UTC().Format("2006-01-02T15:04:05Z"),
-			state, session.CreatedBy, session.Container, lasted, session.RecordedBytes, note)
+			state, session.CreatedBy, container, lasted, session.RecordedBytes, note)
 	}
 	return nil
 }

@@ -18,6 +18,12 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.3.16] - 2026-10-22
+
+### Added
+
+- The core opens a recorded root terminal on the server itself (`POST /api/v1/servers/{id}/terminal`): it needs `confirm`, a fresh TOTP code (verified with the same replay guard as login and password change, so a code cannot be reused) and an agent that has the host terminal enabled. Recorded like container terminals, audited as `host_terminal_open` and `host_terminal_close`, one per user and server, and shown as `host` in `talaia-core terminal list`. Not in the panel yet.
+
 ## [0.3.15] - 2026-10-22
 
 ### Added
@@ -316,7 +322,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.3.15...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.3.16...HEAD
+[0.3.16]: https://github.com/catlinux/Talaia/releases/tag/v0.3.16
 [0.3.15]: https://github.com/catlinux/Talaia/releases/tag/v0.3.15
 [0.3.14]: https://github.com/catlinux/Talaia/releases/tag/v0.3.14
 [0.3.13]: https://github.com/catlinux/Talaia/releases/tag/v0.3.13

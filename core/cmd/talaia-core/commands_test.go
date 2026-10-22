@@ -15,6 +15,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/catlinux/Talaia/core/internal/store"
+	"github.com/catlinux/Talaia/core/internal/terminal"
 )
 
 type fakeTokenCreator struct {
@@ -387,14 +388,16 @@ func TestTerminalList(t *testing.T) {
 		{ID: "id-open", Container: "web", CreatedBy: "admin", OpenedAt: opened},
 		{ID: "id-done", Container: "db", CreatedBy: "admin", OpenedAt: opened, ClosedAt: opened.Add(90 * time.Second),
 			CloseReason: "exited", Privileged: true, RecordedBytes: 1234},
+		{ID: "id-host", Container: terminal.HostContainer, CreatedBy: "admin", OpenedAt: opened, Privileged: true},
 	}
 	out.Reset()
 	if err := terminalList(context.Background(), &out, sessions); err != nil {
 		t.Fatalf("terminalList: %v", err)
 	}
 	lines := strings.Split(strings.TrimSpace(out.String()), "\n")
-	if len(lines) != 2 || !strings.Contains(lines[0], "id-open  2026-10-20T10:00:00Z  open  admin  web") ||
-		!strings.Contains(lines[1], "exited  admin  db  1m30s  1234 bytes  root-equivalent") {
+	if len(lines) != 3 || !strings.Contains(lines[0], "id-open  2026-10-20T10:00:00Z  open  admin  web") ||
+		!strings.Contains(lines[1], "exited  admin  db  1m30s  1234 bytes  root-equivalent") ||
+		!strings.Contains(lines[2], "open  admin  host") {
 		t.Errorf("list =\n%s", out.String())
 	}
 }

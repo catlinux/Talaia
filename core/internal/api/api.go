@@ -62,7 +62,8 @@ func NewRouter(deps RouterDeps) http.Handler {
 
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Use(Sessions(deps.Session))
-		r.Mount("/auth", NewAuthHandler(deps.Auth))
+		authHandler := newAuthHandler(deps.Auth)
+		r.Mount("/auth", authHandler.routes())
 
 		// Every other /api/v1 route requires a session that passed both
 		// factors. Later tasks add their endpoints to this group.
@@ -96,7 +97,10 @@ func NewRouter(deps RouterDeps) http.Handler {
 				r.Post("/servers/{serverID}/services/{unit}/actions", NewServiceActionHandler(*deps.Containers).ServeHTTP)
 				r.Get("/jobs/{jobID}", NewJobHandler(*deps.Containers).ServeHTTP)
 				if deps.Terminal != nil {
+					deps.Terminal.TOTP = authHandler
+					deps.Terminal.Limiter = authHandler.deps.Limiter
 					r.Post("/servers/{serverID}/containers/{container}/terminal", NewTerminalOpenHandler(deps.Terminal).ServeHTTP)
+					r.Post("/servers/{serverID}/terminal", NewHostTerminalOpenHandler(deps.Terminal).ServeHTTP)
 					r.Get("/terminal/{sessionID}/ws", NewTerminalSocketHandler(deps.Terminal).ServeHTTP)
 				}
 				r.Post("/servers/{serverID}/resources/list", NewResourcesListHandler(*deps.Containers).ServeHTTP)

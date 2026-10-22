@@ -59,11 +59,19 @@ func NewAuthRateLimiter() *RateLimiter {
 // NewAuthHandler returns the handler of the authentication API. It is mounted
 // under /api/v1/auth.
 func NewAuthHandler(deps AuthDeps) http.Handler {
+	return newAuthHandler(deps).routes()
+}
+
+// newAuthHandler builds the handler; the router keeps the same value to share
+// the TOTP replay guard and the rate limiter with the host terminal endpoint.
+func newAuthHandler(deps AuthDeps) *authHandler {
 	if deps.Limiter == nil {
 		deps.Limiter = NewAuthRateLimiter()
 	}
-	h := &authHandler{deps: deps, passkeys: newPasskeyWebAuthn(deps)}
+	return &authHandler{deps: deps, passkeys: newPasskeyWebAuthn(deps)}
+}
 
+func (h *authHandler) routes() http.Handler {
 	r := chi.NewRouter()
 	r.Post("/login", h.login)
 	r.Post("/totp/setup", h.totpSetup)
@@ -186,6 +194,12 @@ func (h *authHandler) verifyCode(ctx context.Context, user store.User, code stri
 		return errInvalidCode
 	}
 	return nil
+}
+
+// VerifyCode verifies a TOTP code with the same replay guard as login and
+// password changes. It implements TOTPVerifier.
+func (h *authHandler) VerifyCode(ctx context.Context, user store.User, code string) error {
+	return h.verifyCode(ctx, user, code)
 }
 
 // upgrade replaces the session with a full one and returns the new token.
@@ -518,6 +532,9 @@ type passwordRequest struct {
 }
 
 func (h *authHandler) password(w http.ResponseWriter, r *http.Request) {
+	if !h.limit(w, r) {
+		return
+	}
 	session, ok := sessionFromContext(r.Context())
 	if !ok {
 		writeError(w, http.StatusUnauthorized, "session_required")
