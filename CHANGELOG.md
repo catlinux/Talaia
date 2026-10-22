@@ -18,6 +18,12 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.3.17] - 2026-10-22
+
+### Added
+
+- Terminal on the server itself from the panel: a **Terminal** button on the server screen opens a root shell after a confirmation and a fresh 6-digit TOTP code, with a permanent red *Root on <server>* banner and the recording mark; it is disabled with an explanation when the agent has it off or is too old. In ca, es and en.
+
 ## [0.3.16] - 2026-10-22
 
 ### Added
@@ -322,7 +328,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.3.16...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.3.17...HEAD
+[0.3.17]: https://github.com/catlinux/Talaia/releases/tag/v0.3.17
 [0.3.16]: https://github.com/catlinux/Talaia/releases/tag/v0.3.16
 [0.3.15]: https://github.com/catlinux/Talaia/releases/tag/v0.3.15
 [0.3.14]: https://github.com/catlinux/Talaia/releases/tag/v0.3.14

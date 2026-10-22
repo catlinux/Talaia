@@ -20,6 +20,8 @@ export type ApiErrorCode =
   | 'too_many_terminals'
   | 'terminal_exists'
   | 'terminal_open_failed'
+  | 'code_invalid'
+  | 'host_terminal_disabled'
   | 'not_found'
   | 'target_not_offered'
   | 'update_in_progress'
@@ -45,6 +47,8 @@ const knownCodes: readonly ApiErrorCode[] = [
   'too_many_terminals',
   'terminal_exists',
   'terminal_open_failed',
+  'code_invalid',
+  'host_terminal_disabled',
   'not_found',
   'target_not_offered',
   'update_in_progress',

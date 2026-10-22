@@ -34,6 +34,14 @@ export interface TerminalApi {
     cols: number,
     rows: number,
   ): Promise<TerminalSession>
+  /** openHost opens a root shell on the server itself after a fresh TOTP code. */
+  openHost(
+    serverId: string,
+    shell: TerminalShell,
+    code: string,
+    cols: number,
+    rows: number,
+  ): Promise<TerminalSession>
   /** connect opens the WebSocket of a session; the caller sends the ticket first. */
   connect(sessionId: string): SocketLike
 }
@@ -88,6 +96,13 @@ export function createTerminalApi(fetchImpl?: typeof fetch): TerminalApi {
       const body = await http.post<apiTerminalSession>(
         `/api/v1/servers/${encodeURIComponent(serverId)}/containers/${encodeURIComponent(container)}/terminal`,
         { confirm: true, shell, cols, rows },
+      )
+      return { sessionId: body.session_id, ticket: body.ticket, privileged: body.privileged }
+    },
+    openHost: async (serverId, shell, code, cols, rows) => {
+      const body = await http.post<apiTerminalSession>(
+        `/api/v1/servers/${encodeURIComponent(serverId)}/terminal`,
+        { confirm: true, code, shell, cols, rows },
       )
       return { sessionId: body.session_id, ticket: body.ticket, privileged: body.privileged }
     },

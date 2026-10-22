@@ -67,6 +67,7 @@ interface ServerScreenProps {
     id: string
     name: string
     hostname?: string
+    hostTerminal?: boolean
     agentUpdateManual?: boolean
     agentUpgradeCommand?: string
   }
@@ -173,6 +174,8 @@ export function ServerScreen({
   const [logsFor, setLogsFor] = useState<string | null>(null)
   // The container whose terminal is open, if any.
   const [terminalFor, setTerminalFor] = useState<string | null>(null)
+  // Whether the root terminal on the server itself is open.
+  const [hostTerminalOpen, setHostTerminalOpen] = useState(false)
   // The managed stack whose screen is open, if any.
   const [openStack, setOpenStack] = useState<{
     name: string
@@ -307,6 +310,8 @@ export function ServerScreen({
   const agentVersion = serverInfo?.agentVersion ?? ''
   const agentUpdateManual = server.agentUpdateManual || serverInfo?.agentUpdateManual || false
   const agentUpgradeCommand = server.agentUpgradeCommand || serverInfo?.agentUpgradeCommand || ''
+  const hostTerminal = serverInfo?.hostTerminal ?? server.hostTerminal ?? false
+  const hostTerminalConnected = serverInfo?.connected ?? list?.connected ?? false
   const canUpdateAgent =
     serverInfo !== null && serverInfo.connected && serverInfo.agentUpdateAvailable && !updatingAgent
 
@@ -365,8 +370,38 @@ export function ServerScreen({
             ) : null}
           </div>
         ) : null}
+        {hostTerminalConnected ? (
+          <button
+            type="button"
+            className="cbtn serverscreen__terminal"
+            disabled={!hostTerminal}
+            title={hostTerminal ? undefined : t('server:terminal.hostUnavailable')}
+            onClick={() => setHostTerminalOpen(true)}
+          >
+            <TerminalIcon />
+            {t('server:terminal.hostButton')}
+          </button>
+        ) : null}
         {agentUpdateManual ? <ManualUpgrade command={agentUpgradeCommand} /> : null}
       </header>
+
+      {hostTerminalOpen && hostTerminalConnected ? (
+        <Suspense
+          fallback={
+            <p className="terminal__message" role="status">
+              {t('server:terminal.opening')}
+            </p>
+          }
+        >
+          <TerminalPanel
+            api={terminalApi}
+            serverId={server.id}
+            serverName={server.name}
+            target={{ kind: 'host' }}
+            onClose={() => setHostTerminalOpen(false)}
+          />
+        </Suspense>
+      ) : null}
 
       {state.status === 'loading' ? (
         <p className="serverscreen__message" role="status">
@@ -473,7 +508,8 @@ export function ServerScreen({
                     <TerminalPanel
                       api={terminalApi}
                       serverId={server.id}
-                      container={container.name}
+                      serverName={server.name}
+                      target={{ kind: 'container', container: container.name }}
                       onClose={() => setTerminalFor(null)}
                     />
                   </Suspense>

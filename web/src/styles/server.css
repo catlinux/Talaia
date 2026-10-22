@@ -46,6 +46,10 @@
   letter-spacing: -0.03em;
 }
 
+.serverscreen__terminal {
+  align-self: flex-start;
+}
+
 .serverscreen__summary {
   margin: 0;
   color: var(--muted);
@@ -870,6 +874,41 @@
   background: var(--surface);
   color: var(--ink);
   font: inherit;
+}
+
+.terminal__field input {
+  padding: 7px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+}
+
+.terminal__code {
+  max-width: 160px;
+  font-family: var(--f-mono);
+  font-size: 1rem;
+  letter-spacing: 0.28em;
+  font-variant-numeric: tabular-nums;
+}
+
+.terminal__hint {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.terminal__root {
+  margin: 0;
+  padding: 10px 14px;
+  border: 1px solid color-mix(in srgb, var(--crit) 70%, var(--line));
+  border-radius: var(--radius-sm);
+  background: var(--crit-soft);
+  color: var(--crit);
+  font-family: var(--f-mono);
+  font-size: 0.875rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
 }
 
 .terminal__warning {

@@ -10,6 +10,29 @@ import { AgentUpdateError, type ServerSummary, type ServersApi } from '../api/se
 import i18n from '../i18n'
 import { ServerScreen } from './ServerScreen'
 
+// xterm needs a real layout engine; opening the host confirmation loads the panel.
+vi.mock('@xterm/xterm', () => ({
+  Terminal: class {
+    cols = 80
+    rows = 24
+    loadAddon() {}
+    open() {}
+    focus() {}
+    write() {}
+    onData() {
+      return { dispose: () => undefined }
+    }
+    dispose() {}
+  },
+}))
+
+vi.mock('@xterm/addon-fit', () => ({
+  FitAddon: class {
+    loadAddon() {}
+    fit() {}
+  },
+}))
+
 const server = { id: 'srv-1', name: 'vps-web-01' }
 
 // The unrelated tests do not wait for the apt section; leaving its request
@@ -44,6 +67,7 @@ function serverSummary(overrides: Partial<ServerSummary> = {}): ServerSummary {
     agentUpdateAvailable: false,
     agentUpdateManual: false,
     agentUpgradeCommand: '',
+    hostTerminal: false,
     ...overrides,
   }
 }
@@ -218,6 +242,55 @@ describe('ServerScreen', () => {
     expect(await screen.findByRole('heading', { level: 2, name: 'Services' })).toBeTruthy()
     expect(await screen.findByText('1 service')).toBeTruthy()
     expect(screen.getByRole('heading', { level: 3, name: 'docker.service' })).toBeTruthy()
+  })
+
+  it('offers a root terminal only when the agent supports it', async () => {
+    renderScreen(
+      apiWith(listOf(container())),
+      undefined,
+      serversApiWith([serverSummary({ hostTerminal: false })]),
+    )
+    let header = (await screen.findByRole('heading', { level: 1 })).closest('header')
+    if (header === null) throw new Error('no server header')
+    let button = within(header).getByRole('button', { name: 'Terminal' }) as HTMLButtonElement
+    expect(button.disabled).toBe(true)
+    expect(button.title).toContain('Not available')
+
+    cleanup()
+    renderScreen(
+      apiWith(listOf(container())),
+      undefined,
+      serversApiWith([serverSummary({ hostTerminal: true })]),
+    )
+    header = (await screen.findByRole('heading', { level: 1 })).closest('header')
+    if (header === null) throw new Error('no server header')
+    button = within(header).getByRole('button', { name: 'Terminal' }) as HTMLButtonElement
+    expect(button.disabled).toBe(false)
+  })
+
+  it('does not offer the root terminal while the agent is offline', async () => {
+    renderScreen(
+      apiWith({ connected: false, dockerAvailable: false, containers: [] }),
+      undefined,
+      serversApiWith([serverSummary({ connected: false, hostTerminal: true })]),
+    )
+    const header = (await screen.findByRole('heading', { level: 1 })).closest('header')
+    if (header === null) throw new Error('no server header')
+    expect(within(header).queryByRole('button', { name: 'Terminal' })).toBeNull()
+  })
+
+  it('opens the host terminal confirmation from the header', async () => {
+    renderScreen(
+      apiWith(listOf(container())),
+      undefined,
+      serversApiWith([serverSummary({ hostTerminal: true })]),
+    )
+    const header = (await screen.findByRole('heading', { level: 1 })).closest('header')
+    if (header === null) throw new Error('no server header')
+    fireEvent.click(within(header).getByRole('button', { name: 'Terminal' }))
+
+    expect(await screen.findByText('Open a root shell on vps-web-01?')).toBeTruthy()
+    expect(screen.getByLabelText('Authenticator code')).toBeTruthy()
   })
 
   it('explains an offline agent, a missing Docker and an empty server', async () => {

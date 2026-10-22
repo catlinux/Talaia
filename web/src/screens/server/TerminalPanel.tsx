@@ -11,14 +11,21 @@ import {
   type TerminalApi,
   type TerminalShell,
 } from '../../api/terminal'
-import { isSignedOut } from '../../api/http'
+import { ApiError, isSignedOut } from '../../api/http'
 import { errorMessage } from '../../auth/AuthGate'
 import { CloseIcon, TerminalIcon } from '../../components/icons'
+
+/** TerminalTarget says where the shell runs. */
+export type TerminalTarget = { kind: 'container'; container: string } | { kind: 'host' }
 
 interface TerminalPanelProps {
   api: TerminalApi
   serverId: string
-  container: string
+  /** target is the preferred form; container is kept for older callers. */
+  target?: TerminalTarget
+  container?: string
+  /** serverName labels a host shell and its red banner. */
+  serverName?: string
   onClose: () => void
 }
 
@@ -64,16 +71,31 @@ function terminalColors(): Record<string, string> {
 }
 
 /**
- * TerminalPanel opens an interactive shell in a container. It asks first, because
- * the session is recorded and may be as good as root on the server; then the core
- * starts the shell and the panel attaches to it over a WebSocket with a ticket.
+ * TerminalPanel opens an interactive shell in a container or on the host. It asks
+ * first, because the session is recorded and may be as good as root on the server;
+ * then the core starts the shell and the panel attaches to it over a WebSocket with
+ * a ticket.
  */
-export function TerminalPanel({ api, serverId, container, onClose }: TerminalPanelProps) {
+export function TerminalPanel({
+  api,
+  serverId,
+  target,
+  container: legacyContainer,
+  serverName,
+  onClose,
+}: TerminalPanelProps) {
   const { t } = useTranslation(['server', 'errors'])
+  const host = target?.kind === 'host'
+  const container = target?.kind === 'container' ? target.container : (legacyContainer ?? '')
+  const serverLabel = serverName ?? container
   const [phase, setPhase] = useState<Phase>({ kind: 'confirm' })
   const [shell, setShell] = useState<TerminalShell>('sh')
   // attempt changes to start a new terminal after one ended.
   const [attempt, setAttempt] = useState(0)
+  // code lives only while the person types it; it is cleared before every request.
+  const [code, setCode] = useState('')
+  const [confirmError, setConfirmError] = useState<string | null>(null)
+  const submittedCode = useRef('')
   const screen = useRef<HTMLDivElement>(null)
   // The terminal must not restart when the language or the shell choice changes
   // while it runs, so the effect reads them from refs.
@@ -82,7 +104,9 @@ export function TerminalPanel({ api, serverId, container, onClose }: TerminalPan
     latest.current = { t, shell }
   })
 
-  const title = t('server:terminal.title', { name: container })
+  const title = host
+    ? t('server:terminal.hostTitle', { name: serverLabel })
+    : t('server:terminal.title', { name: container })
   const started = phase.kind !== 'confirm'
 
   useEffect(() => {
@@ -159,8 +183,13 @@ export function TerminalPanel({ api, serverId, container, onClose }: TerminalPan
       if (alive) setPhase({ kind: 'ended', text })
     }
 
-    api
-      .open(serverId, container, latest.current.shell, term.cols, term.rows)
+    const requestCode = host ? submittedCode.current : ''
+    submittedCode.current = ''
+    const openTerminal = host
+      ? () => api.openHost(serverId, latest.current.shell, requestCode, term.cols, term.rows)
+      : () => api.open(serverId, container, latest.current.shell, term.cols, term.rows)
+
+    openTerminal()
       .then((session) => {
         if (!alive) return
         const opened = api.connect(session.sessionId)
@@ -190,7 +219,22 @@ export function TerminalPanel({ api, serverId, container, onClose }: TerminalPan
       .catch((error: unknown) => {
         if (!alive || isSignedOut(error)) return
         finished = true
-        setPhase({ kind: 'error', message: errorMessage(latest.current.t, error) })
+        const current = latest.current.t
+        if (host && error instanceof ApiError && error.code === 'code_invalid') {
+          setCode('')
+          setConfirmError(errorMessage(current, error))
+          setPhase({ kind: 'confirm' })
+          return
+        }
+        let message = errorMessage(current, error)
+        if (host && error instanceof ApiError) {
+          if (error.code === 'terminal_open_failed') {
+            message = current('errors:hostTerminalOpenFailed')
+          } else if (error.code === 'terminal_exists') {
+            message = current('errors:hostTerminalExists')
+          }
+        }
+        setPhase({ kind: 'error', message })
       })
 
     return () => {
@@ -205,7 +249,7 @@ export function TerminalPanel({ api, serverId, container, onClose }: TerminalPan
       term.dispose()
     }
     // attempt restarts the terminal.
-  }, [api, attempt, container, serverId, started])
+  }, [api, attempt, container, host, serverId, started])
 
   const live = phase.kind === 'live'
 
@@ -231,30 +275,75 @@ export function TerminalPanel({ api, serverId, container, onClose }: TerminalPan
         <div
           className="terminal__confirm"
           role="group"
-          aria-label={t('server:terminal.confirmTitle', { name: container })}
+          aria-label={t(
+            host ? 'server:terminal.hostConfirmTitle' : 'server:terminal.confirmTitle',
+            { name: host ? serverLabel : container },
+          )}
         >
           <p className="terminal__confirm-title">
-            {t('server:terminal.confirmTitle', { name: container })}
+            {t(host ? 'server:terminal.hostConfirmTitle' : 'server:terminal.confirmTitle', {
+              name: host ? serverLabel : container,
+            })}
           </p>
-          <p className="terminal__confirm-body">{t('server:terminal.confirmBody')}</p>
+          <p className="terminal__confirm-body">
+            {t(host ? 'server:terminal.hostConfirmBody' : 'server:terminal.confirmBody', {
+              name: serverLabel,
+            })}
+          </p>
+          {confirmError !== null ? (
+            <p className="terminal__message terminal__message--error" role="alert">
+              {confirmError}
+            </p>
+          ) : null}
           <label className="terminal__field">
             <span>{t('server:terminal.shell')}</span>
             <select
               value={shell}
               onChange={(event) => setShell(event.target.value as TerminalShell)}
             >
-              <option value="sh">{t('server:terminal.shellSh')}</option>
-              <option value="bash">{t('server:terminal.shellBash')}</option>
+              <option value="sh">
+                {t(host ? 'server:terminal.hostShellSh' : 'server:terminal.shellSh')}
+              </option>
+              <option value="bash">
+                {t(host ? 'server:terminal.hostShellBash' : 'server:terminal.shellBash')}
+              </option>
             </select>
           </label>
+          {host ? (
+            <div className="terminal__field">
+              <label htmlFor="terminal-code">{t('server:terminal.code')}</label>
+              <input
+                id="terminal-code"
+                className="terminal__code"
+                type="text"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                pattern="[0-9]*"
+                maxLength={6}
+                value={code}
+                aria-describedby="terminal-code-hint"
+                onChange={(event) => setCode(event.target.value.replace(/\D/g, '').slice(0, 6))}
+              />
+              <span className="terminal__hint" id="terminal-code-hint">
+                {t('server:terminal.codeHint')}
+              </span>
+            </div>
+          ) : null}
           <div className="container__actions">
             <button
               type="button"
               className="cbtn cbtn--primary"
-              onClick={() => setPhase({ kind: 'opening' })}
+              disabled={host && code.length !== 6}
+              onClick={() => {
+                if (host && code.length !== 6) return
+                submittedCode.current = host ? code : ''
+                setCode('')
+                setConfirmError(null)
+                setPhase({ kind: 'opening' })
+              }}
             >
               <TerminalIcon />
-              {t('server:terminal.start')}
+              {t(host ? 'server:terminal.hostStart' : 'server:terminal.start')}
             </button>
             <button type="button" className="cbtn" onClick={onClose}>
               {t('server:terminal.cancel')}
@@ -269,7 +358,13 @@ export function TerminalPanel({ api, serverId, container, onClose }: TerminalPan
         </p>
       ) : null}
 
-      {live && phase.privileged ? (
+      {live && host ? (
+        <p className="terminal__root" role="alert">
+          {t('server:terminal.hostBanner', { name: serverLabel })}
+        </p>
+      ) : null}
+
+      {live && phase.privileged && !host ? (
         <p className="terminal__warning" role="alert">
           {t('server:terminal.privileged')}
         </p>
@@ -288,12 +383,18 @@ export function TerminalPanel({ api, serverId, container, onClose }: TerminalPan
             type="button"
             className="cbtn"
             onClick={() => {
+              setConfirmError(null)
+              setCode('')
+              if (host) {
+                setPhase({ kind: 'confirm' })
+                return
+              }
               setPhase({ kind: 'opening' })
               setAttempt((current) => current + 1)
             }}
           >
             <TerminalIcon />
-            {t('server:terminal.again')}
+            {t(host ? 'server:terminal.hostAgain' : 'server:terminal.again')}
           </button>
         </div>
       ) : null}
@@ -307,8 +408,16 @@ export function TerminalPanel({ api, serverId, container, onClose }: TerminalPan
       ) : null}
       {started && phase.kind === 'error' ? (
         <div className="container__actions">
-          <button type="button" className="cbtn" onClick={() => setPhase({ kind: 'confirm' })}>
-            {t('server:terminal.again')}
+          <button
+            type="button"
+            className="cbtn"
+            onClick={() => {
+              setConfirmError(null)
+              setCode('')
+              setPhase({ kind: 'confirm' })
+            }}
+          >
+            {t(host ? 'server:terminal.hostAgain' : 'server:terminal.again')}
           </button>
         </div>
       ) : null}

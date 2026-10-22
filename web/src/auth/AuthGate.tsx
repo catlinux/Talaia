@@ -34,6 +34,8 @@ const errorKeys: Record<ApiErrorCode, string> = {
   too_many_terminals: 'tooManyTerminals',
   terminal_exists: 'terminalExists',
   terminal_open_failed: 'terminalOpenFailed',
+  code_invalid: 'codeInvalid',
+  host_terminal_disabled: 'hostTerminalDisabled',
   not_found: 'notFound',
   target_not_offered: 'targetNotOffered',
   update_in_progress: 'updateInProgress',

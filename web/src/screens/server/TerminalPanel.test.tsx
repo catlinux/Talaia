@@ -80,13 +80,18 @@ class FakeSocket implements SocketLike {
 
 const session: TerminalSession = { sessionId: 'sess-1', ticket: 'ticket-1', privileged: false }
 
-function fakeApi(opened: Promise<TerminalSession> = Promise.resolve(session)) {
+function fakeApi(
+  opened: Promise<TerminalSession> = Promise.resolve(session),
+  hostOpened: Promise<TerminalSession> = opened,
+) {
   const socket = new FakeSocket()
+  const openHost = vi.fn(() => hostOpened)
   const api = {
     open: vi.fn(() => opened),
+    openHost,
     connect: vi.fn(() => socket),
   } satisfies TerminalApi
-  return { api, socket }
+  return { api, socket, openHost }
 }
 
 beforeEach(async () => {
@@ -107,7 +112,27 @@ afterEach(() => {
 })
 
 function renderPanel(api: TerminalApi, onClose = vi.fn()) {
-  render(<TerminalPanel api={api} serverId="srv-1" container="web" onClose={onClose} />)
+  render(
+    <TerminalPanel
+      api={api}
+      serverId="srv-1"
+      target={{ kind: 'container', container: 'web' }}
+      onClose={onClose}
+    />,
+  )
+  return onClose
+}
+
+function renderHostPanel(api: TerminalApi, onClose = vi.fn()) {
+  render(
+    <TerminalPanel
+      api={api}
+      serverId="srv-1"
+      serverName="vps-web-01"
+      target={{ kind: 'host' }}
+      onClose={onClose}
+    />,
+  )
   return onClose
 }
 
@@ -268,10 +293,79 @@ describe('TerminalPanel', () => {
     expect(api.connect).not.toHaveBeenCalled()
   })
 
+  it('asks for a root host shell with a six-digit code', async () => {
+    const { api, socket, openHost } = fakeApi()
+    renderHostPanel(api)
+
+    expect(
+      screen.getByText(/This opens a shell as root on vps-web-01\. It is recorded/),
+    ).toBeTruthy()
+    const input = screen.getByLabelText('Authenticator code') as HTMLInputElement
+    const start = screen.getByRole('button', { name: 'Open the root shell' }) as HTMLButtonElement
+    expect(start.disabled).toBe(true)
+
+    fireEvent.change(input, { target: { value: '12345' } })
+    expect(start.disabled).toBe(true)
+    fireEvent.change(input, { target: { value: '123456' } })
+    expect(start.disabled).toBe(false)
+    fireEvent.click(start)
+
+    await waitFor(() => expect(openHost).toHaveBeenCalledWith('srv-1', 'sh', '123456', 90, 30))
+    expect(api.open).not.toHaveBeenCalled()
+    await waitFor(() => expect(api.connect).toHaveBeenCalledWith('sess-1'))
+    act(() => socket.open())
+
+    expect(await screen.findByText('Root on vps-web-01')).toBeTruthy()
+    expect(screen.getByText('Recording')).toBeTruthy()
+  })
+
+  it('clears the code and keeps the dialog when it is invalid', async () => {
+    const refused = Promise.reject(new ApiError('code_invalid', 403))
+    refused.catch(() => undefined)
+    const { api } = fakeApi(Promise.resolve(session), refused)
+    renderHostPanel(api)
+
+    const input = screen.getByLabelText('Authenticator code') as HTMLInputElement
+    fireEvent.change(input, { target: { value: '123456' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Open the root shell' }))
+
+    expect(await screen.findByText('The code is not valid or has already been used.')).toBeTruthy()
+    expect(screen.getByText('Open a root shell on vps-web-01?')).toBeTruthy()
+    expect((screen.getByLabelText('Authenticator code') as HTMLInputElement).value).toBe('')
+    expect(api.openHost).toHaveBeenCalledTimes(1)
+  })
+
+  it('maps a disabled host terminal to a clear message', async () => {
+    const refused = Promise.reject(new ApiError('host_terminal_disabled', 409))
+    refused.catch(() => undefined)
+    const { api } = fakeApi(Promise.resolve(session), refused)
+    renderHostPanel(api)
+
+    fireEvent.change(screen.getByLabelText('Authenticator code'), {
+      target: { value: '123456' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Open the root shell' }))
+
+    expect(await screen.findByText(/This agent does not allow root terminals/)).toBeTruthy()
+  })
+
+  it('cancelling closes the host panel without opening anything', () => {
+    const { api } = fakeApi()
+    const onClose = renderHostPanel(api)
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+    expect(onClose).toHaveBeenCalled()
+    expect(api.openHost).not.toHaveBeenCalled()
+  })
+
   it('closes the socket and the terminal when the panel goes away', async () => {
     const { api, socket } = fakeApi()
     const { unmount } = render(
-      <TerminalPanel api={api} serverId="srv-1" container="web" onClose={vi.fn()} />,
+      <TerminalPanel
+        api={api}
+        serverId="srv-1"
+        target={{ kind: 'container', container: 'web' }}
+        onClose={vi.fn()}
+      />,
     )
     fireEvent.click(screen.getByRole('button', { name: 'Open the terminal' }))
     await waitFor(() => expect(api.connect).toHaveBeenCalled())

@@ -44,8 +44,33 @@ describe('api servers client', () => {
         agentUpdateAvailable: true,
         agentUpdateManual: false,
         agentUpgradeCommand: '',
+        hostTerminal: false,
       },
     ])
+  })
+
+  it('maps the host terminal capability', async () => {
+    const fetchImpl = vi.fn(() =>
+      Promise.resolve(
+        jsonResponse(200, {
+          servers: [
+            {
+              id: 'srv-4',
+              name: 'vps-host-01',
+              connected: true,
+              revoked: false,
+              agent_update_available: false,
+              agent_update_manual: false,
+              live: { agent_version: '0.3.0', host_terminal: true },
+            },
+          ],
+        }),
+      ),
+    )
+    const api = createServersApi(fetchImpl as unknown as typeof fetch)
+
+    const [server] = await api.listServers()
+    expect(server?.hostTerminal).toBe(true)
   })
 
   it('carries the manual upgrade flag and command', async () => {

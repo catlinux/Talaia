@@ -70,6 +70,32 @@ describe('createTerminalApi', () => {
     })
   })
 
+  it('asks for a host terminal with the fresh code', async () => {
+    const fetchImpl = vi.fn(() =>
+      Promise.resolve(
+        new Response(JSON.stringify({ session_id: 'h1', ticket: 't1', privileged: true }), {
+          status: 201,
+          headers: { 'Content-Type': 'application/json' },
+        }),
+      ),
+    )
+    const api = createTerminalApi(fetchImpl as unknown as typeof fetch)
+
+    const session = await api.openHost('srv 1', 'bash', '123456', 100, 30)
+
+    expect(session).toEqual({ sessionId: 'h1', ticket: 't1', privileged: true })
+    const [path, init] = fetchImpl.mock.calls[0] as unknown as [string, RequestInit]
+    expect(path).toBe('/api/v1/servers/srv%201/terminal')
+    expect(init.method).toBe('POST')
+    expect(JSON.parse(init.body as string)).toEqual({
+      confirm: true,
+      code: '123456',
+      shell: 'bash',
+      cols: 100,
+      rows: 30,
+    })
+  })
+
   it('turns the codes of the core into typed errors', async () => {
     const fetchImpl = vi.fn(() =>
       Promise.resolve(

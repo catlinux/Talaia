@@ -42,6 +42,8 @@ export interface Server {
   agentUpdateManual: boolean
   /** agentUpgradeCommand upgrades such an old agent once, by hand. */
   agentUpgradeCommand: string
+  /** hostTerminal is true when the connected agent accepts root host sessions. */
+  hostTerminal?: boolean
   /** apt is absent when the agent did not report an apt summary. */
   apt?: AptSummary
 }

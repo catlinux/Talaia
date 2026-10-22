@@ -51,6 +51,7 @@ interface apiLiveAgent {
   running_containers: number
   compose_projects: number
   services: number
+  host_terminal?: boolean
   seen_at: string
   apt?: {
     upgradable: number
@@ -159,6 +160,7 @@ function toServer(server: apiServer, latestVersion: string, upgradeCommand: stri
     agentUpdateAvailable: server.agent_update_available ?? false,
     agentUpdateManual: server.agent_update_manual ?? false,
     agentUpgradeCommand: upgradeCommand,
+    hostTerminal: live?.host_terminal ?? false,
     ...(live?.apt
       ? {
           apt: {

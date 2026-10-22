@@ -16,6 +16,8 @@ export interface ServerSummary {
   agentUpdateManual: boolean
   /** agentUpgradeCommand upgrades such an old agent once, by hand. */
   agentUpgradeCommand: string
+  /** hostTerminal is true when the connected agent accepts root host sessions. */
+  hostTerminal?: boolean
 }
 
 /** AgentUpdateSkip is one server the bulk update could not queue. */
@@ -73,6 +75,7 @@ interface apiServerSummary {
   agent_update_manual: boolean
   live?: {
     agent_version: string
+    host_terminal?: boolean
   }
 }
 
@@ -151,6 +154,7 @@ export function createServersApi(fetchImpl: typeof fetch = defaultFetch): Server
         agentUpdateAvailable: server.agent_update_available ?? false,
         agentUpdateManual: server.agent_update_manual ?? false,
         agentUpgradeCommand: upgradeCommand,
+        hostTerminal: server.live?.host_terminal ?? false,
       }))
     },
     updateAgent: async (id) => {

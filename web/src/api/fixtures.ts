@@ -34,6 +34,7 @@ export const sampleServers: Server[] = [
     agentUpdateAvailable: true,
     agentUpdateManual: false,
     agentUpgradeCommand: '',
+    hostTerminal: true,
     apt: {
       upgradable: 8,
       security: 3,

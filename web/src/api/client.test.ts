@@ -12,6 +12,7 @@ interface LiveOverrides {
   disk_total_bytes?: number
   containers?: number
   compose_projects?: number
+  host_terminal?: boolean
   seen_at?: string
   apt?: {
     upgradable: number
@@ -115,7 +116,16 @@ describe('api fleet client', () => {
       agentUpdateAvailable: false,
       agentUpdateManual: false,
       agentUpgradeCommand: '',
+      hostTerminal: false,
     })
+  })
+
+  it('maps the host terminal capability the agent reports', async () => {
+    const { client } = clientFor([serverEntry({ live: live({ host_terminal: true }) })])
+
+    const [server] = await client.listServers()
+
+    expect(server?.hostTerminal).toBe(true)
   })
 
   it('maps the manual upgrade flag and the command', async () => {
