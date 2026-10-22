@@ -18,6 +18,12 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-10-22
+
+### Changed
+
+- **Phase 3 (whole server, MVP) closed.** systemd services, the journal with filters and follow, apt updates (security or all) with reboot confirmed by the server name, the host terminal with a fresh TOTP code, the server screen with tabs and the audit screen were tested on two real servers; the security review of the phase is done. The maintainer closed it after the real test; the week without SSH goes on in daily use. Phase 4 (users, permissions and audit) comes next.
+
 ## [0.3.23] - 2026-10-22
 
 ### Fixed
@@ -375,7 +381,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.3.23...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/catlinux/Talaia/releases/tag/v0.4.0
 [0.3.23]: https://github.com/catlinux/Talaia/releases/tag/v0.3.23
 [0.3.22]: https://github.com/catlinux/Talaia/releases/tag/v0.3.22
 [0.3.21]: https://github.com/catlinux/Talaia/releases/tag/v0.3.21

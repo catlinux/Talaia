@@ -126,9 +126,8 @@ Each feature is tagged with the release where it is planned. See [ROADMAP.md](RO
 | Fleet automation | — | Bulk actions, scheduled procedures, GitOps sync | Ansible playbooks, VPS provisioning via provider APIs |
 | Users and security | Single user with 2FA, trusted-device PIN, passkeys, audit log and recorded terminals | Users, teams, scoped roles, OIDC SSO, scoped API keys | — |
 
-> **Phase 3 status.** The whole-server features in the 0.4.0 column are implemented in the code. The phase
-> is not closed: it still needs the real-world week without SSH and the security review. The guide is
-> [docs/en/server.md](docs/en/server.md).
+> **Phase 3 status.** Closed in 0.4.0 after a real test on two servers and its security review. The guide
+> is [docs/en/server.md](docs/en/server.md).
 
 ## Architecture
 

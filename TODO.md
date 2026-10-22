@@ -92,7 +92,7 @@ of the current phase and the next one.
 - [x] journald: filters (unit, priority, boot, time, text) and follow, Logs tab
 - [x] Host terminal: root shell with a fresh TOTP code, recording, red banner
 - [x] Server screen with tabs and overview (mockup 2) and audit log screen
-- [ ] Docs EN/ES, security review (Opus), a week without SSH, close at 0.4.0
+- [x] Docs EN/ES, security review (Opus), real test on two servers, close at 0.4.0 (closed by the maintainer, 2026-10-22; the week without SSH goes on in daily use)
 
 ## Operations block (decided 2026-10-20, before closing phase 2)
 

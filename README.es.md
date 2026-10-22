@@ -125,9 +125,8 @@ Cada funcionalidad indica la versión donde está prevista. Detalle en [ROADMAP.
 | Automatización de flota | — | Acciones en bloque, procedimientos programados, sincronización GitOps | Playbooks de Ansible, creación de VPS vía API del proveedor |
 | Usuarios y seguridad | Usuario único con 2FA, PIN en dispositivos de confianza, claves de acceso, registro de auditoría y terminales grabadas | Usuarios, equipos, roles por ámbito, SSO OIDC, claves de API con permisos | — |
 
-> **Estado de la fase 3.** Las funciones del servidor entero de la columna 0.4.0 están implementadas en el
-> código. La fase no está cerrada: todavía necesita la semana real sin SSH y la revisión de seguridad. La
-> guía es [docs/es/servidor.md](docs/es/servidor.md).
+> **Estado de la fase 3.** Cerrada en 0.4.0 tras una prueba real en dos servidores y su revisión de
+> seguridad. La guía es [docs/es/servidor.md](docs/es/servidor.md).
 
 ## Arquitectura
 

@@ -13,6 +13,12 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+## [0.4.0] - 2026-10-22
+
+### Cambiado
+
+- **Fase 3 (servidor entero, MVP) cerrada.** Servicios de systemd, el journal con filtros y seguimiento, las actualizaciones de apt (de seguridad o todas) con reinicio confirmado escribiendo el nombre del servidor, la terminal del host con un código TOTP nuevo, la pantalla de servidor con pestañas y la de auditoría se probaron en dos servidores reales; la revisión de seguridad de la fase está hecha. El mantenedor la cerró tras la prueba real; la semana sin SSH sigue en el uso diario. Sigue la fase 4 (usuarios, permisos y auditoría).
+
 ## [0.3.23] - 2026-10-22
 
 ### Corregido
@@ -375,7 +381,8 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
   `.gitattributes` y `.gitignore`.
 - Licencia WNCL-1.0 aplicada: archivo `LICENSE` y sección de créditos en los README.
 
-[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.3.23...HEAD
+[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/catlinux/Talaia/releases/tag/v0.4.0
 [0.3.23]: https://github.com/catlinux/Talaia/releases/tag/v0.3.23
 [0.3.22]: https://github.com/catlinux/Talaia/releases/tag/v0.3.22
 [0.3.21]: https://github.com/catlinux/Talaia/releases/tag/v0.3.21

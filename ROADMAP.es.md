@@ -20,8 +20,8 @@ Semana 0    2        6          11         16      19      22           28      
 | 0 | Cimientos | 1–2 | 0.1.0 | 🟢 Terminada |
 | 1 | Agente, conexión e inventario | 3–6 | 0.2.0 | 🟢 Terminada |
 | 2 | Contenedores y stacks | 7–11 | 0.3.0 | 🟢 Terminada |
-| 3 | Servidor entero (**MVP**) | 12–16 | 0.4.0 | ⚪ Pendiente |
-| 4 | Usuarios, permisos y auditoría | 17–19 | 0.5.0 | ⚪ Pendiente |
+| 3 | Servidor entero (**MVP**) | 12–16 | 0.4.0 | 🟢 Terminada |
+| 4 | Usuarios, permisos y auditoría | 17–19 | 0.5.0 | 🟡 En curso |
 | 5 | Monitorización y alertas | 20–22 | 0.6.0 | ⚪ Pendiente |
 | 6 | Despliegues, dominios y plantillas | 23–28 | 0.7.0 | ⚪ Pendiente |
 | 7 | Copias de seguridad | 29–31 | 0.8.0 | ⚪ Pendiente |

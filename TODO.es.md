@@ -92,7 +92,7 @@ tareas concretas de la fase actual y de la siguiente.
 - [x] journald: filtros (unidad, prioridad, arranque, fechas, texto) y seguimiento, pestaña Registros
 - [x] Terminal del host: shell de root con un código TOTP nuevo, grabación y franja roja
 - [x] Pantalla de servidor con pestañas y resumen (maqueta 2) y pantalla de auditoría
-- [ ] Documentación EN/ES, revisión de seguridad (Opus), una semana sin SSH y cierre en 0.4.0
+- [x] Documentación EN/ES, revisión de seguridad (Opus), prueba real en dos servidores y cierre en 0.4.0 (cerrada por el mantenedor, 2026-10-22; la semana sin SSH sigue en el uso diario)
 
 ## Bloque de operación (decidido el 2026-10-20, antes de cerrar la fase 2)
 

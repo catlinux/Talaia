@@ -20,8 +20,8 @@ Week   0    2        6          11         16      19      22           28      
 | 0 | Foundations | 1–2 | 0.1.0 | 🟢 Done |
 | 1 | Agent, connection and inventory | 3–6 | 0.2.0 | 🟢 Done |
 | 2 | Containers and stacks | 7–11 | 0.3.0 | 🟢 Done |
-| 3 | Whole server (**MVP**) | 12–16 | 0.4.0 | ⚪ Pending |
-| 4 | Users, permissions and audit | 17–19 | 0.5.0 | ⚪ Pending |
+| 3 | Whole server (**MVP**) | 12–16 | 0.4.0 | 🟢 Done |
+| 4 | Users, permissions and audit | 17–19 | 0.5.0 | 🟡 In progress |
 | 5 | Monitoring and alerts | 20–22 | 0.6.0 | ⚪ Pending |
 | 6 | Deploys, domains and templates | 23–28 | 0.7.0 | ⚪ Pending |
 | 7 | Backups | 29–31 | 0.8.0 | ⚪ Pending |
