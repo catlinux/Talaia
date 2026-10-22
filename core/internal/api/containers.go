@@ -41,6 +41,10 @@ func jobTimeout(kind string) time.Duration {
 		return 2*time.Minute + margin
 	case aptRefreshKind:
 		return 10*time.Minute + margin
+	case aptUpgradeKind:
+		return 60*time.Minute + margin
+	case hostRebootKind:
+		return time.Minute + margin
 	default:
 		return 90*time.Second + margin
 	}
@@ -68,6 +72,7 @@ type JobStore interface {
 	GetJob(ctx context.Context, id string) (store.Job, error)
 	UpdateJobState(ctx context.Context, id, serverID, state, message, output string) (bool, error)
 	FailStaleJob(ctx context.Context, id string, maxAge time.Duration) (bool, error)
+	HasActiveJobWithin(ctx context.Context, serverID, kind string, maxAge time.Duration) (bool, error)
 }
 
 // ContainerDeps are the collaborators of the container endpoints.

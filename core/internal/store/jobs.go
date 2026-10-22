@@ -124,16 +124,26 @@ func (s *Store) UpdateJobState(ctx context.Context, id, serverID, state, message
 //
 //	A caller can use it to refuse a duplicate operation.
 func (s *Store) HasActiveJob(ctx context.Context, serverID, kind string) (bool, error) {
+	return s.HasActiveJobWithin(ctx, serverID, kind, 15*time.Minute)
+}
+
+// HasActiveJobWithin reports whether the server has a pending or running job of
+// the given kind created in the last maxAge. A caller uses it to refuse a
+// duplicate operation without blocking on a job that can no longer finish.
+func (s *Store) HasActiveJobWithin(ctx context.Context, serverID, kind string, maxAge time.Duration) (bool, error) {
 	if strings.TrimSpace(serverID) == "" || strings.TrimSpace(kind) == "" {
 		return false, errors.New("server id and kind are required")
+	}
+	if maxAge <= 0 {
+		return false, errors.New("the active job age must be positive")
 	}
 	var active bool
 	if err := s.pool.QueryRow(ctx,
 		`SELECT EXISTS (
 			SELECT 1 FROM job
 			 WHERE server_id = $1 AND kind = $2 AND state IN ('pending', 'running')
-			   AND created_at > now() - interval '15 minutes'
-		 )`, serverID, kind).Scan(&active); err != nil {
+			   AND created_at > now() - make_interval(secs => $3)
+		 )`, serverID, kind, maxAge.Seconds()).Scan(&active); err != nil {
 		return false, fmt.Errorf("check active job: %w", err)
 	}
 	return active, nil

@@ -18,6 +18,12 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.3.7] - 2026-10-22
+
+### Added
+
+- The core can upgrade packages and reboot a server: `POST /api/v1/servers/{id}/apt/upgrade` (`mode`: `security` or `all`, needs `confirm: true`) and `POST /api/v1/servers/{id}/reboot` (the confirmation must be the hostname the agent reports, so it cannot reach the wrong machine). Only one upgrade or reboot per server at a time. Audited as `apt_upgrade` and `host_reboot`. Not in the panel yet.
+
 ## [0.3.6] - 2026-10-22
 
 ### Added
@@ -262,7 +268,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.3.6...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.3.7...HEAD
+[0.3.7]: https://github.com/catlinux/Talaia/releases/tag/v0.3.7
 [0.3.6]: https://github.com/catlinux/Talaia/releases/tag/v0.3.6
 [0.3.5]: https://github.com/catlinux/Talaia/releases/tag/v0.3.5
 [0.3.4]: https://github.com/catlinux/Talaia/releases/tag/v0.3.4

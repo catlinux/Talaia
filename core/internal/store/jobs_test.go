@@ -100,6 +100,62 @@ func TestJobValidation(t *testing.T) {
 	}
 }
 
+func TestHasActiveJobWithin(t *testing.T) {
+	s := newTestStore(t)
+	ctx := context.Background()
+	serverID := newTestServerID(t, s)
+	otherID := newTestServerID(t, s)
+
+	job, err := s.CreateJob(ctx, serverID, "apt_upgrade", nil, "admin")
+	if err != nil {
+		t.Fatalf("CreateJob: %v", err)
+	}
+
+	active, err := s.HasActiveJobWithin(ctx, serverID, "apt_upgrade", time.Hour)
+	if err != nil {
+		t.Fatalf("HasActiveJobWithin: %v", err)
+	}
+	if !active {
+		t.Error("a fresh apt upgrade is not active")
+	}
+	if active, _ := s.HasActiveJobWithin(ctx, serverID, "host_reboot", time.Hour); active {
+		t.Error("a different job kind is active")
+	}
+	if active, _ := s.HasActiveJobWithin(ctx, otherID, "apt_upgrade", time.Hour); active {
+		t.Error("another server's job is active")
+	}
+
+	// A job older than the caller's window is not active, even while it is
+	// still pending in the table.
+	if _, err := s.pool.Exec(ctx,
+		`UPDATE job SET created_at = now() - interval '20 minutes' WHERE id = $1`, job.ID); err != nil {
+		t.Fatalf("backdate the job: %v", err)
+	}
+	if active, _ := s.HasActiveJob(ctx, serverID, "apt_upgrade"); active {
+		t.Error("HasActiveJob used more than its 15-minute window")
+	}
+	if active, _ := s.HasActiveJobWithin(ctx, serverID, "apt_upgrade", time.Hour); !active {
+		t.Error("the job is no longer active inside the hour window")
+	}
+
+	if changed, err := s.UpdateJobState(ctx, job.ID, serverID, JobSucceeded, "", ""); err != nil || !changed {
+		t.Fatalf("finish the job = %v, %v", changed, err)
+	}
+	if active, _ := s.HasActiveJobWithin(ctx, serverID, "apt_upgrade", time.Hour); active {
+		t.Error("a finished job is active")
+	}
+
+	if _, err := s.HasActiveJobWithin(ctx, "", "apt_upgrade", time.Hour); err == nil {
+		t.Error("an empty server id was accepted")
+	}
+	if _, err := s.HasActiveJobWithin(ctx, serverID, "", time.Hour); err == nil {
+		t.Error("an empty kind was accepted")
+	}
+	if _, err := s.HasActiveJobWithin(ctx, serverID, "apt_upgrade", 0); err == nil {
+		t.Error("a zero window was accepted")
+	}
+}
+
 func TestUpdateJobStateStoresBrokenUTF8(t *testing.T) {
 	s := newTestStore(t)
 	ctx := context.Background()
