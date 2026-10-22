@@ -63,6 +63,23 @@ type adoption struct {
 	ConfigFile string `json:"config_file"`
 }
 
+// broken reports whether the files the record points at are gone. A symbolic
+// link in their place does not count as the file or the directory.
+func (a adoption) broken() bool {
+	config, err := os.Lstat(a.ConfigFile)
+	if err != nil || !config.Mode().IsRegular() {
+		return true
+	}
+	dir, err := os.Lstat(a.WorkingDir)
+	return err != nil || !dir.IsDir()
+}
+
+// brokenStackError is the failure of an operation on an adopted stack whose
+// files are gone. Forgetting it is still allowed.
+func brokenStackError(name string) error {
+	return fmt.Errorf("the files of the adopted stack %q are gone; forget it (stop managing it) to remove the record", name)
+}
+
 // Manager reads, writes and runs the managed stacks of one server.
 type Manager struct {
 	root     string
@@ -117,6 +134,9 @@ func (m *Manager) Write(ctx context.Context, name, compose, env string) (string,
 	record, adopted, err := m.adoption(name)
 	if err != nil {
 		return "", err
+	}
+	if adopted && record.broken() {
+		return "", brokenStackError(name)
 	}
 	// An adopted stack is validated with the new .env even when it is empty, not
 	// with the one of its directory, which an empty field deletes.
@@ -229,6 +249,9 @@ func (m *Manager) Do(ctx context.Context, name string, action agentv1.StackActio
 	if err != nil {
 		return "", err
 	}
+	if adopted && action != agentv1.StackActionType_STACK_ACTION_TYPE_FORGET && record.broken() {
+		return "", brokenStackError(name)
+	}
 
 	// The directory docker compose runs in, and the arguments that say which
 	// project it is. An adopted project is addressed by its own files.
@@ -286,6 +309,9 @@ func (m *Manager) Read(_ context.Context, name string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	if adopted && record.broken() {
+		return "", brokenStackError(name)
+	}
 
 	composePath, envPath := filepath.Join(dir, composeFile), filepath.Join(dir, envFile)
 	if adopted {
@@ -320,6 +346,15 @@ func (m *Manager) Adopted() []string {
 	return m.names(func(name string) bool {
 		_, adopted, err := m.adoption(name)
 		return err == nil && adopted
+	})
+}
+
+// Broken returns the names of the adopted stacks whose files are gone, sorted.
+// They can still be forgotten.
+func (m *Manager) Broken() []string {
+	return m.names(func(name string) bool {
+		record, adopted, err := m.adoption(name)
+		return err == nil && adopted && record.broken()
 	})
 }
 

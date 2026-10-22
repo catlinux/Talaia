@@ -183,7 +183,8 @@ describe('App', () => {
         }),
       run: () => Promise.reject(new Error('unexpected')),
       logs: () => Promise.reject(new Error('unexpected')),
-      stacks: () => Promise.resolve({ connected: true, stacks: [], adopted: [], adoptable: [] }),
+      stacks: () =>
+        Promise.resolve({ connected: true, stacks: [], adopted: [], broken: [], adoptable: [] }),
       adoptStack: () => Promise.reject(new Error('unexpected')),
       listResources: () => Promise.reject(new Error('unexpected')),
       removeResources: () => Promise.reject(new Error('unexpected')),

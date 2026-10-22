@@ -77,6 +77,8 @@ export interface StackList {
   stacks: string[]
   /** adopted are the managed stacks that were adopted from a running project. */
   adopted: string[]
+  /** broken are the adopted stacks whose files are gone from the server. */
+  broken: string[]
   /** adoptable are the running Compose projects Talaia does not manage yet. */
   adoptable: string[]
 }
@@ -218,6 +220,7 @@ export function createContainersApi(fetchImpl?: typeof fetch): ContainersApi {
         connected: body.connected,
         stacks: body.stacks,
         adopted: body.adopted ?? [],
+        broken: body.broken ?? [],
         adoptable: body.adoptable ?? [],
       }
     },

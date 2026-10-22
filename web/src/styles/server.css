@@ -415,6 +415,18 @@
   font-size: 0.8125rem;
 }
 
+.tag--warning {
+  background: var(--warn-soft);
+  color: var(--warn);
+}
+
+.stack__broken,
+.stackscreen__broken {
+  margin: 0;
+  color: var(--warn);
+  font-size: 0.8125rem;
+}
+
 @media (max-width: 720px) {
   .stack {
     grid-template-columns: minmax(0, 1fr);
@@ -1070,6 +1082,10 @@
   grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
   align-items: start;
   gap: 16px;
+}
+
+.stackscreen__grid--single {
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .stackscreen__card {

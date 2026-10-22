@@ -49,12 +49,24 @@ func TestListStacks(t *testing.T) {
 	if offline.Connected || len(offline.Stacks) != 0 {
 		t.Errorf("offline answer = %+v", offline)
 	}
+	if offline.Broken == nil {
+		t.Error("the offline answer has a null broken list")
+	}
 
-	panel.agents.set(agentWithStacks(serverID, "blog", "shop"))
+	agent := agentWithStacks(serverID, "blog", "shop")
+	agent.AdoptedStacks = []string{"shop"}
+	agent.BrokenStacks = []string{"shop"}
+	panel.agents.set(agent)
 	var online stacksResponse
 	decodeBody(t, panel.get(t, "/api/v1/servers/"+serverID+"/stacks"), &online)
 	if !online.Connected || len(online.Stacks) != 2 || online.Stacks[0] != "blog" {
 		t.Errorf("online answer = %+v", online)
+	}
+	if len(online.Adopted) != 1 || online.Adopted[0] != "shop" {
+		t.Errorf("adopted = %v, want [shop]", online.Adopted)
+	}
+	if len(online.Broken) != 1 || online.Broken[0] != "shop" {
+		t.Errorf("broken = %v, want [shop]", online.Broken)
 	}
 }
 

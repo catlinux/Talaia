@@ -37,7 +37,7 @@ function apiWith(action: Partial<Job> = {}): ContainersApi & {
     run: vi.fn(() => Promise.resolve('job')),
     logs: vi.fn(() => answer('logs', { output: '2026-10-20T10:00:00Z hello\n' })),
     stacks: vi.fn(() =>
-      Promise.resolve({ connected: true, stacks: [], adopted: [], adoptable: [] }),
+      Promise.resolve({ connected: true, stacks: [], adopted: [], broken: [], adoptable: [] }),
     ),
     adoptStack: vi.fn(() => Promise.resolve('job')),
     listResources: vi.fn(() => Promise.resolve('job')),
@@ -59,6 +59,7 @@ function apiWith(action: Partial<Job> = {}): ContainersApi & {
 interface RenderOptions {
   containers?: Container[]
   adopted?: boolean
+  broken?: boolean
   connected?: boolean
   dockerAvailable?: boolean
   onBack?: () => void
@@ -72,6 +73,7 @@ function renderScreen(api: ContainersApi, options: RenderOptions = {}) {
       server={server}
       name="shop"
       adopted={options.adopted ?? false}
+      broken={options.broken ?? false}
       containers={options.containers ?? [container()]}
       connected={options.connected ?? true}
       dockerAvailable={options.dockerAvailable ?? true}
@@ -113,6 +115,27 @@ describe('StackScreen', () => {
     expect(screen.getByRole('navigation', { name: 'Breadcrumb' }).textContent).toContain(
       'vps-web-01/Stacks/shop',
     )
+  })
+
+  it('flags a broken adopted stack and only offers to stop managing it', async () => {
+    const api = apiWith()
+    const onBack = vi.fn()
+    renderScreen(api, { adopted: true, broken: true, onBack })
+    await screen.findByRole('heading', { level: 1, name: /shop/ })
+
+    expect(screen.getByText('Files missing')).toBeTruthy()
+    expect(screen.getByText(/files of this project are gone/)).toBeTruthy()
+    for (const name of ['Restart', 'Stop', 'Deploy', 'Pull']) {
+      expect(screen.queryByRole('button', { name })).toBeNull()
+    }
+    expect(screen.queryByLabelText('compose.yaml')).toBeNull()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Stop managing' }))
+    const confirmation = screen.getByRole('group', { name: 'Stop managing shop?' })
+    fireEvent.click(within(confirmation).getByRole('button', { name: 'Stop managing' }))
+
+    expect(api.runStack).toHaveBeenCalledWith('srv-1', 'shop', 'forget', false)
+    await waitFor(() => expect(onBack).toHaveBeenCalled())
   })
 
   it('runs restart, deploy and pull as jobs', async () => {

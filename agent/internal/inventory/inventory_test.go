@@ -23,6 +23,16 @@ func (f fakeServiceSource) Units(context.Context) []*agentv1.SystemdUnit {
 	return f.units
 }
 
+type fakeStackSource struct {
+	managed []string
+	adopted []string
+	broken  []string
+}
+
+func (f fakeStackSource) List() []string    { return f.managed }
+func (f fakeStackSource) Adopted() []string { return f.adopted }
+func (f fakeStackSource) Broken() []string  { return f.broken }
+
 func TestProviderCollectCombinesSources(t *testing.T) {
 	provider := Provider{
 		Docker: fakeContainerSource{result: DockerInventory{
@@ -44,6 +54,21 @@ func TestProviderCollectCombinesSources(t *testing.T) {
 	}
 	if len(result.Services) != 1 || result.Services[0].GetName() != "docker.service" {
 		t.Errorf("services = %+v", result.Services)
+	}
+}
+
+func TestProviderCollectIncludesBrokenStacks(t *testing.T) {
+	provider := Provider{Stacks: fakeStackSource{
+		managed: []string{"blog", "wiki"},
+		adopted: []string{"wiki"},
+		broken:  []string{"wiki"},
+	}}
+
+	result := provider.Collect(context.Background())
+
+	if len(result.ManagedStacks) != 2 || len(result.AdoptedStacks) != 1 ||
+		len(result.BrokenStacks) != 1 || result.BrokenStacks[0] != "wiki" {
+		t.Errorf("stacks = %v / %v / %v", result.ManagedStacks, result.AdoptedStacks, result.BrokenStacks)
 	}
 }
 

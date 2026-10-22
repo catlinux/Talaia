@@ -55,6 +55,8 @@
   "stacks": {
     "title": "Stacks",
     "intro": "Proyectos Docker Compose que Talaia guarda en el servidor y gestiona por ti.",
+    "brokenTag": "Faltan archivos",
+    "brokenBody": "Los archivos de este proyecto ya no están en el servidor. Deja de gestionarlo para limpiar esta entrada.",
     "new": "Nuevo stack",
     "empty": "Todavía no hay stacks gestionados. Crea el primero con «Nuevo stack».",
     "summary_one": "{{count}} contenedor · {{running}} en marcha",

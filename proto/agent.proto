@@ -213,6 +213,9 @@ message Inventory {
   // The managed stacks that were adopted: they stay where they were and Talaia
   // only points at them. A subset of managed_stacks.
   repeated string adopted_stacks = 15;
+  // The adopted stacks whose compose file or directory no longer exists on the
+  // host. A subset of adopted_stacks; the panel only lets them be forgotten.
+  repeated string broken_stacks = 16;
 }
 
 message Container {

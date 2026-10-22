@@ -20,7 +20,7 @@ interface StacksSectionProps {
   /** onChanged is called when an operation ends, so the containers reload. */
   onChanged: () => void
   /** onOpenStack opens the screen of a managed stack. */
-  onOpenStack: (name: string, adopted: boolean) => void
+  onOpenStack: (name: string, adopted: boolean, broken: boolean) => void
 }
 
 type Outcome = { kind: 'working' } | { kind: 'done' } | { kind: 'failed'; message: string }
@@ -151,6 +151,7 @@ export function StacksSection({
 
   const names = list === null ? null : list.stacks
   const adoptable = list === null ? [] : list.adoptable
+  const broken = new Set(list?.broken ?? [])
 
   const stateOf = (name: string) => {
     const own = containers.filter((container) => container.composeProject === name)
@@ -208,6 +209,7 @@ export function StacksSection({
             const outcome = outcomes[name]
             const busy = outcome?.kind === 'working'
             const adopted = list !== null && list.adopted.includes(name)
+            const isBroken = broken.has(name)
             return (
               <li key={name} className={`stack${running > 0 ? ' stack--up' : ''}`}>
                 <div className="stack__main">
@@ -215,17 +217,24 @@ export function StacksSection({
                     <button
                       type="button"
                       className="stack__open"
-                      onClick={() => onOpenStack(name, adopted)}
+                      onClick={() => onOpenStack(name, adopted, isBroken)}
                     >
                       {name}
                     </button>
-                    {adopted ? <span className="tag">{t('server:stacks.adoptedTag')}</span> : null}
+                    {isBroken ? (
+                      <span className="tag tag--warning">{t('server:stacks.brokenTag')}</span>
+                    ) : adopted ? (
+                      <span className="tag">{t('server:stacks.adoptedTag')}</span>
+                    ) : null}
                   </h3>
                   <p className="stack__meta">
                     {total === 0
                       ? t('server:stacks.noContainers')
                       : t('server:stacks.summary', { count: total, running })}
                   </p>
+                  {isBroken ? (
+                    <p className="stack__broken">{t('server:stacks.brokenBody')}</p>
+                  ) : null}
                   {outcome?.kind === 'working' ? (
                     <p className="container__outcome" role="status">
                       {t('server:progress.working')}
@@ -267,6 +276,18 @@ export function StacksSection({
                         {t('server:stacks.confirm.no')}
                       </button>
                     </div>
+                  </div>
+                ) : isBroken ? (
+                  <div className="container__actions">
+                    <button
+                      type="button"
+                      className="cbtn cbtn--danger"
+                      disabled={busy}
+                      onClick={() => setConfirming({ name, action: 'forget' })}
+                    >
+                      <TrashIcon />
+                      {t('server:stacks.action.forget')}
+                    </button>
                   </div>
                 ) : (
                   <div className="container__actions">

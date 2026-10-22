@@ -13,6 +13,12 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+## [0.2.15] - 2026-10-22
+
+### Corregido
+
+- Un stack adoptado cuya carpeta o archivo compose desaparece del servidor ya no se queda como una entrada muerta: el agente lo informa (`broken_stacks`, campo 16 del proto), `GET /api/v1/servers/{id}/stacks` lo lista en `broken`, y el panel lo marca **Faltan los archivos** y ofrece solo **Dejar de gestionar** (las demás acciones responden que los archivos ya no están). Los agentes antiguos siguen funcionando sin la marca.
+
 ## [0.2.14] - 2026-10-22
 
 ### Cambiado
@@ -205,7 +211,8 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
   `.gitattributes` y `.gitignore`.
 - Licencia WNCL-1.0 aplicada: archivo `LICENSE` y sección de créditos en los README.
 
-[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.2.14...HEAD
+[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.2.15...HEAD
+[0.2.15]: https://github.com/catlinux/Talaia/releases/tag/v0.2.15
 [0.2.14]: https://github.com/catlinux/Talaia/releases/tag/v0.2.14
 [0.2.13]: https://github.com/catlinux/Talaia/releases/tag/v0.2.13
 [0.2.12]: https://github.com/catlinux/Talaia/releases/tag/v0.2.12

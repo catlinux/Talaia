@@ -22,7 +22,7 @@ const container = (overrides: Partial<Container> = {}): Container => ({
 const succeeded: Job = { id: 'job', state: 'succeeded', message: '', output: '' }
 
 function fakeApi(
-  stacks: { stacks: string[]; adopted: string[]; adoptable: string[] },
+  stacks: { stacks: string[]; adopted: string[]; broken: string[]; adoptable: string[] },
   jobs: Job[] = [succeeded],
 ) {
   const queue = [...jobs]
@@ -72,7 +72,7 @@ describe('adopting running projects', () => {
   })
 
   it('offers the running projects that are not managed yet and adopts one', async () => {
-    const api = fakeApi({ stacks: [], adopted: [], adoptable: ['wiki'] })
+    const api = fakeApi({ stacks: [], adopted: [], broken: [], adoptable: ['wiki'] })
     renderScreen(api)
 
     expect(await screen.findByRole('heading', { level: 3, name: 'Running projects' })).toBeTruthy()
@@ -86,7 +86,7 @@ describe('adopting running projects', () => {
   })
 
   it('shows why an adoption failed', async () => {
-    const api = fakeApi({ stacks: [], adopted: [], adoptable: ['wiki'] }, [
+    const api = fakeApi({ stacks: [], adopted: [], broken: [], adoptable: ['wiki'] }, [
       {
         id: 'job',
         state: 'failed',
@@ -104,7 +104,7 @@ describe('adopting running projects', () => {
   })
 
   it('marks an adopted stack and offers to stop managing it instead of removing it', async () => {
-    const api = fakeApi({ stacks: ['wiki'], adopted: ['wiki'], adoptable: [] })
+    const api = fakeApi({ stacks: ['wiki'], adopted: ['wiki'], broken: [], adoptable: [] })
     renderScreen(api)
 
     await screen.findByText('Stacks')
@@ -130,7 +130,7 @@ describe('adopting running projects', () => {
   })
 
   it('keeps removing as the way out of a stack that Talaia created', async () => {
-    const api = fakeApi({ stacks: ['blog'], adopted: [], adoptable: [] })
+    const api = fakeApi({ stacks: ['blog'], adopted: [], broken: [], adoptable: [] })
     renderScreen(api)
 
     const card = (await screen.findByRole('heading', { level: 3, name: 'blog' })).closest('li')!

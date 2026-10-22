@@ -536,13 +536,17 @@ func TestServeTracksTheInventoryFacts(t *testing.T) {
 	first.GetInventory().Arch = "amd64"
 	first.GetInventory().CpuCount = 4
 	first.GetInventory().MemTotalBytes = 8 << 30
+	first.GetInventory().ManagedStacks = []string{"blog", "wiki"}
+	first.GetInventory().AdoptedStacks = []string{"wiki"}
+	first.GetInventory().BrokenStacks = []string{"wiki"}
 	stream.in <- first
 	waitFor(t, func() bool { return len(h.Connected()) == 1 })
 
 	info := h.Connected()[0]
 	if info.OSName != "Debian GNU/Linux" || info.OSVersion != "13" ||
 		info.Kernel != "6.12.0-amd64" || info.Arch != "amd64" ||
-		info.CPUCount != 4 || info.MemTotalBytes != 8<<30 {
+		info.CPUCount != 4 || info.MemTotalBytes != 8<<30 ||
+		len(info.AdoptedStacks) != 1 || len(info.BrokenStacks) != 1 || info.BrokenStacks[0] != "wiki" {
 		t.Fatalf("inventory facts = %+v, want the first inventory", info)
 	}
 

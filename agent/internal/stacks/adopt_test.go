@@ -217,6 +217,98 @@ func TestForgetDeletesOnlyTheRecord(t *testing.T) {
 	}
 }
 
+func TestBrokenAdoptedStackIsReportedAndCanOnlyBeForgotten(t *testing.T) {
+	tests := []struct {
+		name   string
+		remove func(t *testing.T, workingDir, configFile string)
+	}{
+		{
+			name: "compose file gone",
+			remove: func(t *testing.T, _, configFile string) {
+				t.Helper()
+				if err := os.Remove(configFile); err != nil {
+					t.Fatal(err)
+				}
+			},
+		},
+		{
+			name: "directory gone",
+			remove: func(t *testing.T, workingDir, _ string) {
+				t.Helper()
+				if err := os.RemoveAll(workingDir); err != nil {
+					t.Fatal(err)
+				}
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			workingDir, configFile := existingProject(t)
+			m, _, root := adoptingManager(t, fakeProjects{"wiki": {WorkingDir: workingDir, ConfigFiles: []string{configFile}}})
+			if _, err := m.Adopt(context.Background(), "wiki"); err != nil {
+				t.Fatalf("Adopt: %v", err)
+			}
+			tt.remove(t, workingDir, configFile)
+
+			if got := m.Broken(); !reflect.DeepEqual(got, []string{"wiki"}) {
+				t.Errorf("Broken() = %v, want [wiki]", got)
+			}
+			if got := m.Adopted(); !reflect.DeepEqual(got, []string{"wiki"}) {
+				t.Errorf("Adopted() = %v, want [wiki]", got)
+			}
+
+			for name, run := range map[string]func() error{
+				"read":  func() error { _, err := m.Read(context.Background(), "wiki"); return err },
+				"write": func() error { _, err := m.Write(context.Background(), "wiki", sampleCompose, ""); return err },
+				"up": func() error {
+					_, err := m.Do(context.Background(), "wiki", agentv1.StackActionType_STACK_ACTION_TYPE_UP)
+					return err
+				},
+			} {
+				err := run()
+				if err == nil || !strings.Contains(err.Error(), "gone") || !strings.Contains(err.Error(), "forget") {
+					t.Errorf("%s error = %v, want a message about the missing files and forgetting", name, err)
+				}
+			}
+
+			if _, err := m.Do(context.Background(), "wiki", agentv1.StackActionType_STACK_ACTION_TYPE_FORGET); err != nil {
+				t.Fatalf("forget a broken stack: %v", err)
+			}
+			if _, err := os.Stat(filepath.Join(root, "wiki")); !errors.Is(err, os.ErrNotExist) {
+				t.Errorf("the record still exists: %v", err)
+			}
+			if got := m.List(); len(got) != 0 {
+				t.Errorf("List() = %v, want empty", got)
+			}
+		})
+	}
+}
+
+func TestBrokenRefusesASymbolicLinkInPlaceOfTheFiles(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("creating symbolic links needs privileges on Windows")
+	}
+	workingDir, configFile := existingProject(t)
+	other := filepath.Join(t.TempDir(), "other.yml")
+	if err := os.WriteFile(other, []byte(sampleCompose), 0o640); err != nil {
+		t.Fatal(err)
+	}
+	m, _, _ := adoptingManager(t, fakeProjects{"wiki": {WorkingDir: workingDir, ConfigFiles: []string{configFile}}})
+	if _, err := m.Adopt(context.Background(), "wiki"); err != nil {
+		t.Fatalf("Adopt: %v", err)
+	}
+	if err := os.Remove(configFile); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(other, configFile); err != nil {
+		t.Fatal(err)
+	}
+
+	if got := m.Broken(); !reflect.DeepEqual(got, []string{"wiki"}) {
+		t.Errorf("Broken() = %v, want [wiki]", got)
+	}
+}
+
 func TestRemoveIsRefusedForAnAdoptedStackAndForgetForAManagedOne(t *testing.T) {
 	workingDir, configFile := existingProject(t)
 	m, runner, root := adoptingManager(t, fakeProjects{"wiki": {WorkingDir: workingDir, ConfigFiles: []string{configFile}}})

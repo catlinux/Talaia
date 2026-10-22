@@ -74,7 +74,7 @@ function apiWith(
     run: vi.fn(() => Promise.resolve('job-1')),
     logs: vi.fn(() => Promise.resolve('job-1')),
     stacks: vi.fn(() =>
-      Promise.resolve({ connected: true, stacks: [], adopted: [], adoptable: [] }),
+      Promise.resolve({ connected: true, stacks: [], adopted: [], broken: [], adoptable: [] }),
     ),
     adoptStack: vi.fn(() => Promise.resolve('job-1')),
     listResources: vi.fn(() => Promise.resolve('job-1')),
@@ -367,6 +367,7 @@ describe('ServerScreen', () => {
       connected: true,
       stacks: ['shop'],
       adopted: [],
+      broken: [],
       adoptable: [],
     })
     api.job.mockResolvedValue({

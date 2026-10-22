@@ -18,6 +18,12 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.2.15] - 2026-10-22
+
+### Fixed
+
+- An adopted stack whose directory or compose file disappears from the server no longer stays as a dead entry: the agent reports it (`broken_stacks`, proto field 16), `GET /api/v1/servers/{id}/stacks` lists it under `broken`, and the panel marks it **Files missing** and offers only **Stop managing** (the other actions answer that the files are gone). Older agents keep working without the mark.
+
 ## [0.2.14] - 2026-10-22
 
 ### Changed
@@ -205,7 +211,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.2.14...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.2.15...HEAD
+[0.2.15]: https://github.com/catlinux/Talaia/releases/tag/v0.2.15
 [0.2.14]: https://github.com/catlinux/Talaia/releases/tag/v0.2.14
 [0.2.13]: https://github.com/catlinux/Talaia/releases/tag/v0.2.13
 [0.2.12]: https://github.com/catlinux/Talaia/releases/tag/v0.2.12

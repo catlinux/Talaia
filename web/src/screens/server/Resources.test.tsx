@@ -45,7 +45,7 @@ function fakeApi(removalOutput = '{"results":[]}') {
     run: vi.fn(() => Promise.resolve('job')),
     logs: vi.fn(() => Promise.resolve('job')),
     stacks: vi.fn(() =>
-      Promise.resolve({ connected: true, stacks: [], adopted: [], adoptable: [] }),
+      Promise.resolve({ connected: true, stacks: [], adopted: [], broken: [], adoptable: [] }),
     ),
     adoptStack: vi.fn(() => Promise.resolve('job')),
     writeStack: vi.fn(() => Promise.resolve('job')),

@@ -155,7 +155,11 @@ export function ServerScreen({
   // The container whose terminal is open, if any.
   const [terminalFor, setTerminalFor] = useState<string | null>(null)
   // The managed stack whose screen is open, if any.
-  const [openStack, setOpenStack] = useState<{ name: string; adopted: boolean } | null>(null)
+  const [openStack, setOpenStack] = useState<{
+    name: string
+    adopted: boolean
+    broken: boolean
+  } | null>(null)
   const mounted = useRef(true)
   const updatingRef = useRef(false)
   const updateStartedVersionRef = useRef('')
@@ -294,6 +298,7 @@ export function ServerScreen({
         server={server}
         name={openStack.name}
         adopted={openStack.adopted}
+        broken={openStack.broken}
         containers={list?.containers ?? []}
         connected={list?.connected ?? false}
         dockerAvailable={list?.dockerAvailable ?? false}
@@ -391,7 +396,7 @@ export function ServerScreen({
           containers={list.containers}
           pollMs={pollMs}
           onChanged={() => void load()}
-          onOpenStack={(name, adopted) => setOpenStack({ name, adopted })}
+          onOpenStack={(name, adopted, broken) => setOpenStack({ name, adopted, broken })}
         />
       ) : null}
 

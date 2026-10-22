@@ -55,6 +55,8 @@
   "stacks": {
     "title": "Stacks",
     "intro": "Docker Compose projects Talaia keeps on the server and manages for you.",
+    "brokenTag": "Files missing",
+    "brokenBody": "The files of this project are gone from the server. Stop managing it to clean this entry.",
     "new": "New stack",
     "empty": "There are no managed stacks yet. Create the first one with \"New stack\".",
     "summary_one": "{{count}} container · {{running}} running",

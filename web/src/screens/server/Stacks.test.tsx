@@ -25,7 +25,7 @@ const succeeded = (output = ''): Job => ({ id: 'job', state: 'succeeded', messag
 function fakeApi(
   stacks: string[],
   jobs: Job[] = [succeeded()],
-  extra: { adopted?: string[]; adoptable?: string[] } = {},
+  extra: { adopted?: string[]; broken?: string[]; adoptable?: string[] } = {},
 ) {
   const queue = [...jobs]
   const api = {
@@ -39,6 +39,7 @@ function fakeApi(
         connected: true,
         stacks,
         adopted: extra.adopted ?? [],
+        broken: extra.broken ?? [],
         adoptable: extra.adoptable ?? [],
       }),
     ),
@@ -89,6 +90,25 @@ describe('stacks of a server', () => {
     // The header of the screen and the card of the stack both say it.
     expect(screen.getAllByText('1 container · 1 running')).toHaveLength(2)
     expect(screen.getByText('No containers (stopped)')).toBeTruthy()
+  })
+
+  it('flags a broken adopted stack and only lets it be forgotten', async () => {
+    const api = fakeApi(['wiki'], [succeeded()], { adopted: ['wiki'], broken: ['wiki'] })
+    renderScreen(api)
+
+    const open = await screen.findByRole('button', { name: 'wiki' })
+    const row = open.closest('li')!
+    expect(within(row).getByText('Files missing')).toBeTruthy()
+    expect(within(row).getByText(/files of this project are gone/)).toBeTruthy()
+    for (const name of ['Start', 'Stop', 'Restart', 'Pull images', 'Edit', 'Remove']) {
+      expect(within(row).queryByRole('button', { name })).toBeNull()
+    }
+
+    fireEvent.click(within(row).getByRole('button', { name: 'Stop managing' }))
+    const confirmation = screen.getByRole('group', { name: 'Stop managing wiki?' })
+    fireEvent.click(within(confirmation).getByRole('button', { name: 'Stop managing' }))
+
+    await waitFor(() => expect(api.runStack).toHaveBeenCalledWith('srv-1', 'wiki', 'forget', false))
   })
 
   it('invites to create the first stack when there are none', async () => {

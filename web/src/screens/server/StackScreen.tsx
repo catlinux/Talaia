@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 import type { Container, ContainersApi, StackAction } from '../../api/containers'
 import { isSignedOut } from '../../api/http'
 import { errorMessage } from '../../auth/AuthGate'
-import { ArrowLeftIcon, PlayIcon, RestartIcon, StopIcon } from '../../components/icons'
+import { ArrowLeftIcon, PlayIcon, RestartIcon, StopIcon, TrashIcon } from '../../components/icons'
 import { formatBytes, formatPercent } from '../fleet/format'
 import { LogsPanel } from './LogsPanel'
 import { StackEditor } from './StackEditor'
@@ -15,6 +15,8 @@ interface StackScreenProps {
   server: { id: string; name: string }
   name: string
   adopted: boolean
+  /** broken marks an adopted stack whose files are gone from the server. */
+  broken: boolean
   /** containers are the ones the server screen already loads. */
   containers: Container[]
   connected: boolean
@@ -37,6 +39,7 @@ export function StackScreen({
   server,
   name,
   adopted,
+  broken,
   containers,
   connected,
   dockerAvailable,
@@ -47,7 +50,7 @@ export function StackScreen({
   const { t, i18n } = useTranslation(['server', 'errors'])
   const language = i18n.resolvedLanguage ?? i18n.language
   const [outcome, setOutcome] = useState<Outcome | null>(null)
-  const [confirming, setConfirming] = useState(false)
+  const [confirming, setConfirming] = useState<'down' | 'forget' | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
   // chosen is null until the reader picks a container: the first one is shown.
   const [chosen, setChosen] = useState<string | null>(null)
@@ -68,13 +71,15 @@ export function StackScreen({
   const disabled = busy || !connected || !dockerAvailable
 
   const run = async (action: StackAction) => {
-    setConfirming(false)
+    setConfirming(null)
     setNotice(null)
     setOutcome({ kind: 'working' })
+    let succeeded = false
     try {
       const jobId = await api.runStack(server.id, name, action, action === 'down')
       const job = await waitForJob(api, jobId, pollMs, () => alive.current)
       if (job === null || !alive.current) return
+      succeeded = job.state === 'succeeded'
       setOutcome(
         job.state === 'succeeded' ? { kind: 'done' } : { kind: 'failed', message: job.message },
       )
@@ -86,6 +91,9 @@ export function StackScreen({
       })
     }
     onChanged()
+    if (succeeded && action === 'forget') {
+      onBack()
+    }
   }
 
   const containerState = (container: Container) =>
@@ -114,33 +122,56 @@ export function StackScreen({
         <div className="stackscreen__titles">
           <h1 className="stackscreen__title" id="stack-title">
             {name}
-            {adopted ? <span className="tag">{t('server:stacks.adoptedTag')}</span> : null}
+            {broken ? (
+              <span className="tag tag--warning">{t('server:stacks.brokenTag')}</span>
+            ) : adopted ? (
+              <span className="tag">{t('server:stacks.adoptedTag')}</span>
+            ) : null}
           </h1>
           <p className="stackscreen__meta">
             <span className={`status status--${running > 0 ? 'online' : 'offline'}`}>
               {t('server:stack.summary', { running, total: own.length })}
             </span>
           </p>
+          {broken ? <p className="stackscreen__broken">{t('server:stacks.brokenBody')}</p> : null}
         </div>
 
         {confirming ? (
           <div
             className="container__confirm"
             role="group"
-            aria-label={t('server:stacks.confirm.downTitle', { name })}
+            aria-label={t(`server:stacks.confirm.${confirming}Title`, { name })}
           >
             <p className="container__confirm-title">
-              {t('server:stacks.confirm.downTitle', { name })}
+              {t(`server:stacks.confirm.${confirming}Title`, { name })}
             </p>
-            <p className="container__confirm-body">{t('server:stacks.confirm.downBody')}</p>
+            <p className="container__confirm-body">
+              {t(`server:stacks.confirm.${confirming}Body`)}
+            </p>
             <div className="container__actions">
-              <button type="button" className="cbtn cbtn--danger" onClick={() => void run('down')}>
-                {t('server:stacks.confirm.downYes')}
+              <button
+                type="button"
+                className="cbtn cbtn--danger"
+                onClick={() => void run(confirming)}
+              >
+                {t(`server:stacks.confirm.${confirming}Yes`)}
               </button>
-              <button type="button" className="cbtn" onClick={() => setConfirming(false)}>
+              <button type="button" className="cbtn" onClick={() => setConfirming(null)}>
                 {t('server:stacks.confirm.no')}
               </button>
             </div>
+          </div>
+        ) : broken ? (
+          <div className="stackscreen__actions">
+            <button
+              type="button"
+              className="cbtn cbtn--danger"
+              disabled={busy}
+              onClick={() => setConfirming('forget')}
+            >
+              <TrashIcon />
+              {t('server:stacks.action.forget')}
+            </button>
           </div>
         ) : (
           <div className="stackscreen__actions">
@@ -157,7 +188,7 @@ export function StackScreen({
               type="button"
               className="cbtn cbtn--danger"
               disabled={disabled}
-              onClick={() => setConfirming(true)}
+              onClick={() => setConfirming('down')}
             >
               <StopIcon />
               {t('server:stack.actions.stop')}
@@ -203,30 +234,32 @@ export function StackScreen({
         <p className="serverscreen__message">{t('server:offline')}</p>
       ) : (
         <>
-          <div className="stackscreen__grid">
-            <section className="stackscreen__card" aria-labelledby="stack-compose-title">
-              <h2 className="stackscreen__card-title" id="stack-compose-title">
-                {t('server:stack.compose.title')}
-              </h2>
-              {notice !== null ? (
-                <p className="stackscreen__notice" role="status">
-                  {notice}
-                </p>
-              ) : null}
-              <StackEditor
-                key={name}
-                api={api}
-                serverId={server.id}
-                name={name}
-                pollMs={pollMs}
-                onDone={(_, start) => {
-                  setNotice(
-                    t(start ? 'server:stacks.editor.started' : 'server:stacks.editor.saved'),
-                  )
-                  onChanged()
-                }}
-              />
-            </section>
+          <div className={`stackscreen__grid${broken ? ' stackscreen__grid--single' : ''}`}>
+            {!broken ? (
+              <section className="stackscreen__card" aria-labelledby="stack-compose-title">
+                <h2 className="stackscreen__card-title" id="stack-compose-title">
+                  {t('server:stack.compose.title')}
+                </h2>
+                {notice !== null ? (
+                  <p className="stackscreen__notice" role="status">
+                    {notice}
+                  </p>
+                ) : null}
+                <StackEditor
+                  key={name}
+                  api={api}
+                  serverId={server.id}
+                  name={name}
+                  pollMs={pollMs}
+                  onDone={(_, start) => {
+                    setNotice(
+                      t(start ? 'server:stacks.editor.started' : 'server:stacks.editor.saved'),
+                    )
+                    onChanged()
+                  }}
+                />
+              </section>
+            ) : null}
 
             <section className="stackscreen__card" aria-labelledby="stack-containers-title">
               <h2 className="stackscreen__card-title" id="stack-containers-title">

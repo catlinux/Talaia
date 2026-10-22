@@ -55,6 +55,8 @@
   "stacks": {
     "title": "Stacks",
     "intro": "Projectes Docker Compose que Talaia desa al servidor i gestiona per tu.",
+    "brokenTag": "Falten fitxers",
+    "brokenBody": "Els fitxers d'aquest projecte ja no són al servidor. Deixa de gestionar-lo per netejar aquesta entrada.",
     "new": "Nou stack",
     "empty": "Encara no hi ha stacks gestionats. Crea el primer amb «Nou stack».",
     "summary_one": "{{count}} contenidor · {{running}} en marxa",

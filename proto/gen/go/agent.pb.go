@@ -1510,6 +1510,9 @@ type Inventory struct {
 	// The managed stacks that were adopted: they stay where they were and Talaia
 	// only points at them. A subset of managed_stacks.
 	AdoptedStacks []string `protobuf:"bytes,15,rep,name=adopted_stacks,json=adoptedStacks,proto3" json:"adopted_stacks,omitempty"`
+	// The adopted stacks whose compose file or directory no longer exists on the
+	// host. A subset of adopted_stacks; the panel only lets them be forgotten.
+	BrokenStacks  []string `protobuf:"bytes,16,rep,name=broken_stacks,json=brokenStacks,proto3" json:"broken_stacks,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1645,6 +1648,13 @@ func (x *Inventory) GetManagedStacks() []string {
 func (x *Inventory) GetAdoptedStacks() []string {
 	if x != nil {
 		return x.AdoptedStacks
+	}
+	return nil
+}
+
+func (x *Inventory) GetBrokenStacks() []string {
+	if x != nil {
+		return x.BrokenStacks
 	}
 	return nil
 }
@@ -2629,7 +2639,7 @@ const file_agent_proto_rawDesc = "" +
 	"\x03seq\x18\x01 \x01(\x04R\x03seq\x123\n" +
 	"\asent_at\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\x06sentAt\" \n" +
 	"\fHeartbeatAck\x12\x10\n" +
-	"\x03seq\x18\x01 \x01(\x04R\x03seq\"\xd7\x04\n" +
+	"\x03seq\x18\x01 \x01(\x04R\x03seq\"\xfc\x04\n" +
 	"\tInventory\x12\x1a\n" +
 	"\bhostname\x18\x01 \x01(\tR\bhostname\x12\x17\n" +
 	"\aos_name\x18\x02 \x01(\tR\x06osName\x12\x1d\n" +
@@ -2649,7 +2659,8 @@ const file_agent_proto_rawDesc = "" +
 	"\x10compose_projects\x18\f \x03(\v2\x1f.talaia.agent.v1.ComposeProjectR\x0fcomposeProjects\x128\n" +
 	"\bservices\x18\r \x03(\v2\x1c.talaia.agent.v1.SystemdUnitR\bservices\x12%\n" +
 	"\x0emanaged_stacks\x18\x0e \x03(\tR\rmanagedStacks\x12%\n" +
-	"\x0eadopted_stacks\x18\x0f \x03(\tR\radoptedStacks\"\xc5\x01\n" +
+	"\x0eadopted_stacks\x18\x0f \x03(\tR\radoptedStacks\x12#\n" +
+	"\rbroken_stacks\x18\x10 \x03(\tR\fbrokenStacks\"\xc5\x01\n" +
 	"\tContainer\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x14\n" +

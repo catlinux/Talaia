@@ -112,6 +112,9 @@ type AgentInfo struct {
 	ManagedStacks []string
 	// AdoptedStacks are the managed stacks that were adopted, a subset of ManagedStacks.
 	AdoptedStacks []string
+	// BrokenStacks are the adopted stacks whose files are gone, a subset of
+	// AdoptedStacks. The panel only lets them be forgotten.
+	BrokenStacks []string
 	// ContainerStats is the last sample of the running containers, by short id;
 	// StatsAt says when it was taken.
 	ContainerStats map[string]*agentv1.ContainerStat
@@ -151,6 +154,7 @@ func (info *AgentInfo) applyInventory(inventory *agentv1.Inventory) {
 	info.ContainerList = inventory.GetContainers()
 	info.ManagedStacks = inventory.GetManagedStacks()
 	info.AdoptedStacks = inventory.GetAdoptedStacks()
+	info.BrokenStacks = inventory.GetBrokenStacks()
 }
 
 // agentStream is the part of the server stream the hub uses. Keeping it small

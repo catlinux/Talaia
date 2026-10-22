@@ -23,6 +23,7 @@ type ServiceSource interface {
 type StackSource interface {
 	List() []string
 	Adopted() []string
+	Broken() []string
 }
 
 // Provider combines the sources. The zero value reads nothing, which lets
@@ -52,6 +53,7 @@ type Result struct {
 	Services        []*agentv1.SystemdUnit
 	ManagedStacks   []string
 	AdoptedStacks   []string
+	BrokenStacks    []string
 }
 
 // Collect reads both sources. It never fails: a source that is not available
@@ -72,6 +74,7 @@ func (p Provider) Collect(ctx context.Context) Result {
 	if p.Stacks != nil {
 		result.ManagedStacks = p.Stacks.List()
 		result.AdoptedStacks = p.Stacks.Adopted()
+		result.BrokenStacks = p.Stacks.Broken()
 	}
 
 	return result

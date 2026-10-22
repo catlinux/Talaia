@@ -50,6 +50,8 @@ type stacksResponse struct {
 	Stacks    []string `json:"stacks"`
 	// Adopted lists the managed stacks that were adopted from a running project.
 	Adopted []string `json:"adopted"`
+	// Broken lists the adopted stacks whose files are gone from the host.
+	Broken []string `json:"broken"`
 	// Adoptable lists the running Compose projects Talaia does not manage yet.
 	Adoptable []string `json:"adoptable"`
 }
@@ -60,10 +62,17 @@ func NewStacksHandler(deps ContainerDeps) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		agent, ok := connectedAgent(deps.Agents, chi.URLParam(r, "serverID"))
 
-		response := stacksResponse{Connected: ok, Stacks: []string{}, Adopted: []string{}, Adoptable: []string{}}
+		response := stacksResponse{
+			Connected: ok,
+			Stacks:    []string{},
+			Adopted:   []string{},
+			Broken:    []string{},
+			Adoptable: []string{},
+		}
 		if ok {
 			response.Stacks = append(response.Stacks, agent.ManagedStacks...)
 			response.Adopted = append(response.Adopted, agent.AdoptedStacks...)
+			response.Broken = append(response.Broken, agent.BrokenStacks...)
 			response.Adoptable = append(response.Adoptable, adoptableProjects(agent)...)
 		}
 		w.Header().Set("Cache-Control", "no-store")
