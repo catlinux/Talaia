@@ -94,6 +94,17 @@ tareas concretas de la fase actual y de la siguiente.
 - [x] Pantalla de servidor con pestañas y resumen (maqueta 2) y pantalla de auditoría
 - [x] Documentación EN/ES, revisión de seguridad (Opus), prueba real en dos servidores y cierre en 0.4.0 (cerrada por el mantenedor, 2026-10-22; la semana sin SSH sigue en el uso diario)
 
+## Fase 4 · Usuarios, permisos y auditoría (0.5.0, ver `.agents/plans/fase4/fase4.PLAN.md`)
+
+- [ ] Modelo de permisos: roles fijos (administrador, operador de servidor, operador de app, lector, solo métricas) sobre organización → grupo → servidor → stack → contenedor; una asignación de stack nunca llega al host
+- [ ] Usuarios, equipos, grupos de servidores e invitaciones por enlace (2FA obligatorio para todos)
+- [ ] Permisos comprobados en cada ruta de la API, con una prueba que falla si una ruta no tiene ninguno; listas filtradas
+- [ ] Claves de API con ámbito (nunca terminales, usuarios ni reinicio) y `talaiactl` v1
+- [ ] Inicio de sesión OIDC para usuarios existentes (correo verificado), con segundo factor igualmente
+- [ ] Panel: pantalla Usuarios y permisos (maqueta 5), claves de API, ajustes OIDC, lista y descarga de grabaciones de terminal
+- [x] Grabación de sesiones de terminal (hecha en las fases 2 y 3)
+- [ ] Docs EN/ES, revisión de seguridad (Opus), prueba real con un segundo usuario, cierre en 0.5.0
+
 ## Bloque de operación (decidido el 2026-10-20, antes de cerrar la fase 2)
 
 **Prioridad ahora (mantenedor, 2026-10-20):** las actualizaciones desde el panel y el acceso externo, para seguir actualizando y gestionando desde fuera de casa. Diseño y pasos: [`.agents/plans/operacion/operacion.PLAN.md`](.agents/plans/operacion/operacion.PLAN.md).

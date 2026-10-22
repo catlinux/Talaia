@@ -94,6 +94,17 @@ of the current phase and the next one.
 - [x] Server screen with tabs and overview (mockup 2) and audit log screen
 - [x] Docs EN/ES, security review (Opus), real test on two servers, close at 0.4.0 (closed by the maintainer, 2026-10-22; the week without SSH goes on in daily use)
 
+## Phase 4 · Users, permissions and audit (0.5.0, see `.agents/plans/fase4/fase4.PLAN.md`)
+
+- [ ] Permission model: fixed roles (admin, server operator, app operator, viewer, metrics only) on organization → group → server → stack → container; a stack binding never reaches the host
+- [ ] Users, teams, server groups and invitations by link (2FA mandatory for everyone)
+- [ ] Permissions checked on every API route, with a test that fails if a route has none; filtered lists
+- [ ] Scoped API keys (never terminals, users or reboot) and `talaiactl` v1
+- [ ] OIDC sign-in for existing users (verified email), second factor still required
+- [ ] Panel: Users and permissions screen (mockup 5), API keys, OIDC settings, terminal recordings list and download
+- [x] Terminal session recording (done in phases 2 and 3)
+- [ ] Docs EN/ES, security review (Opus), real test with a second user, close at 0.5.0
+
 ## Operations block (decided 2026-10-20, before closing phase 2)
 
 **Priority now (maintainer, 2026-10-20):** the updates from the panel and the external access, to keep updating and managing from outside the home. Design and steps: [`.agents/plans/operacion/operacion.PLAN.md`](.agents/plans/operacion/operacion.PLAN.md).
