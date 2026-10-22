@@ -4,6 +4,7 @@
 
 What the panel can do to your servers, what protects it, and what is recorded. The design behind it is in
 [architecture.md](architecture.md); the installation steps are in [installation.md](installation.md).
+The user guide for the server screen is [server.md](server.md).
 
 ## The administrator is root on every managed server
 
@@ -20,6 +21,8 @@ things the panel offers already give root:
 - **The container terminal** opens a shell inside a container. If the container is `privileged`, shares the host
   PID namespace or mounts the Docker socket, that shell is root on the server; the panel warns before opening it
   and records `privileged` in the audit log.
+- **The host terminal** opens a root login shell on the server itself. It needs a confirmation and a fresh
+  TOTP code, is recorded like a container terminal and is audited. See [server.md](server.md).
 - **Updates from the panel** are applied by a root helper on the core machine ([installation.md](installation.md),
   section 5). The core can only ask for a commit of `origin/main` that is newer than the running one.
 
@@ -75,11 +78,12 @@ not against a compromised core, the same trust as the install command. Every ord
   without the database, the secrets or the data of the core. It answers that name only, never recurses and limits
   each source network. See [dns-delegation.md](dns-delegation.md).
 - **Everything the panel does is audited** with names, ids and hashes; the audit log never holds file contents,
-  log text or what is typed in a terminal.
+  log text, the TOTP code, the journal search text, package lists or what is typed in a terminal.
 
 ## Terminal sessions: recording and retention
 
-A terminal session always records, and cannot be opened if it cannot be recorded.
+A terminal session always records, and cannot be opened if it cannot be recorded. This applies to container
+terminals and to the host terminal.
 
 - **What is recorded:** the *output* of the terminal and its resizing, in the asciicast v2 format. **What you
   type is not recorded**, but anything the shell echoes back is part of the output: a password typed in a prompt
@@ -90,7 +94,8 @@ A terminal session always records, and cannot be opened if it cannot be recorded
 - **Retention:** 90 days by default. Change it with `TALAIA_TERMINAL_RECORDING_DAYS` (or
   `terminal_recording_days` in the configuration file). Older recordings are deleted when the core starts and
   every 24 hours.
-- **Limits:** at most 4 sessions per server and one per user and container; a session closes after 15 minutes
+- **Limits:** at most 4 sessions per server, shared by container and host shells; one session per user and
+  container, and one host session per user and server, with at most 2 host sessions per agent; a session closes after 15 minutes
   without input or output, after 4 hours, or when its recording reaches 50 MiB. Each closure has a reason in the
   audit log (`user`, `idle`, `max_duration`, `recording_limit`, `slow_client`, `agent_offline`,
   `session_revoked`, `exited`).
@@ -107,8 +112,63 @@ asciinema play session.cast
 ```
 
 `terminal list` prints one line per session, newest first: id, opening time, state or closing reason, user,
-container, duration and bytes recorded, plus `root-equivalent` for privileged containers. `terminal export`
+container or host, duration and bytes recorded, plus `root-equivalent` for privileged containers. `terminal export`
 decrypts a recording and writes the `.cast` file to the standard output.
+
+## Whole-server actions (phase 3)
+
+The same administrator account can now change the whole machine, not only its containers:
+
+- **Package upgrades** run as root and can replace libraries, services and the kernel. Security-only or
+  all-pending upgrades are available; they never remove packages and keep local configuration files. One
+  apt upgrade or reboot can run at a time. The work runs in a transient systemd unit so it survives an
+  agent restart, and the live log is shown in the panel.
+- **Service control** starts, stops, restarts, reloads, enables or disables systemd services. Stop,
+  restart and disable ask for confirmation; access-critical services show a stronger warning.
+  `talaia-agent.service` cannot be stopped, restarted or disabled from the panel.
+- **Reboot** needs the hostname the agent reports; the agent checks it again and schedules the restart.
+  Talaia never powers a machine off.
+- **The host terminal** opens a recorded root login shell on the server through a local PTY. It needs a
+  confirmation and a fresh TOTP code, with the same replay guard as sign-in and password changes. It is
+  limited to 2 sessions per agent and one per user and server, shares the 4-session per-server limit and
+  the 15-minute idle, 4-hour and 50 MiB recording limits.
+
+All of these are typed commands; the core does not send a shell line. The user guide, including safe
+update and reboot steps, is [server.md](server.md).
+
+### What phase 3 records and what it does not
+
+The audit log records the action, actor, IP, result and identifiers such as the server, unit or job. The
+phase 3 actions are `apt_status`, `apt_upgrade`, `host_reboot`, the `service_*` actions,
+`journal_read`, `host_terminal_open` and `host_terminal_close`.
+
+- **Never the TOTP code.** The code is checked and discarded; it is not written to the audit log,
+  application logs or the recording.
+- **Never the journal text or the search text.** `journal_read` stores the unit and boot, not the lines or
+  the literal search.
+- **Never package lists.** `apt_status` and `apt_upgrade` store the mode, flags and job id, not the
+  package names or the command output.
+- **Never keystrokes.** A terminal recording stores output and resizing; what you type is not stored, but
+  anything the shell echoes back is part of the output. The TOTP prompt is not echoed into the recording.
+- **Reading the audit log is not audited.** Otherwise every refresh of the Audit screen would add an event.
+
+### Turning the host terminal off
+
+Host terminals are enabled by default on Linux. To turn them off on one server, add this to
+`/etc/talaia/agent.toml` and restart the agent:
+
+```toml
+[terminal]
+host = false
+```
+
+```bash
+sudo systemctl restart talaia-agent
+```
+
+The environment variable `TALAIA_AGENT_TERMINAL_HOST=false` has the same effect and takes precedence over
+the file. The agent reports the capability as false, so the panel disables the button. Old agents also
+report false and need an update.
 
 ## Reporting a vulnerability
 

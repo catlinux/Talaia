@@ -21,8 +21,9 @@
 </p>
 
 > [!WARNING]
-> Talaia is in its **design phase**. There is no usable code yet. This repository currently holds the
-> project definition, roadmap and mockups. Follow the [roadmap](ROADMAP.md) to see what comes next.
+> Talaia is in active development. The core, agent, panel and CLI exist, and phase 3 (whole server) is
+> implemented, but that phase still needs its real-world week without SSH and its security review before
+> the phase can be considered closed. Follow the [roadmap](ROADMAP.md) for what comes next.
 
 ---
 
@@ -118,12 +119,16 @@ Each feature is tagged with the release where it is planned. See [ROADMAP.md](RO
 | Area | MVP (0.4.0) | v1 (1.0.0) | Later |
 |---|---|---|---|
 | Containers and stacks | Actions, live logs, Compose editor, container terminal, images/volumes/networks, adopt existing | Revision history and rollback, image update notices | Podman |
-| Whole server | Metrics, systemd, journald, apt updates, host terminal | Firewall, fail2ban, users and SSH keys, cron, file browser, hardening audit | — |
+| Whole server | Metrics, systemd, journald, apt updates and reboot, host terminal (implemented; awaiting real-world validation and security review) | Firewall, fail2ban, users and SSH keys, cron, file browser, hardening audit | — |
 | Deploys and apps | — | Stacks from Git, Dockerfile/Nixpacks builds, zero-downtime deploys, domains + SSL (Caddy), template catalog | Preview environments per pull request |
 | Monitoring and alerts | — | Metrics history, alert rules, HTTP/TCP checks, certificate expiry, Telegram/ntfy/email/Discord/webhook | Public status page |
 | Backups | — | restic plans, consistent database dumps, S3/B2/SFTP, restore from the panel | Automatic monthly restore test |
 | Fleet automation | — | Bulk actions, scheduled procedures, GitOps sync | Ansible playbooks, VPS provisioning via provider APIs |
-| Users and security | Single user with 2FA, trusted-device PIN, passkeys, audit log | Users, teams, scoped roles, OIDC SSO, terminal session recording, scoped API keys | — |
+| Users and security | Single user with 2FA, trusted-device PIN, passkeys, audit log and recorded terminals | Users, teams, scoped roles, OIDC SSO, scoped API keys | — |
+
+> **Phase 3 status.** The whole-server features in the 0.4.0 column are implemented in the code. The phase
+> is not closed: it still needs the real-world week without SSH and the security review. The guide is
+> [docs/en/server.md](docs/en/server.md).
 
 ## Architecture
 
@@ -173,7 +178,8 @@ Full detail: [docs/en/architecture.md](docs/en/architecture.md). What the panel 
 ## Installation
 
 The core runs in Docker on one machine; each server gets an agent installed with one pasted command.
-Step by step, with troubleshooting: [docs/en/installation.md](docs/en/installation.md).
+Step by step, with troubleshooting: [docs/en/installation.md](docs/en/installation.md). The whole-server
+screen is documented in [docs/en/server.md](docs/en/server.md).
 
 On a fresh Debian or Ubuntu, the one-line bootstrap clones the current `main` into `/opt/talaia` and runs the
 installer (before 1.0 this installs `main`, not a tagged release):

@@ -16,7 +16,10 @@ Talaia tiene dos partes: el **núcleo** (panel, API y base de datos), que corre 
 - **Máquina del núcleo:** Debian 13 (o Ubuntu), `git`, `curl` y Docker Engine con el plugin Docker Compose. Si
   falta Docker, el instalador explica cómo añadirlo y puede ejecutar el script oficial con `--install-docker` (o
   contestando que sí).
-- **Servidores a gestionar:** Debian o Ubuntu con systemd, `curl` y acceso root (`sudo`).
+- **Servidores a gestionar:** Debian o Ubuntu con systemd, `curl` y acceso root (`sudo`). El agente
+  también necesita `apt-get` y `apt-mark`, `systemctl` y `systemd-run`, `journalctl`, y `bash` o
+  `sh` para la terminal del anfitrión. Asegúrate de que esas herramientas están instaladas; una imagen
+  mínima puede no tenerlas todas.
 - Un nombre o una IP desde la que los servidores y tu navegador lleguen al núcleo, y dos puertos TCP libres para
   él (8443 por defecto); los agentes usan un segundo puerto (8444 por defecto). Se llega al panel en
   `https://<dirección>:<puerto>`: el puerto forma parte de la URL salvo que sea el 443 (véase la sección 6).
@@ -191,6 +194,46 @@ Si el agente sigue perteneciendo a este mismo núcleo, por ejemplo porque su ser
 identidad antigua coincide con la CA y seguiría intentando usar el certificado revocado. Purga el paquete en el
 servidor (`sudo apt purge talaia-agent`) antes de ejecutar de nuevo la orden de instalación.
 
+### Opciones del agente para la pantalla del servidor
+
+La pantalla del servidor añade actualizaciones apt y reinicio, control de servicios, lectura del journal y
+una terminal de root grabada en el anfitrión. No necesita otro servicio. El agente usa las herramientas del
+sistema de arriba e informa de lo que puede hacer. Las terminales del anfitrión están activadas por defecto
+en Linux. Para
+apagarlas en un servidor, añade esto a `/etc/talaia/agent.toml`:
+
+```toml
+[terminal]
+host = false
+```
+
+Después reinicia el agente:
+
+```bash
+sudo systemctl restart talaia-agent
+```
+
+La variable de entorno `TALAIA_AGENT_TERMINAL_HOST` acepta `true` o `false` y tiene prioridad sobre el
+fichero. Con systemd, fíjala en un drop-in si tu instalación no lo hace ya:
+
+```bash
+sudo systemctl edit talaia-agent
+```
+
+```ini
+[Service]
+Environment=TALAIA_AGENT_TERMINAL_HOST=false
+```
+
+```bash
+sudo systemctl daemon-reload && sudo systemctl restart talaia-agent
+```
+
+El agente informa de la capacidad en su inventario. El panel desactiva el botón **Terminal** cuando las
+terminales del anfitrión están apagadas. Un agente antiguo también informa `false`; actualízalo con
+**Actualizar agente** antes de usar la terminal del anfitrión. La guía completa de la pantalla del servidor
+es [servidor.md](servidor.md).
+
 ## 5. Día a día
 
 - **Actualizar el núcleo desde el panel:** la pantalla **Ajustes** muestra la versión en marcha y el commit más
@@ -323,3 +366,9 @@ certificado para todos los nombres de la lista. Escrito a partir del código y s
 | `install.sh`: «does not match --ca-fingerprint» | La dirección responde con otra CA. Revisa `--url` y copia de nuevo la huella que imprime `token create`. |
 | El agente no se da de alta | El token caducó (15 minutos) o ya se usó: crea otro. |
 | `./install.sh: command not found` | Ejecútalo con `bash install.sh …`, o dale permiso con `chmod +x`. |
+| Las actualizaciones fallan con un error de bloqueo de apt | Otro proceso de apt tiene el bloqueo. Espera a que terminen apt-daily, unattended-upgrades o una orden apt manual. Comprueba quién lo tiene con `sudo fuser -v /var/lib/dpkg/lock-frontend` y `sudo fuser -v /var/lib/apt/lists/lock`; no borres los ficheros de bloqueo. El agente espera hasta 120 segundos. |
+| **Ya hay una operación de apt en marcha** | Una actualización o un reinicio anterior sigue activo. Espera; `systemctl list-units 'talaia-apt-*' --all` lista las unidades transitorias. El núcleo rechaza otra actualización apt o otro reinicio mientras uno está activo. |
+| El botón **Terminal** está desactivado | El agente tiene `[terminal] host = false`, `TALAIA_AGENT_TERMINAL_HOST=false` o es demasiado antiguo para informar de la capacidad. Revisa `/etc/talaia/agent.toml`, `systemctl cat talaia-agent` y la versión del agente; actualízalo y reinícialo. |
+
+La guía completa de la pantalla del servidor, con la terminal del anfitrión, la auditoría y más problemas
+frecuentes, es [servidor.md](servidor.md).

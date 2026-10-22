@@ -153,6 +153,23 @@ Principios:
 - **Contrato versionado.** Los campos se añaden, nunca se renumeran. Núcleo y agente negocian una versión
   de protocolo al conectar.
 
+### 3.3 Terminales interactivas
+
+Una terminal de contenedor y una del anfitrión usan el mismo flujo. El panel pide una sesión al núcleo
+(`POST /api/v1/servers/{serverID}/containers/{container}/terminal` o
+`POST /api/v1/servers/{serverID}/terminal`), recibe un ticket de un solo uso y abre
+`GET /api/v1/terminal/{sessionID}/ws`. El núcleo guarda la sesión en el gestor de terminales y envía al
+agente un mensaje tipado `TerminalOpen` con `TerminalTarget` puesto a contenedor o anfitrión. El agente
+arranca un PTY; la salida y los cambios de tamaño vuelven y se graban, mientras que las pulsaciones no se
+graban. El panel envía primero el ticket y después datos binarios y mensajes de control de tamaño.
+
+Una terminal del anfitrión necesita además `confirm` y un código TOTP nuevo con la misma protección
+contra reutilización que el acceso y el cambio de contraseña, y el agente debe informar de que la admite.
+Arranca `/bin/bash -l` o `/bin/sh -l` como root con un entorno limpio, está limitada a 2 sesiones por
+agente y una por usuario y servidor, comparte el límite de 4 sesiones por servidor y se audita como
+`host_terminal_open` y `host_terminal_close`. Se puede desactivar con `[terminal] host = false` en
+`/etc/talaia/agent.toml` o con `TALAIA_AGENT_TERMINAL_HOST=false`.
+
 ## 4. Modelo de datos (inicial)
 
 | Entidad | Campos principales |
@@ -224,3 +241,115 @@ Un único administrador creado desde la consola del servidor (`talaia-core user 
 | `/etc/talaia/certs/` | Clave y certificado del agente (modo 0600) |
 | `/var/lib/talaia/` | Búfer local, estado |
 | `/opt/talaia/stacks/<nombre>/` | `compose.yaml` y `.env` de cada stack |
+
+## 8. Operaciones sobre el servidor entero (fase 3)
+
+La fase 3 está implementada en el código: la pantalla del servidor, el estado y las actualizaciones de
+apt, los servicios systemd, la lectura del journal, la terminal del anfitrión y la pantalla de auditoría.
+La fase todavía no está cerrada: le faltan la semana real sin SSH y la revisión de seguridad. La guía de
+uso es [servidor.md](servidor.md).
+
+### 8.1 Órdenes tipadas y tipos de tarea
+
+El núcleo nunca envía una línea de shell. Cada operación es un `CoreMsg` tipado con un `job_id`; el
+agente vuelve a comprobar el mensaje y responde con mensajes `JobEvent`.
+
+| Tipo de tarea | Orden | Notas |
+|---|---|---|
+| `apt_status` | `AptStatus{refresh:false}` | Lee el resumen apt en caché. |
+| `apt_refresh` | `AptStatus{refresh:true}` | Ejecuta `apt-get update` antes; caducidad mayor. |
+| `apt_upgrade` | `AptUpgrade{mode}` | `security` o `all`; el agente calcula la lista de paquetes. |
+| `host_reboot` | `HostReboot{hostname}` | Programa `systemctl reboot` cinco segundos después. |
+| `service_action` | `ServiceAction{unit,action}` | Iniciar, parar, reiniciar, recargar, habilitar o deshabilitar. |
+| `journal_read` | `ReadJournal{...}` | Entradas del journal y cursor en la salida de la tarea. |
+
+La terminal no es una tarea: el gestor mantiene la sesión viva y el navegador se conecta por WebSocket.
+
+Las incorporaciones al protocolo son las órdenes `ServiceAction`, `ReadJournal`, `AptStatus`, `AptUpgrade` y
+`HostReboot`, `AptSummary` y `host_terminal` en `Inventory`, `unit_file_state` en `SystemdUnit`, y
+`TerminalOpen.target` con `TerminalTarget` (`UNSPECIFIED` sigue siendo el contenedor por compatibilidad).
+
+### 8.2 Endpoints
+
+Todas las rutas están bajo `/api/v1` y necesitan una sesión completa. Las rutas de contenedores y
+stacks de la fase 2 no cambian.
+
+| Método y ruta | Cuerpo o consulta | Tarea | Acción de auditoría |
+|---|---|---|---|
+| `GET /servers/{serverID}/services` | - | - | ninguna (lectura) |
+| `POST /servers/{serverID}/services/{unit}/actions` | `{action,confirm}` | `service_action` | `service_<action>` |
+| `POST /servers/{serverID}/apt/status` | `{refresh}` (opcional) | `apt_status` o `apt_refresh` | `apt_status` |
+| `POST /servers/{serverID}/apt/upgrade` | `{mode:"security" or "all",confirm:true}` | `apt_upgrade` | `apt_upgrade` |
+| `POST /servers/{serverID}/reboot` | `{confirm:"<nombre de máquina>"}` | `host_reboot` | `host_reboot` |
+| `POST /servers/{serverID}/journal` | filtros (abajo) | `journal_read` | `journal_read` |
+| `POST /servers/{serverID}/terminal` | `{confirm:true,code,shell,cols,rows}` | sesión de terminal | `host_terminal_open` / `host_terminal_close` |
+| `GET /terminal/{sessionID}/ws` | WebSocket, ticket primero | - | - |
+| `GET /audit` | `limit,before,action,server_id,actor` | - | ninguna (lectura) |
+| `GET /jobs/{jobID}` | - | - | - |
+
+Cuerpo del journal: `unit`, `max_priority` (0-7), `since` y `until` (RFC 3339), `search`
+(literal, como máximo 200 caracteres), `boot` (`all`, `current`, `previous`), `tail` (1-1000,
+200 por defecto) y `after_cursor` para seguir. La entrada de auditoría guarda la unidad y el arranque,
+no la búsqueda ni las líneas.
+
+Los errores usan los mismos códigos que el resto de la API: `invalid_request`,
+`confirmation_required`, `agent_offline`, `operation_in_progress`, `self_management`,
+`too_many_terminals`, `terminal_exists`, `code_invalid`, `host_terminal_disabled`,
+`agent_busy` y `terminal_open_failed`.
+
+### 8.3 apt en una unidad transitoria de systemd
+
+El agente calcula la lista de paquetes de una actualización de seguridad; el núcleo nunca envía nombres.
+La actualización corre con `systemd-run` en una unidad llamada `talaia-apt-<id corto>`:
+
+```text
+systemd-run --unit=talaia-apt-<id> --collect --property=Type=exec
+  --property=RemainAfterExit=yes
+  --property=StandardOutput=append:/var/lib/talaia/apt/<job>.log
+  --setenv=DEBIAN_FRONTEND=noninteractive --setenv=LC_ALL=C
+  -- apt-get -y -o Dpkg::Options::=--force-confdef
+     -o Dpkg::Options::=--force-confold -o DPkg::Lock::Timeout=120
+     --no-remove upgrade --with-new-pkgs
+```
+
+`security` usa `install --only-upgrade -- <paquetes>`. El agente escribe
+`/var/lib/talaia/apt/<job>.json` y consulta `systemctl show`; emite `RUNNING` con la cola del log
+cada pocos segundos y retoma la unidad tras un reinicio del agente. Solo hay una actualización apt o un
+reinicio a la vez. Los ficheros de estado se limpian a las 24 horas y los logs a los 30 días.
+
+### 8.4 Flujo de servicios y journal
+
+Para una acción de servicio el núcleo comprueba que la unidad estaba en el último inventario, que
+`confirm` está presente cuando la acción lo necesita y que no se está parando, reiniciando o
+deshabilitando `talaia-agent.service`. Crea una tarea `service_action` y envía la `ServiceAction`
+tipada; el agente ejecuta `systemctl --no-ask-password` con un verbo fijo, devuelve el estado nuevo y
+refresca el inventario.
+
+Para una lectura del journal el núcleo valida todos los filtros, crea una tarea `journal_read` y envía
+`ReadJournal`. El agente ejecuta `journalctl --output=json --no-pager` con argumentos sueltos, recorta
+cada mensaje a 4 KiB y el total a 256 KiB, y devuelve `{entries,cursor}`. El panel sigue el cursor cada
+3 segundos.
+
+### 8.5 Flujo de la terminal del anfitrión
+
+1. El panel pide `POST /servers/{serverID}/terminal` con `confirm`, un `code` TOTP nuevo, el shell y
+   el tamaño.
+2. El núcleo comprueba la sesión completa, la conexión del agente y la capacidad `host_terminal`, aplica
+   el limitador compartido, verifica el código TOTP con su protección contra reutilización y pide una
+   sesión al gestor de terminales.
+3. El gestor reserva los límites, guarda la sesión (contenedor `@host`), crea el grabador y envía la
+   `TerminalOpen` tipada con `TerminalTarget.HOST`.
+4. El agente arranca un shell de inicio de sesión en un PTY local; el gestor audita
+   `host_terminal_open`, emite un ticket de 30 segundos y responde 201.
+5. El navegador abre el WebSocket, envía el ticket y la sesión queda viva. La salida y los cambios de
+   tamaño se graban cifrados; las pulsaciones no se graban. Al cerrar se audita
+   `host_terminal_close`.
+
+### 8.6 Datos en el servidor gestionado
+
+| Ruta | Contenido |
+|---|---|
+| `/var/lib/talaia/apt/<job>.json` | Estado de la tarea apt para retomarla tras un reinicio del agente. |
+| `/var/lib/talaia/apt/<job>.log` | Salida de apt, conservada 30 días. |
+| `talaia-apt-<id>` | Unidad transitoria de systemd de una actualización apt. |
+| `talaia-reboot` | Unidad transitoria que ejecuta `systemctl reboot`. |

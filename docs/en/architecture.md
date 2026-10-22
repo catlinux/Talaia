@@ -147,6 +147,23 @@ Principles:
 - **Versioned contract.** Fields are added, never renumbered. Core and agent negotiate a protocol version
   on connect.
 
+### 3.3 Interactive terminals
+
+A container terminal and a host terminal use the same flow. The panel asks the core for a session
+(`POST /api/v1/servers/{serverID}/containers/{container}/terminal` or
+`POST /api/v1/servers/{serverID}/terminal`), gets a one-time ticket and opens
+`GET /api/v1/terminal/{sessionID}/ws`. The core keeps the session in the terminal manager and sends a
+typed `TerminalOpen` message to the agent with `TerminalTarget` set to the container or the host. The
+agent starts a PTY; output and resizing travel back and are recorded, while keystrokes are not recorded.
+The panel sends the ticket first and then binary data and resize control messages.
+
+A host terminal additionally needs `confirm` and a fresh TOTP code with the same replay guard as sign-in
+and password changes, and the agent must report host-terminal support. It starts `/bin/bash -l` or
+`/bin/sh -l` as root with a clean environment, is limited to 2 sessions per agent and one per user and
+server, shares the 4-session per-server limit, and is audited as `host_terminal_open` and
+`host_terminal_close`. It can be turned off with `[terminal] host = false` in
+`/etc/talaia/agent.toml` or `TALAIA_AGENT_TERMINAL_HOST=false`.
+
 ## 4. Data model (initial)
 
 | Entity | Main fields |
@@ -218,3 +235,111 @@ never a public sign-up page. Design: `.agents/plans/auth/auth.DESIGN.md`.
 | `/etc/talaia/certs/` | Agent key and certificate (mode 0600) |
 | `/var/lib/talaia/` | Local buffer, state |
 | `/opt/talaia/stacks/<name>/` | `compose.yaml` and `.env` of each stack |
+
+## 8. Whole-server operations (phase 3)
+
+Phase 3 is implemented in the code: the server screen, apt status and upgrades, systemd services,
+journald reads, the host terminal and the audit screen. The phase is not closed yet: it still needs the
+real-world week without SSH and the security review. The user guide is [server.md](server.md).
+
+### 8.1 Typed commands and job kinds
+
+The core never sends a shell line. Each operation is a typed `CoreMsg` with a `job_id`; the agent
+checks the message again and answers with `JobEvent` messages.
+
+| Job kind | Command | Notes |
+|---|---|---|
+| `apt_status` | `AptStatus{refresh:false}` | Reads the cached apt summary. |
+| `apt_refresh` | `AptStatus{refresh:true}` | Runs `apt-get update` first; longer timeout. |
+| `apt_upgrade` | `AptUpgrade{mode}` | `security` or `all`; the agent computes the package list. |
+| `host_reboot` | `HostReboot{hostname}` | Schedules `systemctl reboot` five seconds later. |
+| `service_action` | `ServiceAction{unit,action}` | Start, stop, restart, reload, enable or disable. |
+| `journal_read` | `ReadJournal{...}` | Journal entries and cursor in the job output. |
+
+The terminal is not a job: the manager keeps the live session and the browser attaches over a WebSocket.
+
+The protocol additions are the `ServiceAction`, `ReadJournal`, `AptStatus`, `AptUpgrade` and `HostReboot`
+commands, `AptSummary` and `host_terminal` in `Inventory`, `unit_file_state` in `SystemdUnit`, and
+`TerminalOpen.target` with `TerminalTarget` (`UNSPECIFIED` remains the container for compatibility).
+
+### 8.2 Endpoints
+
+All routes are under `/api/v1` and require a full session. The container and stack routes of phase 2
+are unchanged.
+
+| Method and path | Body or query | Job | Audit action |
+|---|---|---|---|
+| `GET /servers/{serverID}/services` | - | - | none (read) |
+| `POST /servers/{serverID}/services/{unit}/actions` | `{action,confirm}` | `service_action` | `service_<action>` |
+| `POST /servers/{serverID}/apt/status` | `{refresh}` (optional) | `apt_status` or `apt_refresh` | `apt_status` |
+| `POST /servers/{serverID}/apt/upgrade` | `{mode:"security" or "all",confirm:true}` | `apt_upgrade` | `apt_upgrade` |
+| `POST /servers/{serverID}/reboot` | `{confirm:"<hostname>"}` | `host_reboot` | `host_reboot` |
+| `POST /servers/{serverID}/journal` | filters (see below) | `journal_read` | `journal_read` |
+| `POST /servers/{serverID}/terminal` | `{confirm:true,code,shell,cols,rows}` | terminal session | `host_terminal_open` / `host_terminal_close` |
+| `GET /terminal/{sessionID}/ws` | WebSocket, ticket first | - | - |
+| `GET /audit` | `limit,before,action,server_id,actor` | - | none (read) |
+| `GET /jobs/{jobID}` | - | - | - |
+
+Journal body: `unit`, `max_priority` (0-7), `since` and `until` (RFC 3339), `search` (literal,
+at most 200 characters), `boot` (`all`, `current`, `previous`), `tail` (1-1000, 200 by default)
+and `after_cursor` for following. The audit entry stores the unit and boot, not the search or the lines.
+
+Errors use the same codes as the rest of the API: `invalid_request`, `confirmation_required`,
+`agent_offline`, `operation_in_progress`, `self_management`, `too_many_terminals`,
+`terminal_exists`, `code_invalid`, `host_terminal_disabled`, `agent_busy` and
+`terminal_open_failed`.
+
+### 8.3 apt in a transient systemd unit
+
+The agent computes the package list for a security upgrade; the core never sends names. The upgrade runs
+through `systemd-run` in a unit named `talaia-apt-<short job id>`:
+
+```text
+systemd-run --unit=talaia-apt-<id> --collect --property=Type=exec
+  --property=RemainAfterExit=yes
+  --property=StandardOutput=append:/var/lib/talaia/apt/<job>.log
+  --setenv=DEBIAN_FRONTEND=noninteractive --setenv=LC_ALL=C
+  -- apt-get -y -o Dpkg::Options::=--force-confdef
+     -o Dpkg::Options::=--force-confold -o DPkg::Lock::Timeout=120
+     --no-remove upgrade --with-new-pkgs
+```
+
+`security` uses `install --only-upgrade -- <packages>` instead. The agent writes
+`/var/lib/talaia/apt/<job>.json` and polls `systemctl show`; it emits `RUNNING` with a log tail
+every few seconds and resumes the unit after an agent restart. Only one apt upgrade or reboot runs at a
+time. State files are cleaned after 24 hours and logs after 30 days.
+
+### 8.4 Services and journal data flow
+
+For a service action the core checks that the unit was in the last inventory, that `confirm` is present
+when the action needs it, and that `talaia-agent.service` is not being stopped, restarted or disabled.
+It creates a `service_action` job and sends the typed `ServiceAction`; the agent runs
+`systemctl --no-ask-password` with a fixed verb, returns the new state and refreshes the inventory.
+
+For a journal read the core validates every filter, creates a `journal_read` job and sends
+`ReadJournal`. The agent runs `journalctl --output=json --no-pager` with separate arguments, caps each
+message at 4 KiB and the total output at 256 KiB, and returns `{entries,cursor}`. The panel follows the
+cursor every 3 seconds.
+
+### 8.5 Host terminal flow
+
+1. The panel asks `POST /servers/{serverID}/terminal` with `confirm`, a fresh TOTP `code`, the
+   shell and the size.
+2. The core checks the full session, the agent connection and `host_terminal` capability, applies the
+   shared rate limiter, verifies the TOTP code with its replay guard and asks the terminal manager for a
+   session.
+3. The manager reserves the limits, stores the session (container `@host`), creates the recorder and
+   sends the typed `TerminalOpen` with `TerminalTarget.HOST`.
+4. The agent starts a login shell on a local PTY; the manager audits `host_terminal_open`, issues a
+   30-second ticket and answers 201.
+5. The browser opens the WebSocket, sends the ticket and the session becomes live. Output and resizing are
+   recorded and encrypted; keystrokes are not recorded. Closing audits `host_terminal_close`.
+
+### 8.6 Data on the managed server
+
+| Path | Content |
+|---|---|
+| `/var/lib/talaia/apt/<job>.json` | Apt job state for resuming after an agent restart. |
+| `/var/lib/talaia/apt/<job>.log` | Apt output, kept for 30 days. |
+| `talaia-apt-<id>` | Transient systemd unit of one apt upgrade. |
+| `talaia-reboot` | Transient unit that runs `systemctl reboot`. |

@@ -15,7 +15,9 @@ Talaia has two parts: the **core** (panel, API and database), which runs in Dock
 - **Core machine:** Debian 13 (or Ubuntu), `git`, `curl`, and Docker Engine with the Docker Compose plugin. If
   Docker is missing, the installer explains how to add it and can run the official script with `--install-docker`
   (or when you answer yes).
-- **Servers to manage:** Debian or Ubuntu with systemd, `curl`, and root access (`sudo`).
+- **Servers to manage:** Debian or Ubuntu with systemd, `curl`, and root access (`sudo`). The agent
+  also needs `apt-get` and `apt-mark`, `systemctl` and `systemd-run`, `journalctl`, and `bash` or
+  `sh` for the host terminal. Make sure those tools are installed; a minimal image may lack some of them.
 - A name or IP address the servers and your browser can reach the core at, and two free TCP ports for it
   (8443 by default); a second port is used by the agents (8444 by default). The panel is reached at
   `https://<address>:<port>`: the port is part of the URL unless it is 443 (see section 6).
@@ -185,6 +187,44 @@ If the agent still belongs to this same core, for example because its server was
 identity matches the CA and would keep trying to use the revoked certificate. Purge the package on the server
 (`sudo apt purge talaia-agent`) before running the install command again.
 
+### Agent options for the server screen
+
+The server screen adds apt updates and reboot, service control, journal reads and a recorded root host
+terminal. It does not need another service. The agent uses the system tools above and reports what it can
+do. Host terminals are enabled by default on Linux. To turn them off on one server, add this to
+`/etc/talaia/agent.toml`:
+
+```toml
+[terminal]
+host = false
+```
+
+Then restart the agent:
+
+```bash
+sudo systemctl restart talaia-agent
+```
+
+The environment variable `TALAIA_AGENT_TERMINAL_HOST` accepts `true` or `false` and takes precedence
+over the file. With systemd, set it in a drop-in if your installation does not already do so:
+
+```bash
+sudo systemctl edit talaia-agent
+```
+
+```ini
+[Service]
+Environment=TALAIA_AGENT_TERMINAL_HOST=false
+```
+
+```bash
+sudo systemctl daemon-reload && sudo systemctl restart talaia-agent
+```
+
+The agent reports the capability in its inventory. The panel disables the **Terminal** button when host
+terminals are off. An older agent also reports `false`; update it with **Update agent** before using the
+host terminal. The full server guide is [server.md](server.md).
+
 ## 5. Day to day
 
 - **Update the core from the panel:** the **Settings** screen shows the running version and the newest commit of
@@ -311,3 +351,9 @@ This was written from the code and has not been tested on a real VPN.
 | `install.sh`: "does not match --ca-fingerprint" | The address answers with another CA. Check `--url` and copy the fingerprint printed by `token create` again. |
 | The agent does not enroll | The token expired (15 minutes) or was already used: create another. |
 | `./install.sh: command not found` | Run it with `bash install.sh …`, or `chmod +x` it. |
+| Updates fail with an apt lock error | Another apt process holds the lock. Wait for apt-daily, unattended-upgrades or a manual apt command to finish. Check the holder with `sudo fuser -v /var/lib/dpkg/lock-frontend` and `sudo fuser -v /var/lib/apt/lists/lock`; do not delete lock files. The agent waits up to 120 seconds. |
+| **Another apt operation is running** | A previous upgrade or reboot is still active. Wait for it; `systemctl list-units 'talaia-apt-*' --all` lists the transient units. The core refuses a second apt upgrade or reboot while one is active. |
+| The **Terminal** button is disabled | The agent has `[terminal] host = false`, `TALAIA_AGENT_TERMINAL_HOST=false` or is too old to report host-terminal support. Check `/etc/talaia/agent.toml`, `systemctl cat talaia-agent` and the agent version; update and restart the agent. |
+
+The complete server guide, including the host terminal, audit screen and more troubleshooting, is
+[server.md](server.md).

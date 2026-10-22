@@ -21,9 +21,9 @@
 </p>
 
 > [!WARNING]
-> Talaia está en **fase de diseño**. Todavía no hay código utilizable. Este repositorio contiene por ahora
-> la definición del proyecto, la hoja de ruta y las maquetas. Consulta la [hoja de ruta](ROADMAP.es.md)
-> para ver qué viene a continuación.
+> Talaia está en desarrollo activo. El núcleo, el agente, el panel y la CLI existen, y la fase 3 (servidor
+> entero) está implementada, pero esa fase todavía necesita su semana real sin SSH y su revisión de
+> seguridad antes de poder cerrar la fase. Sigue la [hoja de ruta](ROADMAP.es.md) para ver qué viene.
 
 ---
 
@@ -118,12 +118,16 @@ Cada funcionalidad indica la versión donde está prevista. Detalle en [ROADMAP.
 | Área | MVP (0.4.0) | v1 (1.0.0) | Más adelante |
 |---|---|---|---|
 | Contenedores y stacks | Acciones, logs en directo, editor Compose, terminal del contenedor, imágenes/volúmenes/redes, adoptar existentes | Historial de revisiones y reversión, avisos de imágenes nuevas | Podman |
-| Servidor entero | Métricas, systemd, journald, actualizaciones apt, terminal del anfitrión | Cortafuegos, fail2ban, usuarios y claves SSH, cron, explorador de archivos, auditoría de bastionado | — |
+| Servidor entero | Métricas, systemd, journald, actualizaciones apt y reinicio, terminal del anfitrión (implementado; pendiente de la validación real y la revisión de seguridad) | Cortafuegos, fail2ban, usuarios y claves SSH, cron, explorador de archivos, auditoría de bastionado | — |
 | Despliegues y apps | — | Stacks desde Git, builds con Dockerfile/Nixpacks, despliegue sin cortes, dominios + SSL (Caddy), catálogo de plantillas | Entornos de prueba por pull request |
 | Monitorización y alertas | — | Historial de métricas, reglas de alerta, comprobaciones HTTP/TCP, caducidad de certificados, Telegram/ntfy/correo/Discord/webhook | Página de estado pública |
 | Copias de seguridad | — | Planes con restic, volcados coherentes de bases de datos, S3/B2/SFTP, restaurar desde el panel | Prueba de restauración mensual automática |
 | Automatización de flota | — | Acciones en bloque, procedimientos programados, sincronización GitOps | Playbooks de Ansible, creación de VPS vía API del proveedor |
-| Usuarios y seguridad | Usuario único con 2FA, PIN en dispositivos de confianza, claves de acceso, registro de auditoría | Usuarios, equipos, roles por ámbito, SSO OIDC, grabación de sesiones de terminal, claves de API con permisos | — |
+| Usuarios y seguridad | Usuario único con 2FA, PIN en dispositivos de confianza, claves de acceso, registro de auditoría y terminales grabadas | Usuarios, equipos, roles por ámbito, SSO OIDC, claves de API con permisos | — |
+
+> **Estado de la fase 3.** Las funciones del servidor entero de la columna 0.4.0 están implementadas en el
+> código. La fase no está cerrada: todavía necesita la semana real sin SSH y la revisión de seguridad. La
+> guía es [docs/es/servidor.md](docs/es/servidor.md).
 
 ## Arquitectura
 
@@ -174,7 +178,8 @@ Detalle completo: [docs/es/arquitectura.md](docs/es/arquitectura.md). Qué puede
 ## Instalación
 
 El núcleo corre en Docker en una máquina; cada servidor recibe un agente con una sola orden pegada.
-Paso a paso y con solución de problemas: [docs/es/instalacion.md](docs/es/instalacion.md).
+Paso a paso y con solución de problemas: [docs/es/instalacion.md](docs/es/instalacion.md). La pantalla
+del servidor entero está documentada en [docs/es/servidor.md](docs/es/servidor.md).
 
 En un Debian o Ubuntu recién instalado, el arranque de una línea clona el `main` actual en `/opt/talaia` y
 ejecuta el instalador (antes de la 1.0 instala `main`, no una versión etiquetada):

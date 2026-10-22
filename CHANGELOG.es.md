@@ -13,6 +13,12 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+## [0.3.20] - 2026-10-22
+
+### Añadido
+
+- Guía de la pantalla de servidor entero (`docs/es/servidor.md`): actualizaciones y reinicio, servicios, registro del sistema, terminal del host y auditoría, con límites y solución de problemas. Los documentos de seguridad, arquitectura e instalación describen lo que la fase 3 puede hacer como root, qué se registra (nunca el código TOTP, el texto buscado, las líneas del registro ni las listas de paquetes) y cómo desactivar la terminal del host con `[terminal] host = false`.
+
 ## [0.3.19] - 2026-10-22
 
 ### Añadido
@@ -340,7 +346,8 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
   `.gitattributes` y `.gitignore`.
 - Licencia WNCL-1.0 aplicada: archivo `LICENSE` y sección de créditos en los README.
 
-[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.3.19...HEAD
+[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.3.20...HEAD
+[0.3.20]: https://github.com/catlinux/Talaia/releases/tag/v0.3.20
 [0.3.19]: https://github.com/catlinux/Talaia/releases/tag/v0.3.19
 [0.3.18]: https://github.com/catlinux/Talaia/releases/tag/v0.3.18
 [0.3.17]: https://github.com/catlinux/Talaia/releases/tag/v0.3.17
