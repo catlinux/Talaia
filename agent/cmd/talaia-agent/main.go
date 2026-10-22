@@ -12,6 +12,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/catlinux/Talaia/agent/internal/apt"
 	"github.com/catlinux/Talaia/agent/internal/collect"
 	"github.com/catlinux/Talaia/agent/internal/config"
 	"github.com/catlinux/Talaia/agent/internal/enroll"
@@ -85,7 +86,8 @@ func run() error {
 		}
 	}
 
-	if err := link.Run(ctx, cfg, collect.New(), identity); err != nil {
+	checker := apt.New(apt.Options{})
+	if err := link.Run(ctx, cfg, collect.New(), identity, checker); err != nil {
 		return err
 	}
 	logger.Info("talaia-agent stopped")

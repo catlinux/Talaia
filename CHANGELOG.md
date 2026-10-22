@@ -18,6 +18,12 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.3.3] - 2026-10-22
+
+### Added
+
+- The agent reads apt without changing anything: it simulates an upgrade at start and every 6 hours, counts pending and security updates, held packages and whether a reboot is required (flag file or a newer installed kernel), sends the summary in its inventory and answers the `AptStatus` command with the full list (optionally running `apt-get update` first). Not shown in the panel yet.
+
 ## [0.3.2] - 2026-10-22
 
 ### Added
@@ -238,7 +244,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.3.2...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.3.3...HEAD
+[0.3.3]: https://github.com/catlinux/Talaia/releases/tag/v0.3.3
 [0.3.2]: https://github.com/catlinux/Talaia/releases/tag/v0.3.2
 [0.3.1]: https://github.com/catlinux/Talaia/releases/tag/v0.3.1
 [0.3.0]: https://github.com/catlinux/Talaia/releases/tag/v0.3.0

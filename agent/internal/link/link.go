@@ -20,6 +20,7 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	"github.com/catlinux/Talaia/agent/internal/apt"
 	"github.com/catlinux/Talaia/agent/internal/collect"
 	"github.com/catlinux/Talaia/agent/internal/config"
 	"github.com/catlinux/Talaia/agent/internal/enroll"
@@ -50,6 +51,8 @@ type Link struct {
 	client    agentv1connect.AgentHubClient
 	// jobs runs the typed commands the core sends.
 	jobs *jobs.Executor
+	// apt keeps the pending package updates used by the inventory and the job.
+	apt *apt.Checker
 	// terminals runs the interactive shells; its sessions end with each stream.
 	terminals *terminal.Manager
 	// stats samples the running containers; nil leaves it out.
@@ -70,20 +73,39 @@ type Link struct {
 
 // New returns a Link that reaches the core over TLS with mutual authentication,
 // using the identity of the agent.
-func New(cfg config.Config, collector collect.Collector, identity *enroll.Identity) *Link {
-	if identity == nil {
-		return NewInsecure(cfg, collector)
+func New(
+	cfg config.Config,
+	collector collect.Collector,
+	identity *enroll.Identity,
+	checkers ...*apt.Checker,
+) *Link {
+	var checker *apt.Checker
+	if len(checkers) > 0 {
+		checker = checkers[0]
 	}
-	return newLink(cfg, collector, identity, newTLSTransport(identity, coreHost(cfg.CoreURL)))
+	if identity == nil {
+		return NewInsecure(cfg, collector, checker)
+	}
+	return newLink(cfg, collector, identity, newTLSTransport(identity, coreHost(cfg.CoreURL)), checker)
 }
 
 // NewInsecure returns a Link for insecure development mode: plaintext HTTP/2
 // and no certificate.
-func NewInsecure(cfg config.Config, collector collect.Collector) *Link {
-	return newLink(cfg, collector, nil, newH2CTransport())
+func NewInsecure(cfg config.Config, collector collect.Collector, checkers ...*apt.Checker) *Link {
+	var checker *apt.Checker
+	if len(checkers) > 0 {
+		checker = checkers[0]
+	}
+	return newLink(cfg, collector, nil, newH2CTransport(), checker)
 }
 
-func newLink(cfg config.Config, collector collect.Collector, identity *enroll.Identity, transport *http.Transport) *Link {
+func newLink(
+	cfg config.Config,
+	collector collect.Collector,
+	identity *enroll.Identity,
+	transport *http.Transport,
+	checker *apt.Checker,
+) *Link {
 	httpClient := &http.Client{Transport: transport}
 	rpcTransport := connecthttp.NewTransport(httpClient, cfg.CoreURL)
 
@@ -92,7 +114,8 @@ func newLink(cfg config.Config, collector collect.Collector, identity *enroll.Id
 		collector:         collector,
 		identity:          identity,
 		client:            agentv1connect.NewAgentHubClient(connect.NewClient(rpcTransport)),
-		jobs:              newExecutor(cfg, identity),
+		jobs:              newExecutor(cfg, identity, checker),
+		apt:               checker,
 		terminals:         terminal.New(terminal.NewDockerBackend(), terminal.DefaultLimits()),
 		HeartbeatInterval: 10 * time.Second,
 		MetricsInterval:   15 * time.Second,
@@ -107,14 +130,23 @@ func newLink(cfg config.Config, collector collect.Collector, identity *enroll.Id
 }
 
 // Run connects with the default settings and blocks until ctx is cancelled.
-func Run(ctx context.Context, cfg config.Config, collector collect.Collector, identity *enroll.Identity) error {
-	return New(cfg, collector, identity).Run(ctx)
+func Run(
+	ctx context.Context,
+	cfg config.Config,
+	collector collect.Collector,
+	identity *enroll.Identity,
+	checkers ...*apt.Checker,
+) error {
+	return New(cfg, collector, identity, checkers...).Run(ctx)
 }
 
 // Run keeps the stream alive, reconnecting with backoff, until ctx is
 // cancelled. It also renews the certificate in the background.
 func (l *Link) Run(ctx context.Context) error {
 	go l.renewLoop(ctx)
+	if l.apt != nil {
+		go l.apt.Run(ctx)
+	}
 
 	backoff := l.BackoffBase
 
@@ -153,6 +185,7 @@ func (l *Link) session(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("collect inventory: %w", err)
 	}
+	applyAptSummary(inventory, l.apt)
 	if err := stream.Send(inventoryMsg(inventory)); err != nil {
 		return fmt.Errorf("send inventory: %w", err)
 	}
@@ -196,6 +229,7 @@ func (l *Link) session(ctx context.Context) error {
 			slog.Warn("collect inventory", "error", err)
 			return nil
 		}
+		applyAptSummary(current, l.apt)
 		if inventoryUnchanged(current, sentInventory) {
 			return nil
 		}
@@ -329,6 +363,29 @@ func inventoryMsg(inventory *agentv1.Inventory) *agentv1.AgentMsg {
 	return &agentv1.AgentMsg{Msg: &agentv1.AgentMsg_Inventory{Inventory: inventory}}
 }
 
+// applyAptSummary copies the last apt snapshot into the inventory message.
+func applyAptSummary(inventory *agentv1.Inventory, checker *apt.Checker) {
+	if inventory == nil || checker == nil {
+		return
+	}
+	summary := checker.Summary()
+	if summary == nil {
+		return
+	}
+	aptSummary := &agentv1.AptSummary{
+		Upgradable:     uint32(summary.Upgradable),
+		Security:       uint32(summary.Security),
+		RebootRequired: summary.RebootRequired,
+	}
+	if !summary.CheckedAt.IsZero() {
+		aptSummary.CheckedAt = timestamppb.New(summary.CheckedAt)
+	}
+	if !summary.ListsUpdatedAt.IsZero() {
+		aptSummary.ListsUpdatedAt = timestamppb.New(summary.ListsUpdatedAt)
+	}
+	inventory.Apt = aptSummary
+}
+
 // newH2CTransport speaks HTTP/2 without TLS (h2c). It is only for insecure
 // development mode.
 func newH2CTransport() *http.Transport {
@@ -394,10 +451,11 @@ func jitter(backoff time.Duration) time.Duration {
 
 // newExecutor builds the executor of a real agent: container actions, stacks,
 // Docker resources and agent updates, all on the local Docker.
-func newExecutor(cfg config.Config, identity *enroll.Identity) *jobs.Executor {
+func newExecutor(cfg config.Config, identity *enroll.Identity, checker *apt.Checker) *jobs.Executor {
 	docker := jobs.NewDockerActions()
 	return jobs.New(docker).
 		WithStacks(stacks.NewDefault().WithProjects(inventory.NewDocker())).
 		WithResources(docker).
-		WithUpdates(update.New(update.Options{CoreURL: cfg.CoreURL, Identity: identity}))
+		WithUpdates(update.New(update.Options{CoreURL: cfg.CoreURL, Identity: identity})).
+		WithApt(checker)
 }

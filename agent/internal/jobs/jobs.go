@@ -66,6 +66,8 @@ type Executor struct {
 	resources ResourceManager
 	// updates is nil until WithUpdates sets it.
 	updates Updater
+	// apt is nil until WithApt sets it.
+	apt AptStatusReader
 
 	mu       sync.Mutex
 	finished map[string]*agentv1.JobEvent
@@ -102,7 +104,8 @@ func (e *Executor) Handle(ctx context.Context, msg *agentv1.CoreMsg, emit func(*
 	write, stackAction, read, adopt := msg.GetStackWrite(), msg.GetStackAction(), msg.GetStackRead(), msg.GetStackAdopt()
 	list, remove := msg.GetListResources(), msg.GetRemoveResources()
 	updateCommand := msg.GetAgentUpdate()
-	if action == nil && logs == nil && write == nil && stackAction == nil && read == nil && adopt == nil && list == nil && remove == nil && updateCommand == nil {
+	aptStatus := msg.GetAptStatus()
+	if action == nil && logs == nil && write == nil && stackAction == nil && read == nil && adopt == nil && list == nil && remove == nil && updateCommand == nil && aptStatus == nil {
 		return false
 	}
 
@@ -185,6 +188,24 @@ func (e *Executor) Handle(ctx context.Context, msg *agentv1.CoreMsg, emit func(*
 				return "", errNoUpdates
 			}
 			return e.updates.Update(ctx, updateCommand.GetVersion(), updateCommand.GetSha256())
+		})
+	case aptStatus != nil:
+		timeout := aptStatusTimeout
+		if aptStatus.GetRefresh() {
+			timeout = aptStatusRefreshTimeout
+		}
+		go e.execute(ctx, jobID, "apt status", timeout, emit, func(ctx context.Context) (string, error) {
+			if e.apt == nil {
+				return "", errNoApt
+			}
+			output, err := e.apt.StatusJSON(ctx, aptStatus.GetRefresh())
+			if err != nil {
+				return "", err
+			}
+			if len(output) > maxAptStatusBytes {
+				return "", errors.New("the apt status is too large")
+			}
+			return output, nil
 		})
 	default:
 		go e.execute(ctx, jobID, "stack read", jobTimeout, emit, func(ctx context.Context) (string, error) {

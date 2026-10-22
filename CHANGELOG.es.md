@@ -13,6 +13,12 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+## [0.3.3] - 2026-10-22
+
+### Añadido
+
+- El agente lee apt sin cambiar nada: simula una actualización al arrancar y cada 6 horas, cuenta las actualizaciones pendientes y de seguridad, los paquetes retenidos y si hace falta reiniciar (archivo marcador o un kernel instalado más nuevo), manda el resumen en su inventario y responde a la orden `AptStatus` con la lista completa (pudiendo ejecutar antes `apt-get update`). Todavía no se ve en el panel.
+
 ## [0.3.2] - 2026-10-22
 
 ### Añadido
@@ -238,7 +244,8 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
   `.gitattributes` y `.gitignore`.
 - Licencia WNCL-1.0 aplicada: archivo `LICENSE` y sección de créditos en los README.
 
-[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.3.2...HEAD
+[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.3.3...HEAD
+[0.3.3]: https://github.com/catlinux/Talaia/releases/tag/v0.3.3
 [0.3.2]: https://github.com/catlinux/Talaia/releases/tag/v0.3.2
 [0.3.1]: https://github.com/catlinux/Talaia/releases/tag/v0.3.1
 [0.3.0]: https://github.com/catlinux/Talaia/releases/tag/v0.3.0
