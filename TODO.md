@@ -83,6 +83,17 @@ of the current phase and the next one.
 - [x] An adopted stack whose directory has disappeared stays as a broken entry: detect it and offer **Stop managing** (or clean the record) in the panel; found in the real test of 2026-10-22
 - [x] Close the phase against its criterion; closing it raises the version to 0.3.0 (maintainer policy, 2026-10-21)
 
+## Phase 3 · Whole server (0.4.0, see `.agents/plans/fase3/fase3.PLAN.md`)
+
+- [x] Contract for apt, systemd, journald, reboot and the host terminal
+- [ ] apt, read only: pending and security updates, held packages, "reboot required" (agent, core, Updates tab, fleet badges)
+- [ ] apt upgrade (all or security only) that survives an agent restart, and reboot with the server name typed
+- [ ] systemd: enabled state, start/stop/restart/reload/enable/disable with confirmation, Services tab
+- [ ] journald: filters (unit, priority, boot, time, text) and follow, Logs tab
+- [ ] Host terminal: root shell with a fresh TOTP code, recording, red banner
+- [ ] Server screen with tabs and overview (mockup 2) and audit log screen
+- [ ] Docs EN/ES, security review (Opus), a week without SSH, close at 0.4.0
+
 ## Operations block (decided 2026-10-20, before closing phase 2)
 
 **Priority now (maintainer, 2026-10-20):** the updates from the panel and the external access, to keep updating and managing from outside the home. Design and steps: [`.agents/plans/operacion/operacion.PLAN.md`](.agents/plans/operacion/operacion.PLAN.md).

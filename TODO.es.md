@@ -83,6 +83,17 @@ tareas concretas de la fase actual y de la siguiente.
 - [x] Un stack adoptado cuya carpeta ha desaparecido se queda como una entrada rota: detectarlo y ofrecer **Dejar de gestionar** (o limpiar el registro) en el panel; encontrado en la prueba real del 22-10-2026
 - [x] Cerrar la fase contra su criterio; al cerrarla la versión pasa a 0.3.0 (política del mantenedor, 2026-10-21)
 
+## Fase 3 · Servidor entero (0.4.0, ver `.agents/plans/fase3/fase3.PLAN.md`)
+
+- [x] Contrato para apt, systemd, journald, reinicio y terminal del host
+- [ ] apt, solo lectura: actualizaciones pendientes y de seguridad, paquetes retenidos, «reinicio necesario» (agente, core, pestaña Actualizaciones, insignias en Flota)
+- [ ] Actualizar con apt (todo o solo seguridad) de forma que sobreviva a un reinicio del agente, y reiniciar escribiendo el nombre del servidor
+- [ ] systemd: estado de activación, iniciar/parar/reiniciar/recargar/activar/desactivar con confirmación, pestaña Servicios
+- [ ] journald: filtros (unidad, prioridad, arranque, fechas, texto) y seguimiento, pestaña Registros
+- [ ] Terminal del host: shell de root con un código TOTP nuevo, grabación y franja roja
+- [ ] Pantalla de servidor con pestañas y resumen (maqueta 2) y pantalla de auditoría
+- [ ] Documentación EN/ES, revisión de seguridad (Opus), una semana sin SSH y cierre en 0.4.0
+
 ## Bloque de operación (decidido el 2026-10-20, antes de cerrar la fase 2)
 
 **Prioridad ahora (mantenedor, 2026-10-20):** las actualizaciones desde el panel y el acceso externo, para seguir actualizando y gestionando desde fuera de casa. Diseño y pasos: [`.agents/plans/operacion/operacion.PLAN.md`](.agents/plans/operacion/operacion.PLAN.md).

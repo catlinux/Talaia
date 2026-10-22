@@ -34,6 +34,11 @@ message CoreMsg {
     TerminalResize terminal_resize = 20;
     TerminalClose terminal_close = 21;
     AgentUpdate agent_update = 22;
+    ServiceAction service_action = 23;
+    ReadJournal read_journal = 24;
+    AptStatus apt_status = 25;
+    AptUpgrade apt_upgrade = 26;
+    HostReboot host_reboot = 27;
   }
 }
 
@@ -164,6 +169,80 @@ message AgentUpdate {
   string sha256 = 2;
 }
 
+// ServiceAction acts on one systemd service unit. The agent runs systemctl with
+// the unit as a separate argument and returns the new state as the JSON output
+// of the job. It refuses to stop, restart or disable talaia-agent.service.
+message ServiceAction {
+  // Unit name ending in .service, as reported in Inventory.services.
+  string unit = 1;
+  ServiceActionType action = 2;
+}
+
+enum ServiceActionType {
+  SERVICE_ACTION_TYPE_UNSPECIFIED = 0;
+  SERVICE_ACTION_TYPE_START = 1;
+  SERVICE_ACTION_TYPE_STOP = 2;
+  SERVICE_ACTION_TYPE_RESTART = 3;
+  SERVICE_ACTION_TYPE_RELOAD = 4;
+  SERVICE_ACTION_TYPE_ENABLE = 5;
+  SERVICE_ACTION_TYPE_DISABLE = 6;
+}
+
+// ReadJournal reads journald entries with filters. The entries and the cursor to
+// continue from come back as the JSON output of the job.
+message ReadJournal {
+  // A service unit from Inventory.services; empty reads every unit.
+  string unit = 1;
+  // Highest priority level shown, 0 (emerg) to 7 (debug); unset shows all.
+  optional uint32 max_priority = 2;
+  // RFC 3339 timestamps; empty means no limit.
+  string since = 3;
+  string until = 4;
+  // Literal text, case-insensitive, at most 200 characters; empty means no search.
+  string search = 5;
+  JournalBoot boot = 6;
+  // How many entries from the end; the agent clamps it to 1..1000 (200 if 0).
+  uint32 tail = 7;
+  // Cursor returned by a previous read: only newer entries come back.
+  string after_cursor = 8;
+}
+
+enum JournalBoot {
+  // Every boot the journal keeps.
+  JOURNAL_BOOT_UNSPECIFIED = 0;
+  JOURNAL_BOOT_CURRENT = 1;
+  JOURNAL_BOOT_PREVIOUS = 2;
+}
+
+// AptStatus lists the pending updates, held packages and whether a reboot is
+// required, as the JSON output of the job.
+message AptStatus {
+  // Run apt-get update first to download fresh package lists.
+  bool refresh = 1;
+}
+
+// AptUpgrade upgrades packages without removing any. The agent works out the
+// package list itself; the core never sends package names.
+message AptUpgrade {
+  AptUpgradeMode mode = 1;
+}
+
+enum AptUpgradeMode {
+  APT_UPGRADE_MODE_UNSPECIFIED = 0;
+  // Only the packages coming from a security archive.
+  APT_UPGRADE_MODE_SECURITY = 1;
+  // apt-get upgrade --with-new-pkgs.
+  APT_UPGRADE_MODE_ALL = 2;
+}
+
+// HostReboot reboots the server a few seconds after the job succeeds. There is
+// no power-off: Talaia could not turn the server on again.
+message HostReboot {
+  // Must equal the hostname of the agent, so a command can never reboot the
+  // wrong machine.
+  string hostname = 1;
+}
+
 // JobEvent reports how a command (identified by CoreMsg.job_id) is going.
 message JobEvent {
   string job_id = 1;
@@ -216,6 +295,23 @@ message Inventory {
   // The adopted stacks whose compose file or directory no longer exists on the
   // host. A subset of adopted_stacks; the panel only lets them be forgotten.
   repeated string broken_stacks = 16;
+  // Pending package updates; unset when the host has no apt.
+  AptSummary apt = 17;
+  // True when the agent accepts terminal sessions on the host itself
+  // ([terminal] host in agent.toml). Older agents leave it false.
+  bool host_terminal = 18;
+}
+
+// AptSummary is what the panel shows without asking: the agent simulates an
+// upgrade at start, every 6 hours and after each apt job. It never runs
+// apt-get update by itself.
+message AptSummary {
+  uint32 upgradable = 1;      // packages an upgrade would install or change
+  uint32 security = 2;        // of them, the ones coming from a security archive
+  bool reboot_required = 3;
+  google.protobuf.Timestamp checked_at = 4;
+  // When the package lists were last downloaded (apt-get update); unset if unknown.
+  google.protobuf.Timestamp lists_updated_at = 5;
 }
 
 message Container {
@@ -242,6 +338,7 @@ message SystemdUnit {
   string load_state = 3;   // loaded | not-found | masked ...
   string active_state = 4; // active | inactive | failed ...
   string sub_state = 5;    // running | exited | dead | failed ...
+  string unit_file_state = 6; // enabled | disabled | static | masked ...; empty if unknown
 }
 
 // ContainerStats is the resource use of the running containers at one instant.
@@ -270,6 +367,16 @@ message TerminalOpen {
   TerminalShell shell = 3;
   uint32 cols = 4;
   uint32 rows = 5;
+  // Where the shell runs. HOST opens a root shell on the server itself and
+  // requires container to be empty.
+  TerminalTarget target = 6;
+}
+
+enum TerminalTarget {
+  // A container, as before this field existed.
+  TERMINAL_TARGET_UNSPECIFIED = 0;
+  TERMINAL_TARGET_CONTAINER = 1;
+  TERMINAL_TARGET_HOST = 2;
 }
 
 enum TerminalShell {

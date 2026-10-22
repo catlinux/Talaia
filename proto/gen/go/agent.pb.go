@@ -202,6 +202,168 @@ func (ResourceKind) EnumDescriptor() ([]byte, []int) {
 	return file_agent_proto_rawDescGZIP(), []int{2}
 }
 
+type ServiceActionType int32
+
+const (
+	ServiceActionType_SERVICE_ACTION_TYPE_UNSPECIFIED ServiceActionType = 0
+	ServiceActionType_SERVICE_ACTION_TYPE_START       ServiceActionType = 1
+	ServiceActionType_SERVICE_ACTION_TYPE_STOP        ServiceActionType = 2
+	ServiceActionType_SERVICE_ACTION_TYPE_RESTART     ServiceActionType = 3
+	ServiceActionType_SERVICE_ACTION_TYPE_RELOAD      ServiceActionType = 4
+	ServiceActionType_SERVICE_ACTION_TYPE_ENABLE      ServiceActionType = 5
+	ServiceActionType_SERVICE_ACTION_TYPE_DISABLE     ServiceActionType = 6
+)
+
+// Enum value maps for ServiceActionType.
+var (
+	ServiceActionType_name = map[int32]string{
+		0: "SERVICE_ACTION_TYPE_UNSPECIFIED",
+		1: "SERVICE_ACTION_TYPE_START",
+		2: "SERVICE_ACTION_TYPE_STOP",
+		3: "SERVICE_ACTION_TYPE_RESTART",
+		4: "SERVICE_ACTION_TYPE_RELOAD",
+		5: "SERVICE_ACTION_TYPE_ENABLE",
+		6: "SERVICE_ACTION_TYPE_DISABLE",
+	}
+	ServiceActionType_value = map[string]int32{
+		"SERVICE_ACTION_TYPE_UNSPECIFIED": 0,
+		"SERVICE_ACTION_TYPE_START":       1,
+		"SERVICE_ACTION_TYPE_STOP":        2,
+		"SERVICE_ACTION_TYPE_RESTART":     3,
+		"SERVICE_ACTION_TYPE_RELOAD":      4,
+		"SERVICE_ACTION_TYPE_ENABLE":      5,
+		"SERVICE_ACTION_TYPE_DISABLE":     6,
+	}
+)
+
+func (x ServiceActionType) Enum() *ServiceActionType {
+	p := new(ServiceActionType)
+	*p = x
+	return p
+}
+
+func (x ServiceActionType) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (ServiceActionType) Descriptor() protoreflect.EnumDescriptor {
+	return file_agent_proto_enumTypes[3].Descriptor()
+}
+
+func (ServiceActionType) Type() protoreflect.EnumType {
+	return &file_agent_proto_enumTypes[3]
+}
+
+func (x ServiceActionType) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use ServiceActionType.Descriptor instead.
+func (ServiceActionType) EnumDescriptor() ([]byte, []int) {
+	return file_agent_proto_rawDescGZIP(), []int{3}
+}
+
+type JournalBoot int32
+
+const (
+	// Every boot the journal keeps.
+	JournalBoot_JOURNAL_BOOT_UNSPECIFIED JournalBoot = 0
+	JournalBoot_JOURNAL_BOOT_CURRENT     JournalBoot = 1
+	JournalBoot_JOURNAL_BOOT_PREVIOUS    JournalBoot = 2
+)
+
+// Enum value maps for JournalBoot.
+var (
+	JournalBoot_name = map[int32]string{
+		0: "JOURNAL_BOOT_UNSPECIFIED",
+		1: "JOURNAL_BOOT_CURRENT",
+		2: "JOURNAL_BOOT_PREVIOUS",
+	}
+	JournalBoot_value = map[string]int32{
+		"JOURNAL_BOOT_UNSPECIFIED": 0,
+		"JOURNAL_BOOT_CURRENT":     1,
+		"JOURNAL_BOOT_PREVIOUS":    2,
+	}
+)
+
+func (x JournalBoot) Enum() *JournalBoot {
+	p := new(JournalBoot)
+	*p = x
+	return p
+}
+
+func (x JournalBoot) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (JournalBoot) Descriptor() protoreflect.EnumDescriptor {
+	return file_agent_proto_enumTypes[4].Descriptor()
+}
+
+func (JournalBoot) Type() protoreflect.EnumType {
+	return &file_agent_proto_enumTypes[4]
+}
+
+func (x JournalBoot) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use JournalBoot.Descriptor instead.
+func (JournalBoot) EnumDescriptor() ([]byte, []int) {
+	return file_agent_proto_rawDescGZIP(), []int{4}
+}
+
+type AptUpgradeMode int32
+
+const (
+	AptUpgradeMode_APT_UPGRADE_MODE_UNSPECIFIED AptUpgradeMode = 0
+	// Only the packages coming from a security archive.
+	AptUpgradeMode_APT_UPGRADE_MODE_SECURITY AptUpgradeMode = 1
+	// apt-get upgrade --with-new-pkgs.
+	AptUpgradeMode_APT_UPGRADE_MODE_ALL AptUpgradeMode = 2
+)
+
+// Enum value maps for AptUpgradeMode.
+var (
+	AptUpgradeMode_name = map[int32]string{
+		0: "APT_UPGRADE_MODE_UNSPECIFIED",
+		1: "APT_UPGRADE_MODE_SECURITY",
+		2: "APT_UPGRADE_MODE_ALL",
+	}
+	AptUpgradeMode_value = map[string]int32{
+		"APT_UPGRADE_MODE_UNSPECIFIED": 0,
+		"APT_UPGRADE_MODE_SECURITY":    1,
+		"APT_UPGRADE_MODE_ALL":         2,
+	}
+)
+
+func (x AptUpgradeMode) Enum() *AptUpgradeMode {
+	p := new(AptUpgradeMode)
+	*p = x
+	return p
+}
+
+func (x AptUpgradeMode) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (AptUpgradeMode) Descriptor() protoreflect.EnumDescriptor {
+	return file_agent_proto_enumTypes[5].Descriptor()
+}
+
+func (AptUpgradeMode) Type() protoreflect.EnumType {
+	return &file_agent_proto_enumTypes[5]
+}
+
+func (x AptUpgradeMode) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use AptUpgradeMode.Descriptor instead.
+func (AptUpgradeMode) EnumDescriptor() ([]byte, []int) {
+	return file_agent_proto_rawDescGZIP(), []int{5}
+}
+
 type JobState int32
 
 const (
@@ -238,11 +400,11 @@ func (x JobState) String() string {
 }
 
 func (JobState) Descriptor() protoreflect.EnumDescriptor {
-	return file_agent_proto_enumTypes[3].Descriptor()
+	return file_agent_proto_enumTypes[6].Descriptor()
 }
 
 func (JobState) Type() protoreflect.EnumType {
-	return &file_agent_proto_enumTypes[3]
+	return &file_agent_proto_enumTypes[6]
 }
 
 func (x JobState) Number() protoreflect.EnumNumber {
@@ -251,7 +413,57 @@ func (x JobState) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use JobState.Descriptor instead.
 func (JobState) EnumDescriptor() ([]byte, []int) {
-	return file_agent_proto_rawDescGZIP(), []int{3}
+	return file_agent_proto_rawDescGZIP(), []int{6}
+}
+
+type TerminalTarget int32
+
+const (
+	// A container, as before this field existed.
+	TerminalTarget_TERMINAL_TARGET_UNSPECIFIED TerminalTarget = 0
+	TerminalTarget_TERMINAL_TARGET_CONTAINER   TerminalTarget = 1
+	TerminalTarget_TERMINAL_TARGET_HOST        TerminalTarget = 2
+)
+
+// Enum value maps for TerminalTarget.
+var (
+	TerminalTarget_name = map[int32]string{
+		0: "TERMINAL_TARGET_UNSPECIFIED",
+		1: "TERMINAL_TARGET_CONTAINER",
+		2: "TERMINAL_TARGET_HOST",
+	}
+	TerminalTarget_value = map[string]int32{
+		"TERMINAL_TARGET_UNSPECIFIED": 0,
+		"TERMINAL_TARGET_CONTAINER":   1,
+		"TERMINAL_TARGET_HOST":        2,
+	}
+)
+
+func (x TerminalTarget) Enum() *TerminalTarget {
+	p := new(TerminalTarget)
+	*p = x
+	return p
+}
+
+func (x TerminalTarget) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (TerminalTarget) Descriptor() protoreflect.EnumDescriptor {
+	return file_agent_proto_enumTypes[7].Descriptor()
+}
+
+func (TerminalTarget) Type() protoreflect.EnumType {
+	return &file_agent_proto_enumTypes[7]
+}
+
+func (x TerminalTarget) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use TerminalTarget.Descriptor instead.
+func (TerminalTarget) EnumDescriptor() ([]byte, []int) {
+	return file_agent_proto_rawDescGZIP(), []int{7}
 }
 
 type TerminalShell int32
@@ -287,11 +499,11 @@ func (x TerminalShell) String() string {
 }
 
 func (TerminalShell) Descriptor() protoreflect.EnumDescriptor {
-	return file_agent_proto_enumTypes[4].Descriptor()
+	return file_agent_proto_enumTypes[8].Descriptor()
 }
 
 func (TerminalShell) Type() protoreflect.EnumType {
-	return &file_agent_proto_enumTypes[4]
+	return &file_agent_proto_enumTypes[8]
 }
 
 func (x TerminalShell) Number() protoreflect.EnumNumber {
@@ -300,7 +512,7 @@ func (x TerminalShell) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use TerminalShell.Descriptor instead.
 func (TerminalShell) EnumDescriptor() ([]byte, []int) {
-	return file_agent_proto_rawDescGZIP(), []int{4}
+	return file_agent_proto_rawDescGZIP(), []int{8}
 }
 
 // core -> agent
@@ -324,6 +536,11 @@ type CoreMsg struct {
 	//	*CoreMsg_TerminalResize
 	//	*CoreMsg_TerminalClose
 	//	*CoreMsg_AgentUpdate
+	//	*CoreMsg_ServiceAction
+	//	*CoreMsg_ReadJournal
+	//	*CoreMsg_AptStatus
+	//	*CoreMsg_AptUpgrade
+	//	*CoreMsg_HostReboot
 	Cmd           isCoreMsg_Cmd `protobuf_oneof:"cmd"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -499,6 +716,51 @@ func (x *CoreMsg) GetAgentUpdate() *AgentUpdate {
 	return nil
 }
 
+func (x *CoreMsg) GetServiceAction() *ServiceAction {
+	if x != nil {
+		if x, ok := x.Cmd.(*CoreMsg_ServiceAction); ok {
+			return x.ServiceAction
+		}
+	}
+	return nil
+}
+
+func (x *CoreMsg) GetReadJournal() *ReadJournal {
+	if x != nil {
+		if x, ok := x.Cmd.(*CoreMsg_ReadJournal); ok {
+			return x.ReadJournal
+		}
+	}
+	return nil
+}
+
+func (x *CoreMsg) GetAptStatus() *AptStatus {
+	if x != nil {
+		if x, ok := x.Cmd.(*CoreMsg_AptStatus); ok {
+			return x.AptStatus
+		}
+	}
+	return nil
+}
+
+func (x *CoreMsg) GetAptUpgrade() *AptUpgrade {
+	if x != nil {
+		if x, ok := x.Cmd.(*CoreMsg_AptUpgrade); ok {
+			return x.AptUpgrade
+		}
+	}
+	return nil
+}
+
+func (x *CoreMsg) GetHostReboot() *HostReboot {
+	if x != nil {
+		if x, ok := x.Cmd.(*CoreMsg_HostReboot); ok {
+			return x.HostReboot
+		}
+	}
+	return nil
+}
+
 type isCoreMsg_Cmd interface {
 	isCoreMsg_Cmd()
 }
@@ -563,6 +825,26 @@ type CoreMsg_AgentUpdate struct {
 	AgentUpdate *AgentUpdate `protobuf:"bytes,22,opt,name=agent_update,json=agentUpdate,proto3,oneof"`
 }
 
+type CoreMsg_ServiceAction struct {
+	ServiceAction *ServiceAction `protobuf:"bytes,23,opt,name=service_action,json=serviceAction,proto3,oneof"`
+}
+
+type CoreMsg_ReadJournal struct {
+	ReadJournal *ReadJournal `protobuf:"bytes,24,opt,name=read_journal,json=readJournal,proto3,oneof"`
+}
+
+type CoreMsg_AptStatus struct {
+	AptStatus *AptStatus `protobuf:"bytes,25,opt,name=apt_status,json=aptStatus,proto3,oneof"`
+}
+
+type CoreMsg_AptUpgrade struct {
+	AptUpgrade *AptUpgrade `protobuf:"bytes,26,opt,name=apt_upgrade,json=aptUpgrade,proto3,oneof"`
+}
+
+type CoreMsg_HostReboot struct {
+	HostReboot *HostReboot `protobuf:"bytes,27,opt,name=host_reboot,json=hostReboot,proto3,oneof"`
+}
+
 func (*CoreMsg_HeartbeatAck) isCoreMsg_Cmd() {}
 
 func (*CoreMsg_ContainerAction) isCoreMsg_Cmd() {}
@@ -590,6 +872,16 @@ func (*CoreMsg_TerminalResize) isCoreMsg_Cmd() {}
 func (*CoreMsg_TerminalClose) isCoreMsg_Cmd() {}
 
 func (*CoreMsg_AgentUpdate) isCoreMsg_Cmd() {}
+
+func (*CoreMsg_ServiceAction) isCoreMsg_Cmd() {}
+
+func (*CoreMsg_ReadJournal) isCoreMsg_Cmd() {}
+
+func (*CoreMsg_AptStatus) isCoreMsg_Cmd() {}
+
+func (*CoreMsg_AptUpgrade) isCoreMsg_Cmd() {}
+
+func (*CoreMsg_HostReboot) isCoreMsg_Cmd() {}
 
 // agent -> core
 type AgentMsg struct {
@@ -1312,6 +1604,311 @@ func (x *AgentUpdate) GetSha256() string {
 	return ""
 }
 
+// ServiceAction acts on one systemd service unit. The agent runs systemctl with
+// the unit as a separate argument and returns the new state as the JSON output
+// of the job. It refuses to stop, restart or disable talaia-agent.service.
+type ServiceAction struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Unit name ending in .service, as reported in Inventory.services.
+	Unit          string            `protobuf:"bytes,1,opt,name=unit,proto3" json:"unit,omitempty"`
+	Action        ServiceActionType `protobuf:"varint,2,opt,name=action,proto3,enum=talaia.agent.v1.ServiceActionType" json:"action,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ServiceAction) Reset() {
+	*x = ServiceAction{}
+	mi := &file_agent_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ServiceAction) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ServiceAction) ProtoMessage() {}
+
+func (x *ServiceAction) ProtoReflect() protoreflect.Message {
+	mi := &file_agent_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ServiceAction.ProtoReflect.Descriptor instead.
+func (*ServiceAction) Descriptor() ([]byte, []int) {
+	return file_agent_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *ServiceAction) GetUnit() string {
+	if x != nil {
+		return x.Unit
+	}
+	return ""
+}
+
+func (x *ServiceAction) GetAction() ServiceActionType {
+	if x != nil {
+		return x.Action
+	}
+	return ServiceActionType_SERVICE_ACTION_TYPE_UNSPECIFIED
+}
+
+// ReadJournal reads journald entries with filters. The entries and the cursor to
+// continue from come back as the JSON output of the job.
+type ReadJournal struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// A service unit from Inventory.services; empty reads every unit.
+	Unit string `protobuf:"bytes,1,opt,name=unit,proto3" json:"unit,omitempty"`
+	// Highest priority level shown, 0 (emerg) to 7 (debug); unset shows all.
+	MaxPriority *uint32 `protobuf:"varint,2,opt,name=max_priority,json=maxPriority,proto3,oneof" json:"max_priority,omitempty"`
+	// RFC 3339 timestamps; empty means no limit.
+	Since string `protobuf:"bytes,3,opt,name=since,proto3" json:"since,omitempty"`
+	Until string `protobuf:"bytes,4,opt,name=until,proto3" json:"until,omitempty"`
+	// Literal text, case-insensitive, at most 200 characters; empty means no search.
+	Search string      `protobuf:"bytes,5,opt,name=search,proto3" json:"search,omitempty"`
+	Boot   JournalBoot `protobuf:"varint,6,opt,name=boot,proto3,enum=talaia.agent.v1.JournalBoot" json:"boot,omitempty"`
+	// How many entries from the end; the agent clamps it to 1..1000 (200 if 0).
+	Tail uint32 `protobuf:"varint,7,opt,name=tail,proto3" json:"tail,omitempty"`
+	// Cursor returned by a previous read: only newer entries come back.
+	AfterCursor   string `protobuf:"bytes,8,opt,name=after_cursor,json=afterCursor,proto3" json:"after_cursor,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ReadJournal) Reset() {
+	*x = ReadJournal{}
+	mi := &file_agent_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ReadJournal) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ReadJournal) ProtoMessage() {}
+
+func (x *ReadJournal) ProtoReflect() protoreflect.Message {
+	mi := &file_agent_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ReadJournal.ProtoReflect.Descriptor instead.
+func (*ReadJournal) Descriptor() ([]byte, []int) {
+	return file_agent_proto_rawDescGZIP(), []int{13}
+}
+
+func (x *ReadJournal) GetUnit() string {
+	if x != nil {
+		return x.Unit
+	}
+	return ""
+}
+
+func (x *ReadJournal) GetMaxPriority() uint32 {
+	if x != nil && x.MaxPriority != nil {
+		return *x.MaxPriority
+	}
+	return 0
+}
+
+func (x *ReadJournal) GetSince() string {
+	if x != nil {
+		return x.Since
+	}
+	return ""
+}
+
+func (x *ReadJournal) GetUntil() string {
+	if x != nil {
+		return x.Until
+	}
+	return ""
+}
+
+func (x *ReadJournal) GetSearch() string {
+	if x != nil {
+		return x.Search
+	}
+	return ""
+}
+
+func (x *ReadJournal) GetBoot() JournalBoot {
+	if x != nil {
+		return x.Boot
+	}
+	return JournalBoot_JOURNAL_BOOT_UNSPECIFIED
+}
+
+func (x *ReadJournal) GetTail() uint32 {
+	if x != nil {
+		return x.Tail
+	}
+	return 0
+}
+
+func (x *ReadJournal) GetAfterCursor() string {
+	if x != nil {
+		return x.AfterCursor
+	}
+	return ""
+}
+
+// AptStatus lists the pending updates, held packages and whether a reboot is
+// required, as the JSON output of the job.
+type AptStatus struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Run apt-get update first to download fresh package lists.
+	Refresh       bool `protobuf:"varint,1,opt,name=refresh,proto3" json:"refresh,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AptStatus) Reset() {
+	*x = AptStatus{}
+	mi := &file_agent_proto_msgTypes[14]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AptStatus) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AptStatus) ProtoMessage() {}
+
+func (x *AptStatus) ProtoReflect() protoreflect.Message {
+	mi := &file_agent_proto_msgTypes[14]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AptStatus.ProtoReflect.Descriptor instead.
+func (*AptStatus) Descriptor() ([]byte, []int) {
+	return file_agent_proto_rawDescGZIP(), []int{14}
+}
+
+func (x *AptStatus) GetRefresh() bool {
+	if x != nil {
+		return x.Refresh
+	}
+	return false
+}
+
+// AptUpgrade upgrades packages without removing any. The agent works out the
+// package list itself; the core never sends package names.
+type AptUpgrade struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Mode          AptUpgradeMode         `protobuf:"varint,1,opt,name=mode,proto3,enum=talaia.agent.v1.AptUpgradeMode" json:"mode,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AptUpgrade) Reset() {
+	*x = AptUpgrade{}
+	mi := &file_agent_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AptUpgrade) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AptUpgrade) ProtoMessage() {}
+
+func (x *AptUpgrade) ProtoReflect() protoreflect.Message {
+	mi := &file_agent_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AptUpgrade.ProtoReflect.Descriptor instead.
+func (*AptUpgrade) Descriptor() ([]byte, []int) {
+	return file_agent_proto_rawDescGZIP(), []int{15}
+}
+
+func (x *AptUpgrade) GetMode() AptUpgradeMode {
+	if x != nil {
+		return x.Mode
+	}
+	return AptUpgradeMode_APT_UPGRADE_MODE_UNSPECIFIED
+}
+
+// HostReboot reboots the server a few seconds after the job succeeds. There is
+// no power-off: Talaia could not turn the server on again.
+type HostReboot struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Must equal the hostname of the agent, so a command can never reboot the
+	// wrong machine.
+	Hostname      string `protobuf:"bytes,1,opt,name=hostname,proto3" json:"hostname,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *HostReboot) Reset() {
+	*x = HostReboot{}
+	mi := &file_agent_proto_msgTypes[16]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *HostReboot) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*HostReboot) ProtoMessage() {}
+
+func (x *HostReboot) ProtoReflect() protoreflect.Message {
+	mi := &file_agent_proto_msgTypes[16]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use HostReboot.ProtoReflect.Descriptor instead.
+func (*HostReboot) Descriptor() ([]byte, []int) {
+	return file_agent_proto_rawDescGZIP(), []int{16}
+}
+
+func (x *HostReboot) GetHostname() string {
+	if x != nil {
+		return x.Hostname
+	}
+	return ""
+}
+
 // JobEvent reports how a command (identified by CoreMsg.job_id) is going.
 type JobEvent struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -1328,7 +1925,7 @@ type JobEvent struct {
 
 func (x *JobEvent) Reset() {
 	*x = JobEvent{}
-	mi := &file_agent_proto_msgTypes[12]
+	mi := &file_agent_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1340,7 +1937,7 @@ func (x *JobEvent) String() string {
 func (*JobEvent) ProtoMessage() {}
 
 func (x *JobEvent) ProtoReflect() protoreflect.Message {
-	mi := &file_agent_proto_msgTypes[12]
+	mi := &file_agent_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1353,7 +1950,7 @@ func (x *JobEvent) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use JobEvent.ProtoReflect.Descriptor instead.
 func (*JobEvent) Descriptor() ([]byte, []int) {
-	return file_agent_proto_rawDescGZIP(), []int{12}
+	return file_agent_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *JobEvent) GetJobId() string {
@@ -1402,7 +1999,7 @@ type Heartbeat struct {
 
 func (x *Heartbeat) Reset() {
 	*x = Heartbeat{}
-	mi := &file_agent_proto_msgTypes[13]
+	mi := &file_agent_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1414,7 +2011,7 @@ func (x *Heartbeat) String() string {
 func (*Heartbeat) ProtoMessage() {}
 
 func (x *Heartbeat) ProtoReflect() protoreflect.Message {
-	mi := &file_agent_proto_msgTypes[13]
+	mi := &file_agent_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1427,7 +2024,7 @@ func (x *Heartbeat) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Heartbeat.ProtoReflect.Descriptor instead.
 func (*Heartbeat) Descriptor() ([]byte, []int) {
-	return file_agent_proto_rawDescGZIP(), []int{13}
+	return file_agent_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *Heartbeat) GetSeq() uint64 {
@@ -1453,7 +2050,7 @@ type HeartbeatAck struct {
 
 func (x *HeartbeatAck) Reset() {
 	*x = HeartbeatAck{}
-	mi := &file_agent_proto_msgTypes[14]
+	mi := &file_agent_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1465,7 +2062,7 @@ func (x *HeartbeatAck) String() string {
 func (*HeartbeatAck) ProtoMessage() {}
 
 func (x *HeartbeatAck) ProtoReflect() protoreflect.Message {
-	mi := &file_agent_proto_msgTypes[14]
+	mi := &file_agent_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1478,7 +2075,7 @@ func (x *HeartbeatAck) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use HeartbeatAck.ProtoReflect.Descriptor instead.
 func (*HeartbeatAck) Descriptor() ([]byte, []int) {
-	return file_agent_proto_rawDescGZIP(), []int{14}
+	return file_agent_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *HeartbeatAck) GetSeq() uint64 {
@@ -1512,14 +2109,19 @@ type Inventory struct {
 	AdoptedStacks []string `protobuf:"bytes,15,rep,name=adopted_stacks,json=adoptedStacks,proto3" json:"adopted_stacks,omitempty"`
 	// The adopted stacks whose compose file or directory no longer exists on the
 	// host. A subset of adopted_stacks; the panel only lets them be forgotten.
-	BrokenStacks  []string `protobuf:"bytes,16,rep,name=broken_stacks,json=brokenStacks,proto3" json:"broken_stacks,omitempty"`
+	BrokenStacks []string `protobuf:"bytes,16,rep,name=broken_stacks,json=brokenStacks,proto3" json:"broken_stacks,omitempty"`
+	// Pending package updates; unset when the host has no apt.
+	Apt *AptSummary `protobuf:"bytes,17,opt,name=apt,proto3" json:"apt,omitempty"`
+	// True when the agent accepts terminal sessions on the host itself
+	// ([terminal] host in agent.toml). Older agents leave it false.
+	HostTerminal  bool `protobuf:"varint,18,opt,name=host_terminal,json=hostTerminal,proto3" json:"host_terminal,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *Inventory) Reset() {
 	*x = Inventory{}
-	mi := &file_agent_proto_msgTypes[15]
+	mi := &file_agent_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1531,7 +2133,7 @@ func (x *Inventory) String() string {
 func (*Inventory) ProtoMessage() {}
 
 func (x *Inventory) ProtoReflect() protoreflect.Message {
-	mi := &file_agent_proto_msgTypes[15]
+	mi := &file_agent_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1544,7 +2146,7 @@ func (x *Inventory) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Inventory.ProtoReflect.Descriptor instead.
 func (*Inventory) Descriptor() ([]byte, []int) {
-	return file_agent_proto_rawDescGZIP(), []int{15}
+	return file_agent_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *Inventory) GetHostname() string {
@@ -1659,6 +2261,100 @@ func (x *Inventory) GetBrokenStacks() []string {
 	return nil
 }
 
+func (x *Inventory) GetApt() *AptSummary {
+	if x != nil {
+		return x.Apt
+	}
+	return nil
+}
+
+func (x *Inventory) GetHostTerminal() bool {
+	if x != nil {
+		return x.HostTerminal
+	}
+	return false
+}
+
+// AptSummary is what the panel shows without asking: the agent simulates an
+// upgrade at start, every 6 hours and after each apt job. It never runs
+// apt-get update by itself.
+type AptSummary struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	Upgradable     uint32                 `protobuf:"varint,1,opt,name=upgradable,proto3" json:"upgradable,omitempty"` // packages an upgrade would install or change
+	Security       uint32                 `protobuf:"varint,2,opt,name=security,proto3" json:"security,omitempty"`     // of them, the ones coming from a security archive
+	RebootRequired bool                   `protobuf:"varint,3,opt,name=reboot_required,json=rebootRequired,proto3" json:"reboot_required,omitempty"`
+	CheckedAt      *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=checked_at,json=checkedAt,proto3" json:"checked_at,omitempty"`
+	// When the package lists were last downloaded (apt-get update); unset if unknown.
+	ListsUpdatedAt *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=lists_updated_at,json=listsUpdatedAt,proto3" json:"lists_updated_at,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *AptSummary) Reset() {
+	*x = AptSummary{}
+	mi := &file_agent_proto_msgTypes[21]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AptSummary) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AptSummary) ProtoMessage() {}
+
+func (x *AptSummary) ProtoReflect() protoreflect.Message {
+	mi := &file_agent_proto_msgTypes[21]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AptSummary.ProtoReflect.Descriptor instead.
+func (*AptSummary) Descriptor() ([]byte, []int) {
+	return file_agent_proto_rawDescGZIP(), []int{21}
+}
+
+func (x *AptSummary) GetUpgradable() uint32 {
+	if x != nil {
+		return x.Upgradable
+	}
+	return 0
+}
+
+func (x *AptSummary) GetSecurity() uint32 {
+	if x != nil {
+		return x.Security
+	}
+	return 0
+}
+
+func (x *AptSummary) GetRebootRequired() bool {
+	if x != nil {
+		return x.RebootRequired
+	}
+	return false
+}
+
+func (x *AptSummary) GetCheckedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.CheckedAt
+	}
+	return nil
+}
+
+func (x *AptSummary) GetListsUpdatedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.ListsUpdatedAt
+	}
+	return nil
+}
+
 type Container struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	Id             string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`     // short id (12 chars)
@@ -1674,7 +2370,7 @@ type Container struct {
 
 func (x *Container) Reset() {
 	*x = Container{}
-	mi := &file_agent_proto_msgTypes[16]
+	mi := &file_agent_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1686,7 +2382,7 @@ func (x *Container) String() string {
 func (*Container) ProtoMessage() {}
 
 func (x *Container) ProtoReflect() protoreflect.Message {
-	mi := &file_agent_proto_msgTypes[16]
+	mi := &file_agent_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1699,7 +2395,7 @@ func (x *Container) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Container.ProtoReflect.Descriptor instead.
 func (*Container) Descriptor() ([]byte, []int) {
-	return file_agent_proto_rawDescGZIP(), []int{16}
+	return file_agent_proto_rawDescGZIP(), []int{22}
 }
 
 func (x *Container) GetId() string {
@@ -1764,7 +2460,7 @@ type ComposeProject struct {
 
 func (x *ComposeProject) Reset() {
 	*x = ComposeProject{}
-	mi := &file_agent_proto_msgTypes[17]
+	mi := &file_agent_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1776,7 +2472,7 @@ func (x *ComposeProject) String() string {
 func (*ComposeProject) ProtoMessage() {}
 
 func (x *ComposeProject) ProtoReflect() protoreflect.Message {
-	mi := &file_agent_proto_msgTypes[17]
+	mi := &file_agent_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1789,7 +2485,7 @@ func (x *ComposeProject) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ComposeProject.ProtoReflect.Descriptor instead.
 func (*ComposeProject) Descriptor() ([]byte, []int) {
-	return file_agent_proto_rawDescGZIP(), []int{17}
+	return file_agent_proto_rawDescGZIP(), []int{23}
 }
 
 func (x *ComposeProject) GetName() string {
@@ -1831,16 +2527,17 @@ type SystemdUnit struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"` // e.g. "docker.service"
 	Description   string                 `protobuf:"bytes,2,opt,name=description,proto3" json:"description,omitempty"`
-	LoadState     string                 `protobuf:"bytes,3,opt,name=load_state,json=loadState,proto3" json:"load_state,omitempty"`       // loaded | not-found | masked ...
-	ActiveState   string                 `protobuf:"bytes,4,opt,name=active_state,json=activeState,proto3" json:"active_state,omitempty"` // active | inactive | failed ...
-	SubState      string                 `protobuf:"bytes,5,opt,name=sub_state,json=subState,proto3" json:"sub_state,omitempty"`          // running | exited | dead | failed ...
+	LoadState     string                 `protobuf:"bytes,3,opt,name=load_state,json=loadState,proto3" json:"load_state,omitempty"`               // loaded | not-found | masked ...
+	ActiveState   string                 `protobuf:"bytes,4,opt,name=active_state,json=activeState,proto3" json:"active_state,omitempty"`         // active | inactive | failed ...
+	SubState      string                 `protobuf:"bytes,5,opt,name=sub_state,json=subState,proto3" json:"sub_state,omitempty"`                  // running | exited | dead | failed ...
+	UnitFileState string                 `protobuf:"bytes,6,opt,name=unit_file_state,json=unitFileState,proto3" json:"unit_file_state,omitempty"` // enabled | disabled | static | masked ...; empty if unknown
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *SystemdUnit) Reset() {
 	*x = SystemdUnit{}
-	mi := &file_agent_proto_msgTypes[18]
+	mi := &file_agent_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1852,7 +2549,7 @@ func (x *SystemdUnit) String() string {
 func (*SystemdUnit) ProtoMessage() {}
 
 func (x *SystemdUnit) ProtoReflect() protoreflect.Message {
-	mi := &file_agent_proto_msgTypes[18]
+	mi := &file_agent_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1865,7 +2562,7 @@ func (x *SystemdUnit) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SystemdUnit.ProtoReflect.Descriptor instead.
 func (*SystemdUnit) Descriptor() ([]byte, []int) {
-	return file_agent_proto_rawDescGZIP(), []int{18}
+	return file_agent_proto_rawDescGZIP(), []int{24}
 }
 
 func (x *SystemdUnit) GetName() string {
@@ -1903,6 +2600,13 @@ func (x *SystemdUnit) GetSubState() string {
 	return ""
 }
 
+func (x *SystemdUnit) GetUnitFileState() string {
+	if x != nil {
+		return x.UnitFileState
+	}
+	return ""
+}
+
 // ContainerStats is the resource use of the running containers at one instant.
 type ContainerStats struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -1914,7 +2618,7 @@ type ContainerStats struct {
 
 func (x *ContainerStats) Reset() {
 	*x = ContainerStats{}
-	mi := &file_agent_proto_msgTypes[19]
+	mi := &file_agent_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1926,7 +2630,7 @@ func (x *ContainerStats) String() string {
 func (*ContainerStats) ProtoMessage() {}
 
 func (x *ContainerStats) ProtoReflect() protoreflect.Message {
-	mi := &file_agent_proto_msgTypes[19]
+	mi := &file_agent_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1939,7 +2643,7 @@ func (x *ContainerStats) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ContainerStats.ProtoReflect.Descriptor instead.
 func (*ContainerStats) Descriptor() ([]byte, []int) {
-	return file_agent_proto_rawDescGZIP(), []int{19}
+	return file_agent_proto_rawDescGZIP(), []int{25}
 }
 
 func (x *ContainerStats) GetSampledAt() *timestamppb.Timestamp {
@@ -1971,7 +2675,7 @@ type ContainerStat struct {
 
 func (x *ContainerStat) Reset() {
 	*x = ContainerStat{}
-	mi := &file_agent_proto_msgTypes[20]
+	mi := &file_agent_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1983,7 +2687,7 @@ func (x *ContainerStat) String() string {
 func (*ContainerStat) ProtoMessage() {}
 
 func (x *ContainerStat) ProtoReflect() protoreflect.Message {
-	mi := &file_agent_proto_msgTypes[20]
+	mi := &file_agent_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1996,7 +2700,7 @@ func (x *ContainerStat) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ContainerStat.ProtoReflect.Descriptor instead.
 func (*ContainerStat) Descriptor() ([]byte, []int) {
-	return file_agent_proto_rawDescGZIP(), []int{20}
+	return file_agent_proto_rawDescGZIP(), []int{26}
 }
 
 func (x *ContainerStat) GetId() string {
@@ -2048,17 +2752,20 @@ type TerminalOpen struct {
 	state     protoimpl.MessageState `protogen:"open.v1"`
 	SessionId string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
 	// Container id (hex, 12 to 64 characters) or name.
-	Container     string        `protobuf:"bytes,2,opt,name=container,proto3" json:"container,omitempty"`
-	Shell         TerminalShell `protobuf:"varint,3,opt,name=shell,proto3,enum=talaia.agent.v1.TerminalShell" json:"shell,omitempty"`
-	Cols          uint32        `protobuf:"varint,4,opt,name=cols,proto3" json:"cols,omitempty"`
-	Rows          uint32        `protobuf:"varint,5,opt,name=rows,proto3" json:"rows,omitempty"`
+	Container string        `protobuf:"bytes,2,opt,name=container,proto3" json:"container,omitempty"`
+	Shell     TerminalShell `protobuf:"varint,3,opt,name=shell,proto3,enum=talaia.agent.v1.TerminalShell" json:"shell,omitempty"`
+	Cols      uint32        `protobuf:"varint,4,opt,name=cols,proto3" json:"cols,omitempty"`
+	Rows      uint32        `protobuf:"varint,5,opt,name=rows,proto3" json:"rows,omitempty"`
+	// Where the shell runs. HOST opens a root shell on the server itself and
+	// requires container to be empty.
+	Target        TerminalTarget `protobuf:"varint,6,opt,name=target,proto3,enum=talaia.agent.v1.TerminalTarget" json:"target,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *TerminalOpen) Reset() {
 	*x = TerminalOpen{}
-	mi := &file_agent_proto_msgTypes[21]
+	mi := &file_agent_proto_msgTypes[27]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2070,7 +2777,7 @@ func (x *TerminalOpen) String() string {
 func (*TerminalOpen) ProtoMessage() {}
 
 func (x *TerminalOpen) ProtoReflect() protoreflect.Message {
-	mi := &file_agent_proto_msgTypes[21]
+	mi := &file_agent_proto_msgTypes[27]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2083,7 +2790,7 @@ func (x *TerminalOpen) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TerminalOpen.ProtoReflect.Descriptor instead.
 func (*TerminalOpen) Descriptor() ([]byte, []int) {
-	return file_agent_proto_rawDescGZIP(), []int{21}
+	return file_agent_proto_rawDescGZIP(), []int{27}
 }
 
 func (x *TerminalOpen) GetSessionId() string {
@@ -2121,6 +2828,13 @@ func (x *TerminalOpen) GetRows() uint32 {
 	return 0
 }
 
+func (x *TerminalOpen) GetTarget() TerminalTarget {
+	if x != nil {
+		return x.Target
+	}
+	return TerminalTarget_TERMINAL_TARGET_UNSPECIFIED
+}
+
 // TerminalInput carries keystrokes, at most 4 KiB per message. It is bytes, not
 // text: a terminal does not speak only UTF-8.
 type TerminalInput struct {
@@ -2133,7 +2847,7 @@ type TerminalInput struct {
 
 func (x *TerminalInput) Reset() {
 	*x = TerminalInput{}
-	mi := &file_agent_proto_msgTypes[22]
+	mi := &file_agent_proto_msgTypes[28]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2145,7 +2859,7 @@ func (x *TerminalInput) String() string {
 func (*TerminalInput) ProtoMessage() {}
 
 func (x *TerminalInput) ProtoReflect() protoreflect.Message {
-	mi := &file_agent_proto_msgTypes[22]
+	mi := &file_agent_proto_msgTypes[28]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2158,7 +2872,7 @@ func (x *TerminalInput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TerminalInput.ProtoReflect.Descriptor instead.
 func (*TerminalInput) Descriptor() ([]byte, []int) {
-	return file_agent_proto_rawDescGZIP(), []int{22}
+	return file_agent_proto_rawDescGZIP(), []int{28}
 }
 
 func (x *TerminalInput) GetSessionId() string {
@@ -2187,7 +2901,7 @@ type TerminalResize struct {
 
 func (x *TerminalResize) Reset() {
 	*x = TerminalResize{}
-	mi := &file_agent_proto_msgTypes[23]
+	mi := &file_agent_proto_msgTypes[29]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2199,7 +2913,7 @@ func (x *TerminalResize) String() string {
 func (*TerminalResize) ProtoMessage() {}
 
 func (x *TerminalResize) ProtoReflect() protoreflect.Message {
-	mi := &file_agent_proto_msgTypes[23]
+	mi := &file_agent_proto_msgTypes[29]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2212,7 +2926,7 @@ func (x *TerminalResize) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TerminalResize.ProtoReflect.Descriptor instead.
 func (*TerminalResize) Descriptor() ([]byte, []int) {
-	return file_agent_proto_rawDescGZIP(), []int{23}
+	return file_agent_proto_rawDescGZIP(), []int{29}
 }
 
 func (x *TerminalResize) GetSessionId() string {
@@ -2246,7 +2960,7 @@ type TerminalClose struct {
 
 func (x *TerminalClose) Reset() {
 	*x = TerminalClose{}
-	mi := &file_agent_proto_msgTypes[24]
+	mi := &file_agent_proto_msgTypes[30]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2258,7 +2972,7 @@ func (x *TerminalClose) String() string {
 func (*TerminalClose) ProtoMessage() {}
 
 func (x *TerminalClose) ProtoReflect() protoreflect.Message {
-	mi := &file_agent_proto_msgTypes[24]
+	mi := &file_agent_proto_msgTypes[30]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2271,7 +2985,7 @@ func (x *TerminalClose) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TerminalClose.ProtoReflect.Descriptor instead.
 func (*TerminalClose) Descriptor() ([]byte, []int) {
-	return file_agent_proto_rawDescGZIP(), []int{24}
+	return file_agent_proto_rawDescGZIP(), []int{30}
 }
 
 func (x *TerminalClose) GetSessionId() string {
@@ -2295,7 +3009,7 @@ type TerminalOpened struct {
 
 func (x *TerminalOpened) Reset() {
 	*x = TerminalOpened{}
-	mi := &file_agent_proto_msgTypes[25]
+	mi := &file_agent_proto_msgTypes[31]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2307,7 +3021,7 @@ func (x *TerminalOpened) String() string {
 func (*TerminalOpened) ProtoMessage() {}
 
 func (x *TerminalOpened) ProtoReflect() protoreflect.Message {
-	mi := &file_agent_proto_msgTypes[25]
+	mi := &file_agent_proto_msgTypes[31]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2320,7 +3034,7 @@ func (x *TerminalOpened) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TerminalOpened.ProtoReflect.Descriptor instead.
 func (*TerminalOpened) Descriptor() ([]byte, []int) {
-	return file_agent_proto_rawDescGZIP(), []int{25}
+	return file_agent_proto_rawDescGZIP(), []int{31}
 }
 
 func (x *TerminalOpened) GetSessionId() string {
@@ -2355,7 +3069,7 @@ type TerminalOutput struct {
 
 func (x *TerminalOutput) Reset() {
 	*x = TerminalOutput{}
-	mi := &file_agent_proto_msgTypes[26]
+	mi := &file_agent_proto_msgTypes[32]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2367,7 +3081,7 @@ func (x *TerminalOutput) String() string {
 func (*TerminalOutput) ProtoMessage() {}
 
 func (x *TerminalOutput) ProtoReflect() protoreflect.Message {
-	mi := &file_agent_proto_msgTypes[26]
+	mi := &file_agent_proto_msgTypes[32]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2380,7 +3094,7 @@ func (x *TerminalOutput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TerminalOutput.ProtoReflect.Descriptor instead.
 func (*TerminalOutput) Descriptor() ([]byte, []int) {
-	return file_agent_proto_rawDescGZIP(), []int{26}
+	return file_agent_proto_rawDescGZIP(), []int{32}
 }
 
 func (x *TerminalOutput) GetSessionId() string {
@@ -2410,7 +3124,7 @@ type TerminalClosed struct {
 
 func (x *TerminalClosed) Reset() {
 	*x = TerminalClosed{}
-	mi := &file_agent_proto_msgTypes[27]
+	mi := &file_agent_proto_msgTypes[33]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2422,7 +3136,7 @@ func (x *TerminalClosed) String() string {
 func (*TerminalClosed) ProtoMessage() {}
 
 func (x *TerminalClosed) ProtoReflect() protoreflect.Message {
-	mi := &file_agent_proto_msgTypes[27]
+	mi := &file_agent_proto_msgTypes[33]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2435,7 +3149,7 @@ func (x *TerminalClosed) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TerminalClosed.ProtoReflect.Descriptor instead.
 func (*TerminalClosed) Descriptor() ([]byte, []int) {
-	return file_agent_proto_rawDescGZIP(), []int{27}
+	return file_agent_proto_rawDescGZIP(), []int{33}
 }
 
 func (x *TerminalClosed) GetSessionId() string {
@@ -2476,7 +3190,7 @@ type Metrics struct {
 
 func (x *Metrics) Reset() {
 	*x = Metrics{}
-	mi := &file_agent_proto_msgTypes[28]
+	mi := &file_agent_proto_msgTypes[34]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2488,7 +3202,7 @@ func (x *Metrics) String() string {
 func (*Metrics) ProtoMessage() {}
 
 func (x *Metrics) ProtoReflect() protoreflect.Message {
-	mi := &file_agent_proto_msgTypes[28]
+	mi := &file_agent_proto_msgTypes[34]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2501,7 +3215,7 @@ func (x *Metrics) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Metrics.ProtoReflect.Descriptor instead.
 func (*Metrics) Descriptor() ([]byte, []int) {
-	return file_agent_proto_rawDescGZIP(), []int{28}
+	return file_agent_proto_rawDescGZIP(), []int{34}
 }
 
 func (x *Metrics) GetSampledAt() *timestamppb.Timestamp {
@@ -2564,7 +3278,8 @@ var File_agent_proto protoreflect.FileDescriptor
 
 const file_agent_proto_rawDesc = "" +
 	"\n" +
-	"\vagent.proto\x12\x0ftalaia.agent.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\xf5\a\n" +
+	"\vagent.proto\x12\x0ftalaia.agent.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\xbe\n" +
+	"\n" +
 	"\aCoreMsg\x12\x15\n" +
 	"\x06job_id\x18\x01 \x01(\tR\x05jobId\x12D\n" +
 	"\rheartbeat_ack\x18\x02 \x01(\v2\x1d.talaia.agent.v1.HeartbeatAckH\x00R\fheartbeatAck\x12M\n" +
@@ -2584,7 +3299,15 @@ const file_agent_proto_rawDesc = "" +
 	"\x0eterminal_input\x18\x13 \x01(\v2\x1e.talaia.agent.v1.TerminalInputH\x00R\rterminalInput\x12J\n" +
 	"\x0fterminal_resize\x18\x14 \x01(\v2\x1f.talaia.agent.v1.TerminalResizeH\x00R\x0eterminalResize\x12G\n" +
 	"\x0eterminal_close\x18\x15 \x01(\v2\x1e.talaia.agent.v1.TerminalCloseH\x00R\rterminalClose\x12A\n" +
-	"\fagent_update\x18\x16 \x01(\v2\x1c.talaia.agent.v1.AgentUpdateH\x00R\vagentUpdateB\x05\n" +
+	"\fagent_update\x18\x16 \x01(\v2\x1c.talaia.agent.v1.AgentUpdateH\x00R\vagentUpdate\x12G\n" +
+	"\x0eservice_action\x18\x17 \x01(\v2\x1e.talaia.agent.v1.ServiceActionH\x00R\rserviceAction\x12A\n" +
+	"\fread_journal\x18\x18 \x01(\v2\x1c.talaia.agent.v1.ReadJournalH\x00R\vreadJournal\x12;\n" +
+	"\n" +
+	"apt_status\x18\x19 \x01(\v2\x1a.talaia.agent.v1.AptStatusH\x00R\taptStatus\x12>\n" +
+	"\vapt_upgrade\x18\x1a \x01(\v2\x1b.talaia.agent.v1.AptUpgradeH\x00R\n" +
+	"aptUpgrade\x12>\n" +
+	"\vhost_reboot\x18\x1b \x01(\v2\x1b.talaia.agent.v1.HostRebootH\x00R\n" +
+	"hostRebootB\x05\n" +
 	"\x03cmd\"\xa9\x04\n" +
 	"\bAgentMsg\x12:\n" +
 	"\theartbeat\x18\x01 \x01(\v2\x1a.talaia.agent.v1.HeartbeatH\x00R\theartbeat\x124\n" +
@@ -2628,7 +3351,28 @@ const file_agent_proto_rawDesc = "" +
 	"\x05items\x18\x01 \x03(\v2\x1c.talaia.agent.v1.ResourceRefR\x05items\"?\n" +
 	"\vAgentUpdate\x12\x18\n" +
 	"\aversion\x18\x01 \x01(\tR\aversion\x12\x16\n" +
-	"\x06sha256\x18\x02 \x01(\tR\x06sha256\"\xb0\x01\n" +
+	"\x06sha256\x18\x02 \x01(\tR\x06sha256\"_\n" +
+	"\rServiceAction\x12\x12\n" +
+	"\x04unit\x18\x01 \x01(\tR\x04unit\x12:\n" +
+	"\x06action\x18\x02 \x01(\x0e2\".talaia.agent.v1.ServiceActionTypeR\x06action\"\x87\x02\n" +
+	"\vReadJournal\x12\x12\n" +
+	"\x04unit\x18\x01 \x01(\tR\x04unit\x12&\n" +
+	"\fmax_priority\x18\x02 \x01(\rH\x00R\vmaxPriority\x88\x01\x01\x12\x14\n" +
+	"\x05since\x18\x03 \x01(\tR\x05since\x12\x14\n" +
+	"\x05until\x18\x04 \x01(\tR\x05until\x12\x16\n" +
+	"\x06search\x18\x05 \x01(\tR\x06search\x120\n" +
+	"\x04boot\x18\x06 \x01(\x0e2\x1c.talaia.agent.v1.JournalBootR\x04boot\x12\x12\n" +
+	"\x04tail\x18\a \x01(\rR\x04tail\x12!\n" +
+	"\fafter_cursor\x18\b \x01(\tR\vafterCursorB\x0f\n" +
+	"\r_max_priority\"%\n" +
+	"\tAptStatus\x12\x18\n" +
+	"\arefresh\x18\x01 \x01(\bR\arefresh\"A\n" +
+	"\n" +
+	"AptUpgrade\x123\n" +
+	"\x04mode\x18\x01 \x01(\x0e2\x1f.talaia.agent.v1.AptUpgradeModeR\x04mode\"(\n" +
+	"\n" +
+	"HostReboot\x12\x1a\n" +
+	"\bhostname\x18\x01 \x01(\tR\bhostname\"\xb0\x01\n" +
 	"\bJobEvent\x12\x15\n" +
 	"\x06job_id\x18\x01 \x01(\tR\x05jobId\x12/\n" +
 	"\x05state\x18\x02 \x01(\x0e2\x19.talaia.agent.v1.JobStateR\x05state\x12\x18\n" +
@@ -2639,7 +3383,7 @@ const file_agent_proto_rawDesc = "" +
 	"\x03seq\x18\x01 \x01(\x04R\x03seq\x123\n" +
 	"\asent_at\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\x06sentAt\" \n" +
 	"\fHeartbeatAck\x12\x10\n" +
-	"\x03seq\x18\x01 \x01(\x04R\x03seq\"\xfc\x04\n" +
+	"\x03seq\x18\x01 \x01(\x04R\x03seq\"\xd0\x05\n" +
 	"\tInventory\x12\x1a\n" +
 	"\bhostname\x18\x01 \x01(\tR\bhostname\x12\x17\n" +
 	"\aos_name\x18\x02 \x01(\tR\x06osName\x12\x1d\n" +
@@ -2660,7 +3404,19 @@ const file_agent_proto_rawDesc = "" +
 	"\bservices\x18\r \x03(\v2\x1c.talaia.agent.v1.SystemdUnitR\bservices\x12%\n" +
 	"\x0emanaged_stacks\x18\x0e \x03(\tR\rmanagedStacks\x12%\n" +
 	"\x0eadopted_stacks\x18\x0f \x03(\tR\radoptedStacks\x12#\n" +
-	"\rbroken_stacks\x18\x10 \x03(\tR\fbrokenStacks\"\xc5\x01\n" +
+	"\rbroken_stacks\x18\x10 \x03(\tR\fbrokenStacks\x12-\n" +
+	"\x03apt\x18\x11 \x01(\v2\x1b.talaia.agent.v1.AptSummaryR\x03apt\x12#\n" +
+	"\rhost_terminal\x18\x12 \x01(\bR\fhostTerminal\"\xf2\x01\n" +
+	"\n" +
+	"AptSummary\x12\x1e\n" +
+	"\n" +
+	"upgradable\x18\x01 \x01(\rR\n" +
+	"upgradable\x12\x1a\n" +
+	"\bsecurity\x18\x02 \x01(\rR\bsecurity\x12'\n" +
+	"\x0freboot_required\x18\x03 \x01(\bR\x0erebootRequired\x129\n" +
+	"\n" +
+	"checked_at\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\tcheckedAt\x12D\n" +
+	"\x10lists_updated_at\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\x0elistsUpdatedAt\"\xc5\x01\n" +
 	"\tContainer\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x14\n" +
@@ -2675,14 +3431,15 @@ const file_agent_proto_rawDesc = "" +
 	"workingDir\x12!\n" +
 	"\fconfig_files\x18\x03 \x03(\tR\vconfigFiles\x12'\n" +
 	"\x0fcontainer_count\x18\x04 \x01(\rR\x0econtainerCount\x12#\n" +
-	"\rrunning_count\x18\x05 \x01(\rR\frunningCount\"\xa2\x01\n" +
+	"\rrunning_count\x18\x05 \x01(\rR\frunningCount\"\xca\x01\n" +
 	"\vSystemdUnit\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12 \n" +
 	"\vdescription\x18\x02 \x01(\tR\vdescription\x12\x1d\n" +
 	"\n" +
 	"load_state\x18\x03 \x01(\tR\tloadState\x12!\n" +
 	"\factive_state\x18\x04 \x01(\tR\vactiveState\x12\x1b\n" +
-	"\tsub_state\x18\x05 \x01(\tR\bsubState\"\x81\x01\n" +
+	"\tsub_state\x18\x05 \x01(\tR\bsubState\x12&\n" +
+	"\x0funit_file_state\x18\x06 \x01(\tR\runitFileState\"\x81\x01\n" +
 	"\x0eContainerStats\x129\n" +
 	"\n" +
 	"sampled_at\x18\x01 \x01(\v2\x1a.google.protobuf.TimestampR\tsampledAt\x124\n" +
@@ -2696,14 +3453,15 @@ const file_agent_proto_rawDesc = "" +
 	"\fnet_rx_bytes\x18\x05 \x01(\x04R\n" +
 	"netRxBytes\x12 \n" +
 	"\fnet_tx_bytes\x18\x06 \x01(\x04R\n" +
-	"netTxBytes\"\xa9\x01\n" +
+	"netTxBytes\"\xe2\x01\n" +
 	"\fTerminalOpen\x12\x1d\n" +
 	"\n" +
 	"session_id\x18\x01 \x01(\tR\tsessionId\x12\x1c\n" +
 	"\tcontainer\x18\x02 \x01(\tR\tcontainer\x124\n" +
 	"\x05shell\x18\x03 \x01(\x0e2\x1e.talaia.agent.v1.TerminalShellR\x05shell\x12\x12\n" +
 	"\x04cols\x18\x04 \x01(\rR\x04cols\x12\x12\n" +
-	"\x04rows\x18\x05 \x01(\rR\x04rows\"B\n" +
+	"\x04rows\x18\x05 \x01(\rR\x04rows\x127\n" +
+	"\x06target\x18\x06 \x01(\x0e2\x1f.talaia.agent.v1.TerminalTargetR\x06target\"B\n" +
 	"\rTerminalInput\x12\x1d\n" +
 	"\n" +
 	"session_id\x18\x01 \x01(\tR\tsessionId\x12\x12\n" +
@@ -2763,12 +3521,32 @@ const file_agent_proto_rawDesc = "" +
 	"\x19RESOURCE_KIND_UNSPECIFIED\x10\x00\x12\x17\n" +
 	"\x13RESOURCE_KIND_IMAGE\x10\x01\x12\x18\n" +
 	"\x14RESOURCE_KIND_VOLUME\x10\x02\x12\x19\n" +
-	"\x15RESOURCE_KIND_NETWORK\x10\x03*k\n" +
+	"\x15RESOURCE_KIND_NETWORK\x10\x03*\xf7\x01\n" +
+	"\x11ServiceActionType\x12#\n" +
+	"\x1fSERVICE_ACTION_TYPE_UNSPECIFIED\x10\x00\x12\x1d\n" +
+	"\x19SERVICE_ACTION_TYPE_START\x10\x01\x12\x1c\n" +
+	"\x18SERVICE_ACTION_TYPE_STOP\x10\x02\x12\x1f\n" +
+	"\x1bSERVICE_ACTION_TYPE_RESTART\x10\x03\x12\x1e\n" +
+	"\x1aSERVICE_ACTION_TYPE_RELOAD\x10\x04\x12\x1e\n" +
+	"\x1aSERVICE_ACTION_TYPE_ENABLE\x10\x05\x12\x1f\n" +
+	"\x1bSERVICE_ACTION_TYPE_DISABLE\x10\x06*`\n" +
+	"\vJournalBoot\x12\x1c\n" +
+	"\x18JOURNAL_BOOT_UNSPECIFIED\x10\x00\x12\x18\n" +
+	"\x14JOURNAL_BOOT_CURRENT\x10\x01\x12\x19\n" +
+	"\x15JOURNAL_BOOT_PREVIOUS\x10\x02*k\n" +
+	"\x0eAptUpgradeMode\x12 \n" +
+	"\x1cAPT_UPGRADE_MODE_UNSPECIFIED\x10\x00\x12\x1d\n" +
+	"\x19APT_UPGRADE_MODE_SECURITY\x10\x01\x12\x18\n" +
+	"\x14APT_UPGRADE_MODE_ALL\x10\x02*k\n" +
 	"\bJobState\x12\x19\n" +
 	"\x15JOB_STATE_UNSPECIFIED\x10\x00\x12\x15\n" +
 	"\x11JOB_STATE_RUNNING\x10\x01\x12\x17\n" +
 	"\x13JOB_STATE_SUCCEEDED\x10\x02\x12\x14\n" +
-	"\x10JOB_STATE_FAILED\x10\x03*_\n" +
+	"\x10JOB_STATE_FAILED\x10\x03*j\n" +
+	"\x0eTerminalTarget\x12\x1f\n" +
+	"\x1bTERMINAL_TARGET_UNSPECIFIED\x10\x00\x12\x1d\n" +
+	"\x19TERMINAL_TARGET_CONTAINER\x10\x01\x12\x18\n" +
+	"\x14TERMINAL_TARGET_HOST\x10\x02*_\n" +
 	"\rTerminalShell\x12\x1e\n" +
 	"\x1aTERMINAL_SHELL_UNSPECIFIED\x10\x00\x12\x15\n" +
 	"\x11TERMINAL_SHELL_SH\x10\x01\x12\x17\n" +
@@ -2790,90 +3568,112 @@ func file_agent_proto_rawDescGZIP() []byte {
 	return file_agent_proto_rawDescData
 }
 
-var file_agent_proto_enumTypes = make([]protoimpl.EnumInfo, 5)
-var file_agent_proto_msgTypes = make([]protoimpl.MessageInfo, 29)
+var file_agent_proto_enumTypes = make([]protoimpl.EnumInfo, 9)
+var file_agent_proto_msgTypes = make([]protoimpl.MessageInfo, 35)
 var file_agent_proto_goTypes = []any{
 	(ContainerActionType)(0),      // 0: talaia.agent.v1.ContainerActionType
 	(StackActionType)(0),          // 1: talaia.agent.v1.StackActionType
 	(ResourceKind)(0),             // 2: talaia.agent.v1.ResourceKind
-	(JobState)(0),                 // 3: talaia.agent.v1.JobState
-	(TerminalShell)(0),            // 4: talaia.agent.v1.TerminalShell
-	(*CoreMsg)(nil),               // 5: talaia.agent.v1.CoreMsg
-	(*AgentMsg)(nil),              // 6: talaia.agent.v1.AgentMsg
-	(*ContainerAction)(nil),       // 7: talaia.agent.v1.ContainerAction
-	(*ReadLogs)(nil),              // 8: talaia.agent.v1.ReadLogs
-	(*StackWrite)(nil),            // 9: talaia.agent.v1.StackWrite
-	(*StackAction)(nil),           // 10: talaia.agent.v1.StackAction
-	(*StackAdopt)(nil),            // 11: talaia.agent.v1.StackAdopt
-	(*StackRead)(nil),             // 12: talaia.agent.v1.StackRead
-	(*ListResources)(nil),         // 13: talaia.agent.v1.ListResources
-	(*ResourceRef)(nil),           // 14: talaia.agent.v1.ResourceRef
-	(*RemoveResources)(nil),       // 15: talaia.agent.v1.RemoveResources
-	(*AgentUpdate)(nil),           // 16: talaia.agent.v1.AgentUpdate
-	(*JobEvent)(nil),              // 17: talaia.agent.v1.JobEvent
-	(*Heartbeat)(nil),             // 18: talaia.agent.v1.Heartbeat
-	(*HeartbeatAck)(nil),          // 19: talaia.agent.v1.HeartbeatAck
-	(*Inventory)(nil),             // 20: talaia.agent.v1.Inventory
-	(*Container)(nil),             // 21: talaia.agent.v1.Container
-	(*ComposeProject)(nil),        // 22: talaia.agent.v1.ComposeProject
-	(*SystemdUnit)(nil),           // 23: talaia.agent.v1.SystemdUnit
-	(*ContainerStats)(nil),        // 24: talaia.agent.v1.ContainerStats
-	(*ContainerStat)(nil),         // 25: talaia.agent.v1.ContainerStat
-	(*TerminalOpen)(nil),          // 26: talaia.agent.v1.TerminalOpen
-	(*TerminalInput)(nil),         // 27: talaia.agent.v1.TerminalInput
-	(*TerminalResize)(nil),        // 28: talaia.agent.v1.TerminalResize
-	(*TerminalClose)(nil),         // 29: talaia.agent.v1.TerminalClose
-	(*TerminalOpened)(nil),        // 30: talaia.agent.v1.TerminalOpened
-	(*TerminalOutput)(nil),        // 31: talaia.agent.v1.TerminalOutput
-	(*TerminalClosed)(nil),        // 32: talaia.agent.v1.TerminalClosed
-	(*Metrics)(nil),               // 33: talaia.agent.v1.Metrics
-	(*timestamppb.Timestamp)(nil), // 34: google.protobuf.Timestamp
+	(ServiceActionType)(0),        // 3: talaia.agent.v1.ServiceActionType
+	(JournalBoot)(0),              // 4: talaia.agent.v1.JournalBoot
+	(AptUpgradeMode)(0),           // 5: talaia.agent.v1.AptUpgradeMode
+	(JobState)(0),                 // 6: talaia.agent.v1.JobState
+	(TerminalTarget)(0),           // 7: talaia.agent.v1.TerminalTarget
+	(TerminalShell)(0),            // 8: talaia.agent.v1.TerminalShell
+	(*CoreMsg)(nil),               // 9: talaia.agent.v1.CoreMsg
+	(*AgentMsg)(nil),              // 10: talaia.agent.v1.AgentMsg
+	(*ContainerAction)(nil),       // 11: talaia.agent.v1.ContainerAction
+	(*ReadLogs)(nil),              // 12: talaia.agent.v1.ReadLogs
+	(*StackWrite)(nil),            // 13: talaia.agent.v1.StackWrite
+	(*StackAction)(nil),           // 14: talaia.agent.v1.StackAction
+	(*StackAdopt)(nil),            // 15: talaia.agent.v1.StackAdopt
+	(*StackRead)(nil),             // 16: talaia.agent.v1.StackRead
+	(*ListResources)(nil),         // 17: talaia.agent.v1.ListResources
+	(*ResourceRef)(nil),           // 18: talaia.agent.v1.ResourceRef
+	(*RemoveResources)(nil),       // 19: talaia.agent.v1.RemoveResources
+	(*AgentUpdate)(nil),           // 20: talaia.agent.v1.AgentUpdate
+	(*ServiceAction)(nil),         // 21: talaia.agent.v1.ServiceAction
+	(*ReadJournal)(nil),           // 22: talaia.agent.v1.ReadJournal
+	(*AptStatus)(nil),             // 23: talaia.agent.v1.AptStatus
+	(*AptUpgrade)(nil),            // 24: talaia.agent.v1.AptUpgrade
+	(*HostReboot)(nil),            // 25: talaia.agent.v1.HostReboot
+	(*JobEvent)(nil),              // 26: talaia.agent.v1.JobEvent
+	(*Heartbeat)(nil),             // 27: talaia.agent.v1.Heartbeat
+	(*HeartbeatAck)(nil),          // 28: talaia.agent.v1.HeartbeatAck
+	(*Inventory)(nil),             // 29: talaia.agent.v1.Inventory
+	(*AptSummary)(nil),            // 30: talaia.agent.v1.AptSummary
+	(*Container)(nil),             // 31: talaia.agent.v1.Container
+	(*ComposeProject)(nil),        // 32: talaia.agent.v1.ComposeProject
+	(*SystemdUnit)(nil),           // 33: talaia.agent.v1.SystemdUnit
+	(*ContainerStats)(nil),        // 34: talaia.agent.v1.ContainerStats
+	(*ContainerStat)(nil),         // 35: talaia.agent.v1.ContainerStat
+	(*TerminalOpen)(nil),          // 36: talaia.agent.v1.TerminalOpen
+	(*TerminalInput)(nil),         // 37: talaia.agent.v1.TerminalInput
+	(*TerminalResize)(nil),        // 38: talaia.agent.v1.TerminalResize
+	(*TerminalClose)(nil),         // 39: talaia.agent.v1.TerminalClose
+	(*TerminalOpened)(nil),        // 40: talaia.agent.v1.TerminalOpened
+	(*TerminalOutput)(nil),        // 41: talaia.agent.v1.TerminalOutput
+	(*TerminalClosed)(nil),        // 42: talaia.agent.v1.TerminalClosed
+	(*Metrics)(nil),               // 43: talaia.agent.v1.Metrics
+	(*timestamppb.Timestamp)(nil), // 44: google.protobuf.Timestamp
 }
 var file_agent_proto_depIdxs = []int32{
-	19, // 0: talaia.agent.v1.CoreMsg.heartbeat_ack:type_name -> talaia.agent.v1.HeartbeatAck
-	7,  // 1: talaia.agent.v1.CoreMsg.container_action:type_name -> talaia.agent.v1.ContainerAction
-	8,  // 2: talaia.agent.v1.CoreMsg.read_logs:type_name -> talaia.agent.v1.ReadLogs
-	9,  // 3: talaia.agent.v1.CoreMsg.stack_write:type_name -> talaia.agent.v1.StackWrite
-	10, // 4: talaia.agent.v1.CoreMsg.stack_action:type_name -> talaia.agent.v1.StackAction
-	12, // 5: talaia.agent.v1.CoreMsg.stack_read:type_name -> talaia.agent.v1.StackRead
-	11, // 6: talaia.agent.v1.CoreMsg.stack_adopt:type_name -> talaia.agent.v1.StackAdopt
-	13, // 7: talaia.agent.v1.CoreMsg.list_resources:type_name -> talaia.agent.v1.ListResources
-	15, // 8: talaia.agent.v1.CoreMsg.remove_resources:type_name -> talaia.agent.v1.RemoveResources
-	26, // 9: talaia.agent.v1.CoreMsg.terminal_open:type_name -> talaia.agent.v1.TerminalOpen
-	27, // 10: talaia.agent.v1.CoreMsg.terminal_input:type_name -> talaia.agent.v1.TerminalInput
-	28, // 11: talaia.agent.v1.CoreMsg.terminal_resize:type_name -> talaia.agent.v1.TerminalResize
-	29, // 12: talaia.agent.v1.CoreMsg.terminal_close:type_name -> talaia.agent.v1.TerminalClose
-	16, // 13: talaia.agent.v1.CoreMsg.agent_update:type_name -> talaia.agent.v1.AgentUpdate
-	18, // 14: talaia.agent.v1.AgentMsg.heartbeat:type_name -> talaia.agent.v1.Heartbeat
-	33, // 15: talaia.agent.v1.AgentMsg.metrics:type_name -> talaia.agent.v1.Metrics
-	17, // 16: talaia.agent.v1.AgentMsg.job_event:type_name -> talaia.agent.v1.JobEvent
-	20, // 17: talaia.agent.v1.AgentMsg.inventory:type_name -> talaia.agent.v1.Inventory
-	24, // 18: talaia.agent.v1.AgentMsg.container_stats:type_name -> talaia.agent.v1.ContainerStats
-	30, // 19: talaia.agent.v1.AgentMsg.terminal_opened:type_name -> talaia.agent.v1.TerminalOpened
-	31, // 20: talaia.agent.v1.AgentMsg.terminal_output:type_name -> talaia.agent.v1.TerminalOutput
-	32, // 21: talaia.agent.v1.AgentMsg.terminal_closed:type_name -> talaia.agent.v1.TerminalClosed
-	0,  // 22: talaia.agent.v1.ContainerAction.action:type_name -> talaia.agent.v1.ContainerActionType
-	1,  // 23: talaia.agent.v1.StackAction.action:type_name -> talaia.agent.v1.StackActionType
-	2,  // 24: talaia.agent.v1.ListResources.kind:type_name -> talaia.agent.v1.ResourceKind
-	2,  // 25: talaia.agent.v1.ResourceRef.kind:type_name -> talaia.agent.v1.ResourceKind
-	14, // 26: talaia.agent.v1.RemoveResources.items:type_name -> talaia.agent.v1.ResourceRef
-	3,  // 27: talaia.agent.v1.JobEvent.state:type_name -> talaia.agent.v1.JobState
-	34, // 28: talaia.agent.v1.JobEvent.at:type_name -> google.protobuf.Timestamp
-	34, // 29: talaia.agent.v1.Heartbeat.sent_at:type_name -> google.protobuf.Timestamp
-	21, // 30: talaia.agent.v1.Inventory.containers:type_name -> talaia.agent.v1.Container
-	22, // 31: talaia.agent.v1.Inventory.compose_projects:type_name -> talaia.agent.v1.ComposeProject
-	23, // 32: talaia.agent.v1.Inventory.services:type_name -> talaia.agent.v1.SystemdUnit
-	34, // 33: talaia.agent.v1.ContainerStats.sampled_at:type_name -> google.protobuf.Timestamp
-	25, // 34: talaia.agent.v1.ContainerStats.items:type_name -> talaia.agent.v1.ContainerStat
-	4,  // 35: talaia.agent.v1.TerminalOpen.shell:type_name -> talaia.agent.v1.TerminalShell
-	34, // 36: talaia.agent.v1.Metrics.sampled_at:type_name -> google.protobuf.Timestamp
-	6,  // 37: talaia.agent.v1.AgentHub.Connect:input_type -> talaia.agent.v1.AgentMsg
-	5,  // 38: talaia.agent.v1.AgentHub.Connect:output_type -> talaia.agent.v1.CoreMsg
-	38, // [38:39] is the sub-list for method output_type
-	37, // [37:38] is the sub-list for method input_type
-	37, // [37:37] is the sub-list for extension type_name
-	37, // [37:37] is the sub-list for extension extendee
-	0,  // [0:37] is the sub-list for field type_name
+	28, // 0: talaia.agent.v1.CoreMsg.heartbeat_ack:type_name -> talaia.agent.v1.HeartbeatAck
+	11, // 1: talaia.agent.v1.CoreMsg.container_action:type_name -> talaia.agent.v1.ContainerAction
+	12, // 2: talaia.agent.v1.CoreMsg.read_logs:type_name -> talaia.agent.v1.ReadLogs
+	13, // 3: talaia.agent.v1.CoreMsg.stack_write:type_name -> talaia.agent.v1.StackWrite
+	14, // 4: talaia.agent.v1.CoreMsg.stack_action:type_name -> talaia.agent.v1.StackAction
+	16, // 5: talaia.agent.v1.CoreMsg.stack_read:type_name -> talaia.agent.v1.StackRead
+	15, // 6: talaia.agent.v1.CoreMsg.stack_adopt:type_name -> talaia.agent.v1.StackAdopt
+	17, // 7: talaia.agent.v1.CoreMsg.list_resources:type_name -> talaia.agent.v1.ListResources
+	19, // 8: talaia.agent.v1.CoreMsg.remove_resources:type_name -> talaia.agent.v1.RemoveResources
+	36, // 9: talaia.agent.v1.CoreMsg.terminal_open:type_name -> talaia.agent.v1.TerminalOpen
+	37, // 10: talaia.agent.v1.CoreMsg.terminal_input:type_name -> talaia.agent.v1.TerminalInput
+	38, // 11: talaia.agent.v1.CoreMsg.terminal_resize:type_name -> talaia.agent.v1.TerminalResize
+	39, // 12: talaia.agent.v1.CoreMsg.terminal_close:type_name -> talaia.agent.v1.TerminalClose
+	20, // 13: talaia.agent.v1.CoreMsg.agent_update:type_name -> talaia.agent.v1.AgentUpdate
+	21, // 14: talaia.agent.v1.CoreMsg.service_action:type_name -> talaia.agent.v1.ServiceAction
+	22, // 15: talaia.agent.v1.CoreMsg.read_journal:type_name -> talaia.agent.v1.ReadJournal
+	23, // 16: talaia.agent.v1.CoreMsg.apt_status:type_name -> talaia.agent.v1.AptStatus
+	24, // 17: talaia.agent.v1.CoreMsg.apt_upgrade:type_name -> talaia.agent.v1.AptUpgrade
+	25, // 18: talaia.agent.v1.CoreMsg.host_reboot:type_name -> talaia.agent.v1.HostReboot
+	27, // 19: talaia.agent.v1.AgentMsg.heartbeat:type_name -> talaia.agent.v1.Heartbeat
+	43, // 20: talaia.agent.v1.AgentMsg.metrics:type_name -> talaia.agent.v1.Metrics
+	26, // 21: talaia.agent.v1.AgentMsg.job_event:type_name -> talaia.agent.v1.JobEvent
+	29, // 22: talaia.agent.v1.AgentMsg.inventory:type_name -> talaia.agent.v1.Inventory
+	34, // 23: talaia.agent.v1.AgentMsg.container_stats:type_name -> talaia.agent.v1.ContainerStats
+	40, // 24: talaia.agent.v1.AgentMsg.terminal_opened:type_name -> talaia.agent.v1.TerminalOpened
+	41, // 25: talaia.agent.v1.AgentMsg.terminal_output:type_name -> talaia.agent.v1.TerminalOutput
+	42, // 26: talaia.agent.v1.AgentMsg.terminal_closed:type_name -> talaia.agent.v1.TerminalClosed
+	0,  // 27: talaia.agent.v1.ContainerAction.action:type_name -> talaia.agent.v1.ContainerActionType
+	1,  // 28: talaia.agent.v1.StackAction.action:type_name -> talaia.agent.v1.StackActionType
+	2,  // 29: talaia.agent.v1.ListResources.kind:type_name -> talaia.agent.v1.ResourceKind
+	2,  // 30: talaia.agent.v1.ResourceRef.kind:type_name -> talaia.agent.v1.ResourceKind
+	18, // 31: talaia.agent.v1.RemoveResources.items:type_name -> talaia.agent.v1.ResourceRef
+	3,  // 32: talaia.agent.v1.ServiceAction.action:type_name -> talaia.agent.v1.ServiceActionType
+	4,  // 33: talaia.agent.v1.ReadJournal.boot:type_name -> talaia.agent.v1.JournalBoot
+	5,  // 34: talaia.agent.v1.AptUpgrade.mode:type_name -> talaia.agent.v1.AptUpgradeMode
+	6,  // 35: talaia.agent.v1.JobEvent.state:type_name -> talaia.agent.v1.JobState
+	44, // 36: talaia.agent.v1.JobEvent.at:type_name -> google.protobuf.Timestamp
+	44, // 37: talaia.agent.v1.Heartbeat.sent_at:type_name -> google.protobuf.Timestamp
+	31, // 38: talaia.agent.v1.Inventory.containers:type_name -> talaia.agent.v1.Container
+	32, // 39: talaia.agent.v1.Inventory.compose_projects:type_name -> talaia.agent.v1.ComposeProject
+	33, // 40: talaia.agent.v1.Inventory.services:type_name -> talaia.agent.v1.SystemdUnit
+	30, // 41: talaia.agent.v1.Inventory.apt:type_name -> talaia.agent.v1.AptSummary
+	44, // 42: talaia.agent.v1.AptSummary.checked_at:type_name -> google.protobuf.Timestamp
+	44, // 43: talaia.agent.v1.AptSummary.lists_updated_at:type_name -> google.protobuf.Timestamp
+	44, // 44: talaia.agent.v1.ContainerStats.sampled_at:type_name -> google.protobuf.Timestamp
+	35, // 45: talaia.agent.v1.ContainerStats.items:type_name -> talaia.agent.v1.ContainerStat
+	8,  // 46: talaia.agent.v1.TerminalOpen.shell:type_name -> talaia.agent.v1.TerminalShell
+	7,  // 47: talaia.agent.v1.TerminalOpen.target:type_name -> talaia.agent.v1.TerminalTarget
+	44, // 48: talaia.agent.v1.Metrics.sampled_at:type_name -> google.protobuf.Timestamp
+	10, // 49: talaia.agent.v1.AgentHub.Connect:input_type -> talaia.agent.v1.AgentMsg
+	9,  // 50: talaia.agent.v1.AgentHub.Connect:output_type -> talaia.agent.v1.CoreMsg
+	50, // [50:51] is the sub-list for method output_type
+	49, // [49:50] is the sub-list for method input_type
+	49, // [49:49] is the sub-list for extension type_name
+	49, // [49:49] is the sub-list for extension extendee
+	0,  // [0:49] is the sub-list for field type_name
 }
 
 func init() { file_agent_proto_init() }
@@ -2896,6 +3696,11 @@ func file_agent_proto_init() {
 		(*CoreMsg_TerminalResize)(nil),
 		(*CoreMsg_TerminalClose)(nil),
 		(*CoreMsg_AgentUpdate)(nil),
+		(*CoreMsg_ServiceAction)(nil),
+		(*CoreMsg_ReadJournal)(nil),
+		(*CoreMsg_AptStatus)(nil),
+		(*CoreMsg_AptUpgrade)(nil),
+		(*CoreMsg_HostReboot)(nil),
 	}
 	file_agent_proto_msgTypes[1].OneofWrappers = []any{
 		(*AgentMsg_Heartbeat)(nil),
@@ -2907,13 +3712,14 @@ func file_agent_proto_init() {
 		(*AgentMsg_TerminalOutput)(nil),
 		(*AgentMsg_TerminalClosed)(nil),
 	}
+	file_agent_proto_msgTypes[13].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_agent_proto_rawDesc), len(file_agent_proto_rawDesc)),
-			NumEnums:      5,
-			NumMessages:   29,
+			NumEnums:      9,
+			NumMessages:   35,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

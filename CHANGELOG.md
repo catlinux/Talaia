@@ -18,6 +18,12 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.3.2] - 2026-10-22
+
+### Added
+
+- Agent contract for phase 3 (whole server): typed commands for systemd services, journald, apt status and upgrades, and reboot; an apt summary and the host terminal flag in the inventory; the enabled state of each service; a target for terminal sessions (container or host). Nothing uses them yet.
+
 ## [0.3.1] - 2026-10-22
 
 ### Changed
@@ -232,7 +238,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.3.1...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.3.2...HEAD
+[0.3.2]: https://github.com/catlinux/Talaia/releases/tag/v0.3.2
 [0.3.1]: https://github.com/catlinux/Talaia/releases/tag/v0.3.1
 [0.3.0]: https://github.com/catlinux/Talaia/releases/tag/v0.3.0
 [0.2.15]: https://github.com/catlinux/Talaia/releases/tag/v0.2.15
