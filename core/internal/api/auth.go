@@ -83,6 +83,8 @@ func (h *authHandler) routes() http.Handler {
 	r.Post("/pin/login", h.pinLogin)
 	r.Post("/passkey/login/begin", h.passkeyLoginBegin)
 	r.Post("/passkey/login/finish", h.passkeyLoginFinish)
+	r.Get("/invite/{token}", h.inviteInfo)
+	r.Post("/invite/{token}/accept", h.inviteAccept)
 	r.Group(func(r chi.Router) {
 		r.Use(RequireFull)
 		r.Post("/devices", h.createDevice)

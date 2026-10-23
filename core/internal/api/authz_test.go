@@ -132,6 +132,9 @@ func routePath(method string, pattern string) string {
 		"{unit}", "ssh.service",
 		"{jobID}", "00000000-0000-0000-0000-000000000001",
 		"{sessionID}", "00000000-0000-0000-0000-000000000002",
+		"{userID}", "00000000-0000-0000-0000-000000000003",
+		"{bindingID}", "00000000-0000-0000-0000-000000000004",
+		"{inviteID}", "00000000-0000-0000-0000-000000000005",
 	).Replace(pattern)
 	return "/api/v1" + path
 }

@@ -87,6 +87,18 @@ func NewRouter(deps RouterDeps) http.Handler {
 				Agents:  deps.Agents,
 			}))
 			registerRoute(r, deps.Authz, http.MethodGet, "/audit", NewAuditHandler(AuditDeps{Entries: deps.AuditLog}))
+			userAdmin := newUserAdminHandler(UserAdminDeps{Store: deps.Auth.Store, Audit: deps.Auth.Store})
+			registerRoute(r, deps.Authz, http.MethodGet, "/users", http.HandlerFunc(userAdmin.listUsers))
+			registerRoute(r, deps.Authz, http.MethodPost, "/users/invites", http.HandlerFunc(userAdmin.createInvite))
+			registerRoute(r, deps.Authz, http.MethodGet, "/users/invites", http.HandlerFunc(userAdmin.listInvites))
+			registerRoute(r, deps.Authz, http.MethodDelete, "/users/invites/{inviteID}", http.HandlerFunc(userAdmin.revokeInvite))
+			registerRoute(r, deps.Authz, http.MethodGet, "/users/{userID}/bindings", http.HandlerFunc(userAdmin.listUserBindings))
+			registerRoute(r, deps.Authz, http.MethodPost, "/users/{userID}/bindings", http.HandlerFunc(userAdmin.createBinding))
+			registerRoute(r, deps.Authz, http.MethodPatch, "/users/{userID}", http.HandlerFunc(userAdmin.updateUser))
+			registerRoute(r, deps.Authz, http.MethodPost, "/users/{userID}/disable", http.HandlerFunc(userAdmin.disableUser))
+			registerRoute(r, deps.Authz, http.MethodPost, "/users/{userID}/enable", http.HandlerFunc(userAdmin.enableUser))
+			registerRoute(r, deps.Authz, http.MethodPatch, "/bindings/{bindingID}", http.HandlerFunc(userAdmin.updateBinding))
+			registerRoute(r, deps.Authz, http.MethodDelete, "/bindings/{bindingID}", http.HandlerFunc(userAdmin.deleteBinding))
 			if deps.AgentUpdates != nil {
 				registerRoute(r, deps.Authz, http.MethodPost, "/servers/{serverID}/agent/update",
 					NewAgentUpdateHandler(*deps.AgentUpdates))

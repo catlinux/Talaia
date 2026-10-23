@@ -13,6 +13,12 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+## [0.4.4] - 2026-10-23
+
+### Añadido
+
+- API de gestión de usuarios (permiso `users.manage`): listar usuarios, editar nombre y correo, desactivar y activar (no se puede desactivar, degradar ni quitar al último administrador, ni desactivarse a uno mismo), crear, cambiar y borrar asignaciones de rol, e invitaciones por enlace (72 horas, un solo uso, el token se muestra una vez y se guarda con hash). La persona invitada pone su contraseña en `/api/v1/auth/invite/{token}/accept` y debe activar TOTP antes de tener sesión completa. Todo queda en la auditoría.
+
 ## [0.4.3] - 2026-10-23
 
 ### Añadido
@@ -399,7 +405,8 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
   `.gitattributes` y `.gitignore`.
 - Licencia WNCL-1.0 aplicada: archivo `LICENSE` y sección de créditos en los README.
 
-[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.4.3...HEAD
+[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.4.4...HEAD
+[0.4.4]: https://github.com/catlinux/Talaia/releases/tag/v0.4.4
 [0.4.3]: https://github.com/catlinux/Talaia/releases/tag/v0.4.3
 [0.4.2]: https://github.com/catlinux/Talaia/releases/tag/v0.4.2
 [0.4.1]: https://github.com/catlinux/Talaia/releases/tag/v0.4.1
