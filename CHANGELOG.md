@@ -18,6 +18,12 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.4.13] - 2026-10-23
+
+### Added
+
+- Panel: API keys in Settings (created with a fresh TOTP code, shown once, with a ready-made `curl` example), single sign-on settings for administrators, a "Sign in with…" button on the login when OIDC is enabled, and a list of terminal recordings with `.cast` download in the audit screen.
+
 ## [0.4.12] - 2026-10-23
 
 ### Added
@@ -453,7 +459,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.4.12...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.4.13...HEAD
+[0.4.13]: https://github.com/catlinux/Talaia/releases/tag/v0.4.13
 [0.4.12]: https://github.com/catlinux/Talaia/releases/tag/v0.4.12
 [0.4.11]: https://github.com/catlinux/Talaia/releases/tag/v0.4.11
 [0.4.10]: https://github.com/catlinux/Talaia/releases/tag/v0.4.10

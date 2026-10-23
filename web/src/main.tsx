@@ -12,6 +12,7 @@ import './styles/fleet.css'
 import './styles/server.css'
 import './styles/audit.css'
 import './styles/users.css'
+import './styles/fase4.css'
 import './styles/auth.css'
 
 // Apply the theme before the first render to avoid a flash of the wrong theme.

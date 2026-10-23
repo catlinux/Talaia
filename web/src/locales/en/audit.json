@@ -98,5 +98,39 @@
   "empty": "There are no events for these filters.",
   "error": "The audit log could not be read: {{message}}",
   "unknownAction": "Unknown action",
-  "unknownServer": "No server"
+  "unknownServer": "No server",
+  "tabs": {
+    "label": "Audit sections",
+    "log": "Audit log",
+    "recordings": "Recordings"
+  },
+  "recordings": {
+    "intro": "Terminal sessions are recorded. Download a finished session and play it locally.",
+    "playHint": "Play it with",
+    "loading": "Loading recordings…",
+    "empty": "There are no terminal recordings yet.",
+    "host": "Host",
+    "noReason": "—",
+    "privileged": "Privileged",
+    "unprivileged": "Not privileged",
+    "download": "Download .cast",
+    "open": "Still open",
+    "table": {
+      "when": "When",
+      "who": "Who",
+      "server": "Server",
+      "where": "Container or host",
+      "duration": "Duration",
+      "reason": "Closed because",
+      "privileged": "Privileged",
+      "download": "Recording"
+    },
+    "reasons": {
+      "exited": "Shell exited",
+      "sessionRevoked": "Session revoked",
+      "ticketExpired": "Ticket expired",
+      "openFailed": "Could not open",
+      "detached": "Disconnected"
+    }
+  }
 }

@@ -2,10 +2,12 @@ import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { createAuditApi, type AuditApi, type AuditEntry } from '../api/audit'
+import { createRecordingsApi, type RecordingsApi } from '../api/recordings'
 import { isSignedOut } from '../api/http'
 import { errorMessage } from '../auth/AuthGate'
 import { usePermissions } from '../auth/permissions'
 import { formatRelativeTime } from './fleet/format'
+import { RecordingsTab } from './audit/RecordingsTab'
 
 const actionGroups = [
   { value: '', key: 'filters.all' },
@@ -22,6 +24,7 @@ const actionGroups = [
 ] as const
 
 const defaultApi = createAuditApi()
+const defaultRecordingsApi = createRecordingsApi()
 
 interface AuditProps {
   /** api is injected by the tests; the panel builds its own otherwise. */
@@ -30,6 +33,8 @@ interface AuditProps {
   limit?: number
   /** serverNames is optional; without it the id from the details is shown. */
   serverNames?: Record<string, string>
+  /** recordingsApi is injected by the tests; the panel builds its own otherwise. */
+  recordingsApi?: RecordingsApi
 }
 
 /** formatDetail turns a JSON value into text, never HTML. */
@@ -65,11 +70,19 @@ function resultTone(result: string): 'success' | 'failure' | 'denied' | 'request
  * Audit lists the append-only audit log newest first. Filters reset the list and
  * Load more follows the opaque cursor; details are always rendered as text.
  */
-export function Audit({ api = defaultApi, limit = 50, serverNames }: AuditProps) {
+export function Audit({ api = defaultApi, limit = 50, serverNames, recordingsApi }: AuditProps) {
   const { t, i18n } = useTranslation(['audit', 'errors'])
   const language = i18n.resolvedLanguage ?? i18n.language
   const { can, loading: permissionsLoading } = usePermissions()
   const canView = !permissionsLoading && can('audit.view')
+  const canRecordings = !permissionsLoading && can('recordings.view')
+  const recordings = recordingsApi ?? defaultRecordingsApi
+  const [tab, setTab] = useState<'audit' | 'recordings'>('audit')
+  const activeTab: 'audit' | 'recordings' = !canView
+    ? 'recordings'
+    : tab === 'recordings' && !canRecordings
+      ? 'audit'
+      : tab
   const [entries, setEntries] = useState<AuditEntry[]>([])
   const [next, setNext] = useState('')
   const [loading, setLoading] = useState(true)
@@ -111,13 +124,13 @@ export function Audit({ api = defaultApi, limit = 50, serverNames }: AuditProps)
   )
 
   useEffect(() => {
-    if (!canView) return
+    if (!canView || activeTab !== 'audit') return
     // Start after the effect returns: load updates state when the page arrives,
     // and this keeps the first render free of a cascading update.
     queueMicrotask(() => {
       void load('', false)
     })
-  }, [canView, load])
+  }, [activeTab, canView, load])
 
   useEffect(() => {
     const trimmed = actor.trim()
@@ -145,7 +158,7 @@ export function Audit({ api = defaultApi, limit = 50, serverNames }: AuditProps)
     })
   }
 
-  if (!permissionsLoading && !canView) {
+  if (!permissionsLoading && !canView && !canRecordings) {
     return null
   }
 
@@ -158,121 +171,158 @@ export function Audit({ api = defaultApi, limit = 50, serverNames }: AuditProps)
         <p className="audit__subtitle">{t('subtitle')}</p>
       </header>
 
-      <div className="audit__filters" role="group" aria-label={t('filters.label')}>
-        <label className="audit__field">
-          <span>{t('filters.action')}</span>
-          <select value={action} onChange={(event) => changeAction(event.target.value)}>
-            {actionGroups.map((group) => (
-              <option key={group.value} value={group.value}>
-                {t(group.key)}
-              </option>
-            ))}
-          </select>
-        </label>
-        <form className="audit__actor-form" onSubmit={applyActor}>
-          <label className="audit__field">
-            <span>{t('filters.actor')}</span>
-            <input
-              type="search"
-              value={actor}
-              placeholder={t('filters.actorPlaceholder')}
-              onChange={(event) => setActor(event.target.value)}
-            />
-          </label>
-          <button type="submit" className="cbtn">
-            {t('filters.apply')}
+      <div className="audit__tabs" role="tablist" aria-label={t('tabs.label')}>
+        {canView ? (
+          <button
+            id="audit-tab-log"
+            type="button"
+            role="tab"
+            aria-selected={activeTab === 'audit'}
+            aria-controls="audit-panel-log"
+            className={activeTab === 'audit' ? 'audit__tab audit__tab--on' : 'audit__tab'}
+            onClick={() => setTab('audit')}
+          >
+            {t('tabs.log')}
           </button>
-        </form>
+        ) : null}
+        {canRecordings ? (
+          <button
+            id="audit-tab-recordings"
+            type="button"
+            role="tab"
+            aria-selected={activeTab === 'recordings'}
+            aria-controls="audit-panel-recordings"
+            className={activeTab === 'recordings' ? 'audit__tab audit__tab--on' : 'audit__tab'}
+            onClick={() => setTab('recordings')}
+          >
+            {t('tabs.recordings')}
+          </button>
+        ) : null}
       </div>
 
-      {error !== null ? (
-        <p className="audit__message audit__message--error" role="alert">
-          {error}
-        </p>
-      ) : null}
+      {activeTab === 'audit' && canView ? (
+        <div id="audit-panel-log" role="tabpanel" aria-labelledby="audit-tab-log">
+          <div className="audit__filters" role="group" aria-label={t('filters.label')}>
+            <label className="audit__field">
+              <span>{t('filters.action')}</span>
+              <select value={action} onChange={(event) => changeAction(event.target.value)}>
+                {actionGroups.map((group) => (
+                  <option key={group.value} value={group.value}>
+                    {t(group.key)}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <form className="audit__actor-form" onSubmit={applyActor}>
+              <label className="audit__field">
+                <span>{t('filters.actor')}</span>
+                <input
+                  type="search"
+                  value={actor}
+                  placeholder={t('filters.actorPlaceholder')}
+                  onChange={(event) => setActor(event.target.value)}
+                />
+              </label>
+              <button type="submit" className="cbtn">
+                {t('filters.apply')}
+              </button>
+            </form>
+          </div>
 
-      {loading ? (
-        <p className="audit__message" role="status">
-          {t('loading')}
-        </p>
-      ) : null}
+          {error !== null ? (
+            <p className="audit__message audit__message--error" role="alert">
+              {error}
+            </p>
+          ) : null}
 
-      {!loading && error === null && entries.length === 0 ? (
-        <p className="audit__message">{t('empty')}</p>
-      ) : null}
+          {loading ? (
+            <p className="audit__message" role="status">
+              {t('loading')}
+            </p>
+          ) : null}
 
-      {entries.length > 0 ? (
-        <div className="audit__table-wrap">
-          <table className="audit__table">
-            <thead>
-              <tr>
-                <th scope="col">{t('table.time')}</th>
-                <th scope="col">{t('table.actor')}</th>
-                <th scope="col">{t('table.action')}</th>
-                <th scope="col">{t('table.result')}</th>
-                <th scope="col">{t('table.server')}</th>
-                <th scope="col">{t('table.details')}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {entries.map((entry) => {
-                const at = new Date(entry.at)
-                const known = !Number.isNaN(at.getTime())
-                const absolute = known
-                  ? new Intl.DateTimeFormat(language, {
-                      dateStyle: 'medium',
-                      timeStyle: 'medium',
-                    }).format(at)
-                  : entry.at
-                const relative = known ? formatRelativeTime(at, new Date(), language) : ''
-                const serverID =
-                  typeof entry.details?.server_id === 'string' ? entry.details.server_id : ''
-                const server =
-                  serverID === '' ? t('unknownServer') : (serverNames?.[serverID] ?? serverID)
-                const tone = resultTone(entry.result)
-                const result = t(`result.${tone}`, { defaultValue: entry.result })
-                const actionLabel = t(`actions.${entry.action}`, {
-                  defaultValue: entry.action || t('unknownAction'),
-                })
-                const details = entry.details ?? {}
-                const detailRows = Object.entries(details).slice(0, 8)
-                const open = expanded.has(entry.id)
-                return (
-                  <FragmentRows
-                    key={entry.id}
-                    entry={entry}
-                    absolute={absolute}
-                    relative={relative}
-                    server={server}
-                    result={result}
-                    tone={tone}
-                    actionLabel={actionLabel}
-                    detailRows={detailRows}
-                    open={open}
-                    onToggle={() => toggleDetails(entry.id)}
-                    labels={{
-                      details: t('details.show'),
-                      hide: t('details.hide'),
-                      empty: t('details.empty'),
-                    }}
-                  />
-                )
-              })}
-            </tbody>
-          </table>
+          {!loading && error === null && entries.length === 0 ? (
+            <p className="audit__message">{t('empty')}</p>
+          ) : null}
+
+          {entries.length > 0 ? (
+            <div className="audit__table-wrap">
+              <table className="audit__table">
+                <thead>
+                  <tr>
+                    <th scope="col">{t('table.time')}</th>
+                    <th scope="col">{t('table.actor')}</th>
+                    <th scope="col">{t('table.action')}</th>
+                    <th scope="col">{t('table.result')}</th>
+                    <th scope="col">{t('table.server')}</th>
+                    <th scope="col">{t('table.details')}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {entries.map((entry) => {
+                    const at = new Date(entry.at)
+                    const known = !Number.isNaN(at.getTime())
+                    const absolute = known
+                      ? new Intl.DateTimeFormat(language, {
+                          dateStyle: 'medium',
+                          timeStyle: 'medium',
+                        }).format(at)
+                      : entry.at
+                    const relative = known ? formatRelativeTime(at, new Date(), language) : ''
+                    const serverID =
+                      typeof entry.details?.server_id === 'string' ? entry.details.server_id : ''
+                    const server =
+                      serverID === '' ? t('unknownServer') : (serverNames?.[serverID] ?? serverID)
+                    const tone = resultTone(entry.result)
+                    const result = t(`result.${tone}`, { defaultValue: entry.result })
+                    const actionLabel = t(`actions.${entry.action}`, {
+                      defaultValue: entry.action || t('unknownAction'),
+                    })
+                    const details = entry.details ?? {}
+                    const detailRows = Object.entries(details).slice(0, 8)
+                    const open = expanded.has(entry.id)
+                    return (
+                      <FragmentRows
+                        key={entry.id}
+                        entry={entry}
+                        absolute={absolute}
+                        relative={relative}
+                        server={server}
+                        result={result}
+                        tone={tone}
+                        actionLabel={actionLabel}
+                        detailRows={detailRows}
+                        open={open}
+                        onToggle={() => toggleDetails(entry.id)}
+                        labels={{
+                          details: t('details.show'),
+                          hide: t('details.hide'),
+                          empty: t('details.empty'),
+                        }}
+                      />
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          ) : null}
+
+          {!loading && next !== '' ? (
+            <div className="audit__more">
+              <button
+                type="button"
+                className="cbtn"
+                disabled={appending}
+                onClick={() => void load(next, true)}
+              >
+                {appending ? t('loadingMore') : t('loadMore')}
+              </button>
+            </div>
+          ) : null}
         </div>
-      ) : null}
-
-      {!loading && next !== '' ? (
-        <div className="audit__more">
-          <button
-            type="button"
-            className="cbtn"
-            disabled={appending}
-            onClick={() => void load(next, true)}
-          >
-            {appending ? t('loadingMore') : t('loadMore')}
-          </button>
+      ) : canRecordings ? (
+        <div id="audit-panel-recordings" role="tabpanel" aria-labelledby="audit-tab-recordings">
+          <RecordingsTab api={recordings} />
         </div>
       ) : null}
     </section>

@@ -80,7 +80,7 @@ export function App({
   const { t } = useTranslation(['common', 'auth'])
   const auth = useAuth()
   const { can } = usePermissions()
-  const canAudit = can('audit.view')
+  const canAudit = can('audit.view') || can('recordings.view')
   const canUsers = can('users.manage')
   const [screen, setScreen] = useState<Screen>('fleet')
   // The server whose containers are open, if any; it replaces the fleet screen.

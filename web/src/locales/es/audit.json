@@ -98,5 +98,39 @@
   "empty": "No hay eventos para estos filtros.",
   "error": "No se ha podido leer la auditoría: {{message}}",
   "unknownAction": "Acción desconocida",
-  "unknownServer": "Sin servidor"
+  "unknownServer": "Sin servidor",
+  "tabs": {
+    "label": "Secciones de auditoría",
+    "log": "Registro de auditoría",
+    "recordings": "Grabaciones"
+  },
+  "recordings": {
+    "intro": "Las sesiones de terminal se graban. Descarga una sesión terminada y reprodúcela en local.",
+    "playHint": "Reprodúcela con",
+    "loading": "Cargando grabaciones…",
+    "empty": "Todavía no hay grabaciones de terminal.",
+    "host": "Host",
+    "noReason": "—",
+    "privileged": "Privilegiada",
+    "unprivileged": "Sin privilegios",
+    "download": "Descargar .cast",
+    "open": "Sigue abierta",
+    "table": {
+      "when": "Cuándo",
+      "who": "Quién",
+      "server": "Servidor",
+      "where": "Contenedor o host",
+      "duration": "Duración",
+      "reason": "Motivo de cierre",
+      "privileged": "Privilegiada",
+      "download": "Grabación"
+    },
+    "reasons": {
+      "exited": "La shell terminó",
+      "sessionRevoked": "Sesión revocada",
+      "ticketExpired": "Ticket caducado",
+      "openFailed": "No se pudo abrir",
+      "detached": "Desconectada"
+    }
+  }
 }

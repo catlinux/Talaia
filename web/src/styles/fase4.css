@@ -1,0 +1,131 @@
+/* API keys, single sign-on, recordings and the OIDC login button. */
+
+.settings__hint {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.8125rem;
+}
+
+.settings__card-head > div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.apikeys__once {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.apikeys__secret,
+.apikeys__curl {
+  display: block;
+  overflow-wrap: anywhere;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--code-bg);
+  color: var(--code-ink);
+  font-family: var(--f-mono);
+  font-size: 0.8125rem;
+  user-select: all;
+}
+
+.apikeys__secret {
+  font-size: 0.9375rem;
+}
+
+.oidc-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.oidc-form__switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  align-self: flex-start;
+  cursor: pointer;
+}
+
+.oidc-form__switch input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent);
+}
+
+.oidc-form__redirect {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+}
+
+.oidc-form__redirect code {
+  flex: 1 1 260px;
+  overflow-wrap: anywhere;
+  font-family: var(--f-mono);
+  font-size: 0.8125rem;
+}
+
+.audit__tabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid var(--line);
+}
+
+.audit__tab {
+  padding: 9px 14px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  cursor: pointer;
+}
+
+.audit__tab--on {
+  border-bottom-color: var(--accent);
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.recordings {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.recordings__intro {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+.recordings__intro p {
+  margin: 0;
+}
+
+.recordings__hint code {
+  font-family: var(--f-mono);
+  font-size: 0.8125rem;
+}
+
+.recordings__download {
+  color: var(--accent);
+  font-size: 0.8125rem;
+  text-underline-offset: 3px;
+}
+
+.auth__sso {
+  width: 100%;
+  margin-top: 12px;
+}

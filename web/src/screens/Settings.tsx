@@ -2,7 +2,10 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { createAuthApi, type AccessApi } from '../api/auth'
+import { createAPIKeysApi, type APIKeysApi } from '../api/apikeys'
+import { createGroupsApi, type Group, type GroupsApi } from '../api/groups'
 import { ApiError, isSignedOut } from '../api/http'
+import { createOIDCApi, type OIDCApi } from '../api/oidc'
 import {
   AgentUpdateError,
   type AgentUpdateAllResult,
@@ -19,6 +22,8 @@ import { errorMessage } from '../auth/AuthGate'
 import { usePermissions } from '../auth/permissions'
 import { ManualUpgrade } from './server/ManualUpgrade'
 import { AccessCard } from './settings/AccessCard'
+import { APIKeysCard } from './settings/APIKeysCard'
+import { OIDCSettingsCard } from './settings/OIDCSettingsCard'
 
 /** pollEvery is how often the progress of a running update is asked for. */
 export const pollEvery = 3000
@@ -35,6 +40,12 @@ interface SettingsProps {
   api?: SettingsApi
   /** accessApi manages trusted devices and passkeys; the panel builds its own otherwise. */
   accessApi?: AccessApi
+  /** keysApi manages API keys; the panel builds its own otherwise. */
+  keysApi?: APIKeysApi
+  /** oidcApi manages single sign-on settings; the panel builds its own otherwise. */
+  oidcApi?: OIDCApi
+  /** groupsApi supplies the group names of the key scope selector. */
+  groupsApi?: GroupsApi
   /** pollMs overrides the polling interval, for the tests. */
   pollMs?: number
 }
@@ -47,6 +58,9 @@ type View =
 
 const defaultApi = createSystemApi()
 const defaultAccessApi = createAuthApi()
+const defaultKeysApi = createAPIKeysApi()
+const defaultOIDCApi = createOIDCApi()
+const defaultGroupsApi = createGroupsApi()
 
 /** shortSHA returns the seven characters the panel shows of a commit. */
 function shortSHA(sha: string): string {
@@ -130,7 +144,14 @@ function NoteText({ note }: { note: string }) {
  * button only queues the request: the host helper does the work, and the screen
  * follows its progress through the status of the API, so a reload resumes it.
  */
-export function Settings({ api = defaultApi, accessApi, pollMs = pollEvery }: SettingsProps) {
+export function Settings({
+  api = defaultApi,
+  accessApi,
+  keysApi,
+  oidcApi,
+  groupsApi,
+  pollMs = pollEvery,
+}: SettingsProps) {
   const { t, i18n } = useTranslation(['settings', 'errors'])
   const language = i18n.resolvedLanguage ?? i18n.language
   const { can, loading: permissionsLoading } = usePermissions()
@@ -139,6 +160,9 @@ export function Settings({ api = defaultApi, accessApi, pollMs = pollEvery }: Se
   // default system API means the panel also manages trusted devices and
   // passkeys.
   const access = accessApi ?? (api === defaultApi ? defaultAccessApi : undefined)
+  const keys = keysApi ?? (api === defaultApi ? defaultKeysApi : undefined)
+  const oidc = oidcApi ?? (api === defaultApi ? defaultOIDCApi : undefined)
+  const groupsClient = groupsApi ?? (api === defaultApi ? defaultGroupsApi : undefined)
   const [view, setView] = useState<View>({ status: 'loading' })
   const [confirming, setConfirming] = useState(false)
   const [requesting, setRequesting] = useState(false)
@@ -150,6 +174,7 @@ export function Settings({ api = defaultApi, accessApi, pollMs = pollEvery }: Se
   const [notesExpanded, setNotesExpanded] = useState(false)
   const [servers, setServers] = useState<ServerSummary[] | null>(null)
   const [serversError, setServersError] = useState<string | null>(null)
+  const [groups, setGroups] = useState<Group[]>([])
   const [removing, setRemoving] = useState<ServerSummary | null>(null)
   const [confirmName, setConfirmName] = useState('')
   const [removeBusy, setRemoveBusy] = useState(false)
@@ -162,6 +187,7 @@ export function Settings({ api = defaultApi, accessApi, pollMs = pollEvery }: Se
   const [updateNotice, setUpdateNotice] = useState<string | null>(null)
 
   const showServers = canSettings && api.listServers !== undefined
+  const canUsers = !permissionsLoading && can('users.manage')
   const canAgentUpdate = canSettings && can('server.agent_update')
   const canUpdateAgent = canAgentUpdate && api.updateAgent !== undefined
   const canUpdateAll = canAgentUpdate && api.updateAllAgents !== undefined
@@ -169,7 +195,7 @@ export function Settings({ api = defaultApi, accessApi, pollMs = pollEvery }: Se
   const updateAvailableCount = servers?.filter((server) => server.agentUpdateAvailable).length ?? 0
 
   useEffect(() => {
-    if (!canSettings || !api.listServers) {
+    if (!api.listServers) {
       return
     }
     let cancelled = false
@@ -188,6 +214,22 @@ export function Settings({ api = defaultApi, accessApi, pollMs = pollEvery }: Se
       cancelled = true
     }
   }, [api, canSettings, t])
+
+  useEffect(() => {
+    if (!keys || !groupsClient || !canUsers) return
+    let cancelled = false
+    groupsClient.list().then(
+      (next) => {
+        if (!cancelled) setGroups(next)
+      },
+      () => {
+        if (!cancelled) setGroups([])
+      },
+    )
+    return () => {
+      cancelled = true
+    }
+  }, [canUsers, groupsClient, keys])
 
   useEffect(() => {
     if (!canSettings) {
@@ -554,6 +596,12 @@ export function Settings({ api = defaultApi, accessApi, pollMs = pollEvery }: Se
           {view.message}
         </p>
       ) : null}
+
+      {keys !== undefined ? (
+        <APIKeysCard api={keys} canListAll={canUsers} servers={servers ?? []} groups={groups} />
+      ) : null}
+
+      {canSettings && oidc !== undefined ? <OIDCSettingsCard api={oidc} /> : null}
 
       {canSettings && system !== null && update !== null ? (
         <>

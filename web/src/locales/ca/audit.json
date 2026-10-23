@@ -98,5 +98,39 @@
   "empty": "No hi ha esdeveniments per a aquests filtres.",
   "error": "No s'ha pogut llegir l'auditoria: {{message}}",
   "unknownAction": "Acció desconeguda",
-  "unknownServer": "Sense servidor"
+  "unknownServer": "Sense servidor",
+  "tabs": {
+    "label": "Seccions d'auditoria",
+    "log": "Registre d'auditoria",
+    "recordings": "Gravacions"
+  },
+  "recordings": {
+    "intro": "Les sessions de terminal es graven. Baixa una sessió acabada i reprodueix-la en local.",
+    "playHint": "Reprodueix-la amb",
+    "loading": "Carregant gravacions…",
+    "empty": "Encara no hi ha gravacions de terminal.",
+    "host": "Amfitrió",
+    "noReason": "—",
+    "privileged": "Privilegiada",
+    "unprivileged": "Sense privilegis",
+    "download": "Baixa .cast",
+    "open": "Encara oberta",
+    "table": {
+      "when": "Quan",
+      "who": "Qui",
+      "server": "Servidor",
+      "where": "Contenidor o amfitrió",
+      "duration": "Durada",
+      "reason": "Motiu de tancament",
+      "privileged": "Privilegiada",
+      "download": "Gravació"
+    },
+    "reasons": {
+      "exited": "La shell va acabar",
+      "sessionRevoked": "Sessió revocada",
+      "ticketExpired": "Ticket caducat",
+      "openFailed": "No s'ha pogut obrir",
+      "detached": "Desconnectada"
+    }
+  }
 }

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { PasskeysUnavailableError } from '../api/auth'
+import type { OIDCLoginConfig } from '../api/oidc'
 import { errorMessage } from './AuthGate'
 import { AuthFrame } from './AuthFrame'
 import { PinLogin, readTrustedDevice } from './PinLogin'
@@ -15,10 +16,12 @@ export interface LoginProps {
   onPasskey?: () => Promise<void>
   /** expired tells the user the previous session ended on its own. */
   expired?: boolean
+  /** oidc is the public configuration of the single sign-on provider. */
+  oidc?: OIDCLoginConfig | null
 }
 
 /** Login is the first screen: PIN for a trusted browser, password and passkeys. */
-export function Login({ onSubmit, onPin, onPasskey, expired = false }: LoginProps) {
+export function Login({ onSubmit, onPin, onPasskey, expired = false, oidc }: LoginProps) {
   const { t } = useTranslation(['auth', 'errors'])
   const [trustedDevice] = useState(() => readTrustedDevice())
   const [mode, setMode] = useState<'pin' | 'password'>(() =>
@@ -32,6 +35,7 @@ export function Login({ onSubmit, onPin, onPasskey, expired = false }: LoginProp
   const [passkeyError, setPasskeyError] = useState<string | null>(null)
   const [passkeyAvailable, setPasskeyAvailable] = useState(true)
   const usernameField = useRef<HTMLInputElement>(null)
+  const oidcError = new URLSearchParams(window.location.search).has('oidc_error')
 
   useEffect(() => {
     if (mode === 'password') {
@@ -90,6 +94,11 @@ export function Login({ onSubmit, onPin, onPasskey, expired = false }: LoginProp
             {t('errors:sessionRequired')}
           </p>
         )}
+        {oidcError ? (
+          <p className="auth__status" role="status">
+            {t('auth:oidc.failed')}
+          </p>
+        ) : null}
 
         {mode === 'pin' && trustedDevice !== null && onPin !== undefined ? (
           <PinLogin
@@ -137,6 +146,17 @@ export function Login({ onSubmit, onPin, onPasskey, expired = false }: LoginProp
           </form>
         )}
 
+        {oidc?.enabled ? (
+          <button
+            className="auth__button auth__sso"
+            type="button"
+            onClick={() => window.location.assign('/api/v1/auth/oidc/start')}
+          >
+            {t('auth:oidc.button', {
+              label: oidc.label.trim() === '' ? t('auth:oidc.defaultLabel') : oidc.label,
+            })}
+          </button>
+        ) : null}
         {showPasskey ? (
           <button
             className="auth__button auth__passkey"

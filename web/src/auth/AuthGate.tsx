@@ -13,6 +13,7 @@ import type { TFunction } from 'i18next'
 import { createAuthApi, type AuthApi, type TotpPayload, type TotpSetup as Setup } from '../api/auth'
 import { ApiError, onSignedOut, type ApiErrorCode } from '../api/http'
 import { createInvitesApi, type InvitesApi } from '../api/invites'
+import { createOIDCApi, type OIDCApi, type OIDCLoginConfig } from '../api/oidc'
 import type { MeApi } from '../api/me'
 import { InviteAccept } from './InviteAccept'
 import { Login } from './Login'
@@ -96,6 +97,8 @@ export interface AuthGateProps {
   meApi?: MeApi
   /** inviteApi is injected by the tests; the panel builds its own otherwise. */
   inviteApi?: InvitesApi
+  /** oidcApi is injected by the tests; the panel builds its own otherwise. */
+  oidcApi?: OIDCApi
   children: ReactNode
 }
 
@@ -104,10 +107,15 @@ export interface AuthGateProps {
  * signed in and shows the sign-in, second-factor or recovery-code screens
  * until the session is complete.
  */
-export function AuthGate({ api, meApi, inviteApi, children }: AuthGateProps) {
+export function AuthGate({ api, meApi, inviteApi, oidcApi, children }: AuthGateProps) {
   const { t } = useTranslation('auth')
   const client = useMemo(() => api ?? createAuthApi(), [api])
   const invites = useMemo(() => inviteApi ?? createInvitesApi(), [inviteApi])
+  const oidc = useMemo(
+    () => oidcApi ?? (api === undefined ? createOIDCApi() : undefined),
+    [api, oidcApi],
+  )
+  const [oidcConfig, setOidcConfig] = useState<OIDCLoginConfig | null>(null)
   const initialInvite = useMemo(() => {
     if (window.location.pathname !== '/invite') return null
     return window.location.hash.replace(/^#/, '')
@@ -147,6 +155,23 @@ export function AuthGate({ api, meApi, inviteApi, children }: AuthGateProps) {
       active = false
     }
   }, [client, initialInvite])
+
+  useEffect(() => {
+    if (!oidc) return
+    let active = true
+    // A failed lookup only removes the SSO button; the password form stays.
+    oidc.loginConfig().then(
+      (config) => {
+        if (active) setOidcConfig(config)
+      },
+      () => {
+        if (active) setOidcConfig(null)
+      },
+    )
+    return () => {
+      active = false
+    }
+  }, [oidc])
 
   // A later call that finds no session sends the user back to the form.
   useEffect(() => onSignedOut(toLogin), [toLogin])
@@ -261,6 +286,7 @@ export function AuthGate({ api, meApi, inviteApi, children }: AuthGateProps) {
         onPin={client.pinLogin ? loginPin : undefined}
         onPasskey={client.beginPasskeyLogin && client.finishPasskeyLogin ? loginPasskey : undefined}
         expired={state.expired === true}
+        oidc={oidcConfig}
       />
     )
   }
