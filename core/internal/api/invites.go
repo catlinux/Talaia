@@ -65,19 +65,23 @@ func (h *userAdminHandler) createInvite(w http.ResponseWriter, r *http.Request) 
 	}
 	var request inviteCreateRequest
 	if err := decodeJSON(w, r, &request); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid_request")
+		writeInvalid(w, "", "body")
 		return
 	}
 	request.Username = strings.TrimSpace(request.Username)
 	request.Email = strings.TrimSpace(request.Email)
 	request.Role = strings.TrimSpace(request.Role)
-	if request.Username == "" || !validAdminRole(request.Role) {
-		writeError(w, http.StatusBadRequest, "invalid_request")
+	if request.Username == "" {
+		writeInvalid(w, "username", "required")
+		return
+	}
+	if !validAdminRole(request.Role) {
+		writeInvalid(w, "role", "invalid_value")
 		return
 	}
 	scope, err := h.validScope(r, request.Scope)
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid_request")
+		writeValidationError(w, err)
 		return
 	}
 
@@ -176,7 +180,7 @@ func (h *authHandler) inviteAccept(w http.ResponseWriter, r *http.Request) {
 	}
 	var request inviteAcceptRequest
 	if err := decodeJSON(w, r, &request); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid_request")
+		writeInvalid(w, "", "body")
 		return
 	}
 	invite, ok, err := h.pendingInvite(r, chi.URLParam(r, "token"))

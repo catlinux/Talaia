@@ -56,8 +56,12 @@ func (h *userAdminHandler) createTeam(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var request teamRequest
-	if err := decodeJSON(w, r, &request); err != nil || !validAdminName(request.Name) {
-		writeError(w, http.StatusBadRequest, "invalid_request")
+	if err := decodeJSON(w, r, &request); err != nil {
+		writeInvalid(w, "", "body")
+		return
+	}
+	if err := validateAdminName("name", request.Name); err != nil {
+		writeValidationError(w, err)
 		return
 	}
 	team, err := st.CreateTeam(r.Context(), request.Name)
@@ -75,8 +79,12 @@ func (h *userAdminHandler) updateTeam(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var request teamRequest
-	if err := decodeJSON(w, r, &request); err != nil || !validAdminName(request.Name) {
-		writeError(w, http.StatusBadRequest, "invalid_request")
+	if err := decodeJSON(w, r, &request); err != nil {
+		writeInvalid(w, "", "body")
+		return
+	}
+	if err := validateAdminName("name", request.Name); err != nil {
+		writeValidationError(w, err)
 		return
 	}
 	teamID := chi.URLParam(r, "teamID")
@@ -198,17 +206,17 @@ func (h *userAdminHandler) createTeamBinding(w http.ResponseWriter, r *http.Requ
 	}
 	var request bindingRequest
 	if err := decodeJSON(w, r, &request); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid_request")
+		writeInvalid(w, "", "body")
 		return
 	}
 	request.Role = strings.TrimSpace(request.Role)
 	if !validAdminRole(request.Role) {
-		writeError(w, http.StatusBadRequest, "invalid_request")
+		writeInvalid(w, "role", "invalid_value")
 		return
 	}
 	scope, err := h.validScope(r, request.Scope)
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid_request")
+		writeValidationError(w, err)
 		return
 	}
 	binding, err := st.CreateRoleBinding(r.Context(), store.RoleBinding{

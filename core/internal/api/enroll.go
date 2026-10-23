@@ -216,7 +216,26 @@ type errorBody struct {
 }
 
 type errorDetail struct {
-	Code string `json:"code"`
+	Code   string `json:"code"`
+	Field  string `json:"field,omitempty"`
+	Reason string `json:"reason,omitempty"`
+}
+
+type fieldError struct{ Field, Reason string }
+
+func (e fieldError) Error() string { return e.Field + ": " + e.Reason }
+
+func writeInvalid(w http.ResponseWriter, field, reason string) {
+	writeJSON(w, http.StatusBadRequest, errorBody{Error: errorDetail{Code: "invalid_request", Field: field, Reason: reason}})
+}
+
+func writeValidationError(w http.ResponseWriter, err error) {
+	var e fieldError
+	if errors.As(err, &e) {
+		writeInvalid(w, e.Field, e.Reason)
+		return
+	}
+	writeInvalid(w, "", "")
 }
 
 func writeError(w http.ResponseWriter, status int, code string) {

@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"errors"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -76,17 +77,22 @@ func newAPIKeyToken() (keyID, secret, token string, err error) {
 
 func (h *userAdminHandler) validateKeyBindings(r *http.Request, bindings []bindingRequest) ([]bindingRequest, error) {
 	if len(bindings) < 1 || len(bindings) > 10 {
-		return nil, errors.New("an api key needs between 1 and 10 bindings")
+		return nil, fieldError{"bindings", "out_of_range"}
 	}
 	seen := map[string]bool{}
 	validated := make([]bindingRequest, 0, len(bindings))
-	for _, binding := range bindings {
+	for i, binding := range bindings {
 		binding.Role = strings.TrimSpace(binding.Role)
 		if !validAdminRole(binding.Role) {
-			return nil, errors.New("invalid role")
+			return nil, fieldError{"bindings[" + strconv.Itoa(i) + "].role", "invalid_value"}
 		}
 		scope, err := h.validScope(r, binding.Scope)
 		if err != nil {
+			var fieldErr fieldError
+			if errors.As(err, &fieldErr) {
+				fieldErr.Field = "bindings[" + strconv.Itoa(i) + "]." + fieldErr.Field
+				return nil, fieldErr
+			}
 			return nil, err
 		}
 		binding.Scope = scope
@@ -112,16 +118,16 @@ func (h *userAdminHandler) createAPIKey(w http.ResponseWriter, r *http.Request) 
 	}
 	var request apiKeyCreateRequest
 	if err := decodeJSON(w, r, &request); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid_request")
+		writeInvalid(w, "", "body")
 		return
 	}
 	request.Name = strings.TrimSpace(request.Name)
 	if !validAdminName(request.Name) {
-		writeError(w, http.StatusBadRequest, "invalid_request")
+		writeValidationError(w, validateAdminName("name", request.Name))
 		return
 	}
 	if request.ExpiresInDays < 0 || request.ExpiresInDays > maxAPIKeyDays {
-		writeError(w, http.StatusBadRequest, "invalid_request")
+		writeInvalid(w, "expires_in_days", "out_of_range")
 		return
 	}
 	if request.ExpiresInDays == 0 {
@@ -133,7 +139,7 @@ func (h *userAdminHandler) createAPIKey(w http.ResponseWriter, r *http.Request) 
 			writeError(w, http.StatusConflict, "binding_exists")
 			return
 		}
-		writeError(w, http.StatusBadRequest, "invalid_request")
+		writeValidationError(w, err)
 		return
 	}
 	if h.deps.Limiter != nil && !h.deps.Limiter.Allow(clientIP(r)) {
@@ -155,7 +161,7 @@ func (h *userAdminHandler) createAPIKey(w http.ResponseWriter, r *http.Request) 
 			writeError(w, http.StatusForbidden, "code_invalid")
 			return
 		}
-		writeError(w, http.StatusBadRequest, "invalid_request")
+		writeValidationError(w, err)
 		return
 	}
 
@@ -168,7 +174,7 @@ func (h *userAdminHandler) createAPIKey(w http.ResponseWriter, r *http.Request) 
 	key, err := st.CreateAPIKey(r.Context(), keyID, auth.HashToken(secret), request.Name, session.User.ID, expiresAt)
 	if err != nil {
 		if errors.Is(err, store.ErrAPIKeyLifetime) {
-			writeError(w, http.StatusBadRequest, "invalid_request")
+			writeInvalid(w, "expires_in_days", "out_of_range")
 			return
 		}
 		internal(w, "create api key", err)

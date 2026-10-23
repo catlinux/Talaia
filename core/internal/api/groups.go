@@ -33,6 +33,18 @@ func validAdminName(name string) bool {
 	return length >= 1 && length <= 64
 }
 
+func validateAdminName(field, name string) error {
+	name = strings.TrimSpace(name)
+	length := utf8.RuneCountInString(name)
+	if length == 0 {
+		return fieldError{field, "required"}
+	}
+	if length > 64 {
+		return fieldError{field, "too_long"}
+	}
+	return nil
+}
+
 func groupEntryOf(group store.ServerGroup) groupEntry {
 	return groupEntry{ID: group.ID, Name: group.Name}
 }
@@ -60,8 +72,12 @@ func (h *userAdminHandler) createGroup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var request groupRequest
-	if err := decodeJSON(w, r, &request); err != nil || !validAdminName(request.Name) {
-		writeError(w, http.StatusBadRequest, "invalid_request")
+	if err := decodeJSON(w, r, &request); err != nil {
+		writeInvalid(w, "", "body")
+		return
+	}
+	if err := validateAdminName("name", request.Name); err != nil {
+		writeValidationError(w, err)
 		return
 	}
 	group, err := st.CreateGroup(r.Context(), request.Name)
@@ -79,8 +95,12 @@ func (h *userAdminHandler) updateGroup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var request groupRequest
-	if err := decodeJSON(w, r, &request); err != nil || !validAdminName(request.Name) {
-		writeError(w, http.StatusBadRequest, "invalid_request")
+	if err := decodeJSON(w, r, &request); err != nil {
+		writeInvalid(w, "", "body")
+		return
+	}
+	if err := validateAdminName("name", request.Name); err != nil {
+		writeValidationError(w, err)
 		return
 	}
 	groupID := chi.URLParam(r, "groupID")
@@ -113,7 +133,7 @@ func (h *userAdminHandler) setServerGroup(w http.ResponseWriter, r *http.Request
 	}
 	var request serverGroupRequest
 	if err := decodeJSON(w, r, &request); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid_request")
+		writeInvalid(w, "", "body")
 		return
 	}
 	serverID := chi.URLParam(r, "serverID")

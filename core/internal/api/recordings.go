@@ -74,7 +74,7 @@ func NewRecordingListHandler(deps RecordingDeps) http.Handler {
 		}
 		limit, err := parseRecordingLimit(r.URL.Query().Get("limit"))
 		if err != nil {
-			writeError(w, http.StatusBadRequest, "invalid_request")
+			writeInvalid(w, "limit", "out_of_range")
 			return
 		}
 		sessions, err := deps.Recordings.ListTerminalSessions(r.Context(), limit)

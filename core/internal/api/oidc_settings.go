@@ -155,7 +155,7 @@ func (h *oidcSettingsHandler) updateSettings(w http.ResponseWriter, r *http.Requ
 	}
 	var request oidcSettingsRequest
 	if err := decodeJSON(w, r, &request); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid_request")
+		writeInvalid(w, "", "body")
 		return
 	}
 	request.Issuer = strings.TrimSpace(request.Issuer)
@@ -164,16 +164,20 @@ func (h *oidcSettingsHandler) updateSettings(w http.ResponseWriter, r *http.Requ
 
 	if request.Issuer != "" {
 		if err := coreoidc.ValidateIssuer(request.Issuer); err != nil {
-			writeError(w, http.StatusBadRequest, "invalid_request")
+			writeInvalid(w, "issuer", "invalid_format")
 			return
 		}
 	}
 	if request.Enabled && (request.Issuer == "" || request.ClientID == "") {
-		writeError(w, http.StatusBadRequest, "invalid_request")
+		if request.Issuer == "" {
+			writeInvalid(w, "issuer", "required")
+		} else {
+			writeInvalid(w, "client_id", "required")
+		}
 		return
 	}
 	if utf8.RuneCountInString(request.ButtonLabel) > 40 {
-		writeError(w, http.StatusBadRequest, "invalid_request")
+		writeInvalid(w, "button_label", "too_long")
 		return
 	}
 

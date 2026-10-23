@@ -18,6 +18,12 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.4.17] - 2026-10-23
+
+### Changed
+
+- Validation errors of the administration API now name the failing field and the reason (`{"error":{"code":"invalid_request","field":"scope.name","reason":"required"}}`) instead of a bare `invalid_request`.
+
 ## [0.4.16] - 2026-10-23
 
 ### Fixed
@@ -477,7 +483,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.4.16...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.4.17...HEAD
+[0.4.17]: https://github.com/catlinux/Talaia/releases/tag/v0.4.17
 [0.4.16]: https://github.com/catlinux/Talaia/releases/tag/v0.4.16
 [0.4.15]: https://github.com/catlinux/Talaia/releases/tag/v0.4.15
 [0.4.14]: https://github.com/catlinux/Talaia/releases/tag/v0.4.14

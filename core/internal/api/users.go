@@ -3,6 +3,7 @@ package api
 import (
 	"errors"
 	"net/http"
+	"regexp"
 	"strings"
 	"time"
 
@@ -69,6 +70,10 @@ type bindingRequest struct {
 type bindingRoleRequest struct {
 	Role string `json:"role"`
 }
+
+var scopeNamePattern = regexp.MustCompile(`^[A-Za-z0-9_.-]+$`)
+
+func validScopeName(name string) bool { return scopeNamePattern.MatchString(name) }
 
 func newUserAdminHandler(deps UserAdminDeps) *userAdminHandler {
 	if deps.Audit == nil {
@@ -150,7 +155,7 @@ func (h *userAdminHandler) updateUser(w http.ResponseWriter, r *http.Request) {
 	}
 	var request userUpdateRequest
 	if err := decodeJSON(w, r, &request); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid_request")
+		writeInvalid(w, "", "body")
 		return
 	}
 	userID := chi.URLParam(r, "userID")
@@ -170,7 +175,7 @@ func (h *userAdminHandler) disableUser(w http.ResponseWriter, r *http.Request) {
 	userID := chi.URLParam(r, "userID")
 	session, _ := sessionFromContext(r.Context())
 	if userID == session.User.ID {
-		writeError(w, http.StatusBadRequest, "invalid_request")
+		writeInvalid(w, "", "invalid_value")
 		return
 	}
 	if err := st.DisableUser(r.Context(), userID); err != nil {
@@ -224,7 +229,7 @@ func (h *userAdminHandler) createBinding(w http.ResponseWriter, r *http.Request)
 	}
 	var request bindingRequest
 	if err := decodeJSON(w, r, &request); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid_request")
+		writeInvalid(w, "", "body")
 		return
 	}
 	request.Role = strings.TrimSpace(request.Role)
@@ -235,11 +240,11 @@ func (h *userAdminHandler) createBinding(w http.ResponseWriter, r *http.Request)
 	}
 	scope, err := h.validScope(r, request.Scope)
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid_request")
+		writeValidationError(w, err)
 		return
 	}
 	if !validAdminRole(request.Role) {
-		writeError(w, http.StatusBadRequest, "invalid_request")
+		writeInvalid(w, "role", "invalid_value")
 		return
 	}
 	binding, err := st.CreateRoleBinding(r.Context(), store.RoleBinding{
@@ -269,12 +274,12 @@ func (h *userAdminHandler) updateBinding(w http.ResponseWriter, r *http.Request)
 	}
 	var request bindingRoleRequest
 	if err := decodeJSON(w, r, &request); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid_request")
+		writeInvalid(w, "", "body")
 		return
 	}
 	request.Role = strings.TrimSpace(request.Role)
 	if !validAdminRole(request.Role) {
-		writeError(w, http.StatusBadRequest, "invalid_request")
+		writeInvalid(w, "role", "invalid_value")
 		return
 	}
 	bindingID := chi.URLParam(r, "bindingID")
@@ -311,31 +316,46 @@ func (h *userAdminHandler) validScope(r *http.Request, scope adminScope) (adminS
 	switch scope.Type {
 	case string(rbac.ScopeOrganization):
 		if scope.ServerID != "" || scope.GroupID != "" || scope.Name != "" {
-			return adminScope{}, errors.New("organization scope cannot have ids")
+			return adminScope{}, fieldError{"scope.type", "invalid_value"}
 		}
 	case string(rbac.ScopeGroup):
-		if scope.ServerID != "" || scope.GroupID == "" || scope.Name != "" {
-			return adminScope{}, errors.New("invalid group scope")
+		if scope.GroupID == "" {
+			return adminScope{}, fieldError{"scope.group_id", "required"}
+		}
+		if scope.ServerID != "" || scope.Name != "" {
+			return adminScope{}, fieldError{"scope.group_id", "invalid_value"}
 		}
 		if _, err := h.deps.Store.GetGroup(r.Context(), scope.GroupID); err != nil {
-			return adminScope{}, err
+			return adminScope{}, fieldError{"scope.group_id", "unknown"}
 		}
 	case string(rbac.ScopeServer):
-		if scope.ServerID == "" || scope.GroupID != "" || scope.Name != "" {
-			return adminScope{}, errors.New("invalid server scope")
+		if scope.ServerID == "" {
+			return adminScope{}, fieldError{"scope.server_id", "required"}
+		}
+		if scope.GroupID != "" || scope.Name != "" {
+			return adminScope{}, fieldError{"scope.server_id", "invalid_value"}
 		}
 		if _, err := h.deps.Store.GetServer(r.Context(), scope.ServerID); err != nil {
-			return adminScope{}, err
+			return adminScope{}, fieldError{"scope.server_id", "unknown"}
 		}
 	case string(rbac.ScopeStack), string(rbac.ScopeContainer):
-		if scope.ServerID == "" || scope.GroupID != "" || scope.Name == "" {
-			return adminScope{}, errors.New("invalid stack or container scope")
+		if scope.ServerID == "" {
+			return adminScope{}, fieldError{"scope.server_id", "required"}
+		}
+		if scope.Name == "" {
+			return adminScope{}, fieldError{"scope.name", "required"}
+		}
+		if scope.GroupID != "" {
+			return adminScope{}, fieldError{"scope.group_id", "invalid_value"}
+		}
+		if len(scope.Name) > 128 || !validScopeName(scope.Name) {
+			return adminScope{}, fieldError{"scope.name", "invalid_format"}
 		}
 		if _, err := h.deps.Store.GetServer(r.Context(), scope.ServerID); err != nil {
-			return adminScope{}, err
+			return adminScope{}, fieldError{"scope.server_id", "unknown"}
 		}
 	default:
-		return adminScope{}, errors.New("invalid scope type")
+		return adminScope{}, fieldError{"scope.type", "invalid_value"}
 	}
 	return scope, nil
 }
