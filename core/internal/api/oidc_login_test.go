@@ -189,12 +189,6 @@ func (f *oidcLoginTestIDP) verifier() string {
 	return f.lastVerifier
 }
 
-func (f *oidcLoginTestIDP) calls() int {
-	f.mu.Lock()
-	defer f.mu.Unlock()
-	return f.tokenCalls
-}
-
 func oidcNoRedirectClient(t *testing.T, panel *testPanel) *http.Client {
 	t.Helper()
 	jar, err := newTestJar()
@@ -323,13 +317,13 @@ func TestOIDCLoginHappyPathAndSubjectBinding(t *testing.T) {
 
 	client := oidcNoRedirectClient(t, panel)
 	state, _, start := oidcStartFlow(t, panel, idp, client)
-	if cookie := findResponseCookie(start, OIDCCookieName); cookie == nil {
+	cookie := findResponseCookie(start, OIDCCookieName)
+	if cookie == nil {
 		t.Fatal("oidc start did not set the state cookie")
-	} else {
-		if !cookie.HttpOnly || !cookie.Secure || cookie.SameSite != http.SameSiteLaxMode ||
-			cookie.Path != "/" || cookie.MaxAge != 600 {
-			t.Fatalf("oidc state cookie = %+v", cookie)
-		}
+	}
+	if !cookie.HttpOnly || !cookie.Secure || cookie.SameSite != http.SameSiteLaxMode ||
+		cookie.Path != "/" || cookie.MaxAge != 600 {
+		t.Fatalf("oidc state cookie = %+v", cookie)
 	}
 
 	callback := oidcCallbackFlow(t, panel, client, state, idp.code)
@@ -559,7 +553,7 @@ func TestOIDCLoginDisabled(t *testing.T) {
 	if err != nil {
 		t.Fatalf("oidc start while disabled: %v", err)
 	}
-	defer response.Body.Close()
+	defer func() { _ = response.Body.Close() }()
 	if response.StatusCode != http.StatusNotFound {
 		t.Fatalf("disabled oidc start status = %d, want 404", response.StatusCode)
 	}

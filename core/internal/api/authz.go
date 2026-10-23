@@ -283,11 +283,12 @@ func (a *Authorizer) resolveRequest(r *http.Request) (rbac.Effective, *http.Requ
 
 	state := &effectiveState{loaded: true}
 	session, ok := sessionFromContext(r.Context())
-	if !ok {
+	switch {
+	case !ok:
 		state.err = errors.New("no session")
-	} else if a.bindings == nil {
+	case a.bindings == nil:
 		state.effective = rbac.Resolve(nil)
-	} else if session.AuthKind == AuthKindAPIKey {
+	case session.AuthKind == AuthKindAPIKey:
 		ownerRows, err := a.bindings.ListRoleBindingsForUser(r.Context(), session.User.ID)
 		if err != nil {
 			state.err = err
@@ -303,7 +304,7 @@ func (a *Authorizer) resolveRequest(r *http.Request) (rbac.Effective, *http.Requ
 				state.effective = key.Limit(owner)
 			}
 		}
-	} else {
+	default:
 		bindings, err := a.bindings.ListRoleBindingsForUser(r.Context(), session.User.ID)
 		if err != nil {
 			state.err = err

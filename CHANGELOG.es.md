@@ -13,6 +13,12 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+## [0.4.16] - 2026-10-23
+
+### Corregido
+
+- Avisos del linter en el código de la fase 4 (cierres sin comprobar, ramas vacías, cadenas if-else) en el core y `talaiactl`.
+
 ## [0.4.15] - 2026-10-23
 
 ### Cambiado
@@ -471,7 +477,8 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
   `.gitattributes` y `.gitignore`.
 - Licencia WNCL-1.0 aplicada: archivo `LICENSE` y sección de créditos en los README.
 
-[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.4.15...HEAD
+[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.4.16...HEAD
+[0.4.16]: https://github.com/catlinux/Talaia/releases/tag/v0.4.16
 [0.4.15]: https://github.com/catlinux/Talaia/releases/tag/v0.4.15
 [0.4.14]: https://github.com/catlinux/Talaia/releases/tag/v0.4.14
 [0.4.13]: https://github.com/catlinux/Talaia/releases/tag/v0.4.13

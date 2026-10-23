@@ -371,10 +371,9 @@ func (h *userAdminHandler) audit(r *http.Request, action string, scope map[strin
 		Details: details,
 		Scope:   scope,
 	}
-	if err := h.deps.Audit.AppendAudit(r.Context(), event); err != nil {
-		// Audit failures never turn a completed administration action into an
-		// error for the client.
-	}
+	// Audit failures never turn a completed administration action into an
+	// error for the client.
+	_ = h.deps.Audit.AppendAudit(r.Context(), event)
 }
 
 func validAdminRole(role string) bool {

@@ -38,7 +38,7 @@ func TestServersListTableAndJSON(t *testing.T) {
 		t.Fatalf("json exit = %d", code)
 	}
 	var decoded map[string]any
-	if err := json.Unmarshal([]byte(h.stdout.String()), &decoded); err != nil {
+	if err := json.Unmarshal(h.stdout.Bytes(), &decoded); err != nil {
 		t.Fatalf("json output = %q: %v", h.stdout.String(), err)
 	}
 	if decoded["servers"] == nil {
@@ -96,16 +96,16 @@ func TestServerResolutionByIDNameAndAmbiguity(t *testing.T) {
 
 func TestContainersListAndAction(t *testing.T) {
 	h := newHarness(t, func(w http.ResponseWriter, r *http.Request) {
-		switch {
-		case r.URL.Path == "/api/v1/servers":
+		switch r.URL.Path {
+		case "/api/v1/servers":
 			writeJSON(w, http.StatusOK, map[string]any{"servers": []map[string]any{
 				{"id": "srv-1", "name": "vps-web-01", "connected": true},
 			}})
-		case r.URL.Path == "/api/v1/servers/srv-1/containers":
+		case "/api/v1/servers/srv-1/containers":
 			writeJSON(w, http.StatusOK, map[string]any{"connected": true, "containers": []map[string]any{
 				{"id": "c1", "name": "web", "image": "nginx:1", "state": "running", "status": "Up 2 hours"},
 			}})
-		case r.URL.Path == "/api/v1/servers/srv-1/containers/web/actions":
+		case "/api/v1/servers/srv-1/containers/web/actions":
 			writeJSON(w, http.StatusAccepted, map[string]any{"job_id": "job-1"})
 		default:
 			http.NotFound(w, r)
@@ -125,7 +125,7 @@ func TestContainersListAndAction(t *testing.T) {
 		t.Fatalf("json list exit = %d", code)
 	}
 	var listJSON map[string]any
-	if err := json.Unmarshal([]byte(h.stdout.String()), &listJSON); err != nil {
+	if err := json.Unmarshal(h.stdout.Bytes(), &listJSON); err != nil {
 		t.Fatalf("containers json = %q: %v", h.stdout.String(), err)
 	}
 	if listJSON["containers"] == nil {
@@ -160,21 +160,21 @@ func TestContainersListAndAction(t *testing.T) {
 
 func TestStacksListAndActions(t *testing.T) {
 	h := newHarness(t, func(w http.ResponseWriter, r *http.Request) {
-		switch {
-		case r.URL.Path == "/api/v1/servers":
+		switch r.URL.Path {
+		case "/api/v1/servers":
 			writeJSON(w, http.StatusOK, map[string]any{"servers": []map[string]any{
 				{"id": "srv-1", "name": "vps-web-01", "connected": true},
 			}})
-		case r.URL.Path == "/api/v1/stacks":
+		case "/api/v1/stacks":
 			writeJSON(w, http.StatusOK, map[string]any{"stacks": []map[string]any{
 				{"server_id": "srv-1", "server_name": "vps-web-01", "name": "web", "state": "managed"},
 				{"server_id": "srv-1", "server_name": "vps-web-01", "name": "db", "state": "adopted"},
 			}})
-		case r.URL.Path == "/api/v1/servers/srv-1/stacks":
+		case "/api/v1/servers/srv-1/stacks":
 			writeJSON(w, http.StatusOK, map[string]any{
 				"connected": true, "stacks": []string{"web"}, "adopted": []string{"db"},
 			})
-		case r.URL.Path == "/api/v1/servers/srv-1/stacks/web/actions":
+		case "/api/v1/servers/srv-1/stacks/web/actions":
 			writeJSON(w, http.StatusAccepted, map[string]any{"job_id": "job-stack"})
 		default:
 			http.NotFound(w, r)
@@ -227,7 +227,7 @@ func TestStacksListAndActions(t *testing.T) {
 		t.Fatalf("stacks json exit = %d", code)
 	}
 	var decoded map[string]any
-	if err := json.Unmarshal([]byte(h.stdout.String()), &decoded); err != nil {
+	if err := json.Unmarshal(h.stdout.Bytes(), &decoded); err != nil {
 		t.Fatalf("stacks json = %q: %v", h.stdout.String(), err)
 	}
 }

@@ -16,7 +16,7 @@ import (
 func createAdminExtraUser(t *testing.T, panel *testPanel, username string) store.User {
 	t.Helper()
 	user, err := panel.store.CreateUserFull(context.Background(), username, auth.HashPassword(testPassword),
-		strings.Title(username), username+"@example.com")
+		username, username+"@example.com")
 	if err != nil {
 		t.Fatalf("create %s: %v", username, err)
 	}

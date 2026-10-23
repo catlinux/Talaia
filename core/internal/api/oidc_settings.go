@@ -235,7 +235,6 @@ func (h *oidcSettingsHandler) audit(r *http.Request, config store.OIDCConfig) {
 			"button_label": config.ButtonLabel,
 		},
 	}
-	if err := h.deps.Audit.AppendAudit(r.Context(), event); err != nil {
-		// An audit failure must not undo a saved setting.
-	}
+	// An audit failure must not undo a saved setting.
+	_ = h.deps.Audit.AppendAudit(r.Context(), event)
 }

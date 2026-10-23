@@ -32,7 +32,7 @@ func TestJobsWaitSuccessAndJSON(t *testing.T) {
 		t.Fatalf("json exit = %d", code)
 	}
 	var decoded map[string]any
-	if err := json.Unmarshal([]byte(h.stdout.String()), &decoded); err != nil {
+	if err := json.Unmarshal(h.stdout.Bytes(), &decoded); err != nil {
 		t.Fatalf("json = %q: %v", h.stdout.String(), err)
 	}
 	if decoded["state"] != "succeeded" {

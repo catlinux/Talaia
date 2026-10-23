@@ -241,11 +241,10 @@ func (h *authHandler) pendingInvite(r *http.Request, token string) (store.Invite
 }
 
 func (h *authHandler) auditActor(r *http.Request, actorID, actor, action string, scope, details map[string]any) {
-	if err := h.deps.Store.AppendAudit(r.Context(), store.AuditEvent{
+	// The account was created and the invite consumed; never fail the response
+	// because the audit write failed.
+	_ = h.deps.Store.AppendAudit(r.Context(), store.AuditEvent{
 		Actor: actor, ActorID: actorID, Action: action, IP: clientIP(r), Result: "success",
 		Details: details, Scope: scope,
-	}); err != nil {
-		// The account was created and the invite consumed; never fail the
-		// response because the audit write failed.
-	}
+	})
 }

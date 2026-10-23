@@ -131,7 +131,7 @@ func (c *apiClient) request(ctx context.Context, method, path string, body any) 
 	if err != nil {
 		return nil, &networkError{err: err}
 	}
-	defer response.Body.Close()
+	defer func() { _ = response.Body.Close() }()
 	payload, err := io.ReadAll(io.LimitReader(response.Body, 8<<20))
 	if err != nil {
 		return nil, &networkError{err: err}
