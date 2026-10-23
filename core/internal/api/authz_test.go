@@ -95,6 +95,7 @@ func fullRouter(t *testing.T) http.Handler {
 		Enrollment:         &EnrollmentTokenDeps{},
 		Containers:         &ContainerDeps{Agents: agents, Servers: servers},
 		Terminal:           NewTerminalDeps(TerminalDeps{}),
+		Recordings:         &RecordingDeps{},
 		System:             &SystemDeps{},
 		Authz:              NewAuthorizer(AuthorizerDeps{}),
 		Auth:               AuthDeps{},

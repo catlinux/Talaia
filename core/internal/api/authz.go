@@ -136,6 +136,8 @@ var routePerms = map[routeKey]routePermission{
 	{http.MethodGet, "/apikeys"}:                                             {mode: permAny, noAPIKey: true},
 	{http.MethodDelete, "/apikeys/{id}"}:                                     {mode: permAny, noAPIKey: true},
 	{http.MethodGet, "/audit"}:                                               {mode: permExact, permission: rbac.PermAuditView, target: targetOrganization},
+	{http.MethodGet, "/recordings"}:                                          {mode: permExact, permission: rbac.PermRecordingsView, target: targetOrganization, noAPIKey: true},
+	{http.MethodGet, "/recordings/{sessionID}/download"}:                     {mode: permExact, permission: rbac.PermRecordingsView, target: targetOrganization, noAPIKey: true},
 	{http.MethodGet, "/settings/oidc"}:                                       {mode: permExact, permission: rbac.PermSettingsManage, target: targetOrganization, noAPIKey: true},
 	{http.MethodPut, "/settings/oidc"}:                                       {mode: permExact, permission: rbac.PermSettingsManage, target: targetOrganization, noAPIKey: true},
 	{http.MethodPost, "/servers/{serverID}/agent/update"}:                    {mode: permExact, permission: rbac.PermServerAgentUpdate, target: targetServer},

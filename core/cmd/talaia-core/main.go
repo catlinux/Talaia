@@ -104,6 +104,7 @@ type panelOptions struct {
 	// Containers enables the container and job API.
 	Containers     *api.ContainerDeps
 	Terminal       *api.TerminalDeps
+	Recordings     *api.RecordingDeps
 	System         *api.SystemDeps
 	Origins        []string
 	TLS            bool
@@ -151,6 +152,7 @@ func newCoreRouter(st *store.Store, agents api.LiveAgents, options panelOptions)
 		Enrollment:         options.Enrollment,
 		Containers:         options.Containers,
 		Terminal:           options.Terminal,
+		Recordings:         options.Recordings,
 		System:             options.System,
 		Authz: api.NewAuthorizer(api.AuthorizerDeps{
 			Bindings: st,
@@ -350,6 +352,7 @@ func serve() error {
 		terminals = terminal.New(st, agentHub, st, box, terminal.DefaultConfig())
 		agentHub.SetTerminals(terminals)
 		panel.Terminal = api.NewTerminalDeps(api.TerminalDeps{Agents: agentHub, Terminals: terminals, Sessions: st, Origins: cfg.AllowedOrigins})
+		panel.Recordings = &api.RecordingDeps{Recordings: st, Opener: box, Servers: st, Audit: st}
 
 		checker, err := updates.New(updates.Options{
 			Repo:          cfg.UpdateRepo,

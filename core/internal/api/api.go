@@ -50,6 +50,9 @@ type RouterDeps struct {
 	// Terminal enables the terminal endpoints; nil leaves them out. Build it with
 	// NewTerminalDeps.
 	Terminal *TerminalDeps
+	// Recordings enables the terminal recording list and download endpoints;
+	// nil leaves them out.
+	Recordings *RecordingDeps
 	// System enables the version and update endpoints; nil leaves them out.
 	System *SystemDeps
 	// Authz enforces the permissions of the protected API. Nil fails closed.
@@ -97,6 +100,12 @@ func NewRouter(deps RouterDeps) http.Handler {
 				Agents:  deps.Agents,
 			}))
 			registerRoute(r, deps.Authz, http.MethodGet, "/audit", NewAuditHandler(AuditDeps{Entries: deps.AuditLog}))
+			if deps.Recordings != nil {
+				registerRoute(r, deps.Authz, http.MethodGet, "/recordings",
+					NewRecordingListHandler(*deps.Recordings))
+				registerRoute(r, deps.Authz, http.MethodGet, "/recordings/{sessionID}/download",
+					NewRecordingDownloadHandler(*deps.Recordings))
+			}
 			registerRoute(r, deps.Authz, http.MethodGet, "/settings/oidc", http.HandlerFunc(oidcSettings.getSettings))
 			registerRoute(r, deps.Authz, http.MethodPut, "/settings/oidc", http.HandlerFunc(oidcSettings.updateSettings))
 			userAdmin := newUserAdminHandler(UserAdminDeps{

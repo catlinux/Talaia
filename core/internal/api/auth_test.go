@@ -114,6 +114,8 @@ type testPanel struct {
 	// talks to.
 	terminals     *terminal.Manager
 	terminalAgent *fakeTerminalAgent
+	// box lets tests create recording fixtures.
+	box *auth.SecretBox
 }
 
 // testPanelOptions tweak the test panel.
@@ -174,6 +176,7 @@ func newTestPanel(t *testing.T, options ...panelOption) *testPanel {
 	terminalConfig.OpenTimeout = 2 * time.Second
 	terminalConfig.FlushEvery = 20 * time.Millisecond
 	terminals := terminal.New(st, terminalAgent, st, box, terminalConfig)
+	recordings := &RecordingDeps{Recordings: st, Opener: box, Servers: st, Audit: st}
 	router := NewRouter(RouterDeps{
 		DB:                 st,
 		WebDir:             settings.webDir,
@@ -203,6 +206,7 @@ func newTestPanel(t *testing.T, options ...panelOption) *testPanel {
 			Agents: agents, Terminals: terminals, Sessions: st, Origins: []string{testOrigin},
 			CheckInterval: 50 * time.Millisecond, TicketTTL: settings.ticketTTL,
 		}),
+		Recordings: recordings,
 		Containers: &ContainerDeps{
 			Agents:     agents,
 			Dispatcher: dispatcher,
@@ -242,6 +246,7 @@ func newTestPanel(t *testing.T, options ...panelOption) *testPanel {
 
 		terminals:     terminals,
 		terminalAgent: terminalAgent,
+		box:           box,
 	}
 }
 

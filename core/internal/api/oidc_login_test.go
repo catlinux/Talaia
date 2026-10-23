@@ -486,10 +486,14 @@ func TestOIDCLoginFailures(t *testing.T) {
 		if cookie == nil || len(cookie.Value) < 2 {
 			t.Fatal("missing oidc state cookie")
 		}
-		tampered := cookie.Value[:len(cookie.Value)-1] + "A"
-		if tampered == cookie.Value {
-			tampered = cookie.Value[:len(cookie.Value)-1] + "B"
+		// Change a middle character: the tail of a base64 value can encode only
+		// unused padding bits, so changing it might decode to the same bytes.
+		middle := len(cookie.Value) / 2
+		replacement := "A"
+		if cookie.Value[middle:middle+1] == "A" {
+			replacement = "B"
 		}
+		tampered := cookie.Value[:middle] + replacement + cookie.Value[middle+1:]
 		client := oidcNoRedirectClient(t, panel)
 		values := url.Values{"state": {state}, "code": {idp.code}}
 		request, _ := http.NewRequest(http.MethodGet,

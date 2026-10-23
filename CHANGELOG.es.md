@@ -13,6 +13,12 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+## [0.4.9] - 2026-10-23
+
+### Añadido
+
+- API de grabaciones de terminal (permiso `recordings.view`, nunca con claves de API): `GET /api/v1/recordings` lista quién abrió qué sesión, dónde, cuándo y durante cuánto tiempo, y `GET /api/v1/recordings/{id}/download` da el archivo `.cast` para `asciinema play`. Las descargas se auditan.
+
 ## [0.4.8] - 2026-10-23
 
 ### Añadido
@@ -429,7 +435,8 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
   `.gitattributes` y `.gitignore`.
 - Licencia WNCL-1.0 aplicada: archivo `LICENSE` y sección de créditos en los README.
 
-[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.4.8...HEAD
+[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.4.9...HEAD
+[0.4.9]: https://github.com/catlinux/Talaia/releases/tag/v0.4.9
 [0.4.8]: https://github.com/catlinux/Talaia/releases/tag/v0.4.8
 [0.4.7]: https://github.com/catlinux/Talaia/releases/tag/v0.4.7
 [0.4.6]: https://github.com/catlinux/Talaia/releases/tag/v0.4.6
