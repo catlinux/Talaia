@@ -22,13 +22,17 @@ type SecurityConfig struct {
 }
 
 // Security adds the security headers to every response and rejects state
-// changing API requests that do not come from the panel.
+// changing API requests that do not come from the panel or an API key.
 func Security(config SecurityConfig) func(http.Handler) http.Handler {
-	allowed := make(map[string]bool, len(config.Origins))
-	for _, origin := range config.Origins {
-		allowed[strings.ToLower(origin)] = true
+	headers := securityHeaders(config)
+	origin := securityOrigin(config)
+	return func(next http.Handler) http.Handler {
+		return headers(origin(next))
 	}
+}
 
+// securityHeaders is applied to every response, including the static panel.
+func securityHeaders(config SecurityConfig) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			header := w.Header()
@@ -38,17 +42,33 @@ func Security(config SecurityConfig) func(http.Handler) http.Handler {
 			if config.TLS {
 				header.Set("Strict-Transport-Security", "max-age=31536000")
 			}
-
-			apiRequest := strings.HasPrefix(r.URL.Path, "/api/")
-			if apiRequest {
+			if strings.HasPrefix(r.URL.Path, "/api/") {
 				header.Set("Cache-Control", "no-store")
 			}
+			next.ServeHTTP(w, r)
+		})
+	}
+}
 
-			if apiRequest && stateChanging(r.Method) && !allowedChange(r, allowed) {
-				writeError(w, http.StatusForbidden, "forbidden_origin")
-				return
+// securityOrigin checks browser change requests after Sessions has identified
+// the caller, so a valid API key can bypass the browser-only CSRF rule.
+func securityOrigin(config SecurityConfig) func(http.Handler) http.Handler {
+	allowed := make(map[string]bool, len(config.Origins))
+	for _, origin := range config.Origins {
+		allowed[strings.ToLower(origin)] = true
+	}
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			apiRequest := strings.HasPrefix(r.URL.Path, "/api/")
+			if apiRequest && stateChanging(r.Method) {
+				session, hasSession := sessionFromContext(r.Context())
+				if !hasSession || session.AuthKind != AuthKindAPIKey {
+					if !allowedChange(r, allowed) {
+						writeError(w, http.StatusForbidden, "forbidden_origin")
+						return
+					}
+				}
 			}
-
 			next.ServeHTTP(w, r)
 		})
 	}

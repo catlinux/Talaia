@@ -67,6 +67,7 @@ func criterionPath(pattern, serverID, container, stack string) string {
 		"{inviteID}", "00000000-0000-0000-0000-000000000005",
 		"{groupID}", "00000000-0000-0000-0000-000000000006",
 		"{teamID}", "00000000-0000-0000-0000-000000000007",
+		"{id}", "00000000-0000-0000-0000-000000000008",
 	).Replace(pattern)
 }
 
@@ -143,6 +144,9 @@ func TestSingleStackCriterion(t *testing.T) {
 		{http.MethodPost, "/servers/{serverID}/stacks/{name}/actions"}:          true,
 		{http.MethodGet, "/jobs/{jobID}"}:                                       true,
 		{http.MethodGet, "/terminal/{sessionID}/ws"}:                            true,
+		{http.MethodPost, "/apikeys"}:                                           true,
+		{http.MethodGet, "/apikeys"}:                                            true,
+		{http.MethodDelete, "/apikeys/{id}"}:                                    true,
 	}
 	for key := range routePerms {
 		if skipped[key] {

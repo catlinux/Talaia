@@ -117,6 +117,8 @@ type Target struct {
 // Effective is the set of bindings that apply to one user or API key.
 type Effective struct {
 	Bindings []Binding
+	apiKey   bool
+	owner    *Effective
 }
 
 // Resolve copies bindings into an Effective value.
@@ -245,6 +247,11 @@ func (b Binding) appliesTo(t Target) bool {
 // grants a permission when the binding scope is at least the permission's
 // minimum scope, so a stack-bound server operator cannot reach the host.
 func (e Effective) Can(permission Permission, target Target) bool {
+	if e.apiKey {
+		if !AllowedForAPIKey(permission) || !e.owner.Can(permission, target) {
+			return false
+		}
+	}
 	min := permission.MinScope()
 	if min == "" {
 		return false
@@ -267,6 +274,9 @@ func (e Effective) Can(permission Permission, target Target) bool {
 // container bindings also reveal their server so a stack-only user can find it
 // in the server list.
 func (e Effective) CanSeeServer(serverID, groupID string) bool {
+	if e.apiKey && !e.owner.CanSeeServer(serverID, groupID) {
+		return false
+	}
 	for _, binding := range e.Bindings {
 		if !binding.Role.known() {
 			continue
@@ -295,6 +305,15 @@ func (e Effective) CanSeeServer(serverID, groupID string) bool {
 // names of the stacks that are visible. Container bindings do not reveal the
 // stack they belong to, so they contribute no stack name.
 func (e Effective) VisibleStacks(serverID string) (bool, []string) {
+	if e.apiKey {
+		all, names := e.bindingsVisibleStacks(serverID)
+		ownerAll, ownerNames := e.owner.VisibleStacks(serverID)
+		return intersectVisibility(all, names, ownerAll, ownerNames)
+	}
+	return e.bindingsVisibleStacks(serverID)
+}
+
+func (e Effective) bindingsVisibleStacks(serverID string) (bool, []string) {
 	names := make(map[string]bool)
 	for _, binding := range e.Bindings {
 		if !binding.Role.known() {
@@ -320,6 +339,15 @@ func (e Effective) VisibleStacks(serverID string) (bool, []string) {
 // or the names of the containers that are visible. A stack binding covers all
 // containers of that stack but cannot enumerate them here.
 func (e Effective) VisibleContainers(serverID string) (bool, []string) {
+	if e.apiKey {
+		all, names := e.bindingsVisibleContainers(serverID)
+		ownerAll, ownerNames := e.owner.VisibleContainers(serverID)
+		return intersectVisibility(all, names, ownerAll, ownerNames)
+	}
+	return e.bindingsVisibleContainers(serverID)
+}
+
+func (e Effective) bindingsVisibleContainers(serverID string) (bool, []string) {
 	names := make(map[string]bool)
 	for _, binding := range e.Bindings {
 		if !binding.Role.known() {
@@ -350,11 +378,41 @@ func sortedNames(names map[string]bool) []string {
 	return result
 }
 
+// Limit returns the effective permissions of an API key: the key keeps only
+// permissions granted by both its own bindings and the owner's current
+// bindings, and the API-key blacklist always applies.
+func (e Effective) Limit(owner Effective) Effective {
+	ownerCopy := owner
+	return Effective{Bindings: e.Bindings, apiKey: true, owner: &ownerCopy}
+}
+
+func intersectVisibility(all bool, names []string, ownerAll bool, ownerNames []string) (bool, []string) {
+	if all && ownerAll {
+		return true, nil
+	}
+	if all {
+		return false, append([]string(nil), ownerNames...)
+	}
+	if ownerAll {
+		return false, append([]string(nil), names...)
+	}
+	ownerSet := make(map[string]bool, len(ownerNames))
+	for _, name := range ownerNames {
+		ownerSet[name] = true
+	}
+	result := make([]string, 0, len(names))
+	for _, name := range names {
+		if ownerSet[name] {
+			result = append(result, name)
+		}
+	}
+	return false, result
+}
+
 // Summary is the JSON-friendly form of Effective for a future /me endpoint.
 type Summary struct {
 	Bindings []Binding `json:"bindings"`
 }
-
 
 // Summary returns the resolved bindings in a form suitable for JSON.
 func (e Effective) Summary() Summary {

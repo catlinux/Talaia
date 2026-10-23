@@ -13,6 +13,12 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+## [0.4.6] - 2026-10-23
+
+### Añadido
+
+- Claves de API (`Authorization: Bearer tlk_…`) con asignaciones de rol propias: los permisos de una clave son la intersección de sus asignaciones y las actuales de su dueño, así que pierde acceso cuando lo pierde él. Una clave nunca puede abrir terminales, gestionar usuarios, equipos, grupos, claves ni ajustes, reiniciar un servidor ni llegar a los endpoints de inicio de sesión. Duran 90 días por defecto (365 como máximo), se muestran una vez y se guardan con hash, exigen un código TOTP reciente para crearse, se limitan a 600 peticiones por minuto y se revocan al desactivar a su dueño. API: `POST/GET /api/v1/apikeys` y `DELETE /api/v1/apikeys/{id}`.
+
 ## [0.4.5] - 2026-10-23
 
 ### Añadido
@@ -411,7 +417,8 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
   `.gitattributes` y `.gitignore`.
 - Licencia WNCL-1.0 aplicada: archivo `LICENSE` y sección de créditos en los README.
 
-[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.4.5...HEAD
+[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.4.6...HEAD
+[0.4.6]: https://github.com/catlinux/Talaia/releases/tag/v0.4.6
 [0.4.5]: https://github.com/catlinux/Talaia/releases/tag/v0.4.5
 [0.4.4]: https://github.com/catlinux/Talaia/releases/tag/v0.4.4
 [0.4.3]: https://github.com/catlinux/Talaia/releases/tag/v0.4.3

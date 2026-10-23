@@ -280,3 +280,73 @@ func TestSummaryAndUnknownRole(t *testing.T) {
 		t.Fatal("unknown role revealed a server")
 	}
 }
+
+func TestAPIKeyLimitIntersectsOwnerAndBlacklist(t *testing.T) {
+	keyOrgAdmin := Resolve([]Binding{{Scope: Scope{Type: ScopeOrganization}, Role: RoleAdmin}})
+	ownerStack := Resolve([]Binding{{Scope: Scope{Type: ScopeStack, ServerID: "s1", Name: "web"}, Role: RoleAppOperator}})
+	limited := keyOrgAdmin.Limit(ownerStack)
+	target := Target{ServerID: "s1", GroupID: "g1", Stack: "web", Container: "web-ct"}
+
+	if !limited.Can(PermContainerView, target) {
+		t.Fatal("key lost a permission both sides grant")
+	}
+	if limited.Can(PermStackEdit, target) {
+		t.Fatal("key gained stack.edit from its admin binding, which the owner lacks")
+	}
+	if limited.Can(PermHostTerminal, target) || limited.Can(PermUsersManage, Target{}) ||
+		limited.Can(PermSettingsManage, Target{}) || limited.Can(PermAPIKeysManage, Target{}) ||
+		limited.Can(PermHostReboot, target) {
+		t.Fatal("key gained a forbidden permission")
+	}
+	if limited.Can(PermServerView, target) {
+		t.Fatal("key reached a server permission the stack owner lacks")
+	}
+
+	// An API key never gains a terminal permission even when both sides are
+	// organization admins.
+	bothAdmins := keyOrgAdmin.Limit(keyOrgAdmin)
+	if bothAdmins.Can(PermContainerTerminal, target) || bothAdmins.Can(PermHostTerminal, target) {
+		t.Fatal("admin API key got a terminal permission")
+	}
+
+	// The owner's current bindings are read on every check.
+	ownerAll := Resolve([]Binding{{Scope: Scope{Type: ScopeServer, ServerID: "s1"}, Role: RoleServerOperator}})
+	limited = keyOrgAdmin.Limit(ownerAll)
+	if !limited.Can(PermHostServicesControl, target) {
+		t.Fatal("key lost a permission the owner has")
+	}
+	if !limited.CanSeeServer("s1", "g1") {
+		t.Fatal("key cannot see a server the owner can see")
+	}
+	if limited.CanSeeServer("s2", "g2") {
+		t.Fatal("key saw a server the owner cannot see")
+	}
+}
+
+func TestAPIKeyLimitVisibilityIntersection(t *testing.T) {
+	key := Resolve([]Binding{
+		{Scope: Scope{Type: ScopeStack, ServerID: "s1", Name: "web"}, Role: RoleViewer},
+		{Scope: Scope{Type: ScopeStack, ServerID: "s1", Name: "db"}, Role: RoleViewer},
+		{Scope: Scope{Type: ScopeContainer, ServerID: "s1", Name: "one"}, Role: RoleViewer},
+		{Scope: Scope{Type: ScopeContainer, ServerID: "s1", Name: "two"}, Role: RoleViewer},
+	}).Limit(Resolve([]Binding{
+		{Scope: Scope{Type: ScopeStack, ServerID: "s1", Name: "db"}, Role: RoleViewer},
+		{Scope: Scope{Type: ScopeContainer, ServerID: "s1", Name: "two"}, Role: RoleViewer},
+		{Scope: Scope{Type: ScopeContainer, ServerID: "s1", Name: "three"}, Role: RoleViewer},
+	}))
+	all, names := key.VisibleStacks("s1")
+	if all || len(names) != 1 || names[0] != "db" {
+		t.Fatalf("limited stacks = %v %v, want only db", all, names)
+	}
+	all, names = key.VisibleContainers("s1")
+	if all || len(names) != 1 || names[0] != "two" {
+		t.Fatalf("limited containers = %v %v, want only two", all, names)
+	}
+
+	keyAll := Resolve([]Binding{{Scope: Scope{Type: ScopeServer, ServerID: "s1"}, Role: RoleViewer}}).Limit(
+		Resolve([]Binding{{Scope: Scope{Type: ScopeStack, ServerID: "s1", Name: "web"}, Role: RoleViewer}}))
+	all, names = keyAll.VisibleStacks("s1")
+	if all || len(names) != 1 || names[0] != "web" {
+		t.Fatalf("owner-limited stacks = %v %v", all, names)
+	}
+}

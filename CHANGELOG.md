@@ -18,6 +18,12 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.4.6] - 2026-10-23
+
+### Added
+
+- API keys (`Authorization: Bearer tlk_…`) with their own role assignments: a key's permissions are the intersection of its assignments and its owner's current ones, so it loses access when the owner does. A key can never open terminals, manage users, teams, groups, keys or settings, reboot a server or reach the sign-in endpoints. They last 90 days by default (365 at most), are shown once and stored hashed, need a fresh TOTP code to be created, are limited to 600 requests per minute and are revoked when their owner is disabled. API: `POST/GET /api/v1/apikeys` and `DELETE /api/v1/apikeys/{id}`.
+
 ## [0.4.5] - 2026-10-23
 
 ### Added
@@ -411,7 +417,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.4.5...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.4.6...HEAD
+[0.4.6]: https://github.com/catlinux/Talaia/releases/tag/v0.4.6
 [0.4.5]: https://github.com/catlinux/Talaia/releases/tag/v0.4.5
 [0.4.4]: https://github.com/catlinux/Talaia/releases/tag/v0.4.4
 [0.4.3]: https://github.com/catlinux/Talaia/releases/tag/v0.4.3

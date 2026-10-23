@@ -45,8 +45,9 @@ func (s stubServers) GetServer(_ context.Context, id string) (store.Server, erro
 func (s stubServers) RemoveServer(context.Context, string) error { return nil }
 
 type stubBindings struct {
-	byUser map[string][]store.RoleBinding
-	err    error
+	byUser    map[string][]store.RoleBinding
+	bySubject map[string][]store.RoleBinding
+	err       error
 }
 
 func (s stubBindings) ListRoleBindingsForUser(_ context.Context, userID string) ([]store.RoleBinding, error) {
@@ -54,6 +55,13 @@ func (s stubBindings) ListRoleBindingsForUser(_ context.Context, userID string) 
 		return nil, s.err
 	}
 	return s.byUser[userID], nil
+}
+
+func (s stubBindings) ListRoleBindings(_ context.Context, subjectType, subjectID string) ([]store.RoleBinding, error) {
+	if s.err != nil {
+		return nil, s.err
+	}
+	return s.bySubject[subjectType+"/"+subjectID], nil
 }
 
 func authzServers() stubServers {
@@ -137,6 +145,7 @@ func routePath(method string, pattern string) string {
 		"{inviteID}", "00000000-0000-0000-0000-000000000005",
 		"{groupID}", "00000000-0000-0000-0000-000000000006",
 		"{teamID}", "00000000-0000-0000-0000-000000000007",
+		"{id}", "00000000-0000-0000-0000-000000000008",
 	).Replace(pattern)
 	return "/api/v1" + path
 }
@@ -319,6 +328,10 @@ type countingBindings struct{ calls *int }
 
 func (c countingBindings) ListRoleBindingsForUser(context.Context, string) ([]store.RoleBinding, error) {
 	(*c.calls)++
+	return nil, nil
+}
+
+func (c countingBindings) ListRoleBindings(context.Context, string, string) ([]store.RoleBinding, error) {
 	return nil, nil
 }
 

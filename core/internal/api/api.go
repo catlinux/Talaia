@@ -60,12 +60,13 @@ type RouterDeps struct {
 // authentication API, the protected API routes and the static panel.
 func NewRouter(deps RouterDeps) http.Handler {
 	r := chi.NewRouter()
-	r.Use(Security(deps.Security))
+	r.Use(securityHeaders(deps.Security))
 
 	r.Get("/healthz", health(deps.DB))
 
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Use(Sessions(deps.Session))
+		r.Use(securityOrigin(deps.Security))
 		authHandler := newAuthHandler(deps.Auth)
 		r.Mount("/auth", authHandler.routes())
 
@@ -87,7 +88,10 @@ func NewRouter(deps RouterDeps) http.Handler {
 				Agents:  deps.Agents,
 			}))
 			registerRoute(r, deps.Authz, http.MethodGet, "/audit", NewAuditHandler(AuditDeps{Entries: deps.AuditLog}))
-			userAdmin := newUserAdminHandler(UserAdminDeps{Store: deps.Auth.Store, Audit: deps.Auth.Store})
+			userAdmin := newUserAdminHandler(UserAdminDeps{
+				Store: deps.Auth.Store, Audit: deps.Auth.Store, TOTP: authHandler,
+				Limiter: authHandler.deps.Limiter, Now: authHandler.now,
+			})
 			registerRoute(r, deps.Authz, http.MethodGet, "/users", http.HandlerFunc(userAdmin.listUsers))
 			registerRoute(r, deps.Authz, http.MethodPost, "/users/invites", http.HandlerFunc(userAdmin.createInvite))
 			registerRoute(r, deps.Authz, http.MethodGet, "/users/invites", http.HandlerFunc(userAdmin.listInvites))
@@ -99,6 +103,9 @@ func NewRouter(deps RouterDeps) http.Handler {
 			registerRoute(r, deps.Authz, http.MethodPost, "/users/{userID}/enable", http.HandlerFunc(userAdmin.enableUser))
 			registerRoute(r, deps.Authz, http.MethodPatch, "/bindings/{bindingID}", http.HandlerFunc(userAdmin.updateBinding))
 			registerRoute(r, deps.Authz, http.MethodDelete, "/bindings/{bindingID}", http.HandlerFunc(userAdmin.deleteBinding))
+			registerRoute(r, deps.Authz, http.MethodPost, "/apikeys", http.HandlerFunc(userAdmin.createAPIKey))
+			registerRoute(r, deps.Authz, http.MethodGet, "/apikeys", http.HandlerFunc(userAdmin.listAPIKeys))
+			registerRoute(r, deps.Authz, http.MethodDelete, "/apikeys/{id}", http.HandlerFunc(userAdmin.revokeAPIKey))
 			registerRoute(r, deps.Authz, http.MethodGet, "/groups", http.HandlerFunc(userAdmin.listGroups))
 			registerRoute(r, deps.Authz, http.MethodPost, "/groups", http.HandlerFunc(userAdmin.createGroup))
 			registerRoute(r, deps.Authz, http.MethodPatch, "/groups/{groupID}", http.HandlerFunc(userAdmin.updateGroup))

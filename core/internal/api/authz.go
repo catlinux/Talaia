@@ -17,6 +17,10 @@ type BindingLister interface {
 	ListRoleBindingsForUser(ctx context.Context, userID string) ([]store.RoleBinding, error)
 }
 
+type keyBindingLister interface {
+	ListRoleBindings(ctx context.Context, subjectType, subjectID string) ([]store.RoleBinding, error)
+}
+
 // ServerGetter returns a server and its group.
 type ServerGetter interface {
 	GetServer(ctx context.Context, id string) (store.Server, error)
@@ -94,6 +98,7 @@ type routePermission struct {
 	mode       permissionMode
 	permission rbac.Permission
 	target     targetKind
+	noAPIKey   bool
 }
 
 // routePerms is the single permission decision for every protected route.
@@ -102,31 +107,34 @@ var routePerms = map[routeKey]routePermission{
 	{http.MethodGet, "/servers"}:                                             {mode: permAny},
 	{http.MethodGet, "/me"}:                                                  {mode: permAny},
 	{http.MethodGet, "/stacks"}:                                              {mode: permAny},
-	{http.MethodGet, "/users"}:                                               {mode: permExact, permission: rbac.PermUsersManage, target: targetOrganization},
-	{http.MethodPost, "/users/invites"}:                                      {mode: permExact, permission: rbac.PermUsersManage, target: targetOrganization},
-	{http.MethodGet, "/users/invites"}:                                       {mode: permExact, permission: rbac.PermUsersManage, target: targetOrganization},
-	{http.MethodDelete, "/users/invites/{inviteID}"}:                         {mode: permExact, permission: rbac.PermUsersManage, target: targetOrganization},
-	{http.MethodGet, "/users/{userID}/bindings"}:                             {mode: permExact, permission: rbac.PermUsersManage, target: targetOrganization},
-	{http.MethodPost, "/users/{userID}/bindings"}:                            {mode: permExact, permission: rbac.PermUsersManage, target: targetOrganization},
-	{http.MethodPatch, "/users/{userID}"}:                                    {mode: permExact, permission: rbac.PermUsersManage, target: targetOrganization},
-	{http.MethodPost, "/users/{userID}/disable"}:                             {mode: permExact, permission: rbac.PermUsersManage, target: targetOrganization},
-	{http.MethodPost, "/users/{userID}/enable"}:                              {mode: permExact, permission: rbac.PermUsersManage, target: targetOrganization},
-	{http.MethodPatch, "/bindings/{bindingID}"}:                              {mode: permExact, permission: rbac.PermUsersManage, target: targetOrganization},
-	{http.MethodDelete, "/bindings/{bindingID}"}:                             {mode: permExact, permission: rbac.PermUsersManage, target: targetOrganization},
-	{http.MethodGet, "/groups"}:                                              {mode: permExact, permission: rbac.PermUsersManage, target: targetOrganization},
-	{http.MethodPost, "/groups"}:                                             {mode: permExact, permission: rbac.PermUsersManage, target: targetOrganization},
-	{http.MethodPatch, "/groups/{groupID}"}:                                  {mode: permExact, permission: rbac.PermUsersManage, target: targetOrganization},
-	{http.MethodDelete, "/groups/{groupID}"}:                                 {mode: permExact, permission: rbac.PermUsersManage, target: targetOrganization},
-	{http.MethodPut, "/servers/{serverID}/group"}:                            {mode: permExact, permission: rbac.PermUsersManage, target: targetOrganization},
-	{http.MethodGet, "/teams"}:                                               {mode: permExact, permission: rbac.PermUsersManage, target: targetOrganization},
-	{http.MethodPost, "/teams"}:                                              {mode: permExact, permission: rbac.PermUsersManage, target: targetOrganization},
-	{http.MethodGet, "/teams/{teamID}"}:                                      {mode: permExact, permission: rbac.PermUsersManage, target: targetOrganization},
-	{http.MethodPatch, "/teams/{teamID}"}:                                    {mode: permExact, permission: rbac.PermUsersManage, target: targetOrganization},
-	{http.MethodDelete, "/teams/{teamID}"}:                                   {mode: permExact, permission: rbac.PermUsersManage, target: targetOrganization},
-	{http.MethodPut, "/teams/{teamID}/members/{userID}"}:                     {mode: permExact, permission: rbac.PermUsersManage, target: targetOrganization},
-	{http.MethodDelete, "/teams/{teamID}/members/{userID}"}:                  {mode: permExact, permission: rbac.PermUsersManage, target: targetOrganization},
-	{http.MethodGet, "/teams/{teamID}/bindings"}:                             {mode: permExact, permission: rbac.PermUsersManage, target: targetOrganization},
-	{http.MethodPost, "/teams/{teamID}/bindings"}:                            {mode: permExact, permission: rbac.PermUsersManage, target: targetOrganization},
+	{http.MethodGet, "/users"}:                                               {mode: permExact, permission: rbac.PermUsersManage, target: targetOrganization, noAPIKey: true},
+	{http.MethodPost, "/users/invites"}:                                      {mode: permExact, permission: rbac.PermUsersManage, target: targetOrganization, noAPIKey: true},
+	{http.MethodGet, "/users/invites"}:                                       {mode: permExact, permission: rbac.PermUsersManage, target: targetOrganization, noAPIKey: true},
+	{http.MethodDelete, "/users/invites/{inviteID}"}:                         {mode: permExact, permission: rbac.PermUsersManage, target: targetOrganization, noAPIKey: true},
+	{http.MethodGet, "/users/{userID}/bindings"}:                             {mode: permExact, permission: rbac.PermUsersManage, target: targetOrganization, noAPIKey: true},
+	{http.MethodPost, "/users/{userID}/bindings"}:                            {mode: permExact, permission: rbac.PermUsersManage, target: targetOrganization, noAPIKey: true},
+	{http.MethodPatch, "/users/{userID}"}:                                    {mode: permExact, permission: rbac.PermUsersManage, target: targetOrganization, noAPIKey: true},
+	{http.MethodPost, "/users/{userID}/disable"}:                             {mode: permExact, permission: rbac.PermUsersManage, target: targetOrganization, noAPIKey: true},
+	{http.MethodPost, "/users/{userID}/enable"}:                              {mode: permExact, permission: rbac.PermUsersManage, target: targetOrganization, noAPIKey: true},
+	{http.MethodPatch, "/bindings/{bindingID}"}:                              {mode: permExact, permission: rbac.PermUsersManage, target: targetOrganization, noAPIKey: true},
+	{http.MethodDelete, "/bindings/{bindingID}"}:                             {mode: permExact, permission: rbac.PermUsersManage, target: targetOrganization, noAPIKey: true},
+	{http.MethodGet, "/groups"}:                                              {mode: permExact, permission: rbac.PermUsersManage, target: targetOrganization, noAPIKey: true},
+	{http.MethodPost, "/groups"}:                                             {mode: permExact, permission: rbac.PermUsersManage, target: targetOrganization, noAPIKey: true},
+	{http.MethodPatch, "/groups/{groupID}"}:                                  {mode: permExact, permission: rbac.PermUsersManage, target: targetOrganization, noAPIKey: true},
+	{http.MethodDelete, "/groups/{groupID}"}:                                 {mode: permExact, permission: rbac.PermUsersManage, target: targetOrganization, noAPIKey: true},
+	{http.MethodPut, "/servers/{serverID}/group"}:                            {mode: permExact, permission: rbac.PermUsersManage, target: targetOrganization, noAPIKey: true},
+	{http.MethodGet, "/teams"}:                                               {mode: permExact, permission: rbac.PermUsersManage, target: targetOrganization, noAPIKey: true},
+	{http.MethodPost, "/teams"}:                                              {mode: permExact, permission: rbac.PermUsersManage, target: targetOrganization, noAPIKey: true},
+	{http.MethodGet, "/teams/{teamID}"}:                                      {mode: permExact, permission: rbac.PermUsersManage, target: targetOrganization, noAPIKey: true},
+	{http.MethodPatch, "/teams/{teamID}"}:                                    {mode: permExact, permission: rbac.PermUsersManage, target: targetOrganization, noAPIKey: true},
+	{http.MethodDelete, "/teams/{teamID}"}:                                   {mode: permExact, permission: rbac.PermUsersManage, target: targetOrganization, noAPIKey: true},
+	{http.MethodPut, "/teams/{teamID}/members/{userID}"}:                     {mode: permExact, permission: rbac.PermUsersManage, target: targetOrganization, noAPIKey: true},
+	{http.MethodDelete, "/teams/{teamID}/members/{userID}"}:                  {mode: permExact, permission: rbac.PermUsersManage, target: targetOrganization, noAPIKey: true},
+	{http.MethodGet, "/teams/{teamID}/bindings"}:                             {mode: permExact, permission: rbac.PermUsersManage, target: targetOrganization, noAPIKey: true},
+	{http.MethodPost, "/teams/{teamID}/bindings"}:                            {mode: permExact, permission: rbac.PermUsersManage, target: targetOrganization, noAPIKey: true},
+	{http.MethodPost, "/apikeys"}:                                            {mode: permAny, noAPIKey: true},
+	{http.MethodGet, "/apikeys"}:                                             {mode: permAny, noAPIKey: true},
+	{http.MethodDelete, "/apikeys/{id}"}:                                     {mode: permAny, noAPIKey: true},
 	{http.MethodGet, "/audit"}:                                               {mode: permExact, permission: rbac.PermAuditView, target: targetOrganization},
 	{http.MethodPost, "/servers/{serverID}/agent/update"}:                    {mode: permExact, permission: rbac.PermServerAgentUpdate, target: targetServer},
 	{http.MethodPost, "/agents/update-all"}:                                  {mode: permExact, permission: rbac.PermServerAgentUpdate, target: targetOrganization},
@@ -137,13 +145,13 @@ var routePerms = map[routeKey]routePermission{
 	{http.MethodPost, "/servers/{serverID}/journal"}:                         {mode: permExact, permission: rbac.PermHostJournal, target: targetServer},
 	{http.MethodPost, "/servers/{serverID}/apt/status"}:                      {mode: permExact, permission: rbac.PermHostAptView, target: targetServer},
 	{http.MethodPost, "/servers/{serverID}/apt/upgrade"}:                     {mode: permExact, permission: rbac.PermHostAptUpgrade, target: targetServer},
-	{http.MethodPost, "/servers/{serverID}/reboot"}:                          {mode: permExact, permission: rbac.PermHostReboot, target: targetServer},
+	{http.MethodPost, "/servers/{serverID}/reboot"}:                          {mode: permExact, permission: rbac.PermHostReboot, target: targetServer, noAPIKey: true},
 	{http.MethodGet, "/servers/{serverID}/services"}:                         {mode: permExact, permission: rbac.PermHostServicesView, target: targetServer},
 	{http.MethodPost, "/servers/{serverID}/services/{unit}/actions"}:         {mode: permExact, permission: rbac.PermHostServicesControl, target: targetServer},
 	{http.MethodGet, "/jobs/{jobID}"}:                                        {mode: permAny},
-	{http.MethodPost, "/servers/{serverID}/containers/{container}/terminal"}: {mode: permExact, permission: rbac.PermContainerTerminal, target: targetContainer},
-	{http.MethodPost, "/servers/{serverID}/terminal"}:                        {mode: permExact, permission: rbac.PermHostTerminal, target: targetServer},
-	{http.MethodGet, "/terminal/{sessionID}/ws"}:                             {mode: permAny},
+	{http.MethodPost, "/servers/{serverID}/containers/{container}/terminal"}: {mode: permExact, permission: rbac.PermContainerTerminal, target: targetContainer, noAPIKey: true},
+	{http.MethodPost, "/servers/{serverID}/terminal"}:                        {mode: permExact, permission: rbac.PermHostTerminal, target: targetServer, noAPIKey: true},
+	{http.MethodGet, "/terminal/{sessionID}/ws"}:                             {mode: permAny, noAPIKey: true},
 	{http.MethodPost, "/servers/{serverID}/resources/list"}:                  {mode: permExact, permission: rbac.PermResourcesManage, target: targetServer},
 	{http.MethodPost, "/servers/{serverID}/resources/remove"}:                {mode: permExact, permission: rbac.PermResourcesManage, target: targetServer},
 	{http.MethodGet, "/servers/{serverID}/stacks"}:                           {mode: permSeeServer, permission: rbac.PermServerView, target: targetServer},
@@ -152,9 +160,9 @@ var routePerms = map[routeKey]routePermission{
 	{http.MethodPost, "/servers/{serverID}/stacks/{name}/adopt"}:             {mode: permExact, permission: rbac.PermStackEdit, target: targetStack},
 	{http.MethodPost, "/servers/{serverID}/stacks/{name}/actions"}:           {mode: permExact, permission: rbac.PermStackDeploy, target: targetStack},
 	{http.MethodPost, "/servers/enrollment-tokens"}:                          {mode: permExact, permission: rbac.PermServerEnroll, target: targetOrganization},
-	{http.MethodGet, "/system/version"}:                                      {mode: permExact, permission: rbac.PermSettingsManage, target: targetOrganization},
-	{http.MethodPost, "/system/check"}:                                       {mode: permExact, permission: rbac.PermSettingsManage, target: targetOrganization},
-	{http.MethodPost, "/system/update"}:                                      {mode: permExact, permission: rbac.PermSettingsManage, target: targetOrganization},
+	{http.MethodGet, "/system/version"}:                                      {mode: permExact, permission: rbac.PermSettingsManage, target: targetOrganization, noAPIKey: true},
+	{http.MethodPost, "/system/check"}:                                       {mode: permExact, permission: rbac.PermSettingsManage, target: targetOrganization, noAPIKey: true},
+	{http.MethodPost, "/system/update"}:                                      {mode: permExact, permission: rbac.PermSettingsManage, target: targetOrganization, noAPIKey: true},
 }
 
 // registerRoute wraps handler with the permission declared in routePerms. A
@@ -181,6 +189,10 @@ func (a *Authorizer) requireRoute(route routePermission, next http.Handler) http
 		}
 		if a == nil {
 			writeError(w, http.StatusForbidden, "forbidden")
+			return
+		}
+		if session.AuthKind == AuthKindAPIKey && route.noAPIKey {
+			a.deny(w, r, session, route.permission, targetNone, rbac.Target{}, http.StatusForbidden, "forbidden")
 			return
 		}
 
@@ -271,6 +283,22 @@ func (a *Authorizer) resolveRequest(r *http.Request) (rbac.Effective, *http.Requ
 		state.err = errors.New("no session")
 	} else if a.bindings == nil {
 		state.effective = rbac.Resolve(nil)
+	} else if session.AuthKind == AuthKindAPIKey {
+		ownerRows, err := a.bindings.ListRoleBindingsForUser(r.Context(), session.User.ID)
+		if err != nil {
+			state.err = err
+		} else if keyLister, ok := a.bindings.(keyBindingLister); !ok {
+			state.err = errors.New("api key bindings are not available")
+		} else {
+			keyRows, err := keyLister.ListRoleBindings(r.Context(), store.SubjectAPIKey, session.APIKeyID)
+			if err != nil {
+				state.err = err
+			} else {
+				owner := rbac.Resolve(toRBACBindings(ownerRows))
+				key := rbac.Resolve(toRBACBindings(keyRows))
+				state.effective = key.Limit(owner)
+			}
+		}
 	} else {
 		bindings, err := a.bindings.ListRoleBindingsForUser(r.Context(), session.User.ID)
 		if err != nil {
@@ -374,6 +402,9 @@ func (a *Authorizer) deny(w http.ResponseWriter, r *http.Request, session Sessio
 		"permission": string(permission),
 		"method":     r.Method,
 		"path":       r.URL.Path,
+	}
+	if session.AuthKind == AuthKindAPIKey {
+		details["api_key_id"] = session.APIKeyID
 	}
 	if a.audit != nil {
 		event := store.AuditEvent{

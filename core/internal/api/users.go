@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 
@@ -13,8 +14,11 @@ import (
 
 // UserAdminDeps are the collaborators of the user and binding API.
 type UserAdminDeps struct {
-	Store *store.Store
-	Audit Auditor
+	Store   *store.Store
+	Audit   Auditor
+	TOTP    TOTPVerifier
+	Limiter *RateLimiter
+	Now     func() time.Time
 }
 
 type userAdminHandler struct {
@@ -100,6 +104,13 @@ func adminUserOf(user store.User, bindings []store.RoleBinding) adminUser {
 		result.Bindings = append(result.Bindings, adminBindingOf(binding))
 	}
 	return result
+}
+
+func (h *userAdminHandler) now() time.Time {
+	if h.deps.Now != nil {
+		return h.deps.Now()
+	}
+	return time.Now()
 }
 
 func (h *userAdminHandler) storeOrError(w http.ResponseWriter) (*store.Store, bool) {
