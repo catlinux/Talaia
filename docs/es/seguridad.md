@@ -6,10 +6,12 @@ Qué puede hacer el panel con tus servidores, qué lo protege y qué se graba. E
 [arquitectura.md](arquitectura.md); los pasos de instalación, en [instalacion.md](instalacion.md).
 La guía de uso de la pantalla del servidor es [servidor.md](servidor.md).
 
-## El administrador es root en cada servidor gestionado
+## Administradores y operadores de servidor son root en los servidores que gestionan
 
-En esta versión hay un solo rol: el administrador, protegido por contraseña y un segundo factor (TOTP). **Esa
-cuenta equivale a root en cada servidor que gestiona.** Es una decisión de diseño, no un descuido, porque varias
+El rol de **administrador** está protegido por contraseña y un segundo factor (TOTP). **Esa cuenta equivale
+a root en cada servidor que gestiona.** Los demás roles reducen el alcance, pero cualquier rol que pueda editar
+Compose, ejecutar órdenes del host o abrir una terminal privilegiada sigue equivaliendo a root dentro de su
+ámbito. Las reglas están en [permisos.md](permisos.md). Es una decisión de diseño, no un descuido, porque varias
 cosas que ofrece el panel ya dan root:
 
 - **Un archivo Compose se ejecuta como root en el servidor.** Quien pueda editarlo puede montar `/`, arrancar un
@@ -28,10 +30,10 @@ cosas que ofrece el panel ya dan root:
   ([instalacion.md](instalacion.md), sección 5). El núcleo solo puede pedir un commit de `origin/main` más nuevo
   que el que corre.
 
-Cuida esa cuenta: una contraseña larga y única, una aplicación de autenticación que controles y no compartirla.
-Los roles y abasto por usuario (por ejemplo, acceso a un solo stack) llegan en una fase posterior; cuando lleguen,
-los permisos de editar stacks, adoptar proyectos y abrir terminales se marcarán como equivalentes a root y no se
-concederán por defecto.
+Cuida las cuentas de administrador y de operador de servidor: contraseñas largas y únicas, una aplicación de
+autenticación que controles y nada de compartirlas. Los roles y ámbitos por usuario ya existen, pero los permisos
+de editar stacks, adoptar proyectos y abrir terminales siguen equivaliendo a root y nunca se conceden a un lector
+ni a un operador de app.
 
 ## Métodos de acceso
 
@@ -52,8 +54,67 @@ métodos opcionales que hacen más rápido el acceso habitual:
   rechazarlas. Los desafíos caducan a los cinco minutos, y un contador de firmas que retrocede desactiva la
   clave.
 
-Los dos métodos son adicionales: la contraseña, el TOTP y los códigos de recuperación siguen siendo la base y la
+- **Inicio de sesión único (OIDC).** Un proveedor OpenID Connect configurado puede sustituir la contraseña de
+  un usuario existente cuyo correo verificado coincida. El segundo factor sigue siendo obligatorio. Los fallos
+  del proveedor vuelven a un error genérico del acceso y se auditan; véase [permisos.md](permisos.md).
+Estos métodos son adicionales: la contraseña, el TOTP y los códigos de recuperación siguen siendo la base y la
 vía de recuperación. Configuración, uso, eliminación y problemas frecuentes: [acceso.md](acceso.md).
+
+## Usuarios, invitaciones y denegaciones
+
+- Hay cinco roles fijos que se pueden asignar en los ámbitos organización, grupo, servidor, stack o
+  contenedor. Un permiso solo cuenta cuando el ámbito es al menos su nivel mínimo; un operador de servidor
+  asignado a un stack nunca llega al host. Véase [permisos.md](permisos.md).
+- Quien no puede ver un objeto recibe **404**, no una pista de que existe. Quien lo ve pero no tiene la
+  operación recibe **403**. El panel solo esconde controles; el núcleo toma todas las decisiones.
+- Cada denegación se audita como `authz_denied` con el actor, el permiso, el método, la ruta, el resultado y
+  el ámbito; las denegaciones de claves de API incluyen además el id de la clave. La respuesta nunca
+  contiene el motivo.
+- Un enlace de invitación es de un solo uso, caduca a las 72 horas y el token se guarda con hash. Quien
+  consiga el enlace antes de usarlo puede reclamar la cuenta, así que envíalo por un canal de confianza.
+  Talaia no envía correo. La persona invitada pone una contraseña y debe configurar TOTP antes de tener una
+  sesión completa.
+- Debe quedar al menos un administrador de organización activo. Desactivar al último, o quitar o degradar
+  la última asignación de administrador de organización (directa o mediante un equipo), se rechaza con
+  `409 last_admin`; nadie puede desactivar su propia cuenta.
+
+## Claves de API
+
+- Las claves de API son credenciales con ámbito para scripts. Se muestran una vez, se guardan como hash
+  SHA-256 y caducan a los 90 días por defecto (365 como máximo).
+- Los permisos efectivos son la intersección de las asignaciones de la clave y las actuales de su dueño. Si
+  el dueño pierde acceso, la clave también.
+- Una clave nunca puede abrir una terminal de contenedor o del anfitrión, gestionar usuarios, equipos,
+  grupos, claves ni ajustes, reiniciar un servidor ni usar los endpoints de acceso. Las rutas marcadas como
+  `noAPIKey` rechazan las claves aunque sus asignaciones de rol las permitieran.
+- Las claves usan `Authorization: Bearer tlk_…`, no necesitan cookie ni token CSRF y están limitadas a 600
+  peticiones por minuto por clave, con un límite adicional por IP. Crear una exige un código TOTP reciente.
+- Trata la clave como una contraseña: no la pongas en URL, logs ni historial de shell, y prefiere
+  `TALAIA_API_KEY` o `talaiactl login` antes que `--api-key`, que aparece en la lista de procesos. Revócala
+  de inmediato si se filtra.
+
+## Inicio de sesión único (OIDC)
+
+- El proveedor sustituye solo la contraseña. TOTP o una clave de acceso siguen siendo obligatorios, así que
+  un proveedor de identidad comprometido por sí solo no abre el panel.
+- El claim de correo debe estar verificado y coincidir con un usuario activo existente. No hay alta
+  automática de cuentas. En el primer acceso se vincula el `sub` del proveedor a ese usuario; un subject
+  distinto para el mismo correo se rechaza.
+- El flujo usa descubrimiento, código de autorización con PKCE, `state` y `nonce` en una cookie sellada de
+  10 minutos, y verifica el ID token. El secreto de cliente es de solo escritura y se guarda cifrado.
+- Solo se aceptan emisores `https`, salvo `http://localhost` o `http://127.0.0.1` en desarrollo.
+- Los fallos redirigen a un error genérico del acceso y se auditan como `oidc_login_denied`; no revelan si
+  existe la cuenta. Quien controle el proveedor puede hacerse pasar por sus usuarios después del segundo
+  factor, así que protege el proveedor con el mismo cuidado que el panel.
+
+## Acceso a las grabaciones de terminal
+
+- Las grabaciones solo están disponibles con `recordings.view` en ámbito de organización, desde
+  **Auditoría > Grabaciones**. Las claves de API nunca pueden listarlas ni descargarlas.
+- Descargar un `.cast` se audita como `recording_download`. Una grabación puede contener contraseñas o
+  tokens impresos en pantalla; trátala como dato sensible y guárdala en consecuencia.
+- El panel no tiene reproductor integrado. Usa `asciinema play archivo.cast` en local. La retención es de 90
+  días por defecto y los trozos se cifran con la clave de secretos.
 
 ## Actualizaciones de los agentes
 
@@ -66,9 +127,9 @@ tránsito, no de un núcleo comprometido, la misma confianza que el comando de i
 
 ## Qué protege el panel y los agentes
 
-- **Acceso:** contraseña y TOTP, PIN opcional en dispositivos de confianza y claves de acceso, límite de
-  intentos, bloqueo tras fallos repetidos, sesiones que caducan y protección de cada cambio frente a peticiones
-  de otros sitios (comprobación del origen).
+- **Acceso:** contraseña y TOTP, PIN opcional en dispositivos de confianza, claves de acceso y OIDC para
+  usuarios existentes, límite de intentos, bloqueo tras fallos repetidos, sesiones que caducan y protección de
+  cada cambio frente a peticiones de otros sitios (comprobación del origen).
 - **Solo órdenes tipadas.** El núcleo nunca envía un comando de shell a un agente. Envía mensajes cerrados y
   validados (iniciar un contenedor, leer registros, escribir un stack, abrir una terminal…) y el agente los
   vuelve a comprobar. Los nombres de contenedores y stacks y las rutas se validan antes de usarlos.
@@ -84,7 +145,10 @@ tránsito, no de un núcleo comprometido, la misma confianza que el comando de i
   nunca hace recursión y limita cada red de origen. Véase [dns-delegation.md](dns-delegation.md).
 - **Todo lo que hace el panel queda auditado** con nombres, ids y huellas; el registro de auditoría nunca guarda
   contenido de ficheros, texto de registros, el código TOTP, el texto de búsqueda del journal, las listas de
-  paquetes ni lo que se escribe en una terminal.
+  paquetes ni lo que se escribe en una terminal. Las comprobaciones de autorización denegadas se registran como
+  `authz_denied`.
+- **Los roles con ámbito se aplican en el núcleo.** El panel esconde controles, pero la API comprueba cada ruta
+  contra las asignaciones efectivas; un objeto oculto devuelve 404 y una operación visible sin permiso, 403.
 
 ## Sesiones de terminal: grabación y retención
 
@@ -110,8 +174,9 @@ contenedor y para la del anfitrión.
   pertenece a esa sesión del navegador, y la conexión debe venir de un origen permitido. Cerrar o revocar la
   sesión del panel cierra sus terminales en menos de un minuto.
 
-El panel todavía no tiene reproductor de grabaciones. Para listarlas y reproducirlas, en la máquina del núcleo y
-en `packaging/core`:
+El panel no tiene reproductor integrado. Quien tenga `recordings.view` puede listar las sesiones y descargar el
+archivo `.cast` en **Auditoría > Grabaciones**; las descargas se auditan. Para listarlas y exportarlas desde la
+consola, en la máquina del núcleo y en `packaging/core`:
 
 ```bash
 sudo docker compose run --rm -T core terminal list
@@ -125,7 +190,8 @@ cierre, usuario, contenedor o anfitrión, duración y bytes grabados, más `root
 
 ## Acciones sobre el servidor entero (fase 3)
 
-La misma cuenta de administrador puede ahora cambiar la máquina entera, no solo sus contenedores:
+Un administrador, o un operador de servidor cuyo ámbito llega al servidor, puede cambiar la máquina entera, no
+solo sus contenedores:
 
 - **Actualizaciones de paquetes** ejecutadas como root que pueden sustituir bibliotecas, servicios y el
   kernel. Hay actualización solo de seguridad o de todo lo pendiente; nunca eliminan paquetes y conservan

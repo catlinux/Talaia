@@ -75,8 +75,16 @@ gráficos e i18next para las traducciones (ca/es/en).
 
 ### 2.4 talaiactl
 
-CLI en Go que usa la misma API REST con una clave de API. Pensada para scripts, pipelines de CI y
-sincronización GitOps.
+Cliente de línea de comandos en Go para scripts, pipelines de CI y sincronización GitOps. Se autentica
+con una clave de API (`Authorization: Bearer tlk_…`) y ofrece `login`, `servers list`,
+`containers list|start|stop|restart`, `stacks list|up|down|restart|pull`, `jobs wait`, `version` y
+`help`. Lee `url` y `api_key` de `~/.config/talaia/config.toml` (el directorio que devuelve
+`os.UserConfigDir()`; `%AppData%\talaia\config.toml` en Windows), creado con modo 0600 y rechazado en Unix si el grupo
+u otros usuarios pueden leerlo. `TALAIA_URL`, `TALAIA_API_KEY`, `TALAIA_CA_FILE` y los parámetros
+equivalentes sustituyen al archivo. La salida es una tabla alineada por defecto o `--json` con los
+datos crudos; las acciones admiten `--wait`, y `jobs wait` consulta cada 2 segundos hasta `--timeout`
+(10 minutos por defecto). TLS usa las raíces del sistema más un `--ca-file` opcional; la verificación
+no se puede desactivar.
 
 ## 3. Conexión agente ↔ núcleo
 
@@ -170,57 +178,151 @@ agente y una por usuario y servidor, comparte el límite de 4 sesiones por servi
 `host_terminal_open` y `host_terminal_close`. Se puede desactivar con `[terminal] host = false` en
 `/etc/talaia/agent.toml` o con `TALAIA_AGENT_TERMINAL_HOST=false`.
 
-## 4. Modelo de datos (inicial)
+## 4. Modelo de datos (implementado)
+
+Este es el esquema creado por las migraciones hasta `0013_oidc.sql`. Los stacks y contenedores aún no
+son tablas: los stacks viven en disco y los contenedores proceden del inventario del agente. Las tablas
+de dominios, alertas, copias de seguridad y métricas pertenecen a fases posteriores de la hoja de ruta.
 
 | Entidad | Campos principales |
 |---|---|
 | `organization` | id, name |
-| `user` | id, email, password_hash, totp_secret, locale |
-| `passkey` | id, user_id, credential |
-| `team` | id, name |
-| `team_member` | team_id, user_id |
-| `server_group` | id, name, tags |
-| `server` | id, group_id, name, os, arch, agent_version, cert_fingerprint, last_seen, status |
-| `stack` | id, server_id, name, source (git/local), compose, env_encrypted, current_revision |
-| `stack_revision` | id, stack_id, compose, author_id, created_at |
-| `container` | id, server_id, stack_id (opcional), docker_id, image, state — caché del inventario |
-| `domain` | id, stack_id, host, port, tls_status |
-| `role_binding` | subject (usuario/equipo), scope_type, scope_id, role |
-| `job` | id, server_id, kind, payload, status, output, created_by |
-| `alert_rule` | id, scope, metric, threshold, channels |
-| `backup_plan` | id, target, schedule, destination, retention |
-| `audit_event` | id, actor, action, scope, ip, result, created_at |
-| `metric` | hypertable de TimescaleDB: server_id, container_id, ts, values |
+| `app_user` | id, username, display_name, email, password_hash, campos TOTP, intentos fallidos, locked_until, disabled_at, oidc_subject |
+| `recovery_code` | id, user_id, code_hash, used_at |
+| `session` | id, token_hash, user_id, etapa (`mfa_pending` o `full`), caducidad, revoked_at, IP, user agent, fallos MFA |
+| `trusted_device` | id, user_id, token_hash, pin_hash, nombre, marcador del navegador de 180 días, contadores y fechas |
+| `passkey` | id, user_id, credential_id, public_key, contador de firmas, transportes, indicadores de copia |
+| `webauthn_ceremony` | id, user_id, kind, session_data, expires_at |
+| `server` | id, name, group_id, serial y caducidad del certificado, created_at, last_seen, revoked_at, removed_at |
+| `enrollment_token` | id, token_hash, server_name, expires_at, used_at |
+| `server_group` | id, name, created_at |
+| `team` | id, name, created_at |
+| `team_member` | team_id, user_id, created_at |
+| `role_binding` | id, subject_type (`user`, `team`, `api_key`), subject_id, scope_type (`organization`, `group`, `server`, `stack`, `container`), scope_server_id, scope_group_id, scope_name, role, created_by, created_at |
+| `user_invite` | id, token_hash, username, email, role, campos de ámbito, created_by, created_at, expires_at, used_at |
+| `api_key` | id, key_id, name, owner_id, secret_hash, created_at, expires_at, last_used_at, revoked_at |
+| `oidc_config` | una fila: enabled, issuer, client_id, client_secret_enc, button_label, updated_at, updated_by |
+| `audit_event` | id, at, actor, actor_id, action, IP, result, details, scope |
+| `job` | id, server_id, kind, params, state, message, output, created_by, fechas |
+| `terminal_session` | id, server_id, contenedor o `@host`, shell, created_by, privileged, fechas, close_reason, recorded_bytes |
+| `terminal_chunk` | session_id, seq, datos cifrados |
+
+La migración `0012_rbac.sql` da además a cada usuario de una instalación existente la asignación de
+administrador de la organización, añade `group_id` a `server`, `display_name`/`email`/`disabled_at`/
+`oidc_subject` a `app_user`, y `actor_id`/`scope` a `audit_event`. La migración `0013_oidc.sql` añade
+`oidc_config` con una sola fila (`id boolean PRIMARY KEY DEFAULT true CHECK (id)`).
 
 ## 5. Permisos
 
-Los ámbitos forman un árbol: **organización → grupo → servidor → stack → contenedor**. Un rol concedido en
-un nodo se aplica a todo lo que cuelga de él.
+Hay una sola organización. Los **grupos de servidores** agrupan servidores, los **equipos** agrupan
+usuarios y una **asignación de rol** da un rol fijo a un usuario, un equipo o una clave de API sobre un
+ámbito.
 
-| Rol | Permisos |
+```text
+Organización → Grupo → Servidor → Stack → Contenedor
+```
+
+Un ámbito de stack o contenedor se identifica por su servidor y su nombre. Un contenedor que pertenece
+a un proyecto Compose hereda las asignaciones del stack; un contenedor suelto hereda solo del servidor
+y de los niveles superiores. Una asignación se aplica a su nodo y a todo lo que cuelga de él.
+
+### 5.1 Roles
+
+| Rol | Permisos antes de filtrar por ámbito |
 |---|---|
-| Administrador | Todo, incluidos usuarios y configuración |
-| Operador de servidor | Todo en sus servidores: contenedores, servicios, paquetes, terminal |
-| Operador de app | Ver, logs, reiniciar, desplegar en sus stacks; sin terminal ni acceso al anfitrión |
-| Lector | Solo lectura |
-| Solo métricas | Métricas y estado, sin logs |
+| `admin` | Todos los permisos |
+| `server_operator` | Todos los permisos de contenedor, stack y servidor (incluidas las terminales de contenedor y del anfitrión), pero no los de organización |
+| `app_operator` | Todos los permisos `.view`, más `container.logs`, `container.control` y `stack.deploy` |
+| `viewer` | Todos los permisos `.view`, más `container.logs` |
+| `metrics_only` | `server.view`, `stack.view`, `container.view` |
 
-Los permisos se comprueban siempre en el núcleo. El panel web solo oculta lo que el usuario no puede usar.
+La lista del rol se filtra además por el ámbito mínimo de cada permiso. `audit.view` y
+`recordings.view` son solo de organización; `host.*` y `server.agent_update` necesitan al menos un
+servidor; `stack.edit` necesita al menos un stack; `container.*` se puede conceder en un contenedor.
+
+| Ámbito mínimo | Permisos |
+|---|---|
+| Contenedor | `container.view`, `container.logs`, `container.control`, `container.terminal` |
+| Stack | `stack.view`, `stack.deploy`, `stack.edit`, `container.remove` |
+| Servidor | `server.view`, `resources.manage`, `host.services.view`, `host.services.control`, `host.journal`, `host.apt.view`, `host.apt.upgrade`, `host.reboot`, `host.terminal`, `server.agent_update` |
+| Organización | `server.remove`, `server.enroll`, `users.manage`, `settings.manage`, `audit.view`, `recordings.view`, `apikeys.manage` |
+
+Un permiso cuenta solo cuando el ámbito de la asignación es al menos tan amplio como su ámbito mínimo.
+Un `server_operator` asignado a un stack obtiene allí permisos de contenedor y stack, pero nunca acceso
+al host. Un grupo no tiene un conjunto de permisos propio; una asignación allí se aplica a sus servidores y a sus
+descendientes.
+
+`app_operator` carece a propósito de `stack.edit`, `container.terminal` y `host.terminal`: un archivo
+Compose se ejecuta como root y un shell privilegiado llega al host. Puede desplegar archivos que ya
+existen; cambiarlos o abrir una terminal no. Un `server_operator` asignado a un stack no recibe endpoints
+del host, pero `stack.edit` sigue equivaliendo a root a través de Compose y debe tratarse como tal.
+
+### 5.2 Aplicación
+
+Cada ruta protegida declara su permiso en la única tabla `routePerms` de
+`core/internal/api/authz.go`. La prueba guardiana con `chi.Walk` falla si una ruta no tiene
+declaración, así que un endpoint nuevo no puede quedar público por descuido. El middleware resuelve las
+asignaciones efectivas y el objetivo (organización, grupo, servidor, stack o contenedor) y aplica la
+regla.
+
+- Quien no puede ver el objeto recibe **404 Not Found**; quien lo ve pero no tiene la operación recibe
+  **403 Forbidden**.
+- Cada denegación se escribe en la auditoría como `authz_denied`, con actor, permiso, método, ruta,
+  resultado y ámbito (y el id de la clave de API cuando corresponde).
+- Las listas filtran servidores, stacks y contenedores por visibilidad. Una tarea solo la ve su creador
+  o quien tenga `users.manage`.
+- El panel usa `GET /api/v1/me` y solo esconde controles; nunca sustituye la comprobación del núcleo.
+
+### 5.3 Claves de API
+
+Una clave de API tiene sus propias asignaciones de rol (`subject_type = api_key`). Sus permisos
+efectivos son la **intersección** de esas asignaciones y las actuales de su dueño, así que pierde acceso
+cuando lo pierde el dueño. La lista negra de claves siempre se aplica: no pueden abrir terminales de
+contenedor o del anfitrión, gestionar usuarios, equipos, grupos, claves ni ajustes, reiniciar un
+servidor ni llegar a los endpoints de inicio de sesión. Las rutas marcadas como `noAPIKey` se rechazan
+aunque las asignaciones de la clave las permitieran.
+
+Las claves se autentican con `Authorization: Bearer tlk_…` y no necesitan cookie, token CSRF ni
+cabecera `Origin`. Están limitadas a 600 peticiones por minuto por clave, con un límite adicional por
+IP; el secreto se guarda con hash y se muestra una vez.
+
+### 5.4 Último administrador
+
+Al menos un usuario activo debe conservar el rol de administrador de la organización, directo o a través
+de un equipo. Desactivar al último administrador, o quitar o degradar la última asignación de
+administrador de organización (directa o mediante un equipo), devuelve `409 last_admin`; un usuario no
+puede desactivar su propia cuenta. La comprobación se ejecuta con un bloqueo consultivo dentro de la
+transacción.
+
+La guía completa para la persona usuaria es [permisos.md](permisos.md).
 
 ## 6. Resumen de seguridad
 
-- Los agentes se conectan hacia fuera; los VPS no abren puertos para Talaia.
-- mTLS con certificados por agente; los certificados se pueden revocar desde el panel.
-- 2FA obligatorio; se admiten passkeys y OIDC.
-- Secretos cifrados con `age`; nunca aparecen en los logs.
-- Registro de auditoría de cada acción; sesiones de terminal grabadas. El administrador es root en los servidores gestionados: véase [seguridad.md](seguridad.md).
+- Los agentes se conectan hacia fuera; los VPS no abren puertos para Talaia. mTLS con certificados por
+  agente, revocables desde el panel.
+- Los permisos se aplican en el núcleo: cinco roles fijos sobre organización → grupo → servidor → stack
+  → contenedor. Una denegación es 404 cuando el objeto está oculto y 403 cuando se ve pero la operación
+  no está permitida; cada denegación se audita. El panel solo esconde controles. Véase [permisos.md](permisos.md).
+- 2FA obligatorio, claves de acceso y OIDC solo para usuarios existentes: el proveedor sustituye la
+  contraseña, no el segundo factor. OIDC exige correo verificado, vincula el subject en el primer acceso
+  y no crea cuentas.
+- Las claves de API tienen ámbito, se guardan con hash, se muestran una vez, se limitan a 600
+  peticiones/minuto y a la intersección de sus asignaciones con las actuales del dueño. No pueden usar
+  terminales, administración de usuarios/ajustes, gestión de claves, reinicio ni rutas de acceso.
+- Las invitaciones son de un solo uso, caducan a las 72 horas, se guardan con hash y siguen exigiendo
+  configurar TOTP.
+- Los secretos (TOTP, secreto de cliente OIDC, trozos de terminal) se cifran con la clave de secretos;
+  nunca aparecen en los logs.
+- Registro de auditoría de cada acción y denegación; sesiones de terminal grabadas. Los administradores y
+  operadores de servidor equivalen a root en los servidores que gestionan: véase [seguridad.md](seguridad.md).
 - Paquetes e imágenes firmados (cosign); el agente verifica las firmas antes de autoactualizarse.
 - Despliegue recomendado: panel accesible solo a través de WireGuard o Tailscale.
 
-### 6.1 Autenticación del panel (implementada)
+### 6.1 Autenticación y autorización del panel (implementadas)
 
-Un único administrador creado desde la consola del servidor (`talaia-core user create --username
-<nombre>`); nunca hay una página pública de alta. Diseño: `.agents/plans/auth/auth.DESIGN.md`.
+El primer administrador se crea desde la consola del servidor (`talaia-core user create --username
+<nombre>`); nunca hay una página pública de alta. Los demás usuarios llegan por invitación y deben
+configurar TOTP.
 
 - Contraseña (12–256 caracteres) con argon2id; TOTP obligatorio desde el primer acceso, un código no se
   puede usar dos veces y el secreto TOTP se cifra con AES-256-GCM (`data_dir/secrets.key`).
@@ -230,8 +332,17 @@ Un único administrador creado desde la consola del servidor (`talaia-core user 
   12 h sin actividad y 7 días como máximo; token nuevo tras el segundo factor.
 - CSRF: cuerpo JSON y un `Origin` permitido en toda petición que modifica. Cabeceras de seguridad (CSP,
   HSTS, `nosniff`, `no-referrer`).
+- OIDC usa descubrimiento, código de autorización con PKCE, `state` y `nonce` en una cookie sellada de
+  10 minutos, y verifica el ID token. Los fallos redirigen al error genérico del acceso y se auditan;
+  nunca revelan si existe una cuenta.
+- Las claves de API usan `Authorization: Bearer tlk_…` sin cookie, token CSRF ni `Origin`; se rechazan
+  en las rutas marcadas `noAPIKey` aunque sus asignaciones de rol las permitieran.
 - Fuerza bruta: 10 intentos por IP cada 15 minutos, 5 fallos bloquean la cuenta 15 minutos; los errores
-  nunca dicen qué falló. Cada acceso, fallo y cambio queda en el registro de auditoría, sin secretos.
+  nunca dicen qué falló. Cada acceso, fallo, denegación y cambio queda en el registro de auditoría, sin
+  secretos.
+- Debe quedar al menos un administrador de organización activo; el almacén se niega a desactivar al
+  último administrador o a quitar o degradar la última asignación de administrador de organización
+  (`409 last_admin`).
 
 ## 7. Ubicación de archivos en los servidores gestionados
 
@@ -244,10 +355,10 @@ Un único administrador creado desde la consola del servidor (`talaia-core user 
 
 ## 8. Operaciones sobre el servidor entero (fase 3)
 
-La fase 3 está implementada en el código: la pantalla del servidor, el estado y las actualizaciones de
-apt, los servicios systemd, la lectura del journal, la terminal del anfitrión y la pantalla de auditoría.
-La fase todavía no está cerrada: le faltan la semana real sin SSH y la revisión de seguridad. La guía de
-uso es [servidor.md](servidor.md).
+La fase 3 está implementada y se cerró en 0.4.0 tras la prueba real en dos servidores y su revisión de
+seguridad. Cubre la pantalla del servidor, el estado y las actualizaciones de apt, los servicios
+systemd, la lectura del journal, la terminal del anfitrión y la pantalla de auditoría. La guía de uso es
+[servidor.md](servidor.md).
 
 ### 8.1 Órdenes tipadas y tipos de tarea
 

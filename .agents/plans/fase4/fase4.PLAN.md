@@ -1,6 +1,6 @@
 # Fase 4 · Usuarios, permisos y auditoría (0.5.0)
 
-Estado: **diseño de Opus (2026-10-22), sin código.** Criterio del ROADMAP: *«un usuario con acceso a un solo stack
+Estado: **pasos 1-10 hechos (0.4.15, 2026-10-23); falta la prueba real con un segundo usuario y el cierre 0.5.0 (paso 11).** Pasos 4, 6 y 9 se trocearon (4a/4b, 6a/6b/6c, 9 core+panel) y se añadió el recorte de `GET /servers` para usuarios de solo-stack. Criterio del ROADMAP: *«un usuario con acceso a un solo stack
 no puede ver ni tocar nada más, comprobado con pruebas automáticas»*.
 
 Punto de partida: un solo usuario (`app_user`) con contraseña + TOTP obligatorio, passkeys, PIN de dispositivo de
@@ -119,16 +119,16 @@ Ejecutor por defecto: AgentRelay. Marca ✅ al terminar.
 
 | # | Paso | Archivos | Terminado cuando | Ejecutor · esfuerzo |
 |---|---|---|---|---|
-| 1 | `rbac` puro (D2): permisos, roles, niveles, herencia, `Resolve`/`Can`/filtros | `core/internal/rbac/**` | pruebas de tabla rol × ámbito × objetivo, incluido «stack → nada de host» | AgentRelay · alto |
-| 2 | Migración 0012 y store (D1, D4, D5): grupos, equipos, `role_binding`, campos de usuario, invitaciones, claves, `audit_event.actor_id/scope`, admin inicial | `core/internal/store/migrations/0012_rbac.sql`, `core/internal/store/{rbac,invites,apikeys}.go` | pruebas con Postgres; invariante del último admin en transacción | AgentRelay · alto |
-| 3 | Aplicación (D3): `requirePerm`, `routePerms`, prueba guardiana `chi.Walk`, 404/403 y auditoría de denegaciones, listas filtradas, `/me`, `/stacks` | `core/internal/api/{authz.go,api.go,servers.go,containers.go,stacks.go,audit.go}` | **prueba del criterio**: usuario con un solo stack contra todas las rutas → solo su stack | AgentRelay · alto + revisión Opus |
-| 4 | API de usuarios, equipos, grupos, asignaciones e invitaciones con auditoría | `core/internal/api/{users,teams,groups,invites}.go` | pruebas: último admin, desactivar revoca todo, invitación de un uso | AgentRelay · medio |
-| 5 | Claves de API (D5) en el middleware de sesión y su API | `core/internal/api/{apikeys.go,session.go}` | pruebas: intersección con el dueño, prohibidos (terminal, usuarios, reinicio), caducidad, revocación | AgentRelay · alto |
-| 6 | OIDC (D6) | `core/internal/oidc/**`, `core/internal/api/auth.go` | pruebas con un IdP falso (`httptest`): `email_verified=false` rechazado, `nonce`/`state` erróneos, sin usuario → rechazo | AgentRelay · alto |
-| 7 | Panel: `/me` y permisos (esconder lo no permitido), vista «solo stacks» | `web/src/api/me.ts`, `web/src/auth/**`, `web/src/screens/**` (solo condiciones) | pruebas por rol; capturas de la vista de un operador de app | AgentRelay · medio |
-| 8 | Panel: pantalla Usuarios y permisos (maqueta 5), equipos, grupos, invitación y su aceptación | `web/src/screens/settings/{Users,Teams,Invite}*.tsx`, locales | capturas claro/oscuro/móvil; pruebas | AgentRelay · medio |
-| 9 | Panel: claves de API, ajustes OIDC, botón SSO en el login, grabaciones (D7) | `web/src/screens/settings/**`, `web/src/screens/Login*.tsx`, `core/internal/api/recordings.go` | capturas; pruebas | AgentRelay · medio |
-| 10 | `talaiactl` v1 (D8) | `cli/**` | pruebas con `httptest`; i18n ca/es/en | AgentRelay · medio |
+| 1 ✅ | `rbac` puro (D2): permisos, roles, niveles, herencia, `Resolve`/`Can`/filtros | `core/internal/rbac/**` | pruebas de tabla rol × ámbito × objetivo, incluido «stack → nada de host» | AgentRelay · alto |
+| 2 ✅ | Migración 0012 y store (D1, D4, D5): grupos, equipos, `role_binding`, campos de usuario, invitaciones, claves, `audit_event.actor_id/scope`, admin inicial | `core/internal/store/migrations/0012_rbac.sql`, `core/internal/store/{rbac,invites,apikeys}.go` | pruebas con Postgres; invariante del último admin en transacción | AgentRelay · alto |
+| 3 ✅ | Aplicación (D3): `requirePerm`, `routePerms`, prueba guardiana `chi.Walk`, 404/403 y auditoría de denegaciones, listas filtradas, `/me`, `/stacks` | `core/internal/api/{authz.go,api.go,servers.go,containers.go,stacks.go,audit.go}` | **prueba del criterio**: usuario con un solo stack contra todas las rutas → solo su stack | AgentRelay · alto + revisión Opus |
+| 4 ✅ | API de usuarios, equipos, grupos, asignaciones e invitaciones con auditoría | `core/internal/api/{users,teams,groups,invites}.go` | pruebas: último admin, desactivar revoca todo, invitación de un uso | AgentRelay · medio |
+| 5 ✅ | Claves de API (D5) en el middleware de sesión y su API | `core/internal/api/{apikeys.go,session.go}` | pruebas: intersección con el dueño, prohibidos (terminal, usuarios, reinicio), caducidad, revocación | AgentRelay · alto |
+| 6 ✅ | OIDC (D6) | `core/internal/oidc/**`, `core/internal/api/auth.go` | pruebas con un IdP falso (`httptest`): `email_verified=false` rechazado, `nonce`/`state` erróneos, sin usuario → rechazo | AgentRelay · alto |
+| 7 ✅ | Panel: `/me` y permisos (esconder lo no permitido), vista «solo stacks» | `web/src/api/me.ts`, `web/src/auth/**`, `web/src/screens/**` (solo condiciones) | pruebas por rol; capturas de la vista de un operador de app | AgentRelay · medio |
+| 8 ✅ | Panel: pantalla Usuarios y permisos (maqueta 5), equipos, grupos, invitación y su aceptación | `web/src/screens/settings/{Users,Teams,Invite}*.tsx`, locales | capturas claro/oscuro/móvil; pruebas | AgentRelay · medio |
+| 9 ✅ | Panel: claves de API, ajustes OIDC, botón SSO en el login, grabaciones (D7) | `web/src/screens/settings/**`, `web/src/screens/Login*.tsx`, `core/internal/api/recordings.go` | capturas; pruebas | AgentRelay · medio |
+| 10 ✅ | `talaiactl` v1 (D8) | `cli/**` | pruebas con `httptest`; i18n ca/es/en | AgentRelay · medio |
 | 11 | Documentación EN+ES (permisos, usuarios, claves, OIDC, CLI), **revisión de seguridad (Opus)**, prueba real con un segundo usuario y cierre 0.5.0 | `docs/**`, ROADMAP, TODO | criterio cumplido con el mantenedor | Opus + mantenedor |
 
 Paralelismo: 1 y 2 a la vez; 3 necesita 1 y 2; 4, 5 y 6 tras 3 (archivos distintos); 7-9 tras 3-6; 10 tras 5.

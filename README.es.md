@@ -14,16 +14,17 @@
 </p>
 
 <p align="center">
-  <img alt="Versión" src="https://img.shields.io/badge/versi%C3%B3n-0.0.1-0B7285">
-  <img alt="Estado" src="https://img.shields.io/badge/estado-fase%20de%20dise%C3%B1o-B86E00">
+  <img alt="Versión" src="https://img.shields.io/badge/versi%C3%B3n-0.4.14-0B7285">
+  <img alt="Estado" src="https://img.shields.io/badge/estado-fase%204%20en%20curso-B86E00">
   <img alt="Licencia" src="https://img.shields.io/badge/licencia-WNCL--TP--1.0-56666F">
   <img alt="Idiomas" src="https://img.shields.io/badge/i18n-ca%20%C2%B7%20es%20%C2%B7%20en-0B7285">
 </p>
 
 > [!WARNING]
-> Talaia está en desarrollo activo. El núcleo, el agente, el panel y la CLI existen, y la fase 3 (servidor
-> entero) está implementada, pero esa fase todavía necesita su semana real sin SSH y su revisión de
-> seguridad antes de poder cerrar la fase. Sigue la [hoja de ruta](ROADMAP.es.md) para ver qué viene.
+> Talaia está en desarrollo activo. La fase 3 (servidor entero) se cerró en 0.4.0. La fase 4 (usuarios,
+> permisos, claves de API, OIDC, grabaciones y talaiactl) está implementada, pero todavía no está cerrada:
+> le faltan la revisión de seguridad y la prueba real con un segundo usuario. Sigue la
+> [hoja de ruta](ROADMAP.es.md) para ver qué viene.
 
 ---
 
@@ -32,6 +33,7 @@
 - [¿Qué es Talaia?](#qué-es-talaia)
 - [¿Por qué otro panel?](#por-qué-otro-panel)
 - [Dos niveles de gestión](#dos-niveles-de-gestión)
+- [Usuarios y permisos](#usuarios-y-permisos)
 - [Funcionalidades previstas](#funcionalidades-previstas)
 - [Arquitectura](#arquitectura)
 - [Sistemas soportados](#sistemas-soportados)
@@ -60,7 +62,8 @@ Talaia es un **panel web autoalojado** para gestionar una flota de VPS basados e
 - **`talaia-agent`**: un binario pequeño instalado en cada VPS. Se conecta *hacia fuera* con el núcleo,
   así que tus servidores no necesitan ningún puerto abierto para Talaia.
 - **`talaia-web`**: el panel web, disponible en **catalán, castellano e inglés**.
-- **`talaiactl`**: una herramienta de línea de comandos que hace todo lo que hace el panel.
+- **`talaiactl`**: un cliente de línea de comandos en Go para scripts y CI. Entra con una clave de API
+  con ámbito y ofrece servidores, contenedores, stacks y tareas.
 
 ## ¿Por qué otro panel?
 
@@ -106,10 +109,23 @@ Los permisos siguen la misma jerarquía y se heredan hacia abajo:
 Organización → Grupo (prod, clientes…) → Servidor → Stack / App → Contenedor
 ```
 
-Puedes dar acceso a una persona a **una sola app** sin que llegue a ver el servidor donde se ejecuta.
+Puedes dar acceso a una persona a **una sola app** sin que llegue a ver el servidor donde se ejecuta. Los
+roles y las reglas de ámbito están en [docs/es/permisos.md](docs/es/permisos.md).
 
 **Sin dependencia.** Los stacks se guardan en disco en `/opt/talaia/stacks/<nombre>/compose.yaml`. Si
 desinstalas Talaia, todo sigue funcionando y puedes gestionarlo con `docker compose` como siempre.
+
+## Usuarios y permisos
+
+La fase 4 añade una organización con grupos de servidores, equipos y cinco roles fijos: **administrador,
+operador de servidor, operador de app, lector y solo métricas**. Las asignaciones se hacen en los ámbitos
+organización, grupo, servidor, stack o contenedor y se heredan hacia abajo. Un operador de app puede
+desplegar un stack existente y leer sus registros, pero no editar su archivo Compose ni abrir una terminal,
+porque ambas cosas equivalen a root en el servidor.
+
+La misma fase añade invitaciones por enlace, claves de API con ámbito, inicio de sesión con OpenID Connect
+para usuarios existentes (el segundo factor sigue siendo obligatorio), descarga de grabaciones de terminal y
+`talaiactl`. Guía completa: [docs/es/permisos.md](docs/es/permisos.md).
 
 ## Funcionalidades previstas
 
@@ -118,12 +134,12 @@ Cada funcionalidad indica la versión donde está prevista. Detalle en [ROADMAP.
 | Área | MVP (0.4.0) | v1 (1.0.0) | Más adelante |
 |---|---|---|---|
 | Contenedores y stacks | Acciones, logs en directo, editor Compose, terminal del contenedor, imágenes/volúmenes/redes, adoptar existentes | Historial de revisiones y reversión, avisos de imágenes nuevas | Podman |
-| Servidor entero | Métricas, systemd, journald, actualizaciones apt y reinicio, terminal del anfitrión (implementado; pendiente de la validación real y la revisión de seguridad) | Cortafuegos, fail2ban, usuarios y claves SSH, cron, explorador de archivos, auditoría de bastionado | — |
+| Servidor entero | Métricas, systemd, journald, actualizaciones apt y reinicio, terminal del anfitrión (fase 3 cerrada en 0.4.0) | Cortafuegos, fail2ban, usuarios y claves SSH, cron, explorador de archivos, auditoría de bastionado | — |
 | Despliegues y apps | — | Stacks desde Git, builds con Dockerfile/Nixpacks, despliegue sin cortes, dominios + SSL (Caddy), catálogo de plantillas | Entornos de prueba por pull request |
 | Monitorización y alertas | — | Historial de métricas, reglas de alerta, comprobaciones HTTP/TCP, caducidad de certificados, Telegram/ntfy/correo/Discord/webhook | Página de estado pública |
 | Copias de seguridad | — | Planes con restic, volcados coherentes de bases de datos, S3/B2/SFTP, restaurar desde el panel | Prueba de restauración mensual automática |
 | Automatización de flota | — | Acciones en bloque, procedimientos programados, sincronización GitOps | Playbooks de Ansible, creación de VPS vía API del proveedor |
-| Usuarios y seguridad | Usuario único con 2FA, PIN en dispositivos de confianza, claves de acceso, registro de auditoría y terminales grabadas | Usuarios, equipos, roles por ámbito, SSO OIDC, claves de API con permisos | — |
+| Usuarios y seguridad | Usuario único con 2FA, PIN en dispositivos de confianza, claves de acceso, registro de auditoría y terminales grabadas (0.4.0) | Usuarios, equipos, grupos de servidores, roles por ámbito, invitaciones, claves de API, SSO OIDC y talaiactl (implementado para 0.5.0; fase no cerrada) | — |
 
 > **Estado de la fase 3.** Cerrada en 0.4.0 tras una prueba real en dos servidores y su revisión de
 > seguridad. La guía es [docs/es/servidor.md](docs/es/servidor.md).
@@ -159,7 +175,9 @@ Decisiones clave:
 - **Degradación controlada.** Si cae el núcleo, contenedores y servicios siguen funcionando. El agente
   guarda 24 h de métricas y eventos y los envía al reconectar.
 
-Detalle completo: [docs/es/arquitectura.md](docs/es/arquitectura.md). Qué puede hacer el panel con tus servidores y qué se graba: [docs/es/seguridad.md](docs/es/seguridad.md).
+Detalle completo: [docs/es/arquitectura.md](docs/es/arquitectura.md). Usuarios, roles y claves de API:
+[docs/es/permisos.md](docs/es/permisos.md). Qué puede hacer el panel con tus servidores y qué se graba:
+[docs/es/seguridad.md](docs/es/seguridad.md).
 
 ## Sistemas soportados
 
@@ -216,7 +234,11 @@ y abrir el panel con un PIN, y las **claves de acceso** pueden entrar con la hue
 dispositivo. Los dos son opcionales y mantienen la contraseña, el TOTP y los códigos de recuperación como vía
 de vuelta.
 
-Cómo configurar, usar, eliminar y resolver problemas de cada método: [docs/es/acceso.md](docs/es/acceso.md). El
+Un administrador también puede activar OpenID Connect. Sustituye solo la contraseña: el segundo factor sigue
+siendo obligatorio y los usuarios deben existir ya con el mismo correo verificado.
+
+Cómo configurar, usar, eliminar y resolver problemas de cada método: [docs/es/acceso.md](docs/es/acceso.md).
+Los usuarios, roles, invitaciones y claves de API están en [docs/es/permisos.md](docs/es/permisos.md). El
 modelo de seguridad y qué se graba están en [docs/es/seguridad.md](docs/es/seguridad.md).
 
 ## Tecnologías

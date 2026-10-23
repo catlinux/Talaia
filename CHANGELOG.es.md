@@ -13,6 +13,12 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+## [0.4.15] - 2026-10-23
+
+### Cambiado
+
+- Documentación de usuarios, permisos, claves de API, OIDC, grabaciones y talaiactl.
+
 ## [0.4.14] - 2026-10-23
 
 ### Añadido
@@ -465,7 +471,8 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
   `.gitattributes` y `.gitignore`.
 - Licencia WNCL-1.0 aplicada: archivo `LICENSE` y sección de créditos en los README.
 
-[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.4.14...HEAD
+[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.4.15...HEAD
+[0.4.15]: https://github.com/catlinux/Talaia/releases/tag/v0.4.15
 [0.4.14]: https://github.com/catlinux/Talaia/releases/tag/v0.4.14
 [0.4.13]: https://github.com/catlinux/Talaia/releases/tag/v0.4.13
 [0.4.12]: https://github.com/catlinux/Talaia/releases/tag/v0.4.12

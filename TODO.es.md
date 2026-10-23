@@ -96,12 +96,12 @@ tareas concretas de la fase actual y de la siguiente.
 
 ## Fase 4 · Usuarios, permisos y auditoría (0.5.0, ver `.agents/plans/fase4/fase4.PLAN.md`)
 
-- [ ] Modelo de permisos: roles fijos (administrador, operador de servidor, operador de app, lector, solo métricas) sobre organización → grupo → servidor → stack → contenedor; una asignación de stack nunca llega al host
-- [ ] Usuarios, equipos, grupos de servidores e invitaciones por enlace (2FA obligatorio para todos)
-- [ ] Permisos comprobados en cada ruta de la API, con una prueba que falla si una ruta no tiene ninguno; listas filtradas
-- [ ] Claves de API con ámbito (nunca terminales, usuarios ni reinicio) y `talaiactl` v1
-- [ ] Inicio de sesión OIDC para usuarios existentes (correo verificado), con segundo factor igualmente
-- [ ] Panel: pantalla Usuarios y permisos (maqueta 5), claves de API, ajustes OIDC, lista y descarga de grabaciones de terminal
+- [x] Modelo de permisos: roles fijos (administrador, operador de servidor, operador de app, lector, solo métricas) sobre organización → grupo → servidor → stack → contenedor; una asignación de stack nunca llega al host
+- [x] Usuarios, equipos, grupos de servidores e invitaciones por enlace (2FA obligatorio para todos)
+- [x] Permisos comprobados en cada ruta de la API, con una prueba que falla si una ruta no tiene ninguno; listas filtradas
+- [x] Claves de API con ámbito (nunca terminales, usuarios ni reinicio) y `talaiactl` v1
+- [x] Inicio de sesión OIDC para usuarios existentes (correo verificado), con segundo factor igualmente
+- [x] Panel: pantalla Usuarios y permisos (maqueta 5), claves de API, ajustes OIDC, lista y descarga de grabaciones de terminal
 - [x] Grabación de sesiones de terminal (hecha en las fases 2 y 3)
 - [ ] Tras una actualización, el panel sigue mostrando la versión anterior: que se recargue solo (o avise de que hay que recargar) cuando el core se reinicie con una versión nueva
 - [ ] Docs EN/ES, revisión de seguridad (Opus), prueba real con un segundo usuario, cierre en 0.5.0

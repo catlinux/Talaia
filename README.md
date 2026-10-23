@@ -14,16 +14,16 @@
 </p>
 
 <p align="center">
-  <img alt="Version" src="https://img.shields.io/badge/version-0.0.1-0B7285">
-  <img alt="Status" src="https://img.shields.io/badge/status-design%20phase-B86E00">
+  <img alt="Version" src="https://img.shields.io/badge/version-0.4.14-0B7285">
+  <img alt="Status" src="https://img.shields.io/badge/status-phase%204%20in%20progress-B86E00">
   <img alt="License" src="https://img.shields.io/badge/license-WNCL--TP--1.0-56666F">
   <img alt="Languages" src="https://img.shields.io/badge/i18n-ca%20%C2%B7%20es%20%C2%B7%20en-0B7285">
 </p>
 
 > [!WARNING]
-> Talaia is in active development. The core, agent, panel and CLI exist, and phase 3 (whole server) is
-> implemented, but that phase still needs its real-world week without SSH and its security review before
-> the phase can be considered closed. Follow the [roadmap](ROADMAP.md) for what comes next.
+> Talaia is in active development. Phase 3 (whole server) closed in 0.4.0. Phase 4 (users, permissions,
+> API keys, OIDC, recordings and talaiactl) is implemented, but it is not closed yet: it still needs the
+> security review and the real test with a second user. Follow the [roadmap](ROADMAP.md) for what comes next.
 
 ---
 
@@ -32,6 +32,7 @@
 - [What is Talaia?](#what-is-talaia)
 - [Why another panel?](#why-another-panel)
 - [Two levels of management](#two-levels-of-management)
+- [Users and permissions](#users-and-permissions)
 - [Planned features](#planned-features)
 - [Architecture](#architecture)
 - [Supported systems](#supported-systems)
@@ -61,7 +62,8 @@ Talaia is a **self-hosted web panel** to manage a fleet of Debian-based VPS. It 
 - **`talaia-agent`**: a small binary installed on every VPS. It connects *outbound* to the core, so your
   servers do not need any open port for Talaia.
 - **`talaia-web`**: the web panel, available in **Catalan, Spanish and English**.
-- **`talaiactl`**: a command line tool that does everything the panel does.
+- **`talaiactl`**: a Go command-line client for scripts and CI. It signs in with a scoped API key and
+  exposes servers, containers, stacks and jobs.
 
 ## Why another panel?
 
@@ -107,10 +109,23 @@ Permissions follow the same hierarchy and are inherited downwards:
 Organization → Group (prod, clients…) → Server → Stack / App → Container
 ```
 
-You can give a person access to **a single app** without them ever seeing the server it runs on.
+You can give a person access to **a single app** without them ever seeing the server it runs on. The
+roles and scope rules are in [docs/en/permissions.md](docs/en/permissions.md).
 
 **No lock-in.** Stacks live on disk at `/opt/talaia/stacks/<name>/compose.yaml`. If you uninstall
 Talaia, everything keeps running and you can manage it with `docker compose` as usual.
+
+## Users and permissions
+
+Phase 4 adds one organization with server groups, teams and five fixed roles: **administrator, server
+operator, app operator, viewer and metrics only**. Assignments can be made at organization, group, server,
+stack or container scope and are inherited downwards. An app operator can deploy an existing stack and read
+its logs, but cannot edit its Compose file or open a terminal, because both are equivalent to root on the
+server.
+
+The same phase adds invitations by link, scoped API keys, OpenID Connect sign-in for existing users (the
+second factor stays mandatory), terminal recording downloads and `talaiactl`. Full guide:
+[docs/en/permissions.md](docs/en/permissions.md).
 
 ## Planned features
 
@@ -119,12 +134,12 @@ Each feature is tagged with the release where it is planned. See [ROADMAP.md](RO
 | Area | MVP (0.4.0) | v1 (1.0.0) | Later |
 |---|---|---|---|
 | Containers and stacks | Actions, live logs, Compose editor, container terminal, images/volumes/networks, adopt existing | Revision history and rollback, image update notices | Podman |
-| Whole server | Metrics, systemd, journald, apt updates and reboot, host terminal (implemented; awaiting real-world validation and security review) | Firewall, fail2ban, users and SSH keys, cron, file browser, hardening audit | — |
+| Whole server | Metrics, systemd, journald, apt updates and reboot, host terminal (phase 3 closed in 0.4.0) | Firewall, fail2ban, users and SSH keys, cron, file browser, hardening audit | — |
 | Deploys and apps | — | Stacks from Git, Dockerfile/Nixpacks builds, zero-downtime deploys, domains + SSL (Caddy), template catalog | Preview environments per pull request |
 | Monitoring and alerts | — | Metrics history, alert rules, HTTP/TCP checks, certificate expiry, Telegram/ntfy/email/Discord/webhook | Public status page |
 | Backups | — | restic plans, consistent database dumps, S3/B2/SFTP, restore from the panel | Automatic monthly restore test |
 | Fleet automation | — | Bulk actions, scheduled procedures, GitOps sync | Ansible playbooks, VPS provisioning via provider APIs |
-| Users and security | Single user with 2FA, trusted-device PIN, passkeys, audit log and recorded terminals | Users, teams, scoped roles, OIDC SSO, scoped API keys | — |
+| Users and security | Single user with 2FA, trusted-device PIN, passkeys, audit log and recorded terminals (0.4.0) | Users, teams, server groups, scoped roles, invitations, API keys, OIDC SSO and talaiactl (implemented for 0.5.0; phase not closed) | — |
 
 > **Phase 3 status.** Closed in 0.4.0 after a real test on two servers and its security review. The guide
 > is [docs/en/server.md](docs/en/server.md).
@@ -159,7 +174,9 @@ Key decisions:
 - **Graceful degradation.** If the core goes down, containers and services keep running. The agent keeps
   24 h of metrics and events locally and sends them when it reconnects.
 
-Full detail: [docs/en/architecture.md](docs/en/architecture.md). What the panel can do to your servers, and what is recorded: [docs/en/security.md](docs/en/security.md).
+Full detail: [docs/en/architecture.md](docs/en/architecture.md). Users, roles and API keys:
+[docs/en/permissions.md](docs/en/permissions.md). What the panel can do to your servers, and what is
+recorded: [docs/en/security.md](docs/en/security.md).
 
 ## Supported systems
 
@@ -215,8 +232,12 @@ Password and TOTP are the base. A browser can also become a **trusted device** a
 and **passkeys** can sign in with the fingerprint, the face or the device PIN. Both are optional and keep the
 password, TOTP and recovery codes as the way back in.
 
-How to set up, use, remove and troubleshoot each method: [docs/en/access.md](docs/en/access.md). The security
-model and what is recorded are in [docs/en/security.md](docs/en/security.md).
+An administrator can also enable OpenID Connect. It replaces the password only: the second factor is
+still required, and users must already exist with the same verified email.
+
+How to set up, use, remove and troubleshoot each method: [docs/en/access.md](docs/en/access.md). Users,
+roles, invitations and API keys are in [docs/en/permissions.md](docs/en/permissions.md). The security model
+and what is recorded are in [docs/en/security.md](docs/en/security.md).
 
 ## Technology stack
 

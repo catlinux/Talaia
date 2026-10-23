@@ -6,10 +6,12 @@ What the panel can do to your servers, what protects it, and what is recorded. T
 [architecture.md](architecture.md); the installation steps are in [installation.md](installation.md).
 The user guide for the server screen is [server.md](server.md).
 
-## The administrator is root on every managed server
+## Administrators and server operators are root on the servers they manage
 
-In this version there is one role: the administrator, protected by a password and a second factor (TOTP). **That
-account is equivalent to root on every server it manages.** This is by design, not an oversight, because several
+The **administrator** role is protected by a password and a second factor (TOTP). **That account is
+equivalent to root on every server it manages.** The other roles reduce the reach, but any role that can
+edit Compose, run host commands or open a privileged terminal is still root-equivalent inside its scope.
+The rules are in [permissions.md](permissions.md). This is by design, not an oversight, because several
 things the panel offers already give root:
 
 - **A Compose file runs as root on the server.** Whoever can edit one can mount `/`, start a `privileged`
@@ -26,10 +28,9 @@ things the panel offers already give root:
 - **Updates from the panel** are applied by a root helper on the core machine ([installation.md](installation.md),
   section 5). The core can only ask for a commit of `origin/main` that is newer than the running one.
 
-Keep that account safe: a long, unique password, an authenticator you control, and no sharing. Per-user roles
-and scopes (for example, access to a single stack) come in a later phase; when they do, the permissions to edit
-stacks, adopt projects and open terminals will be marked as equivalent to root and will not be granted by
-default.
+Keep administrator and server-operator accounts safe: long, unique passwords, an authenticator you control,
+and no sharing. Per-user roles and scopes now exist, but the permissions to edit stacks, adopt projects and open
+terminals remain root-equivalent and are never granted to a viewer or an app operator.
 
 ## Sign-in methods
 
@@ -48,8 +49,64 @@ methods make regular sign-in faster:
   party, and with Talaia's own CA some browsers may refuse them. Challenges expire after five minutes, and a
   signature counter that goes backwards disables the passkey.
 
-Both methods are additive: the password, TOTP and recovery codes remain the base and the recovery path. Setup,
+- **Single sign-on (OIDC).** A configured OpenID Connect provider can replace the password for an existing
+  user whose verified email matches. The second factor is still required. Provider failures return to a
+  generic login error and are audited; see [permissions.md](permissions.md).
+These methods are additive: the password, TOTP and recovery codes remain the base and the recovery path. Setup,
 use, removal and troubleshooting: [access.md](access.md).
+
+## Users, invitations and denials
+
+- Five fixed roles can be assigned at organization, group, server, stack or container scope. A permission
+  only counts when the scope is at least its minimum level; a stack-bound server operator never reaches the
+  host. See [permissions.md](permissions.md).
+- A user who cannot see an object gets **404**, not a hint that it exists. A user who can see it but lacks
+  the operation gets **403**. The panel only hides controls; the core makes every decision.
+- Every denial is audited as `authz_denied` with the actor, permission, method, path, result and scope; API
+  key denials also include the key id. The response never contains the reason.
+- An invitation link is single-use, expires after 72 hours, and the token is stored hashed. Anyone who gets
+  the link before it is used can claim the account, so send it through a trusted channel. Talaia sends no
+  email. The invitee sets a password and must set up TOTP before a full session.
+- At least one active organization administrator must remain. Disabling the last one, or removing or
+  demoting the last organization-admin assignment (direct or through a team), is refused with
+  `409 last_admin`; nobody can disable their own account.
+
+## API keys
+
+- API keys are scoped credentials for scripts. They are shown once, stored as a SHA-256 hash, and expire
+  after 90 days by default (365 maximum).
+- Effective permissions are the intersection of the key's own assignments and its owner's current
+  assignments. If the owner loses access, the key loses it too.
+- A key can never open a container or host terminal, manage users, teams, groups, keys or settings, reboot a
+  server, or use the sign-in endpoints. Routes marked `noAPIKey` reject keys even when their role bindings
+  would allow them.
+- Keys use `Authorization: Bearer tlk_…`, need no cookie or CSRF token, and are limited to 600 requests per
+  minute per key, with an additional per-IP bound. Creating one needs a fresh TOTP code.
+- Treat the key as a password: do not put it in URLs, logs or shell history, and prefer `TALAIA_API_KEY` or
+  `talaiactl login` over `--api-key`, which appears in the process list. Revoke it immediately if leaked.
+
+## Single sign-on (OIDC)
+
+- The provider replaces the password only. TOTP or a passkey is still required, so a compromised identity
+  provider alone does not open the panel.
+- The email claim must be verified and match an existing active user. There is no automatic account
+  creation. On the first login the provider's `sub` is bound to that user; a different subject for the same
+  email is rejected.
+- The flow uses discovery, authorization code with PKCE, `state` and `nonce` in a sealed 10-minute cookie,
+  and verifies the ID token. The client secret is write-only and stored encrypted.
+- Only `https` issuers are accepted, except `http://localhost` or `http://127.0.0.1` in development.
+- Failures redirect to a generic login error and are audited as `oidc_login_denied`; they do not reveal
+  whether the account exists. Anyone who controls the provider can impersonate its users after the second
+  factor, so protect the provider as carefully as the panel.
+
+## Terminal recordings access
+
+- Recordings are available only with `recordings.view` at organization scope, through **Audit >
+  Recordings**. API keys can never list or download them.
+- Downloading a `.cast` is audited as `recording_download`. A recording can contain passwords or tokens
+  printed on screen; treat it as sensitive data and store it accordingly.
+- The panel has no built-in player. Use `asciinema play file.cast` locally. Retention defaults to 90 days
+  and the chunks are encrypted with the secrets key.
 
 ## Agent updates
 
@@ -61,9 +118,9 @@ not against a compromised core, the same trust as the install command. Every ord
 
 ## What protects the panel and the agents
 
-- **Sign-in:** password and TOTP, optional PIN on trusted devices and passkeys, rate limiting, lock-out after
-  repeated failures, sessions that expire, and protection of every change against requests from other sites
-  (origin check).
+- **Sign-in:** password and TOTP, optional PIN on trusted devices, passkeys and OIDC for existing users, rate
+  limiting, lock-out after repeated failures, sessions that expire, and protection of every change against
+  requests from other sites (origin check).
 - **Typed commands only.** The core never sends a shell command to an agent. It sends closed, validated
   messages (start a container, read logs, write a stack, open a terminal…), and the agent checks them again.
   Container names, stack names and paths are validated before they are used.
@@ -78,7 +135,10 @@ not against a compromised core, the same trust as the install command. Every ord
   without the database, the secrets or the data of the core. It answers that name only, never recurses and limits
   each source network. See [dns-delegation.md](dns-delegation.md).
 - **Everything the panel does is audited** with names, ids and hashes; the audit log never holds file contents,
-  log text, the TOTP code, the journal search text, package lists or what is typed in a terminal.
+  log text, the TOTP code, the journal search text, package lists or what is typed in a terminal. Denied
+  authorization checks are recorded as `authz_denied`.
+- **Scoped roles are enforced in the core.** The panel hides controls, but the API checks every route against
+  the effective bindings; a hidden object returns 404 and a visible operation without permission returns 403.
 
 ## Terminal sessions: recording and retention
 
@@ -103,7 +163,9 @@ terminals and to the host terminal.
   browser session, and the connection must come from an allowed origin. Closing or revoking the panel session
   closes its terminals within a minute.
 
-The panel has no recording player yet. To list and play them, run on the core machine, in `packaging/core`:
+The panel has no built-in player. Users with `recordings.view` can list the sessions and download the
+`.cast` file in **Audit > Recordings**; downloads are audited. To list and export them from the console,
+run on the core machine, in `packaging/core`:
 
 ```bash
 sudo docker compose run --rm -T core terminal list
@@ -117,7 +179,8 @@ decrypts a recording and writes the `.cast` file to the standard output.
 
 ## Whole-server actions (phase 3)
 
-The same administrator account can now change the whole machine, not only its containers:
+An administrator, or a server operator whose scope reaches the server, can change the whole machine, not
+only its containers:
 
 - **Package upgrades** run as root and can replace libraries, services and the kernel. Security-only or
   all-pending upgrades are available; they never remove packages and keep local configuration files. One

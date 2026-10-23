@@ -73,7 +73,15 @@ xterm.js for terminals, Monaco for editors, uPlot for charts, i18next for transl
 
 ### 2.4 talaiactl
 
-Go CLI that uses the same REST API with an API key. Intended for scripts, CI pipelines and GitOps sync.
+Go command-line client for scripts, CI pipelines and GitOps sync. It authenticates with an API key
+(`Authorization: Bearer tlk_…`) and exposes `login`, `servers list`,
+`containers list|start|stop|restart`, `stacks list|up|down|restart|pull`, `jobs wait`, `version` and
+`help`. It reads `url` and `api_key` from `~/.config/talaia/config.toml` (the directory returned by
+`os.UserConfigDir()`; `%AppData%\talaia\config.toml` on Windows), created with mode 0600 and refused on Unix if group
+or other users can read it. `TALAIA_URL`, `TALAIA_API_KEY`, `TALAIA_CA_FILE` and the matching flags
+override the file. Output is an aligned table by default or `--json` raw data; actions can use
+`--wait`, and `jobs wait` polls every 2 seconds up to `--timeout` (10 minutes by default). TLS uses the
+system roots plus an optional `--ca-file`; verification cannot be disabled.
 
 ## 3. Agent ↔ core connection
 
@@ -164,57 +172,142 @@ server, shares the 4-session per-server limit, and is audited as `host_terminal_
 `host_terminal_close`. It can be turned off with `[terminal] host = false` in
 `/etc/talaia/agent.toml` or `TALAIA_AGENT_TERMINAL_HOST=false`.
 
-## 4. Data model (initial)
+## 4. Data model (implemented)
+
+This is the schema created by migrations up to `0013_oidc.sql`. Stacks and containers are not
+tables yet: stacks live on disk and containers come from the agent inventory. Tables for domains,
+alerts, backups and metrics belong to later roadmap phases.
 
 | Entity | Main fields |
 |---|---|
 | `organization` | id, name |
-| `user` | id, email, password_hash, totp_secret, locale |
-| `passkey` | id, user_id, credential |
-| `team` | id, name |
-| `team_member` | team_id, user_id |
-| `server_group` | id, name, tags |
-| `server` | id, group_id, name, os, arch, agent_version, cert_fingerprint, last_seen, status |
-| `stack` | id, server_id, name, source (git/local), compose, env_encrypted, current_revision |
-| `stack_revision` | id, stack_id, compose, author_id, created_at |
-| `container` | id, server_id, stack_id (nullable), docker_id, image, state — inventory cache |
-| `domain` | id, stack_id, host, port, tls_status |
-| `role_binding` | subject (user/team), scope_type, scope_id, role |
-| `job` | id, server_id, kind, payload, status, output, created_by |
-| `alert_rule` | id, scope, metric, threshold, channels |
-| `backup_plan` | id, target, schedule, destination, retention |
-| `audit_event` | id, actor, action, scope, ip, result, created_at |
-| `metric` | TimescaleDB hypertable: server_id, container_id, ts, values |
+| `app_user` | id, username, display_name, email, password_hash, TOTP fields, failed attempts, locked_until, disabled_at, oidc_subject |
+| `recovery_code` | id, user_id, code_hash, used_at |
+| `session` | id, token_hash, user_id, stage (`mfa_pending` or `full`), expiry, revoked_at, IP, user agent, MFA failures |
+| `trusted_device` | id, user_id, token_hash, pin_hash, name, 180-day browser marker, counters and timestamps |
+| `passkey` | id, user_id, credential_id, public_key, sign counter, transports, backup flags |
+| `webauthn_ceremony` | id, user_id, kind, session_data, expires_at |
+| `server` | id, name, group_id, certificate serial and expiry, created_at, last_seen, revoked_at, removed_at |
+| `enrollment_token` | id, token_hash, server_name, expires_at, used_at |
+| `server_group` | id, name, created_at |
+| `team` | id, name, created_at |
+| `team_member` | team_id, user_id, created_at |
+| `role_binding` | id, subject_type (`user`, `team`, `api_key`), subject_id, scope_type (`organization`, `group`, `server`, `stack`, `container`), scope_server_id, scope_group_id, scope_name, role, created_by, created_at |
+| `user_invite` | id, token_hash, username, email, role, scope fields, created_by, created_at, expires_at, used_at |
+| `api_key` | id, key_id, name, owner_id, secret_hash, created_at, expires_at, last_used_at, revoked_at |
+| `oidc_config` | one row: enabled, issuer, client_id, client_secret_enc, button_label, updated_at, updated_by |
+| `audit_event` | id, at, actor, actor_id, action, IP, result, details, scope |
+| `job` | id, server_id, kind, params, state, message, output, created_by, timestamps |
+| `terminal_session` | id, server_id, container or `@host`, shell, created_by, privileged, times, close_reason, recorded_bytes |
+| `terminal_chunk` | session_id, seq, encrypted data |
+
+Migration `0012_rbac.sql` also gives every existing installation user the organization administrator
+binding, adds `group_id` to `server`, `display_name`/`email`/`disabled_at`/`oidc_subject` to
+`app_user`, and `actor_id`/`scope` to `audit_event`. Migration `0013_oidc.sql` adds `oidc_config`
+with a single row (`id boolean PRIMARY KEY DEFAULT true CHECK (id)`).
 
 ## 5. Permissions
 
-Scopes form a tree: **organization → group → server → stack → container**. A role granted on a node
-applies to everything below it.
+There is one organization. **Server groups** put servers together, **teams** put users together, and a
+**role binding** gives one fixed role to a user, a team or an API key at one scope.
 
-| Role | Permissions |
+```text
+Organization → Group → Server → Stack → Container
+```
+
+A stack or container scope is identified by its server and its name. A container that belongs to a
+Compose project inherits the stack's bindings; a standalone container inherits only from the server and
+above. An assignment applies to its node and everything below it.
+
+### 5.1 Roles
+
+| Role | Permissions before scope filtering |
 |---|---|
-| Admin | Everything, including users and settings |
-| Server operator | Everything on its servers: containers, services, packages, terminal |
-| App operator | View, logs, restart, deploy on its stacks; no terminal, no host access |
-| Viewer | Read only |
-| Metrics only | Metrics and status, no logs |
+| `admin` | All permissions |
+| `server_operator` | All container, stack and server permissions (including container and host terminals), but not organization permissions |
+| `app_operator` | All `.view` permissions, plus `container.logs`, `container.control` and `stack.deploy` |
+| `viewer` | All `.view` permissions, plus `container.logs` |
+| `metrics_only` | `server.view`, `stack.view`, `container.view` |
 
-Permissions are always checked in the core. The web panel only hides what the user cannot use.
+The role's list is still filtered by the minimum scope of each permission. `audit.view` and
+`recordings.view` are organization-only; `host.*` and `server.agent_update` need at least a server;
+`stack.edit` needs at least a stack; `container.*` can be granted on a container.
+
+| Minimum scope | Permissions |
+|---|---|
+| Container | `container.view`, `container.logs`, `container.control`, `container.terminal` |
+| Stack | `stack.view`, `stack.deploy`, `stack.edit`, `container.remove` |
+| Server | `server.view`, `resources.manage`, `host.services.view`, `host.services.control`, `host.journal`, `host.apt.view`, `host.apt.upgrade`, `host.reboot`, `host.terminal`, `server.agent_update` |
+| Organization | `server.remove`, `server.enroll`, `users.manage`, `settings.manage`, `audit.view`, `recordings.view`, `apikeys.manage` |
+
+A permission counts only when the binding scope is at least as wide as the permission's minimum scope.
+A `server_operator` bound to a stack gets container and stack permissions there, but never host access.
+A group has no separate permission set; a binding there applies to its servers and their descendants.
+
+`app_operator` deliberately lacks `stack.edit`, `container.terminal` and `host.terminal`: a Compose file
+runs as root and a privileged shell reaches the host. Deploying files that already exist is allowed;
+changing them or opening a terminal is not. A `server_operator` bound to a stack gets no host endpoints,
+but `stack.edit` is still root-equivalent through Compose and must be treated as such.
+
+### 5.2 Enforcement
+
+Every protected API route declares its permission in the single `routePerms` table in
+`core/internal/api/authz.go`. The `chi.Walk` guardian test fails when a route has no declaration, so a
+new endpoint cannot be accidentally public. The middleware resolves the effective bindings and the
+target (organization, group, server, stack or container) and applies the rule.
+
+- A user who cannot see the object gets **404 Not Found**; a user who can see it but lacks the
+  operation gets **403 Forbidden**.
+- Every denial is written to the audit log as `authz_denied`, with actor, permission, method, path,
+  result and scope (and the API key id when applicable).
+- List endpoints filter servers, stacks and containers by visibility. A job is visible only to its
+  creator or a user with `users.manage`.
+- The panel uses `GET /api/v1/me` and only hides controls; it never replaces the core check.
+
+### 5.3 API keys
+
+An API key has its own role bindings (`subject_type = api_key`). Its effective permissions are the
+**intersection** of those bindings and its owner's current bindings, so it loses access when the owner
+does. The API-key blacklist always applies: keys cannot open container or host terminals, manage
+users, teams, groups, keys or settings, reboot a server, or reach sign-in endpoints. Routes marked
+`noAPIKey` are rejected even when the key's bindings would otherwise allow them.
+
+API keys authenticate with `Authorization: Bearer tlk_…` and need no cookie, CSRF token or `Origin`
+header. They are limited to 600 requests per minute per key, with an additional per-IP bound; the
+secret is stored hashed and shown once.
+
+### 5.4 Last administrator
+
+At least one active user must keep the organization administrator role, directly or through a team.
+Disabling the last administrator, or removing or demoting the last organization-admin assignment (direct
+or through a team), returns `409 last_admin`; a user cannot disable their own account. The check runs with
+an advisory lock inside the transaction.
+
+The full user-facing guide is [permissions.md](permissions.md).
 
 ## 6. Security summary
 
-- Agents connect outbound; VPS do not open ports for Talaia.
-- mTLS with per-agent certificates; certificates can be revoked from the panel.
-- Mandatory 2FA; passkeys and OIDC supported.
-- Secrets encrypted with `age`; never logged.
-- Audit log for every action; terminal sessions recorded. The administrator is root on the managed servers: see [security.md](security.md).
+- Agents connect outbound; VPS do not open ports for Talaia. mTLS with per-agent certificates, revocable
+  from the panel.
+- Permissions are enforced in the core: five fixed roles on organization → group → server → stack →
+  container. A denial is 404 when the object is hidden and 403 when it is visible but the operation is
+  not allowed; every denial is audited. The panel only hides controls. See [permissions.md](permissions.md).
+- Mandatory 2FA, passkeys, and OIDC for existing users only: the provider replaces the password, not the
+  second factor. OIDC requires a verified email, binds the subject on first login, and creates no accounts.
+- API keys are scoped, stored hashed, shown once, limited to 600 requests/minute, and limited to the
+  intersection of their own bindings and the owner's current bindings. They cannot use terminals,
+  user/settings administration, key management, reboot or sign-in routes.
+- Invitations are single-use, expire after 72 hours, are stored hashed, and still require TOTP setup.
+- Secrets (TOTP, OIDC client secret, terminal chunks) are encrypted with the secrets key; never logged.
+- Audit log for every action and denial; terminal sessions are recorded. Administrators and server
+  operators are root-equivalent on the servers they manage: see [security.md](security.md).
 - Signed packages and images (cosign); the agent verifies signatures before self-updating.
 - Recommended deployment: panel reachable only through WireGuard or Tailscale.
 
-### 6.1 Panel authentication (implemented)
+### 6.1 Panel authentication and authorization (implemented)
 
-Single administrator created on the server console (`talaia-core user create --username <name>`); there is
-never a public sign-up page. Design: `.agents/plans/auth/auth.DESIGN.md`.
+The first administrator is created on the server console (`talaia-core user create --username <name>`);
+there is never a public sign-up page. Further users arrive through an invitation and must set up TOTP.
 
 - Password (12–256 characters) hashed with argon2id; mandatory TOTP from the first sign-in, a code can
   never be used twice, and the TOTP secret is encrypted with AES-256-GCM (`data_dir/secrets.key`).
@@ -224,8 +317,15 @@ never a public sign-up page. Design: `.agents/plans/auth/auth.DESIGN.md`.
   and 7 days maximum; a new token after the second factor.
 - CSRF: JSON body and an allowed `Origin` for every state-changing request. Security headers (CSP, HSTS,
   `nosniff`, `no-referrer`).
+- OIDC uses discovery, authorization code with PKCE, `state` and `nonce` in a sealed 10-minute cookie,
+  and verifies the ID token. Failures redirect to the generic login error and are audited; they never
+  reveal whether an account exists.
+- API keys use `Authorization: Bearer tlk_…` with no cookie, CSRF token or `Origin`; they are rejected on
+  the routes marked `noAPIKey` even when their role bindings would allow them.
 - Brute force: 10 attempts per IP every 15 minutes, 5 failures lock the account for 15 minutes; errors never
-  say what was wrong. Every sign-in, failure and change goes to the audit log, without secrets.
+  say what was wrong. Every sign-in, failure, denial and change goes to the audit log, without secrets.
+- At least one active organization administrator must remain; the store refuses to disable the last
+  administrator or remove or demote the last organization-admin assignment (`409 last_admin`).
 
 ## 7. File locations on managed servers
 
@@ -238,9 +338,9 @@ never a public sign-up page. Design: `.agents/plans/auth/auth.DESIGN.md`.
 
 ## 8. Whole-server operations (phase 3)
 
-Phase 3 is implemented in the code: the server screen, apt status and upgrades, systemd services,
-journald reads, the host terminal and the audit screen. The phase is not closed yet: it still needs the
-real-world week without SSH and the security review. The user guide is [server.md](server.md).
+Phase 3 is implemented and was closed in 0.4.0 after the real test on two servers and its security
+review. It covers the server screen, apt status and upgrades, systemd services, journald reads, the host
+terminal and the audit screen. The user guide is [server.md](server.md).
 
 ### 8.1 Typed commands and job kinds
 

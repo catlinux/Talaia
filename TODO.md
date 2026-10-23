@@ -96,12 +96,12 @@ of the current phase and the next one.
 
 ## Phase 4 · Users, permissions and audit (0.5.0, see `.agents/plans/fase4/fase4.PLAN.md`)
 
-- [ ] Permission model: fixed roles (admin, server operator, app operator, viewer, metrics only) on organization → group → server → stack → container; a stack binding never reaches the host
-- [ ] Users, teams, server groups and invitations by link (2FA mandatory for everyone)
-- [ ] Permissions checked on every API route, with a test that fails if a route has none; filtered lists
-- [ ] Scoped API keys (never terminals, users or reboot) and `talaiactl` v1
-- [ ] OIDC sign-in for existing users (verified email), second factor still required
-- [ ] Panel: Users and permissions screen (mockup 5), API keys, OIDC settings, terminal recordings list and download
+- [x] Permission model: fixed roles (admin, server operator, app operator, viewer, metrics only) on organization → group → server → stack → container; a stack binding never reaches the host
+- [x] Users, teams, server groups and invitations by link (2FA mandatory for everyone)
+- [x] Permissions checked on every API route, with a test that fails if a route has none; filtered lists
+- [x] Scoped API keys (never terminals, users or reboot) and `talaiactl` v1
+- [x] OIDC sign-in for existing users (verified email), second factor still required
+- [x] Panel: Users and permissions screen (mockup 5), API keys, OIDC settings, terminal recordings list and download
 - [x] Terminal session recording (done in phases 2 and 3)
 - [ ] After an update, the panel keeps showing the old version: make it reload itself (or show a "reload" notice) once the core restarts with a new version
 - [ ] Docs EN/ES, security review (Opus), real test with a second user, close at 0.5.0
