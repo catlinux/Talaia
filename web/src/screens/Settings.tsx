@@ -16,6 +16,7 @@ import {
   type UpdateStatus,
 } from '../api/system'
 import { errorMessage } from '../auth/AuthGate'
+import { usePermissions } from '../auth/permissions'
 import { ManualUpgrade } from './server/ManualUpgrade'
 import { AccessCard } from './settings/AccessCard'
 
@@ -132,6 +133,8 @@ function NoteText({ note }: { note: string }) {
 export function Settings({ api = defaultApi, accessApi, pollMs = pollEvery }: SettingsProps) {
   const { t, i18n } = useTranslation(['settings', 'errors'])
   const language = i18n.resolvedLanguage ?? i18n.language
+  const { can, loading: permissionsLoading } = usePermissions()
+  const canSettings = !permissionsLoading && can('settings.manage')
   // A test or an embedding may pass a system-only API. In production the
   // default system API means the panel also manages trusted devices and
   // passkeys.
@@ -158,13 +161,15 @@ export function Settings({ api = defaultApi, accessApi, pollMs = pollEvery }: Se
   const [updateError, setUpdateError] = useState<string | null>(null)
   const [updateNotice, setUpdateNotice] = useState<string | null>(null)
 
-  const showServers = api.listServers !== undefined
-  const canUpdateAgent = api.updateAgent !== undefined
-  const canUpdateAll = api.updateAllAgents !== undefined
+  const showServers = canSettings && api.listServers !== undefined
+  const canAgentUpdate = canSettings && can('server.agent_update')
+  const canUpdateAgent = canAgentUpdate && api.updateAgent !== undefined
+  const canUpdateAll = canAgentUpdate && api.updateAllAgents !== undefined
+  const canRemoveServer = canSettings && can('server.remove')
   const updateAvailableCount = servers?.filter((server) => server.agentUpdateAvailable).length ?? 0
 
   useEffect(() => {
-    if (!api.listServers) {
+    if (!canSettings || !api.listServers) {
       return
     }
     let cancelled = false
@@ -182,9 +187,12 @@ export function Settings({ api = defaultApi, accessApi, pollMs = pollEvery }: Se
     return () => {
       cancelled = true
     }
-  }, [api, t])
+  }, [api, canSettings, t])
 
   useEffect(() => {
+    if (!canSettings) {
+      return
+    }
     let cancelled = false
     api.version().then(
       (system) => {
@@ -213,14 +221,14 @@ export function Settings({ api = defaultApi, accessApi, pollMs = pollEvery }: Se
     return () => {
       cancelled = true
     }
-  }, [api, t])
+  }, [api, canSettings, t])
 
   const status = view.status === 'ready' ? view.system.status : null
   const polling =
     view.status === 'checking' || (status !== null && (status.state === 'running' || requested))
 
   useEffect(() => {
-    if (!polling) {
+    if (!canSettings || !polling) {
       return
     }
 
@@ -250,7 +258,7 @@ export function Settings({ api = defaultApi, accessApi, pollMs = pollEvery }: Se
       cancelled = true
       clearInterval(timer)
     }
-  }, [api, pollMs, polling, t])
+  }, [api, canSettings, pollMs, polling, t])
 
   const requestUpdate = () => {
     if (view.status !== 'ready') {
@@ -535,19 +543,19 @@ export function Settings({ api = defaultApi, accessApi, pollMs = pollEvery }: Se
         </p>
       ) : null}
 
-      {view.status === 'loading' || view.status === 'checking' ? (
+      {canSettings && (view.status === 'loading' || view.status === 'checking') ? (
         <p className="settings__message" role="status">
           {t('settings:state.checking')}
         </p>
       ) : null}
 
-      {view.status === 'error' ? (
+      {canSettings && view.status === 'error' ? (
         <p className="settings__message settings__message--error" role="alert">
           {view.message}
         </p>
       ) : null}
 
-      {system !== null && update !== null ? (
+      {canSettings && system !== null && update !== null ? (
         <>
           <section className="settings__card" aria-labelledby="settings-version-title">
             <h2 className="settings__card-title" id="settings-version-title">
@@ -706,14 +714,16 @@ export function Settings({ api = defaultApi, accessApi, pollMs = pollEvery }: Se
                           {t('settings:servers.update')}
                         </button>
                       ) : null}
-                      <button
-                        type="button"
-                        className="settings__button settings__server-remove"
-                        onClick={() => startRemoval(server)}
-                      >
-                        {t('settings:servers.remove')}
-                      </button>
-                      {server.agentUpdateManual ? (
+                      {canRemoveServer ? (
+                        <button
+                          type="button"
+                          className="settings__button settings__server-remove"
+                          onClick={() => startRemoval(server)}
+                        >
+                          {t('settings:servers.remove')}
+                        </button>
+                      ) : null}
+                      {canAgentUpdate && server.agentUpdateManual ? (
                         <ManualUpgrade command={server.agentUpgradeCommand} />
                       ) : null}
                     </li>
@@ -733,7 +743,7 @@ export function Settings({ api = defaultApi, accessApi, pollMs = pollEvery }: Se
             </section>
           ) : null}
 
-          {update.pending.length > 0 || notes.length > 0 ? (
+          {canSettings && (update.pending.length > 0 || notes.length > 0) ? (
             <section className="settings__card" aria-labelledby="settings-pending-title">
               <h2 className="settings__card-title" id="settings-pending-title">
                 {t('settings:pending.title')}
@@ -784,7 +794,11 @@ export function Settings({ api = defaultApi, accessApi, pollMs = pollEvery }: Se
         </>
       ) : null}
 
-      {confirming && update !== null ? (
+      {access !== undefined && !(canSettings && system !== null && update !== null) ? (
+        <AccessCard api={access} />
+      ) : null}
+
+      {canSettings && confirming && update !== null ? (
         <div className="settings__overlay">
           <div
             className="settings__dialog"
@@ -819,7 +833,7 @@ export function Settings({ api = defaultApi, accessApi, pollMs = pollEvery }: Se
         </div>
       ) : null}
 
-      {updatingAgent !== null || updatingAll ? (
+      {canSettings && (updatingAgent !== null || updatingAll) ? (
         <div className="settings__overlay">
           <div
             className="settings__dialog"
@@ -870,7 +884,7 @@ export function Settings({ api = defaultApi, accessApi, pollMs = pollEvery }: Se
         </div>
       ) : null}
 
-      {removing !== null ? (
+      {canSettings && removing !== null ? (
         <div className="settings__overlay">
           <div
             className="settings__dialog"

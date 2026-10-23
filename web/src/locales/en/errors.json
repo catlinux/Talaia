@@ -25,5 +25,14 @@
   "hostHelperMissing": "The host update helper is not available, so the panel cannot update itself.",
   "operationInProgress": "Another apt operation or reboot is already running for this server.",
   "selfManagement": "Talaia cannot manage its own agent service. Update the agent instead.",
-  "updateCheckPending": "The update check has not finished yet. Try again in a moment."
+  "updateCheckPending": "The update check has not finished yet. Try again in a moment.",
+  "forbidden": "You do not have permission to do this.",
+  "lastAdmin": "You cannot disable the last active administrator.",
+  "invalidInvite": "The invitation is not valid or has already been used.",
+  "usernameTaken": "That username is already taken.",
+  "emailTaken": "That email address is already in use.",
+  "invalidAPIKey": "The API key is not valid.",
+  "sessionOpen": "The session is still open; close it before downloading its recording.",
+  "recordingCorrupt": "The recording is damaged and cannot be downloaded.",
+  "oidcDiscoveryFailed": "The OpenID Connect provider could not be reached."
 }

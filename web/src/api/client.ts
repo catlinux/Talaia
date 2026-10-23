@@ -68,14 +68,17 @@ interface apiLiveAgent {
 interface apiServer {
   id: string
   name: string
-  created_at: string | null
-  last_seen: string | null
-  revoked: boolean
-  cert_not_after: string | null
-  connected: boolean
-  agent_update_available: boolean
-  agent_update_manual: boolean
+  created_at?: string | null
+  last_seen?: string | null
+  revoked?: boolean
+  cert_not_after?: string | null
+  connected?: boolean
+  agent_update_available?: boolean
+  agent_update_manual?: boolean
   live?: apiLiveAgent
+  /** limited entries carry only id, name, status and limited. */
+  limited?: boolean
+  status?: 'online' | 'offline'
 }
 
 /** apiEnrollment is the answer of POST /api/v1/servers/enrollment-tokens. */
@@ -115,6 +118,9 @@ function gigabytes(bytes: number): number {
 
 /** statusOf derives the card status from the live data and the revocation. */
 function statusOf(server: apiServer): { status: ServerStatus; statusDetailKey?: string } {
+  if (server.limited) {
+    return { status: server.status === 'online' ? 'online' : 'offline' }
+  }
   if (server.revoked) {
     return { status: 'offline', statusDetailKey: 'status.revoked' }
   }
@@ -137,6 +143,32 @@ function statusOf(server: apiServer): { status: ServerStatus; statusDetailKey?: 
 
 /** toServer maps one API entry to the model of the fleet screen. */
 function toServer(server: apiServer, latestVersion: string, upgradeCommand: string): Server {
+  if (server.limited) {
+    return {
+      id: server.id,
+      name: server.name,
+      limited: true,
+      os: '',
+      location: '',
+      vcpu: 0,
+      memoryGb: 0,
+      status: server.status === 'online' ? 'online' : 'offline',
+      cpuPercent: null,
+      memPercent: null,
+      diskPercent: null,
+      containers: 0,
+      stacks: 0,
+      tags: [],
+      lastSeen: null,
+      agentVersion: '',
+      agentLatestVersion: '',
+      agentUpdateAvailable: false,
+      agentUpdateManual: false,
+      agentUpgradeCommand: '',
+      hostTerminal: false,
+    }
+  }
+
   const live = server.connected ? server.live : undefined
 
   return {
@@ -156,7 +188,7 @@ function toServer(server: apiServer, latestVersion: string, upgradeCommand: stri
     containers: live ? live.containers : 0,
     stacks: live ? live.compose_projects : 0,
     tags: [],
-    lastSeen: live?.seen_at ?? server.last_seen,
+    lastSeen: live?.seen_at ?? server.last_seen ?? null,
     agentVersion: live?.agent_version ?? '',
     agentLatestVersion: latestVersion,
     agentUpdateAvailable: server.agent_update_available ?? false,

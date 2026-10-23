@@ -7,6 +7,7 @@ import type { AptApi } from './api/apt'
 import type { AuditApi } from './api/audit'
 import type { AuthApi } from './api/auth'
 import { createMockFleetClient } from './api/client'
+import type { MeApi, Permission } from './api/me'
 import type { ContainersApi } from './api/containers'
 import type { JournalApi } from './api/journal'
 import type { ServiceUnit, ServicesApi } from './api/services'
@@ -21,6 +22,48 @@ const navFleet = { ca: 'Flota', es: 'Flota', en: 'Fleet' } as const
 const navSettings = { ca: 'Configuració', es: 'Ajustes', en: 'Settings' } as const
 const navAudit = { ca: 'Auditoria', es: 'Auditoría', en: 'Audit' } as const
 const navAbout = { ca: 'Sobre', es: 'Acerca de', en: 'About' } as const
+
+const adminPermissions: Permission[] = [
+  'container.view',
+  'container.logs',
+  'container.control',
+  'container.terminal',
+  'container.remove',
+  'stack.view',
+  'stack.deploy',
+  'stack.edit',
+  'server.view',
+  'server.remove',
+  'server.enroll',
+  'server.agent_update',
+  'resources.manage',
+  'host.services.view',
+  'host.services.control',
+  'host.journal',
+  'host.apt.view',
+  'host.apt.upgrade',
+  'host.reboot',
+  'host.terminal',
+  'users.manage',
+  'settings.manage',
+  'audit.view',
+  'recordings.view',
+  'apikeys.manage',
+]
+
+const adminMe: MeApi = {
+  get: () =>
+    Promise.resolve({
+      user: { id: 'admin', username: 'admin', display_name: 'Admin', email: '' },
+      bindings: { bindings: [] },
+      permissions: {
+        organization: adminPermissions,
+        servers: {},
+        stacks: {},
+        containers: {},
+      },
+    }),
+}
 
 /** signedInApi is the authentication API of an already verified session. */
 const signedInApi: AuthApi = {
@@ -53,7 +96,7 @@ const pendingJournalApi: JournalApi = {
 /** renderApp mounts the panel behind an authenticated gate. */
 function renderApp(systemApi?: SystemApi, auditApi?: AuditApi) {
   render(
-    <AuthGate api={signedInApi}>
+    <AuthGate api={signedInApi} meApi={adminMe}>
       <App client={createMockFleetClient()} systemApi={systemApi} auditApi={auditApi} />
     </AuthGate>,
   )
@@ -232,7 +275,7 @@ describe('App', () => {
       job: () => Promise.reject(new Error('unexpected')),
     }
     render(
-      <AuthGate api={signedInApi}>
+      <AuthGate api={signedInApi} meApi={adminMe}>
         <App
           client={createMockFleetClient()}
           containersApi={containersApi}

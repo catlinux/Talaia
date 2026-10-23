@@ -789,3 +789,13 @@
   background: var(--warn-soft);
   color: var(--warn);
 }
+
+.server--limited {
+  min-height: 0;
+}
+
+.server__limited {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.875rem;
+}

@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import type { Container, ContainersApi, StackAction } from '../../api/containers'
 import { isSignedOut } from '../../api/http'
 import { errorMessage } from '../../auth/AuthGate'
+import { usePermissions } from '../../auth/permissions'
 import { ArrowLeftIcon, PlayIcon, RestartIcon, StopIcon, TrashIcon } from '../../components/icons'
 import { formatBytes, formatPercent } from '../fleet/format'
 import { LogsPanel } from './LogsPanel'
@@ -49,6 +50,10 @@ export function StackScreen({
 }: StackScreenProps) {
   const { t, i18n } = useTranslation(['server', 'errors'])
   const language = i18n.resolvedLanguage ?? i18n.language
+  const { can } = usePermissions()
+  const scope = { serverId: server.id, stack: name }
+  const canDeploy = can('stack.deploy', scope)
+  const canEdit = can('stack.edit', scope)
   const [outcome, setOutcome] = useState<Outcome | null>(null)
   const [confirming, setConfirming] = useState<'down' | 'forget' | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
@@ -67,6 +72,7 @@ export function StackScreen({
   const running = own.filter((container) => container.state === 'running').length
   const selected = chosen !== null ? chosen : (own[0]?.name ?? '')
   const logContainer = own.some((container) => container.name === selected) ? selected : ''
+  const canLogs = can('container.logs', { ...scope, container: logContainer })
   const busy = outcome?.kind === 'working'
   const disabled = busy || !connected || !dockerAvailable
 
@@ -162,18 +168,20 @@ export function StackScreen({
             </div>
           </div>
         ) : broken ? (
-          <div className="stackscreen__actions">
-            <button
-              type="button"
-              className="cbtn cbtn--danger"
-              disabled={busy}
-              onClick={() => setConfirming('forget')}
-            >
-              <TrashIcon />
-              {t('server:stacks.action.forget')}
-            </button>
-          </div>
-        ) : (
+          canEdit ? (
+            <div className="stackscreen__actions">
+              <button
+                type="button"
+                className="cbtn cbtn--danger"
+                disabled={busy}
+                onClick={() => setConfirming('forget')}
+              >
+                <TrashIcon />
+                {t('server:stacks.action.forget')}
+              </button>
+            </div>
+          ) : null
+        ) : canDeploy ? (
           <div className="stackscreen__actions">
             <button
               type="button"
@@ -211,7 +219,7 @@ export function StackScreen({
               {t('server:stack.actions.pull')}
             </button>
           </div>
-        )}
+        ) : null}
       </header>
 
       {outcome?.kind === 'working' ? (
@@ -234,8 +242,10 @@ export function StackScreen({
         <p className="serverscreen__message">{t('server:offline')}</p>
       ) : (
         <>
-          <div className={`stackscreen__grid${broken ? ' stackscreen__grid--single' : ''}`}>
-            {!broken ? (
+          <div
+            className={`stackscreen__grid${broken || !canEdit ? ' stackscreen__grid--single' : ''}`}
+          >
+            {!broken && canEdit ? (
               <section className="stackscreen__card" aria-labelledby="stack-compose-title">
                 <h2 className="stackscreen__card-title" id="stack-compose-title">
                   {t('server:stack.compose.title')}
@@ -318,46 +328,48 @@ export function StackScreen({
             </section>
           </div>
 
-          <section className="stackscreen__card" aria-labelledby="stack-logs-title">
-            <h2 className="stackscreen__card-title" id="stack-logs-title">
-              {t('server:stack.logs.title')}
-            </h2>
-            {!dockerAvailable ? (
-              <p className="serverscreen__message">{t('server:noDocker')}</p>
-            ) : own.length === 0 ? (
-              <p className="serverscreen__message">{t('server:stack.containers.empty')}</p>
-            ) : (
-              <>
-                <label className="field stackscreen__field">
-                  <span className="field__label">{t('server:stack.logs.select')}</span>
-                  <select
-                    className="field__input"
-                    value={logContainer}
-                    onChange={(event) => setChosen(event.target.value)}
-                  >
-                    <option value="">{t('server:stack.logs.choose')}</option>
-                    {own.map((container) => (
-                      <option key={container.id} value={container.name}>
-                        {container.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                {logContainer === '' ? (
-                  <p className="serverscreen__message">{t('server:stack.logs.choose')}</p>
-                ) : (
-                  <LogsPanel
-                    key={logContainer}
-                    api={api}
-                    serverId={server.id}
-                    container={logContainer}
-                    pollMs={pollMs}
-                    onClose={() => setChosen('')}
-                  />
-                )}
-              </>
-            )}
-          </section>
+          {canLogs ? (
+            <section className="stackscreen__card" aria-labelledby="stack-logs-title">
+              <h2 className="stackscreen__card-title" id="stack-logs-title">
+                {t('server:stack.logs.title')}
+              </h2>
+              {!dockerAvailable ? (
+                <p className="serverscreen__message">{t('server:noDocker')}</p>
+              ) : own.length === 0 ? (
+                <p className="serverscreen__message">{t('server:stack.containers.empty')}</p>
+              ) : (
+                <>
+                  <label className="field stackscreen__field">
+                    <span className="field__label">{t('server:stack.logs.select')}</span>
+                    <select
+                      className="field__input"
+                      value={logContainer}
+                      onChange={(event) => setChosen(event.target.value)}
+                    >
+                      <option value="">{t('server:stack.logs.choose')}</option>
+                      {own.map((container) => (
+                        <option key={container.id} value={container.name}>
+                          {container.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  {logContainer === '' ? (
+                    <p className="serverscreen__message">{t('server:stack.logs.choose')}</p>
+                  ) : (
+                    <LogsPanel
+                      key={logContainer}
+                      api={api}
+                      serverId={server.id}
+                      container={logContainer}
+                      pollMs={pollMs}
+                      onClose={() => setChosen('')}
+                    />
+                  )}
+                </>
+              )}
+            </section>
+          ) : null}
         </>
       )}
     </section>

@@ -13,6 +13,12 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+## [0.4.11] - 2026-10-23
+
+### Cambiado
+
+- El panel lee los permisos del usuario (`/api/v1/me`) y esconde lo que no puede usar: auditoría, ajustes, añadir servidores, pestañas del host, terminales, reinicio, acciones de contenedores y stacks, edición del compose. Quien solo tiene un stack ve una tarjeta mínima del servidor y solo la pestaña Contenedores. El core sigue aplicando todo.
+
 ## [0.4.10] - 2026-10-23
 
 ### Seguridad
@@ -441,7 +447,8 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
   `.gitattributes` y `.gitignore`.
 - Licencia WNCL-1.0 aplicada: archivo `LICENSE` y sección de créditos en los README.
 
-[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.4.10...HEAD
+[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.4.11...HEAD
+[0.4.11]: https://github.com/catlinux/Talaia/releases/tag/v0.4.11
 [0.4.10]: https://github.com/catlinux/Talaia/releases/tag/v0.4.10
 [0.4.9]: https://github.com/catlinux/Talaia/releases/tag/v0.4.9
 [0.4.8]: https://github.com/catlinux/Talaia/releases/tag/v0.4.8

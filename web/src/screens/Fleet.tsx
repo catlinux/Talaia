@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { createApiFleetClient } from '../api/client'
 import type { FleetClient } from '../api/client'
 import { isSignedOut } from '../api/http'
+import { usePermissions } from '../auth/permissions'
 import type { ActivityEvent, FleetSummary, Server } from '../api/types'
 import { ActivityFeed } from './fleet/ActivityFeed'
 import { WatchtowerArt } from '../components/WatchtowerArt'
@@ -78,6 +79,8 @@ function summarizeFleet(servers: Server[], activity: ActivityEvent[]): FleetSumm
 export function Fleet({ client = defaultClient, onOpenServer }: FleetProps) {
   const { t, i18n } = useTranslation('fleet')
   const language = i18n.resolvedLanguage ?? i18n.language
+  const { can } = usePermissions()
+  const canEnroll = can('server.enroll')
   const [state, setState] = useState<FleetState>({ status: 'loading' })
   const [refreshFailed, setRefreshFailed] = useState(false)
 
@@ -136,9 +139,11 @@ export function Fleet({ client = defaultClient, onOpenServer }: FleetProps) {
             </p>
           ) : null}
         </div>
-        <div className="fleet__actions">
-          <AddServer create={client.createEnrollment} />
-        </div>
+        {canEnroll ? (
+          <div className="fleet__actions">
+            <AddServer create={client.createEnrollment} />
+          </div>
+        ) : null}
       </header>
 
       {state.status === 'loading' ? (

@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { createAuditApi, type AuditApi, type AuditEntry } from '../api/audit'
 import { isSignedOut } from '../api/http'
 import { errorMessage } from '../auth/AuthGate'
+import { usePermissions } from '../auth/permissions'
 import { formatRelativeTime } from './fleet/format'
 
 const actionGroups = [
@@ -67,6 +68,8 @@ function resultTone(result: string): 'success' | 'failure' | 'denied' | 'request
 export function Audit({ api = defaultApi, limit = 50, serverNames }: AuditProps) {
   const { t, i18n } = useTranslation(['audit', 'errors'])
   const language = i18n.resolvedLanguage ?? i18n.language
+  const { can, loading: permissionsLoading } = usePermissions()
+  const canView = !permissionsLoading && can('audit.view')
   const [entries, setEntries] = useState<AuditEntry[]>([])
   const [next, setNext] = useState('')
   const [loading, setLoading] = useState(true)
@@ -108,12 +111,13 @@ export function Audit({ api = defaultApi, limit = 50, serverNames }: AuditProps)
   )
 
   useEffect(() => {
+    if (!canView) return
     // Start after the effect returns: load updates state when the page arrives,
     // and this keeps the first render free of a cascading update.
     queueMicrotask(() => {
       void load('', false)
     })
-  }, [load])
+  }, [canView, load])
 
   useEffect(() => {
     const trimmed = actor.trim()
@@ -139,6 +143,10 @@ export function Audit({ api = defaultApi, limit = 50, serverNames }: AuditProps)
       else next.add(id)
       return next
     })
+  }
+
+  if (!permissionsLoading && !canView) {
+    return null
   }
 
   return (

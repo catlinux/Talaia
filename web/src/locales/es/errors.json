@@ -25,5 +25,14 @@
   "hostHelperMissing": "El ayudante de actualización del host no está disponible, así que el panel no puede actualizarse solo.",
   "operationInProgress": "Ya hay otra operación de apt o un reinicio en marcha en este servidor.",
   "selfManagement": "Talaia no puede gestionar su propio servicio de agente. Actualiza el agente.",
-  "updateCheckPending": "La comprobación de actualizaciones aún no ha terminado. Vuelve a probar en un momento."
+  "updateCheckPending": "La comprobación de actualizaciones aún no ha terminado. Vuelve a probar en un momento.",
+  "forbidden": "No tienes permiso para hacer esto.",
+  "lastAdmin": "No puedes desactivar al último administrador activo.",
+  "invalidInvite": "La invitación no es válida o ya se ha utilizado.",
+  "usernameTaken": "Ese nombre de usuario ya está en uso.",
+  "emailTaken": "Esa dirección de correo ya está en uso.",
+  "invalidAPIKey": "La clave de API no es válida.",
+  "sessionOpen": "La sesión sigue abierta; ciérrala antes de descargar su grabación.",
+  "recordingCorrupt": "La grabación está dañada y no se puede descargar.",
+  "oidcDiscoveryFailed": "No se ha podido contactar con el proveedor de OpenID Connect."
 }

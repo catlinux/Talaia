@@ -18,6 +18,12 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.4.11] - 2026-10-23
+
+### Changed
+
+- The panel reads the user's permissions (`/api/v1/me`) and hides what they cannot use: audit, settings, adding servers, host tabs, terminals, reboot, container and stack actions, compose editing. A user who only has a stack sees a minimal server card and only the Containers tab. The core still enforces everything.
+
 ## [0.4.10] - 2026-10-23
 
 ### Security
@@ -441,7 +447,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.4.10...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.4.11...HEAD
+[0.4.11]: https://github.com/catlinux/Talaia/releases/tag/v0.4.11
 [0.4.10]: https://github.com/catlinux/Talaia/releases/tag/v0.4.10
 [0.4.9]: https://github.com/catlinux/Talaia/releases/tag/v0.4.9
 [0.4.8]: https://github.com/catlinux/Talaia/releases/tag/v0.4.8

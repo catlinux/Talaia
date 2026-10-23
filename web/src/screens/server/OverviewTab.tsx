@@ -44,6 +44,8 @@ interface OverviewTabProps {
   agentUpdateManual?: boolean
   /** failedServices is unknown until the services list has been read. */
   failedServices?: number | null
+  /** tabs are the tabs the user may open; attention that points elsewhere is hidden. */
+  tabs?: ServerTab[]
   onGoToTab: (tab: ServerTab) => void
 }
 
@@ -84,6 +86,7 @@ export function OverviewTab({
   agentUpdateAvailable,
   agentUpdateManual,
   failedServices = null,
+  tabs = ['overview', 'containers', 'services', 'logs', 'updates'],
   onGoToTab,
 }: OverviewTabProps) {
   const { t, i18n } = useTranslation(['server', 'fleet'])
@@ -216,6 +219,7 @@ export function OverviewTab({
       action: t('overview.attention.goUpdates'),
     })
   }
+  const visibleAttention = attention.filter((item) => tabs.includes(item.tab))
 
   return (
     <div className="overview">
@@ -233,13 +237,13 @@ export function OverviewTab({
         />
       </div>
 
-      {attention.length > 0 ? (
+      {visibleAttention.length > 0 ? (
         <section className="overview__attention" aria-labelledby="overview-attention-title">
           <h2 className="overview__title" id="overview-attention-title">
             {t('overview.attention.title')}
           </h2>
           <ul className="overview__attention-list">
-            {attention.map((item) => (
+            {visibleAttention.map((item) => (
               <li key={item.id} className="overview__attention-item">
                 <span>{item.text}</span>
                 <button type="button" className="cbtn" onClick={() => onGoToTab(item.tab)}>

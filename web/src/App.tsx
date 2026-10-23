@@ -15,6 +15,7 @@ import { Fleet } from './screens/Fleet'
 import { ServerScreen } from './screens/ServerScreen'
 import { Settings } from './screens/Settings'
 import { useAuth } from './auth/AuthGate'
+import { usePermissions } from './auth/permissions'
 import { AuditIcon, FleetIcon, GearIcon, InfoIcon, SignOutIcon } from './components/icons'
 import { LanguageSelector } from './components/LanguageSelector'
 import { Logo } from './components/Logo'
@@ -55,6 +56,8 @@ export function App({
 }: AppProps) {
   const { t } = useTranslation(['common', 'auth'])
   const auth = useAuth()
+  const { can } = usePermissions()
+  const canAudit = can('audit.view')
   const [screen, setScreen] = useState<Screen>('fleet')
   // The server whose containers are open, if any; it replaces the fleet screen.
   const [openServer, setOpenServer] = useState<Server | null>(null)
@@ -92,18 +95,20 @@ export function App({
             <GearIcon />
             {t('nav.settings')}
           </button>
-          <button
-            type="button"
-            className={screen === 'audit' ? 'side__link side__link--active' : 'side__link'}
-            aria-current={screen === 'audit' ? 'page' : undefined}
-            onClick={() => {
-              setScreen('audit')
-              setOpenServer(null)
-            }}
-          >
-            <AuditIcon />
-            {t('nav.audit')}
-          </button>
+          {canAudit ? (
+            <button
+              type="button"
+              className={screen === 'audit' ? 'side__link side__link--active' : 'side__link'}
+              aria-current={screen === 'audit' ? 'page' : undefined}
+              onClick={() => {
+                setScreen('audit')
+                setOpenServer(null)
+              }}
+            >
+              <AuditIcon />
+              {t('nav.audit')}
+            </button>
+          ) : null}
           <button
             type="button"
             className={screen === 'about' ? 'side__link side__link--active' : 'side__link'}

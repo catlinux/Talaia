@@ -12,10 +12,12 @@ import type { TFunction } from 'i18next'
 
 import { createAuthApi, type AuthApi, type TotpPayload } from '../api/auth'
 import { ApiError, onSignedOut, type ApiErrorCode } from '../api/http'
+import type { MeApi } from '../api/me'
 import { Login } from './Login'
 import { RecoveryCodes } from './RecoveryCodes'
 import { TotpSetup } from './TotpSetup'
 import { TotpVerify } from './TotpVerify'
+import { PermissionsProvider } from './permissions'
 import { serializeAssertionCredential, toRequestOptions } from './webauthn'
 
 /** errorKeys maps the stable code of the core to the errors namespace. */
@@ -43,6 +45,15 @@ const errorKeys: Record<ApiErrorCode, string> = {
   self_management: 'selfManagement',
   host_helper_missing: 'hostHelperMissing',
   update_check_pending: 'updateCheckPending',
+  forbidden: 'forbidden',
+  last_admin: 'lastAdmin',
+  invalid_invite: 'invalidInvite',
+  username_taken: 'usernameTaken',
+  email_taken: 'emailTaken',
+  invalid_api_key: 'invalidAPIKey',
+  session_open: 'sessionOpen',
+  recording_corrupt: 'recordingCorrupt',
+  oidc_discovery_failed: 'oidcDiscoveryFailed',
   internal: 'generic',
   network: 'network',
 }
@@ -77,6 +88,8 @@ type GateState =
 export interface AuthGateProps {
   /** api is injected by the tests; the panel builds its own otherwise. */
   api?: AuthApi
+  /** meApi is injected by the tests; the panel builds its own otherwise. */
+  meApi?: MeApi
   children: ReactNode
 }
 
@@ -85,7 +98,7 @@ export interface AuthGateProps {
  * signed in and shows the sign-in, second-factor or recovery-code screens
  * until the session is complete.
  */
-export function AuthGate({ api, children }: AuthGateProps) {
+export function AuthGate({ api, meApi, children }: AuthGateProps) {
   const { t } = useTranslation('auth')
   const client = useMemo(() => api ?? createAuthApi(), [api])
   const [state, setState] = useState<GateState>({ kind: 'loading' })
@@ -244,7 +257,7 @@ export function AuthGate({ api, children }: AuthGateProps) {
 
   return (
     <AuthContext.Provider value={{ username: state.username, signOut }}>
-      {children}
+      <PermissionsProvider meApi={meApi}>{children}</PermissionsProvider>
     </AuthContext.Provider>
   )
 }

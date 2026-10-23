@@ -63,7 +63,8 @@
     "updatesBadge_other": "{{count}} actualitzacions",
     "securityBadge_one": "{{count}} actualització de seguretat",
     "securityBadge_other": "{{count}} actualitzacions de seguretat",
-    "rebootBadge": "Cal reiniciar"
+    "rebootBadge": "Cal reiniciar",
+    "limitedAccess": "Accés limitat"
   },
   "activity": {
     "title": "Activitat",

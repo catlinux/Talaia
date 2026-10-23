@@ -29,6 +29,15 @@ export type ApiErrorCode =
   | 'self_management'
   | 'host_helper_missing'
   | 'update_check_pending'
+  | 'forbidden'
+  | 'last_admin'
+  | 'invalid_invite'
+  | 'username_taken'
+  | 'email_taken'
+  | 'invalid_api_key'
+  | 'session_open'
+  | 'recording_corrupt'
+  | 'oidc_discovery_failed'
   | 'internal'
   | 'network'
 
@@ -56,6 +65,15 @@ const knownCodes: readonly ApiErrorCode[] = [
   'self_management',
   'host_helper_missing',
   'update_check_pending',
+  'forbidden',
+  'last_admin',
+  'invalid_invite',
+  'username_taken',
+  'email_taken',
+  'invalid_api_key',
+  'session_open',
+  'recording_corrupt',
+  'oidc_discovery_failed',
   'internal',
 ]
 

@@ -18,6 +18,26 @@ export function ServerCard({ server, onOpen }: ServerCardProps) {
     ? t(server.statusDetailKey, { percent: formatPercent(server.diskPercent ?? 0, language) })
     : t(`status.${server.status}`)
 
+  if (server.limited) {
+    return (
+      <li className="server server--limited">
+        <div className="server__head">
+          <h3 className="server__name">
+            {onOpen ? (
+              <button type="button" className="server__open" onClick={() => onOpen(server)}>
+                {server.name}
+              </button>
+            ) : (
+              server.name
+            )}
+          </h3>
+          <span className={`status status--${server.status}`}>{status}</span>
+        </div>
+        <p className="server__limited">{t('server.limitedAccess')}</p>
+      </li>
+    )
+  }
+
   return (
     <li className={`server server--${server.status}`}>
       <div className="server__head">

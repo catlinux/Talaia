@@ -16,6 +16,8 @@ export interface AptSummary {
 export interface Server {
   id: string
   name: string
+  /** limited is true when the entry was redacted to id, name and status. */
+  limited?: boolean
   /** hostname is what the connected agent reports; empty when offline. */
   hostname?: string
   os: string

@@ -5,6 +5,7 @@ import { type AptApi, type AptStatus, type AptUpgradeMode, parseAptStatus } from
 import { isSignedOut } from '../../api/http'
 import type { AptSummary } from '../../api/types'
 import { errorMessage } from '../../auth/AuthGate'
+import { usePermissions } from '../../auth/permissions'
 import { formatRelativeTime } from '../fleet/format'
 import { TimedOut, waitForJob } from './waitForJob'
 
@@ -90,6 +91,10 @@ export function UpdatesSection({
 }: UpdatesSectionProps) {
   const { t, i18n } = useTranslation(['server', 'errors'])
   const language = i18n.resolvedLanguage ?? i18n.language
+  const { can } = usePermissions()
+  const canCheck = can('host.apt.view', { serverId })
+  const canUpgrade = can('host.apt.upgrade', { serverId })
+  const canReboot = can('host.reboot', { serverId })
   const [state, setState] = useState<StatusState>({ status: 'loading' })
   const [refreshing, setRefreshing] = useState(false)
   const [dialog, setDialog] = useState<DialogState>(null)
@@ -166,8 +171,8 @@ export function UpdatesSection({
   )
 
   useEffect(() => {
-    void load(false)
-  }, [load])
+    if (canCheck) void load(false)
+  }, [canCheck, load])
 
   const checkNow = () => {
     setActionError(null)
@@ -285,10 +290,12 @@ export function UpdatesSection({
           ) : null}
         </div>
         <div className="updates__actions">
-          <button type="button" className="cbtn cbtn--primary" disabled={busy} onClick={checkNow}>
-            {refreshing ? t('server:updates.checking') : t('server:updates.check')}
-          </button>
-          {data && securityCount > 0 ? (
+          {canCheck ? (
+            <button type="button" className="cbtn cbtn--primary" disabled={busy} onClick={checkNow}>
+              {refreshing ? t('server:updates.checking') : t('server:updates.check')}
+            </button>
+          ) : null}
+          {canUpgrade && data && securityCount > 0 ? (
             <button
               type="button"
               className="cbtn"
@@ -298,7 +305,7 @@ export function UpdatesSection({
               {t('server:updates.upgrade.securityButton', { count: securityCount })}
             </button>
           ) : null}
-          {data && packages.length > 0 ? (
+          {canUpgrade && data && packages.length > 0 ? (
             <button
               type="button"
               className="cbtn"
@@ -308,14 +315,16 @@ export function UpdatesSection({
               {t('server:updates.upgrade.allButton', { count: packages.length })}
             </button>
           ) : null}
-          <button
-            type="button"
-            className="cbtn updates__reboot-open"
-            disabled={busy}
-            onClick={openReboot}
-          >
-            {t('server:updates.reboot.open')}
-          </button>
+          {canReboot ? (
+            <button
+              type="button"
+              className="cbtn updates__reboot-open"
+              disabled={busy}
+              onClick={openReboot}
+            >
+              {t('server:updates.reboot.open')}
+            </button>
+          ) : null}
         </div>
       </header>
 
@@ -396,7 +405,7 @@ export function UpdatesSection({
               />
             </div>
 
-            {data.rebootRequired ? (
+            {canReboot && data.rebootRequired ? (
               <div className="updates__reboot">
                 <p className="updates__reboot-title">{t('server:updates.rebootTitle')}</p>
                 <p className="updates__reboot-body">{t('server:updates.rebootBody')}</p>

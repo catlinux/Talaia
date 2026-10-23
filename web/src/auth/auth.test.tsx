@@ -5,11 +5,54 @@ import { App } from '../App'
 import { createMockFleetClient } from '../api/client'
 import { createAuthApi, type AuthApi } from '../api/auth'
 import { ApiError } from '../api/http'
+import type { MeApi, Permission } from '../api/me'
 import i18n from '../i18n'
 import { AuthGate } from './AuthGate'
 import { DEVICE_STORAGE_KEY } from './PinLogin'
 
 const signedOut = new ApiError('session_required', 401)
+
+const adminPermissions: Permission[] = [
+  'container.view',
+  'container.logs',
+  'container.control',
+  'container.terminal',
+  'container.remove',
+  'stack.view',
+  'stack.deploy',
+  'stack.edit',
+  'server.view',
+  'server.remove',
+  'server.enroll',
+  'server.agent_update',
+  'resources.manage',
+  'host.services.view',
+  'host.services.control',
+  'host.journal',
+  'host.apt.view',
+  'host.apt.upgrade',
+  'host.reboot',
+  'host.terminal',
+  'users.manage',
+  'settings.manage',
+  'audit.view',
+  'recordings.view',
+  'apikeys.manage',
+]
+
+const adminMe: MeApi = {
+  get: () =>
+    Promise.resolve({
+      user: { id: 'admin', username: 'admin', display_name: 'Admin', email: '' },
+      bindings: { bindings: [] },
+      permissions: {
+        organization: adminPermissions,
+        servers: {},
+        stacks: {},
+        containers: {},
+      },
+    }),
+}
 
 /** fakeApi builds an AuthApi; the tests override what they need. */
 function fakeApi(overrides: Partial<AuthApi> = {}): AuthApi {
@@ -27,7 +70,7 @@ function fakeApi(overrides: Partial<AuthApi> = {}): AuthApi {
 /** renderPanel mounts the gate around the real panel. */
 function renderPanel(api: AuthApi) {
   render(
-    <AuthGate api={api}>
+    <AuthGate api={api} meApi={adminMe}>
       <App client={createMockFleetClient()} />
     </AuthGate>,
   )

@@ -18,6 +18,8 @@ export interface ServerSummary {
   agentUpgradeCommand: string
   /** hostTerminal is true when the connected agent accepts root host sessions. */
   hostTerminal?: boolean
+  /** limited is true when the core redacted the server for a scoped user. */
+  limited?: boolean
 }
 
 /** AgentUpdateSkip is one server the bulk update could not queue. */
@@ -69,10 +71,11 @@ export interface ServersApi {
 interface apiServerSummary {
   id: string
   name: string
-  connected: boolean
-  revoked: boolean
-  agent_update_available: boolean
-  agent_update_manual: boolean
+  connected?: boolean
+  revoked?: boolean
+  agent_update_available?: boolean
+  agent_update_manual?: boolean
+  limited?: boolean
   live?: {
     agent_version: string
     host_terminal?: boolean
@@ -147,8 +150,8 @@ export function createServersApi(fetchImpl: typeof fetch = defaultFetch): Server
       return body.servers.map((server) => ({
         id: server.id,
         name: server.name,
-        connected: server.connected,
-        revoked: server.revoked,
+        connected: server.connected ?? false,
+        revoked: server.revoked ?? false,
         agentVersion: server.live?.agent_version ?? '',
         agentLatestVersion: latestVersion,
         agentUpdateAvailable: server.agent_update_available ?? false,

@@ -25,5 +25,14 @@
   "hostHelperMissing": "L'ajudant d'actualització de l'amfitrió no està disponible, així que el panell no es pot actualitzar sol.",
   "operationInProgress": "Ja hi ha una altra operació d'apt o un reinici en marxa en aquest servidor.",
   "selfManagement": "Talaia no pot gestionar el seu propi servei d'agent. Actualitza l'agent.",
-  "updateCheckPending": "La comprovació d'actualitzacions encara no ha acabat. Torna-ho a provar d'aquí a un moment."
+  "updateCheckPending": "La comprovació d'actualitzacions encara no ha acabat. Torna-ho a provar d'aquí a un moment.",
+  "forbidden": "No tens permís per a fer això.",
+  "lastAdmin": "No pots desactivar l'últim administrador actiu.",
+  "invalidInvite": "La invitació no és vàlida o ja s'ha utilitzat.",
+  "usernameTaken": "Aquest nom d'usuari ja està en ús.",
+  "emailTaken": "Aquesta adreça de correu ja està en ús.",
+  "invalidAPIKey": "La clau d'API no és vàlida.",
+  "sessionOpen": "La sessió encara és oberta; tanca-la abans de baixar-ne la gravació.",
+  "recordingCorrupt": "La gravació està malmesa i no es pot baixar.",
+  "oidcDiscoveryFailed": "No s'ha pogut contactar amb el proveïdor d'OpenID Connect."
 }

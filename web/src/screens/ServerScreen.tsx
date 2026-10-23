@@ -3,6 +3,7 @@ import {
   Suspense,
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
   type KeyboardEvent,
@@ -30,6 +31,7 @@ import { createServicesApi, type ServiceUnit, type ServicesApi } from '../api/se
 import { createTerminalApi, type TerminalApi } from '../api/terminal'
 import type { AptSummary } from '../api/types'
 import { errorMessage } from '../auth/AuthGate'
+import { usePermissions } from '../auth/permissions'
 import {
   ArrowLeftIcon,
   LogsIcon,
@@ -105,6 +107,7 @@ interface ServerScreenProps {
   server: {
     id: string
     name: string
+    limited?: boolean
     hostname?: string
     hostTerminal?: boolean
     agentUpdateManual?: boolean
@@ -219,6 +222,19 @@ export function ServerScreen({
   pollMs = pollEvery,
 }: ServerScreenProps) {
   const { t } = useTranslation(['server', 'errors'])
+  const permissions = usePermissions()
+  const permissionsLoading = permissions.loading
+  const serverScope = { serverId: server.id }
+  const canOverview = !permissionsLoading && permissions.can('server.view', serverScope)
+  const canStacks = !permissionsLoading && permissions.canSeeStacks(server.id)
+  const canContainers =
+    !permissionsLoading && (permissions.canSeeContainers(server.id) || canStacks)
+  const canServices = !permissionsLoading && permissions.can('host.services.view', serverScope)
+  const canLogs = !permissionsLoading && permissions.can('host.journal', serverScope)
+  const canUpdates = !permissionsLoading && permissions.can('host.apt.view', serverScope)
+  const canHostTerminal = !permissionsLoading && permissions.can('host.terminal', serverScope)
+  const canAgentUpdate = !permissionsLoading && permissions.can('server.agent_update', serverScope)
+  const canResources = !permissionsLoading && permissions.can('resources.manage', serverScope)
   const [state, setState] = useState<ListState>({ status: 'loading' })
   const [serverInfo, setServerInfo] = useState<ServerSummary | null>(null)
   const [refreshFailed, setRefreshFailed] = useState(false)
@@ -303,6 +319,17 @@ export function ServerScreen({
     [server.id],
   )
 
+  const availableTabs = useMemo<ServerTab[]>(() => {
+    const tabs: ServerTab[] = []
+    if (canOverview) tabs.push('overview')
+    if (canContainers) tabs.push('containers')
+    if (canServices) tabs.push('services')
+    if (canLogs) tabs.push('logs')
+    if (canUpdates) tabs.push('updates')
+    return tabs
+  }, [canContainers, canLogs, canOverview, canServices, canUpdates])
+  const availableTabKey = availableTabs.join(',')
+
   const handleServicesLoaded = useCallback((services: ServiceUnit[]) => {
     setKnownServices(services)
   }, [])
@@ -313,12 +340,31 @@ export function ServerScreen({
   }, [server.id])
 
   useEffect(() => {
+    if (permissionsLoading) return
+    if (availableTabs.includes(activeTab)) return
+    const fallback =
+      server.limited && canContainers ? 'containers' : (availableTabs[0] ?? 'containers')
+    setActiveTab(fallback)
+    storeTab(server.id, fallback)
+  }, [
+    activeTab,
+    availableTabs,
+    availableTabKey,
+    canContainers,
+    permissionsLoading,
+    server.id,
+    server.limited,
+  ])
+
+  useEffect(() => {
     mounted.current = true
-    void load()
-    void loadServer()
+    if (!permissionsLoading) {
+      if (canContainers) void load()
+      void loadServer()
+    }
     const timer = setInterval(() => {
-      if (!document.hidden) {
-        void load()
+      if (!permissionsLoading && !document.hidden) {
+        if (canContainers) void load()
         void loadServer()
       }
     }, refreshEvery)
@@ -326,7 +372,7 @@ export function ServerScreen({
       mounted.current = false
       clearInterval(timer)
     }
-  }, [load, loadServer])
+  }, [canContainers, load, loadServer, permissionsLoading])
 
   useEffect(() => {
     if (!updatingAgent) {
@@ -404,7 +450,11 @@ export function ServerScreen({
   const hostTerminal = serverInfo?.hostTerminal ?? server.hostTerminal ?? false
   const hostTerminalConnected = serverInfo?.connected ?? list?.connected ?? false
   const canUpdateAgent =
-    serverInfo !== null && serverInfo.connected && serverInfo.agentUpdateAvailable && !updatingAgent
+    canAgentUpdate &&
+    serverInfo !== null &&
+    serverInfo.connected &&
+    serverInfo.agentUpdateAvailable &&
+    !updatingAgent
   const apt = liveApt ?? server.apt
   const failedServices =
     knownServices === null
@@ -424,22 +474,22 @@ export function ServerScreen({
     let next: number
     switch (event.key) {
       case 'ArrowLeft':
-        next = (index - 1 + serverTabs.length) % serverTabs.length
+        next = (index - 1 + availableTabs.length) % availableTabs.length
         break
       case 'ArrowRight':
-        next = (index + 1) % serverTabs.length
+        next = (index + 1) % availableTabs.length
         break
       case 'Home':
         next = 0
         break
       case 'End':
-        next = serverTabs.length - 1
+        next = availableTabs.length - 1
         break
       default:
         return
     }
     event.preventDefault()
-    selectTab(serverTabs[next]!, true)
+    selectTab(availableTabs[next]!, true)
   }
 
   if (openStack !== null) {
@@ -497,7 +547,7 @@ export function ServerScreen({
             ) : null}
           </div>
         ) : null}
-        {hostTerminalConnected ? (
+        {canHostTerminal && hostTerminalConnected ? (
           <button
             type="button"
             className="cbtn serverscreen__terminal"
@@ -509,7 +559,9 @@ export function ServerScreen({
             {t('server:terminal.hostButton')}
           </button>
         ) : null}
-        {agentUpdateManual ? <ManualUpgrade command={agentUpgradeCommand} /> : null}
+        {canAgentUpdate && agentUpdateManual ? (
+          <ManualUpgrade command={agentUpgradeCommand} />
+        ) : null}
       </header>
 
       {hostTerminalOpen && hostTerminalConnected ? (
@@ -531,7 +583,7 @@ export function ServerScreen({
       ) : null}
 
       <div className="server-tabs" role="tablist" aria-label={t('server:tabs.label')}>
-        {serverTabs.map((tab, index) => {
+        {availableTabs.map((tab, index) => {
           const selected = activeTab === tab
           const label = t(`server:tabs.${tab}`)
           const updatesBadge = tab === 'updates' && apt ? `${apt.security}/${apt.upgradable}` : ''
@@ -603,7 +655,7 @@ export function ServerScreen({
         </p>
       ) : null}
 
-      {activeTab === 'overview' ? (
+      {canOverview && activeTab === 'overview' ? (
         <div
           className="server-tabpanel"
           role="tabpanel"
@@ -617,12 +669,13 @@ export function ServerScreen({
             agentUpdateAvailable={agentUpdateAvailable}
             agentUpdateManual={agentUpdateManual}
             failedServices={failedServices}
+            tabs={availableTabs}
             onGoToTab={selectTab}
           />
         </div>
       ) : null}
 
-      {activeTab === 'containers' ? (
+      {canContainers && activeTab === 'containers' ? (
         <div
           className="server-tabpanel"
           role="tabpanel"
@@ -640,7 +693,7 @@ export function ServerScreen({
             <p className="serverscreen__message">{t('server:empty')}</p>
           ) : null}
 
-          {list !== null && list.connected && list.dockerAvailable ? (
+          {canStacks && list !== null && list.connected && list.dockerAvailable ? (
             <StacksSection
               api={api}
               serverId={server.id}
@@ -656,6 +709,7 @@ export function ServerScreen({
               {containers.map((container) => (
                 <ContainerRow
                   key={container.id}
+                  serverId={server.id}
                   container={container}
                   outcome={outcomes[container.id]}
                   confirming={
@@ -715,13 +769,13 @@ export function ServerScreen({
             </ul>
           ) : null}
 
-          {list !== null && list.connected && list.dockerAvailable ? (
+          {canResources && list !== null && list.connected && list.dockerAvailable ? (
             <ResourcesSection api={api} serverId={server.id} pollMs={pollMs} />
           ) : null}
         </div>
       ) : null}
 
-      {activeTab === 'services' ? (
+      {canServices && activeTab === 'services' ? (
         <div
           className="server-tabpanel"
           role="tabpanel"
@@ -743,7 +797,7 @@ export function ServerScreen({
         </div>
       ) : null}
 
-      {activeTab === 'logs' ? (
+      {canLogs && activeTab === 'logs' ? (
         <div
           className="server-tabpanel"
           role="tabpanel"
@@ -765,7 +819,7 @@ export function ServerScreen({
         </div>
       ) : null}
 
-      {activeTab === 'updates' ? (
+      {canUpdates && activeTab === 'updates' ? (
         <div
           className="server-tabpanel"
           role="tabpanel"
@@ -824,6 +878,7 @@ export function ServerScreen({
 }
 
 interface ContainerRowProps {
+  serverId: string
   container: Container
   outcome: Outcome | undefined
   /** confirming is the action waiting for confirmation, or null. */
@@ -840,6 +895,7 @@ interface ContainerRowProps {
 }
 
 function ContainerRow({
+  serverId,
   container,
   outcome,
   confirming,
@@ -852,10 +908,23 @@ function ContainerRow({
   terminal,
 }: ContainerRowProps) {
   const { t } = useTranslation('server')
+  const { can } = usePermissions()
   const busy = outcome?.kind === 'working'
   const isRunning = container.state === 'running'
-
-  const actions: ContainerAction[] = isRunning ? ['restart', 'stop', 'remove'] : ['start', 'remove']
+  const scope = {
+    serverId,
+    stack: container.composeProject || undefined,
+    container: container.name,
+  }
+  const canControl = can('container.control', scope)
+  const canRemove = can('container.remove', scope)
+  const canLogs = can('container.logs', scope)
+  const canTerminal = can('container.terminal', scope)
+  const actions: ContainerAction[] = (isRunning ? ['restart', 'stop'] : ['start']).filter(
+    () => canControl,
+  ) as ContainerAction[]
+  if (canRemove) actions.push('remove')
+  const hasActions = canLogs || (canTerminal && isRunning) || actions.length > 0
 
   return (
     <li className={`container container--${container.state}`}>
@@ -920,18 +989,20 @@ function ContainerRow({
             </button>
           </div>
         </div>
-      ) : (
+      ) : hasActions ? (
         <div className="container__actions">
-          <button
-            type="button"
-            className="cbtn"
-            aria-expanded={logs !== null}
-            onClick={onToggleLogs}
-          >
-            <LogsIcon />
-            {t('action.logs')}
-          </button>
-          {isRunning ? (
+          {canLogs ? (
+            <button
+              type="button"
+              className="cbtn"
+              aria-expanded={logs !== null}
+              onClick={onToggleLogs}
+            >
+              <LogsIcon />
+              {t('action.logs')}
+            </button>
+          ) : null}
+          {canTerminal && isRunning ? (
             <button
               type="button"
               className="cbtn"
@@ -958,7 +1029,7 @@ function ContainerRow({
             )
           })}
         </div>
-      )}
+      ) : null}
       {logs}
       {terminal}
     </li>

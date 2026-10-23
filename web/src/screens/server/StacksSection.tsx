@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import type { Container, ContainersApi, StackAction, StackList } from '../../api/containers'
 import { isSignedOut } from '../../api/http'
 import { errorMessage } from '../../auth/AuthGate'
+import { usePermissions } from '../../auth/permissions'
 import { PlayIcon, PlusIcon, RestartIcon, StopIcon, TrashIcon } from '../../components/icons'
 import { StackEditor } from './StackEditor'
 import { TimedOut, waitForJob } from './waitForJob'
@@ -50,6 +51,8 @@ export function StacksSection({
   onOpenStack,
 }: StacksSectionProps) {
   const { t } = useTranslation(['server', 'errors'])
+  const { can } = usePermissions()
+  const canEditServer = can('stack.edit', { serverId })
   const [list, setList] = useState<StackList | null>(null)
   const [outcomes, setOutcomes] = useState<Record<string, Outcome>>({})
   const [confirming, setConfirming] = useState<{
@@ -170,18 +173,20 @@ export function StacksSection({
           </h2>
           <p className="stacks__intro">{t('server:stacks.intro')}</p>
         </div>
-        <button
-          type="button"
-          className="cbtn cbtn--primary"
-          disabled={editor.kind === 'open'}
-          onClick={() => setEditor({ kind: 'open', name: '' })}
-        >
-          <PlusIcon />
-          {t('server:stacks.new')}
-        </button>
+        {canEditServer ? (
+          <button
+            type="button"
+            className="cbtn cbtn--primary"
+            disabled={editor.kind === 'open'}
+            onClick={() => setEditor({ kind: 'open', name: '' })}
+          >
+            <PlusIcon />
+            {t('server:stacks.new')}
+          </button>
+        ) : null}
       </header>
 
-      {editor.kind === 'open' ? (
+      {canEditServer && editor.kind === 'open' ? (
         <StackEditor
           key={editor.name}
           api={api}
@@ -210,6 +215,9 @@ export function StacksSection({
             const busy = outcome?.kind === 'working'
             const adopted = list !== null && list.adopted.includes(name)
             const isBroken = broken.has(name)
+            const scope = { serverId, stack: name }
+            const canDeploy = can('stack.deploy', scope)
+            const canEdit = can('stack.edit', scope)
             return (
               <li key={name} className={`stack${running > 0 ? ' stack--up' : ''}`}>
                 <div className="stack__main">
@@ -278,55 +286,65 @@ export function StacksSection({
                     </div>
                   </div>
                 ) : isBroken ? (
-                  <div className="container__actions">
-                    <button
-                      type="button"
-                      className="cbtn cbtn--danger"
-                      disabled={busy}
-                      onClick={() => setConfirming({ name, action: 'forget' })}
-                    >
-                      <TrashIcon />
-                      {t('server:stacks.action.forget')}
-                    </button>
-                  </div>
+                  canEdit ? (
+                    <div className="container__actions">
+                      <button
+                        type="button"
+                        className="cbtn cbtn--danger"
+                        disabled={busy}
+                        onClick={() => setConfirming({ name, action: 'forget' })}
+                      >
+                        <TrashIcon />
+                        {t('server:stacks.action.forget')}
+                      </button>
+                    </div>
+                  ) : null
                 ) : (
                   <div className="container__actions">
-                    {rowActions.map((action) => {
-                      const ActionIcon = actionIcons[action]
-                      return (
-                        <button
-                          key={action}
-                          type="button"
-                          className={action === 'down' ? 'cbtn cbtn--danger' : 'cbtn'}
-                          disabled={busy}
-                          onClick={() =>
-                            action === 'down'
-                              ? setConfirming({ name, action })
-                              : void run(name, action)
-                          }
-                        >
-                          {ActionIcon ? <ActionIcon /> : null}
-                          {t(`server:stacks.action.${action}`)}
-                        </button>
-                      )
-                    })}
-                    <button
-                      type="button"
-                      className="cbtn"
-                      disabled={busy || editor.kind === 'open'}
-                      onClick={() => setEditor({ kind: 'open', name })}
-                    >
-                      {t('server:stacks.action.edit')}
-                    </button>
-                    <button
-                      type="button"
-                      className="cbtn cbtn--danger"
-                      disabled={busy}
-                      onClick={() => setConfirming({ name, action: adopted ? 'forget' : 'remove' })}
-                    >
-                      <TrashIcon />
-                      {t(adopted ? 'server:stacks.action.forget' : 'server:stacks.action.remove')}
-                    </button>
+                    {rowActions
+                      .filter(() => canDeploy)
+                      .map((action) => {
+                        const ActionIcon = actionIcons[action]
+                        return (
+                          <button
+                            key={action}
+                            type="button"
+                            className={action === 'down' ? 'cbtn cbtn--danger' : 'cbtn'}
+                            disabled={busy}
+                            onClick={() =>
+                              action === 'down'
+                                ? setConfirming({ name, action })
+                                : void run(name, action)
+                            }
+                          >
+                            {ActionIcon ? <ActionIcon /> : null}
+                            {t(`server:stacks.action.${action}`)}
+                          </button>
+                        )
+                      })}
+                    {canEdit ? (
+                      <button
+                        type="button"
+                        className="cbtn"
+                        disabled={busy || editor.kind === 'open'}
+                        onClick={() => setEditor({ kind: 'open', name })}
+                      >
+                        {t('server:stacks.action.edit')}
+                      </button>
+                    ) : null}
+                    {canEdit ? (
+                      <button
+                        type="button"
+                        className="cbtn cbtn--danger"
+                        disabled={busy}
+                        onClick={() =>
+                          setConfirming({ name, action: adopted ? 'forget' : 'remove' })
+                        }
+                      >
+                        <TrashIcon />
+                        {t(adopted ? 'server:stacks.action.forget' : 'server:stacks.action.remove')}
+                      </button>
+                    ) : null}
                   </div>
                 )}
               </li>
@@ -335,7 +353,7 @@ export function StacksSection({
         </ul>
       ) : null}
 
-      {adoptable.length > 0 ? (
+      {canEditServer && adoptable.length > 0 ? (
         <div className="adoptable">
           <h3 className="adoptable__title">{t('server:stacks.adopt.title')}</h3>
           <p className="adoptable__intro">{t('server:stacks.adopt.intro')}</p>
