@@ -166,9 +166,13 @@ describe('Users screen', () => {
     fireEvent.change(screen.getByLabelText(/^Username/), { target: { value: 'new-user' } })
     fireEvent.click(screen.getByRole('button', { name: 'Create invitation' }))
 
-    await waitFor(() => expect(invites.create).toHaveBeenCalledWith(expect.objectContaining({
-      username: 'new-user',
-    })))
+    await waitFor(() =>
+      expect(invites.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          username: 'new-user',
+        }),
+      ),
+    )
     expect(invites.create).toHaveBeenCalledWith(expect.objectContaining({ email: '' }))
 
     fireEvent.click(await screen.findByRole('button', { name: 'Done' }))
@@ -280,7 +284,10 @@ describe('Users screen', () => {
   })
 
   it('shows the cannot disable yourself error', async () => {
-    const usersApi = fakeUsers([account()], vi.fn(() => Promise.reject(new ApiError('cannot_disable_self', 409))))
+    const usersApi = fakeUsers(
+      [account()],
+      vi.fn(() => Promise.reject(new ApiError('cannot_disable_self', 409))),
+    )
     renderUsers(usersApi)
     fireEvent.click((await screen.findAllByRole('button', { name: 'Disable' }))[0]!)
     fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Disable' }))

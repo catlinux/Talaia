@@ -300,13 +300,23 @@ export function UsersTab({
                 className="field__input"
                 type="email"
                 value={editing.email}
-                aria-invalid={editErrors && !!editing.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(editing.email.trim())}
+                aria-invalid={
+                  editErrors &&
+                  !!editing.email.trim() &&
+                  !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(editing.email.trim())
+                }
                 aria-describedby={
-                  editErrors && !!editing.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(editing.email.trim()) ? 'edit-email-error' : undefined
+                  editErrors &&
+                  !!editing.email.trim() &&
+                  !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(editing.email.trim())
+                    ? 'edit-email-error'
+                    : undefined
                 }
                 onChange={(event) => setEditing({ ...editing, email: event.target.value })}
               />
-              {editErrors && !!editing.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(editing.email.trim()) ? (
+              {editErrors &&
+              !!editing.email.trim() &&
+              !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(editing.email.trim()) ? (
                 <span className="field__error" id="edit-email-error">
                   {t('validation:emailInvalid')}
                 </span>
@@ -475,8 +485,14 @@ function InviteDialog({
             <input
               className="field__input"
               type="email"
-              aria-invalid={showErrors && !!email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())}
-              aria-describedby={showErrors && !!email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()) ? 'invite-email-error' : undefined}
+              aria-invalid={
+                showErrors && !!email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
+              }
+              aria-describedby={
+                showErrors && !!email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
+                  ? 'invite-email-error'
+                  : undefined
+              }
               value={email}
               onChange={(event) => setEmail(event.target.value)}
             />

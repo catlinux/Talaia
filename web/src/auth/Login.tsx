@@ -91,7 +91,13 @@ export function Login({ onSubmit, onPin, onPasskey, expired, oidc }: LoginProps)
         </h1>
         {error === null && expired && (
           <p className="auth__status" role="status">
-            {t(expired === 'disabled' ? 'errors:accountDisabled' : expired === 'revoked' ? 'errors:sessionRevoked' : 'errors:sessionRequired')}
+            {t(
+              expired === 'disabled'
+                ? 'errors:accountDisabled'
+                : expired === 'revoked'
+                  ? 'errors:sessionRevoked'
+                  : 'errors:sessionRequired',
+            )}
           </p>
         )}
         {oidcError ? (

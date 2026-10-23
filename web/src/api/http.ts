@@ -109,8 +109,10 @@ export class ApiError extends Error {
 export function isSignedOut(error: unknown): boolean {
   return (
     error instanceof ApiError &&
-    (error.code === 'session_required' || error.code === 'mfa_required' ||
-      error.code === 'account_disabled' || error.code === 'session_revoked')
+    (error.code === 'session_required' ||
+      error.code === 'mfa_required' ||
+      error.code === 'account_disabled' ||
+      error.code === 'session_revoked')
   )
 }
 

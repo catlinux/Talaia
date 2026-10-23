@@ -18,6 +18,12 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.4.21] - 2026-10-23
+
+### Fixed
+
+- Code formatting of the panel (Prettier) after the latest changes.
+
 ## [0.4.20] - 2026-10-23
 
 ### Fixed
@@ -501,7 +507,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.4.20...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.4.21...HEAD
+[0.4.21]: https://github.com/catlinux/Talaia/releases/tag/v0.4.21
 [0.4.20]: https://github.com/catlinux/Talaia/releases/tag/v0.4.20
 [0.4.19]: https://github.com/catlinux/Talaia/releases/tag/v0.4.19
 [0.4.18]: https://github.com/catlinux/Talaia/releases/tag/v0.4.18
