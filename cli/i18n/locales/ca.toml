@@ -6,3 +6,183 @@ other = "talaiactl {{.Version}}"
 
 [error.unknownLanguage]
 other = "avís: idioma desconegut {{.Language}}; s'usa l'anglès"
+
+[usage.line]
+other = "Ús: {{.App}} [opcions globals] <ordre> [arguments]"
+
+[usage.commands]
+other = "Ordres:"
+
+[usage.login]
+other = "  login                         desa i verifica una clau d'API"
+
+[usage.serversList]
+other = "  servers list                  llista els servidors visibles"
+
+[usage.containersList]
+other = "  containers list <servidor>    llista els contenidors d'un servidor"
+
+[usage.containersAction]
+other = "  containers start|stop|restart <servidor> <contenidor>"
+
+[usage.stacksList]
+other = "  stacks list [servidor]        llista els stacks"
+
+[usage.stacksAction]
+other = "  stacks up|down|restart|pull <servidor> <stack>"
+
+[usage.jobsWait]
+other = "  jobs wait <id>                espera una feina i imprimeix-ne la sortida"
+
+[usage.version]
+other = "  version                       mostra la versió del client"
+
+[usage.help]
+other = "  help                          mostra aquesta ajuda"
+
+[usage.flags]
+other = "Opcions globals: --lang, --url, --api-key, --ca-file, --json, --wait, --timeout"
+
+[usage.apiKeyWarning]
+other = "Avís: --api-key pot aparèixer a la llista de processos; prefereix TALAIA_API_KEY o login."
+
+[login.urlPrompt]
+other = "URL del core:"
+
+[login.apiKeyPrompt]
+other = "Clau d'API:"
+
+[login.success]
+other = "Sessió iniciada com a {{.User}}."
+
+[action.queued]
+other = "Feina {{.JobID}} en cua."
+
+[job.failed]
+other = "La feina {{.JobID}} ha fallat: {{.Message}}"
+
+[job.noMessage]
+other = "la feina no ha indicat cap motiu"
+
+[job.timeout]
+other = "S'ha esgotat el temps d'espera de la feina {{.JobID}}."
+
+[error.usage]
+other = "Ordre o arguments no vàlids."
+
+[error.unknownCommand]
+other = "Ordre desconeguda {{.Command}}."
+
+[error.serverNotFound]
+other = "No hi ha cap servidor anomenat {{.Server}}."
+
+[error.serverAmbiguous]
+other = "{{.Count}} servidors es diuen {{.Server}}; fes servir l'id."
+
+[error.missingURL]
+other = "Configura l'URL del core amb --url, TALAIA_URL o login."
+
+[error.missingAPIKey]
+other = "Configura la clau d'API amb TALAIA_API_KEY, --api-key o login."
+
+[error.invalidURL]
+other = "L'URL del core no és vàlid."
+
+[error.configRead]
+other = "No s'ha pogut llegir la configuració a {{.Path}}."
+
+[error.configWrite]
+other = "No s'ha pogut escriure la configuració a {{.Path}}."
+
+[error.configPermissions]
+other = "No es llegeix {{.Path}}: altres usuaris el poden llegir. Aplica el mode 0600."
+
+[error.caFile]
+other = "No s'ha pogut carregar el bundle de CA."
+
+[error.network]
+other = "No s'ha pogut contactar amb el core."
+
+[error.invalidResponse]
+other = "El core ha enviat una resposta no vàlida."
+
+[error.timeout]
+other = "La petició ha caducat."
+
+[error.generic]
+other = "L'ordre ha fallat."
+
+[error.api.forbidden]
+other = "No tens permís per a fer això."
+
+[error.api.notFound]
+other = "No s'ha trobat el recurs demanat."
+
+[error.api.invalidAPIKey]
+other = "La clau d'API no és vàlida."
+
+[error.api.rateLimited]
+other = "Massa peticions. Torna-ho a provar d'aquí a un moment."
+
+[error.api.sessionRequired]
+other = "La sessió de la clau d'API no és vàlida."
+
+[error.api.mfaRequired]
+other = "Cal el segon factor."
+
+[error.api.agentOffline]
+other = "L'agent d'aquell servidor no està connectat."
+
+[error.api.confirmationRequired]
+other = "El core requereix una confirmació explícita."
+
+[error.api.invalidRequest]
+other = "El core ha rebutjat la petició."
+
+[error.api.generic]
+other = "El core ha retornat l'error {{.Code}}."
+
+[table.id]
+other = "ID"
+
+[table.name]
+other = "NOM"
+
+[table.status]
+other = "ESTAT"
+
+[table.agent]
+other = "AGENT"
+
+[table.image]
+other = "IMATGE"
+
+[table.state]
+other = "ESTAT"
+
+[table.server]
+other = "SERVIDOR"
+
+[table.stack]
+other = "STACK"
+
+[status.online]
+other = "en línia"
+
+[status.offline]
+other = "sense connexió"
+
+[status.revoked]
+other = "revocat"
+
+[state.managed]
+other = "gestionat"
+
+[state.adopted]
+other = "adoptat"
+
+[state.broken]
+other = "trencat"
+
+[state.adoptable]
+other = "adoptable"

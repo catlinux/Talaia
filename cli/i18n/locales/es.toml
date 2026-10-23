@@ -6,3 +6,183 @@ other = "talaiactl {{.Version}}"
 
 [error.unknownLanguage]
 other = "aviso: idioma desconocido {{.Language}}; se usa el inglés"
+
+[usage.line]
+other = "Uso: {{.App}} [opciones globales] <comando> [argumentos]"
+
+[usage.commands]
+other = "Comandos:"
+
+[usage.login]
+other = "  login                         guarda y verifica una clave de API"
+
+[usage.serversList]
+other = "  servers list                  lista los servidores visibles"
+
+[usage.containersList]
+other = "  containers list <servidor>    lista los contenedores de un servidor"
+
+[usage.containersAction]
+other = "  containers start|stop|restart <servidor> <contenedor>"
+
+[usage.stacksList]
+other = "  stacks list [servidor]        lista los stacks"
+
+[usage.stacksAction]
+other = "  stacks up|down|restart|pull <servidor> <stack>"
+
+[usage.jobsWait]
+other = "  jobs wait <id>                espera un trabajo e imprime su salida"
+
+[usage.version]
+other = "  version                       muestra la versión del cliente"
+
+[usage.help]
+other = "  help                          muestra esta ayuda"
+
+[usage.flags]
+other = "Opciones globales: --lang, --url, --api-key, --ca-file, --json, --wait, --timeout"
+
+[usage.apiKeyWarning]
+other = "Aviso: --api-key puede aparecer en la lista de procesos; prefiere TALAIA_API_KEY o login."
+
+[login.urlPrompt]
+other = "URL del core:"
+
+[login.apiKeyPrompt]
+other = "Clave de API:"
+
+[login.success]
+other = "Sesión iniciada como {{.User}}."
+
+[action.queued]
+other = "Trabajo {{.JobID}} en cola."
+
+[job.failed]
+other = "El trabajo {{.JobID}} ha fallado: {{.Message}}"
+
+[job.noMessage]
+other = "el trabajo no indicó un motivo"
+
+[job.timeout]
+other = "Se agotó el tiempo de espera del trabajo {{.JobID}}."
+
+[error.usage]
+other = "Comando o argumentos no válidos."
+
+[error.unknownCommand]
+other = "Comando desconocido {{.Command}}."
+
+[error.serverNotFound]
+other = "No hay ningún servidor llamado {{.Server}}."
+
+[error.serverAmbiguous]
+other = "{{.Count}} servidores se llaman {{.Server}}; usa el id."
+
+[error.missingURL]
+other = "Configura la URL del core con --url, TALAIA_URL o login."
+
+[error.missingAPIKey]
+other = "Configura la clave de API con TALAIA_API_KEY, --api-key o login."
+
+[error.invalidURL]
+other = "La URL del core no es válida."
+
+[error.configRead]
+other = "No se ha podido leer la configuración en {{.Path}}."
+
+[error.configWrite]
+other = "No se ha podido escribir la configuración en {{.Path}}."
+
+[error.configPermissions]
+other = "No se lee {{.Path}}: otros usuarios pueden leerlo. Aplica el modo 0600."
+
+[error.caFile]
+other = "No se ha podido cargar el bundle de CA."
+
+[error.network]
+other = "No se ha podido contactar con el core."
+
+[error.invalidResponse]
+other = "El core ha enviado una respuesta no válida."
+
+[error.timeout]
+other = "La petición ha caducado."
+
+[error.generic]
+other = "El comando ha fallado."
+
+[error.api.forbidden]
+other = "No tienes permiso para hacer esto."
+
+[error.api.notFound]
+other = "No se ha encontrado el recurso solicitado."
+
+[error.api.invalidAPIKey]
+other = "La clave de API no es válida."
+
+[error.api.rateLimited]
+other = "Demasiadas peticiones. Vuelve a probarlo en un momento."
+
+[error.api.sessionRequired]
+other = "La sesión de la clave de API no es válida."
+
+[error.api.mfaRequired]
+other = "Hace falta el segundo factor."
+
+[error.api.agentOffline]
+other = "El agente de ese servidor no está conectado."
+
+[error.api.confirmationRequired]
+other = "El core requiere una confirmación explícita."
+
+[error.api.invalidRequest]
+other = "El core ha rechazado la petición."
+
+[error.api.generic]
+other = "El core ha devuelto el error {{.Code}}."
+
+[table.id]
+other = "ID"
+
+[table.name]
+other = "NOMBRE"
+
+[table.status]
+other = "ESTADO"
+
+[table.agent]
+other = "AGENTE"
+
+[table.image]
+other = "IMAGEN"
+
+[table.state]
+other = "ESTADO"
+
+[table.server]
+other = "SERVIDOR"
+
+[table.stack]
+other = "STACK"
+
+[status.online]
+other = "en línea"
+
+[status.offline]
+other = "sin conexión"
+
+[status.revoked]
+other = "revocado"
+
+[state.managed]
+other = "gestionado"
+
+[state.adopted]
+other = "adoptado"
+
+[state.broken]
+other = "roto"
+
+[state.adoptable]
+other = "adoptable"

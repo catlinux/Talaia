@@ -13,6 +13,12 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+## [0.4.14] - 2026-10-23
+
+### Añadido
+
+- `talaiactl` v1: `login`, `servers list`, `containers list|start|stop|restart`, `stacks list|up|down|restart|pull`, `jobs wait` y `version`, con una clave de API de `~/.config/talaia/config.toml` (modo 0600), `TALAIA_URL` / `TALAIA_API_KEY` o parámetros, salida en tabla o `--json`, una CA adicional con `--ca-file` (la verificación TLS nunca se puede desactivar) y mensajes en ca, es y en.
+
 ## [0.4.13] - 2026-10-23
 
 ### Añadido
@@ -459,7 +465,8 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
   `.gitattributes` y `.gitignore`.
 - Licencia WNCL-1.0 aplicada: archivo `LICENSE` y sección de créditos en los README.
 
-[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.4.13...HEAD
+[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.4.14...HEAD
+[0.4.14]: https://github.com/catlinux/Talaia/releases/tag/v0.4.14
 [0.4.13]: https://github.com/catlinux/Talaia/releases/tag/v0.4.13
 [0.4.12]: https://github.com/catlinux/Talaia/releases/tag/v0.4.12
 [0.4.11]: https://github.com/catlinux/Talaia/releases/tag/v0.4.11

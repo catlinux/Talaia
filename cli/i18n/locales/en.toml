@@ -6,3 +6,183 @@ other = "talaiactl {{.Version}}"
 
 [error.unknownLanguage]
 other = "warning: unknown language {{.Language}}; falling back to English"
+
+[usage.line]
+other = "Usage: {{.App}} [global flags] <command> [arguments]"
+
+[usage.commands]
+other = "Commands:"
+
+[usage.login]
+other = "  login                         save and verify an API key"
+
+[usage.serversList]
+other = "  servers list                  list visible servers"
+
+[usage.containersList]
+other = "  containers list <server>      list containers of a server"
+
+[usage.containersAction]
+other = "  containers start|stop|restart <server> <container>"
+
+[usage.stacksList]
+other = "  stacks list [server]          list stacks"
+
+[usage.stacksAction]
+other = "  stacks up|down|restart|pull <server> <stack>"
+
+[usage.jobsWait]
+other = "  jobs wait <id>                wait for a job and print its output"
+
+[usage.version]
+other = "  version                       print the client version"
+
+[usage.help]
+other = "  help                          show this help"
+
+[usage.flags]
+other = "Global flags: --lang, --url, --api-key, --ca-file, --json, --wait, --timeout"
+
+[usage.apiKeyWarning]
+other = "Warning: --api-key can appear in the process list; prefer TALAIA_API_KEY or login."
+
+[login.urlPrompt]
+other = "Core URL:"
+
+[login.apiKeyPrompt]
+other = "API key:"
+
+[login.success]
+other = "Signed in as {{.User}}."
+
+[action.queued]
+other = "Job {{.JobID}} queued."
+
+[job.failed]
+other = "Job {{.JobID}} failed: {{.Message}}"
+
+[job.noMessage]
+other = "the job did not report a reason"
+
+[job.timeout]
+other = "Timed out waiting for job {{.JobID}}."
+
+[error.usage]
+other = "Invalid command or arguments."
+
+[error.unknownCommand]
+other = "Unknown command {{.Command}}."
+
+[error.serverNotFound]
+other = "No server named {{.Server}}."
+
+[error.serverAmbiguous]
+other = "{{.Count}} servers are named {{.Server}}; use the id."
+
+[error.missingURL]
+other = "Set the core URL with --url, TALAIA_URL or login."
+
+[error.missingAPIKey]
+other = "Set the API key with TALAIA_API_KEY, --api-key or login."
+
+[error.invalidURL]
+other = "The core URL is not valid."
+
+[error.configRead]
+other = "Could not read the configuration at {{.Path}}."
+
+[error.configWrite]
+other = "Could not write the configuration at {{.Path}}."
+
+[error.configPermissions]
+other = "Refusing to read {{.Path}}: other users can read it. Set mode 0600."
+
+[error.caFile]
+other = "The CA bundle could not be loaded."
+
+[error.network]
+other = "Could not reach the core."
+
+[error.invalidResponse]
+other = "The core sent an invalid response."
+
+[error.timeout]
+other = "The request timed out."
+
+[error.generic]
+other = "The command failed."
+
+[error.api.forbidden]
+other = "You do not have permission to do this."
+
+[error.api.notFound]
+other = "The requested resource was not found."
+
+[error.api.invalidAPIKey]
+other = "The API key is not valid."
+
+[error.api.rateLimited]
+other = "Too many requests. Try again in a moment."
+
+[error.api.sessionRequired]
+other = "The API key session is not valid."
+
+[error.api.mfaRequired]
+other = "The second factor is required."
+
+[error.api.agentOffline]
+other = "The agent of that server is not connected."
+
+[error.api.confirmationRequired]
+other = "The core requires an explicit confirmation."
+
+[error.api.invalidRequest]
+other = "The core rejected the request."
+
+[error.api.generic]
+other = "The core returned error {{.Code}}."
+
+[table.id]
+other = "ID"
+
+[table.name]
+other = "NAME"
+
+[table.status]
+other = "STATUS"
+
+[table.agent]
+other = "AGENT"
+
+[table.image]
+other = "IMAGE"
+
+[table.state]
+other = "STATE"
+
+[table.server]
+other = "SERVER"
+
+[table.stack]
+other = "STACK"
+
+[status.online]
+other = "online"
+
+[status.offline]
+other = "offline"
+
+[status.revoked]
+other = "revoked"
+
+[state.managed]
+other = "managed"
+
+[state.adopted]
+other = "adopted"
+
+[state.broken]
+other = "broken"
+
+[state.adoptable]
+other = "adoptable"
