@@ -7,7 +7,7 @@ import { createAuthApi, type AuthApi } from '../api/auth'
 import { ApiError } from '../api/http'
 import type { MeApi, Permission } from '../api/me'
 import i18n from '../i18n'
-import { AuthGate } from './AuthGate'
+import { AuthGate, errorMessage } from './AuthGate'
 import { DEVICE_STORAGE_KEY } from './PinLogin'
 
 const signedOut = new ApiError('session_required', 401)
@@ -225,5 +225,24 @@ describe('panel authentication', () => {
     expect((await screen.findByRole('status')).textContent).toBe(
       'The session has expired. Sign in again.',
     )
+  })
+})
+
+describe('validation error messages', () => {
+  it.each([
+    ['en', 'scope.name', 'required', 'Stack or container name is required.'],
+    ['es', 'role', 'invalid_value', 'El rol no es válido.'],
+    ['ca', 'scope.server_id', 'unknown', 'El servidor indicat no existeix.'],
+  ])('translates %s validation errors', async (language, field, reason, expected) => {
+    await i18n.changeLanguage(language)
+    const error = new ApiError('invalid_request', 400, field, reason)
+    expect(errorMessage(i18n.t, error)).toBe(expected)
+  })
+
+  it('falls back to the generic error for an unknown field', async () => {
+    await i18n.changeLanguage('en')
+    expect(
+      errorMessage(i18n.t, new ApiError('invalid_request', 400, 'not_a_field', 'required')),
+    ).toBe('The request is not valid.')
   })
 })

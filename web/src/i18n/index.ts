@@ -11,6 +11,7 @@ import caFleet from '../locales/ca/fleet.json'
 import caServer from '../locales/ca/server.json'
 import caSettings from '../locales/ca/settings.json'
 import caUsers from '../locales/ca/users.json'
+import caValidation from '../locales/ca/validation.json'
 import enAbout from '../locales/en/about.json'
 import enAudit from '../locales/en/audit.json'
 import enAuth from '../locales/en/auth.json'
@@ -20,6 +21,7 @@ import enFleet from '../locales/en/fleet.json'
 import enServer from '../locales/en/server.json'
 import enSettings from '../locales/en/settings.json'
 import enUsers from '../locales/en/users.json'
+import enValidation from '../locales/en/validation.json'
 import esAbout from '../locales/es/about.json'
 import esAudit from '../locales/es/audit.json'
 import esAuth from '../locales/es/auth.json'
@@ -29,6 +31,7 @@ import esFleet from '../locales/es/fleet.json'
 import esServer from '../locales/es/server.json'
 import esSettings from '../locales/es/settings.json'
 import esUsers from '../locales/es/users.json'
+import esValidation from '../locales/es/validation.json'
 
 export const supportedLanguages = ['ca', 'es', 'en'] as const
 
@@ -52,6 +55,7 @@ void i18n
         users: caUsers,
         auth: caAuth,
         errors: caErrors,
+        validation: caValidation,
       },
       es: {
         common: esCommon,
@@ -63,6 +67,7 @@ void i18n
         users: esUsers,
         auth: esAuth,
         errors: esErrors,
+        validation: esValidation,
       },
       en: {
         common: enCommon,
@@ -74,11 +79,23 @@ void i18n
         users: enUsers,
         auth: enAuth,
         errors: enErrors,
+        validation: enValidation,
       },
     },
     supportedLngs: [...supportedLanguages],
     fallbackLng: 'en',
-    ns: ['common', 'about', 'audit', 'fleet', 'server', 'settings', 'users', 'auth', 'errors'],
+    ns: [
+      'common',
+      'about',
+      'audit',
+      'fleet',
+      'server',
+      'settings',
+      'users',
+      'auth',
+      'errors',
+      'validation',
+    ],
     defaultNS: 'common',
     load: 'languageOnly',
     initAsync: false,

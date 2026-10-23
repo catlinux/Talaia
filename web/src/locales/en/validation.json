@@ -1,0 +1,41 @@
+{
+  "fields": {
+    "username": "Username",
+    "email": "Email address",
+    "role": "Role",
+    "name": "Name",
+    "expires_in_days": "Expiry days",
+    "scope": {
+      "type": "Scope type",
+      "server_id": "Server",
+      "group_id": "Group",
+      "name": "Stack or container name"
+    },
+    "bindingScopeName": "Stack or container name",
+    "issuer": "Issuer",
+    "client_id": "Client ID",
+    "button_label": "Button label"
+  },
+  "reasons": {
+    "required": "is required",
+    "too_long": "is too long",
+    "too_short": "is too short",
+    "invalid_format": "has an invalid format",
+    "invalid_value": "is invalid",
+    "unknown": "is invalid",
+    "duplicate": "already exists",
+    "out_of_range": "is outside the allowed range",
+    "body": "contains invalid data"
+  },
+  "serverError": "{{field}} {{reason}}.",
+  "required": "This field is required.",
+  "codeLength": "Enter the six-digit code.",
+  "sentences": {
+    "scope": {
+      "name": { "required": "Stack or container name is required." },
+      "server_id": { "unknown": "The selected server does not exist." }
+    },
+    "bindingScopeName": { "required": "Stack or container name is required." },
+    "role": { "invalid_value": "The role is invalid." }
+  }
+}

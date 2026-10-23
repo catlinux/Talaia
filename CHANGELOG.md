@@ -18,6 +18,12 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.4.18] - 2026-10-23
+
+### Changed
+
+- Panel forms (invitations, access, teams, groups, API keys, single sign-on) check required fields before sending and show the problem under the field; the server's validation errors are explained field by field. The stack or container of an access is picked from the server's list (typing the name remains as a fallback).
+
 ## [0.4.17] - 2026-10-23
 
 ### Changed
@@ -483,7 +489,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.4.17...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.4.18...HEAD
+[0.4.18]: https://github.com/catlinux/Talaia/releases/tag/v0.4.18
 [0.4.17]: https://github.com/catlinux/Talaia/releases/tag/v0.4.17
 [0.4.16]: https://github.com/catlinux/Talaia/releases/tag/v0.4.16
 [0.4.15]: https://github.com/catlinux/Talaia/releases/tag/v0.4.15

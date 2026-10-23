@@ -45,6 +45,7 @@ export function UsersTab({
   const [inviting, setInviting] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [editErrors, setEditErrors] = useState(false)
 
   const selected = accessFor === null ? null : (users.find((user) => user.id === accessFor) ?? null)
 
@@ -64,6 +65,12 @@ export function UsersTab({
   const saveUser = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     if (editing === null) return
+    setEditErrors(true)
+    if (!editing.email.trim()) {
+      const form = event.currentTarget
+      requestAnimationFrame(() => form.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus())
+      return
+    }
     await run(() => usersApi.update(editing.user.id, editing.displayName, editing.email))
     setEditing(null)
   }
@@ -278,7 +285,7 @@ export function UsersTab({
             </div>
           }
         >
-          <form id="edit-user-form" onSubmit={saveUser}>
+          <form id="edit-user-form" noValidate onSubmit={saveUser}>
             <label className="field">
               <span className="field__label">{t('users:editDialog.name')}</span>
               <input
@@ -288,13 +295,23 @@ export function UsersTab({
               />
             </label>
             <label className="field">
-              <span className="field__label">{t('users:editDialog.email')}</span>
+              <span className="field__label">{t('users:editDialog.email')} *</span>
               <input
                 className="field__input"
                 type="email"
+                required
                 value={editing.email}
+                aria-invalid={editErrors && !editing.email.trim()}
+                aria-describedby={
+                  editErrors && !editing.email.trim() ? 'edit-email-error' : undefined
+                }
                 onChange={(event) => setEditing({ ...editing, email: event.target.value })}
               />
+              {editErrors && !editing.email.trim() ? (
+                <span className="field__error" id="edit-email-error">
+                  {t('validation:required')}
+                </span>
+              ) : null}
             </label>
           </form>
         </Dialog>
@@ -368,11 +385,22 @@ function InviteDialog({
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
+  const [showErrors, setShowErrors] = useState(false)
 
   const link = created === null ? '' : `${window.location.origin}${created.linkPath}`
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
+    setShowErrors(true)
+    const invalid =
+      !username.trim() ||
+      !email.trim() ||
+      ((scope.type === 'stack' || scope.type === 'container') && !scope.name?.trim())
+    if (invalid) {
+      const form = event.currentTarget
+      requestAnimationFrame(() => form.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus())
+      return
+    }
     setPending(true)
     setError(null)
     try {
@@ -423,36 +451,61 @@ function InviteDialog({
       }
     >
       {created === null ? (
-        <form id="invite-user-form" onSubmit={submit}>
-          {error !== null ? (
-            <p className="users__error" role="alert">
-              {error}
-            </p>
-          ) : null}
+        <form id="invite-user-form" noValidate onSubmit={submit}>
           <label className="field">
-            <span className="field__label">{t('users:invite.username')}</span>
+            <span className="field__label">{t('users:invite.username')} *</span>
             <input
               className="field__input"
               value={username}
               required
+              aria-required="true"
+              aria-invalid={showErrors && !username.trim()}
+              aria-describedby={
+                showErrors && !username.trim() ? 'invite-username-error' : undefined
+              }
               onChange={(event) => setUsername(event.target.value)}
             />
+            {showErrors && !username.trim() ? (
+              <span className="field__error" id="invite-username-error">
+                {t('validation:required')}
+              </span>
+            ) : null}
           </label>
           <label className="field">
-            <span className="field__label">{t('users:invite.email')}</span>
+            <span className="field__label">{t('users:invite.email')} *</span>
             <input
               className="field__input"
               type="email"
+              required
+              aria-required="true"
+              aria-invalid={showErrors && !email.trim()}
+              aria-describedby={showErrors && !email.trim() ? 'invite-email-error' : undefined}
               value={email}
               onChange={(event) => setEmail(event.target.value)}
             />
+            {showErrors && !email.trim() ? (
+              <span className="field__error" id="invite-email-error">
+                {t('validation:required')}
+              </span>
+            ) : null}
           </label>
           <label className="field">
             <span className="field__label">{t('access.role')}</span>
             <RoleSelect value={role} onChange={setRole} />
           </label>
           <RoleDescription role={role} />
-          <ScopeFields scope={scope} onChange={setScope} groups={groups} servers={servers} />
+          <ScopeFields
+            scope={scope}
+            onChange={setScope}
+            groups={groups}
+            servers={servers}
+            showErrors={showErrors}
+          />
+          {error !== null ? (
+            <p className="users__error" role="alert">
+              {error}
+            </p>
+          ) : null}
         </form>
       ) : (
         <div>

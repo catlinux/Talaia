@@ -1,9 +1,11 @@
 import type { TFunction } from 'i18next'
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import type { Group } from '../../api/groups'
 import type { ServerSummary } from '../../api/servers'
 import type { Role, Scope, ScopeType } from '../../api/users'
+import { createContainersApi } from '../../api/containers'
 
 export const roles: Role[] = ['admin', 'server_operator', 'app_operator', 'viewer', 'metrics_only']
 
@@ -91,14 +93,53 @@ export function ScopeFields({
   onChange,
   groups,
   servers,
+  showErrors = false,
 }: {
   scope: Scope
   onChange: (scope: Scope) => void
   groups: Group[]
   servers: ServerSummary[]
+  showErrors?: boolean
 }) {
   const { t } = useTranslation('users')
+  const [choiceState, setChoiceState] = useState<{ key: string; items: string[] } | null>(null)
+  const [loadingKey, setLoadingKey] = useState('')
+  const scopeType = scope.type
+  const serverId = scopeType === 'stack' || scopeType === 'container' ? scope.serverId : undefined
+  useEffect(() => {
+    if (!serverId) return
+    let active = true
+    const api = createContainersApi()
+    const load =
+      scopeType === 'stack'
+        ? api.stacks(serverId).then((result) => result.stacks)
+        : api.list(serverId).then((result) => result.containers.map((item) => item.name))
+    const key = `${scopeType}:${serverId}`
+    void load.then(
+      (items) => {
+        if (active) {
+          setChoiceState({ key, items })
+          setLoadingKey((current) => (current === key ? '' : current))
+        }
+      },
+      () => {
+        if (active) {
+          setChoiceState({ key, items: [] })
+          setLoadingKey((current) => (current === key ? '' : current))
+        }
+      },
+    )
+    return () => {
+      active = false
+    }
+  }, [scopeType, serverId])
+  const key = serverId ? `${scopeType}:${serverId}` : ''
+  const choices = choiceState?.key === key ? choiceState.items : null
+  const loadingChoices = !!key && loadingKey === key
   const setType = (type: ScopeType) => {
+    const nextServerId =
+      type === 'server' || type === 'stack' || type === 'container' ? (servers[0]?.id ?? '') : ''
+    setLoadingKey(type === 'stack' || type === 'container' ? `${type}:${nextServerId}` : '')
     onChange({
       type,
       ...(type === 'group' ? { groupId: groups[0]?.id ?? '' } : {}),
@@ -149,7 +190,10 @@ export function ScopeFields({
           <select
             className="field__input"
             value={scope.serverId ?? ''}
-            onChange={(event) => onChange({ ...scope, serverId: event.target.value })}
+            onChange={(event) => {
+              setLoadingKey(`${scope.type}:${event.target.value}`)
+              onChange({ ...scope, serverId: event.target.value, name: '' })
+            }}
           >
             {servers.map((server) => (
               <option key={server.id} value={server.id}>
@@ -164,14 +208,54 @@ export function ScopeFields({
         <label className="field">
           <span className="field__label">
             {t(scope.type === 'stack' ? 'scope.stackName' : 'scope.containerName')}
+            <span aria-hidden="true"> *</span>
           </span>
-          <input
-            className="field__input"
-            type="text"
-            value={scope.name ?? ''}
-            placeholder={t('scope.namePlaceholder')}
-            onChange={(event) => onChange({ ...scope, name: event.target.value })}
-          />
+          {loadingChoices ? (
+            <span className="users__hint" role="status">
+              {t('scope.loading')}
+            </span>
+          ) : choices && choices.length > 0 ? (
+            <select
+              className="field__input"
+              value={scope.name ?? ''}
+              required
+              aria-invalid={showErrors && !(scope.name ?? '').trim()}
+              aria-describedby={
+                showErrors && !(scope.name ?? '').trim() ? 'scope-name-error' : undefined
+              }
+              onChange={(event) => onChange({ ...scope, name: event.target.value })}
+            >
+              <option value="">{t('scope.chooseName')}</option>
+              {choices.map((name) => (
+                <option key={name} value={name}>
+                  {name}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <>
+              <input
+                className="field__input"
+                type="text"
+                required
+                value={scope.name ?? ''}
+                placeholder={t('scope.namePlaceholder')}
+                aria-invalid={showErrors && !(scope.name ?? '').trim()}
+                aria-describedby={
+                  showErrors && !(scope.name ?? '').trim() ? 'scope-name-error' : undefined
+                }
+                onChange={(event) => onChange({ ...scope, name: event.target.value })}
+              />
+              {!choices || choices.length === 0 ? (
+                <span className="users__hint">{t('scope.exactName')}</span>
+              ) : null}
+            </>
+          )}
+          {showErrors && !(scope.name ?? '').trim() ? (
+            <span className="field__error" id="scope-name-error">
+              {t('scope.nameRequired')}
+            </span>
+          ) : null}
         </label>
       ) : null}
     </div>

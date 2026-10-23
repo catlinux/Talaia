@@ -83,12 +83,16 @@ const knownCodes: readonly ApiErrorCode[] = [
 export class ApiError extends Error {
   readonly code: ApiErrorCode
   readonly status: number
+  readonly field?: string
+  readonly reason?: string
 
-  constructor(code: ApiErrorCode, status: number) {
+  constructor(code: ApiErrorCode, status: number, field?: string, reason?: string) {
     super(`${code} (${status})`)
     this.name = 'ApiError'
     this.code = code
     this.status = status
+    this.field = field
+    this.reason = reason
   }
 }
 
@@ -145,6 +149,17 @@ function errorCode(payload: unknown): ApiErrorCode {
   return 'internal'
 }
 
+function errorDetails(payload: unknown): { field?: string; reason?: string } {
+  if (typeof payload !== 'object' || payload === null || !('error' in payload)) return {}
+  const error = (payload as { error?: unknown }).error
+  if (typeof error !== 'object' || error === null) return {}
+  const details = error as { field?: unknown; reason?: unknown }
+  return {
+    ...(typeof details.field === 'string' ? { field: details.field } : {}),
+    ...(typeof details.reason === 'string' ? { reason: details.reason } : {}),
+  }
+}
+
 /** parseBody returns the JSON body, or undefined when there is none. */
 async function parseBody(response: Response): Promise<unknown> {
   const text = await response.text()
@@ -189,7 +204,8 @@ export function createHttpClient(fetchImpl: typeof fetch = defaultFetch): HttpCl
 
     const payload = await parseBody(response)
     if (!response.ok) {
-      const error = new ApiError(errorCode(payload), response.status)
+      const details = errorDetails(payload)
+      const error = new ApiError(errorCode(payload), response.status, details.field, details.reason)
       if (isSignedOut(error)) {
         notifySignedOut()
       }

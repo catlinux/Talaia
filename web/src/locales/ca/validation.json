@@ -1,0 +1,41 @@
+{
+  "fields": {
+    "username": "Nom d’usuari",
+    "email": "Correu electrònic",
+    "role": "Rol",
+    "name": "Nom",
+    "expires_in_days": "Dies de validesa",
+    "scope": {
+      "type": "Tipus d’àmbit",
+      "server_id": "Servidor",
+      "group_id": "Grup",
+      "name": "Nom de l’stack o contenidor"
+    },
+    "bindingScopeName": "Nom de l’stack o contenidor",
+    "issuer": "Emissor",
+    "client_id": "Identificador de client",
+    "button_label": "Text del botó"
+  },
+  "reasons": {
+    "required": "és obligatori",
+    "too_long": "és massa llarg",
+    "too_short": "és massa curt",
+    "invalid_format": "no té un format vàlid",
+    "invalid_value": "no és vàlid",
+    "unknown": "no és vàlid",
+    "duplicate": "ja existeix",
+    "out_of_range": "està fora del rang permès",
+    "body": "conté dades no vàlides"
+  },
+  "serverError": "{{field}}: {{reason}}.",
+  "required": "Aquest camp és obligatori.",
+  "codeLength": "Introdueix el codi de sis dígits.",
+  "sentences": {
+    "scope": {
+      "name": { "required": "El nom de l’stack o contenidor és obligatori." },
+      "server_id": { "unknown": "El servidor indicat no existeix." }
+    },
+    "bindingScopeName": { "required": "El nom de l’stack o contenidor és obligatori." },
+    "role": { "invalid_value": "El rol no és vàlid." }
+  }
+}

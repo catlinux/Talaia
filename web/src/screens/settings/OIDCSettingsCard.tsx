@@ -44,6 +44,7 @@ export function OIDCSettingsCard({ api }: OIDCSettingsCardProps) {
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
+  const [showErrors, setShowErrors] = useState(false)
 
   useEffect(() => {
     let active = true
@@ -67,6 +68,14 @@ export function OIDCSettingsCard({ api }: OIDCSettingsCardProps) {
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
+    setShowErrors(true)
+    if (form.enabled && (!form.issuer.trim() || !form.clientId.trim())) {
+      const currentForm = event.currentTarget
+      requestAnimationFrame(() =>
+        currentForm.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus(),
+      )
+      return
+    }
     setSaving(true)
     setError(null)
     setNotice(null)
@@ -110,7 +119,7 @@ export function OIDCSettingsCard({ api }: OIDCSettingsCardProps) {
           {error ?? t('settings:oidc.loadError')}
         </p>
       ) : (
-        <form className="oidc-form" onSubmit={submit}>
+        <form className="oidc-form" noValidate onSubmit={submit}>
           <label className="oidc-form__switch">
             <input
               type="checkbox"
@@ -123,23 +132,51 @@ export function OIDCSettingsCard({ api }: OIDCSettingsCardProps) {
           <p className="settings__hint">{t('settings:oidc.explanation')}</p>
 
           <label className="field">
-            <span className="field__label">{t('settings:oidc.issuer')}</span>
+            <span className="field__label">
+              {t('settings:oidc.issuer')}
+              {form.enabled ? ' *' : ''}
+            </span>
             <input
               className="field__input"
               type="url"
+              required={form.enabled}
               value={form.issuer}
+              aria-invalid={showErrors && form.enabled && !form.issuer.trim()}
+              aria-describedby={
+                showErrors && form.enabled && !form.issuer.trim() ? 'oidc-issuer-error' : undefined
+              }
               placeholder={t('settings:oidc.issuerPlaceholder')}
               onChange={(event) => setForm({ ...form, issuer: event.target.value })}
             />
+            {showErrors && form.enabled && !form.issuer.trim() ? (
+              <span className="field__error" id="oidc-issuer-error">
+                {t('validation:required')}
+              </span>
+            ) : null}
           </label>
 
           <label className="field">
-            <span className="field__label">{t('settings:oidc.clientId')}</span>
+            <span className="field__label">
+              {t('settings:oidc.clientId')}
+              {form.enabled ? ' *' : ''}
+            </span>
             <input
               className="field__input"
+              required={form.enabled}
               value={form.clientId}
+              aria-invalid={showErrors && form.enabled && !form.clientId.trim()}
+              aria-describedby={
+                showErrors && form.enabled && !form.clientId.trim()
+                  ? 'oidc-client-error'
+                  : undefined
+              }
               onChange={(event) => setForm({ ...form, clientId: event.target.value })}
             />
+            {showErrors && form.enabled && !form.clientId.trim() ? (
+              <span className="field__error" id="oidc-client-error">
+                {t('validation:required')}
+              </span>
+            ) : null}
           </label>
 
           <label className="field">
@@ -199,7 +236,7 @@ export function OIDCSettingsCard({ api }: OIDCSettingsCardProps) {
             <button
               type="submit"
               className="settings__button settings__button--primary"
-              disabled={saving || (form.enabled && (form.issuer === '' || form.clientId === ''))}
+              disabled={saving}
             >
               {saving ? t('settings:oidc.saving') : t('settings:oidc.save')}
             </button>

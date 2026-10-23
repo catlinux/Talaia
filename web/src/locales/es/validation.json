@@ -1,0 +1,41 @@
+{
+  "fields": {
+    "username": "Nombre de usuario",
+    "email": "Correo electrónico",
+    "role": "Rol",
+    "name": "Nombre",
+    "expires_in_days": "Días de validez",
+    "scope": {
+      "type": "Tipo de ámbito",
+      "server_id": "Servidor",
+      "group_id": "Grupo",
+      "name": "Nombre del stack o contenedor"
+    },
+    "bindingScopeName": "Nombre del stack o contenedor",
+    "issuer": "Emisor",
+    "client_id": "Identificador de cliente",
+    "button_label": "Texto del botón"
+  },
+  "reasons": {
+    "required": "es obligatorio",
+    "too_long": "es demasiado largo",
+    "too_short": "es demasiado corto",
+    "invalid_format": "no tiene un formato válido",
+    "invalid_value": "no es válido",
+    "unknown": "no es válido",
+    "duplicate": "ya existe",
+    "out_of_range": "está fuera del rango permitido",
+    "body": "contiene datos no válidos"
+  },
+  "serverError": "{{field}}: {{reason}}.",
+  "required": "Este campo es obligatorio.",
+  "codeLength": "Introduce el código de seis dígitos.",
+  "sentences": {
+    "scope": {
+      "name": { "required": "El nombre del stack o contenedor es obligatorio." },
+      "server_id": { "unknown": "El servidor indicado no existe." }
+    },
+    "bindingScopeName": { "required": "El nombre del stack o contenedor es obligatorio." },
+    "role": { "invalid_value": "El rol no es válido." }
+  }
+}

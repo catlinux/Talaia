@@ -33,8 +33,16 @@ export function Assignments({
   const [adding, setAdding] = useState(false)
   const [role, setRole] = useState<Role>('viewer')
   const [scope, setScope] = useState<Scope>({ type: 'organization' })
+  const [showErrors, setShowErrors] = useState(false)
 
   const submit = () => {
+    setShowErrors(true)
+    if ((scope.type === 'stack' || scope.type === 'container') && !scope.name?.trim()) {
+      requestAnimationFrame(() =>
+        document.querySelector<HTMLElement>('.assignments__add [aria-invalid="true"]')?.focus(),
+      )
+      return
+    }
     onAdd(role, scope)
     setAdding(false)
     setRole('viewer')
@@ -89,7 +97,13 @@ export function Assignments({
             <RoleSelect value={role} onChange={setRole} />
           </label>
           <RoleDescription role={role} />
-          <ScopeFields scope={scope} onChange={setScope} groups={groups} servers={servers} />
+          <ScopeFields
+            scope={scope}
+            onChange={setScope}
+            groups={groups}
+            servers={servers}
+            showErrors={showErrors}
+          />
           <div className="users__actions">
             <button
               type="button"

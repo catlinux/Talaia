@@ -99,7 +99,7 @@ describe('Settings API keys and single sign-on', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Create key' }))
 
     const dialog = screen.getByRole('dialog')
-    fireEvent.change(within(dialog).getByLabelText('Name'), { target: { value: 'deploy' } })
+    fireEvent.change(within(dialog).getByLabelText(/^Name/), { target: { value: 'deploy' } })
     fireEvent.change(within(dialog).getByLabelText(/Authenticator code/), {
       target: { value: '123456' },
     })

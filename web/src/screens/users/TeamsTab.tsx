@@ -325,6 +325,16 @@ function NameDialog({
 }) {
   const { t } = useTranslation('users')
   const [name, setName] = useState(initial)
+  const [showError, setShowError] = useState(false)
+  const submit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    setShowError(true)
+    if (!name.trim()) {
+      event.currentTarget.querySelector('input')?.focus()
+      return
+    }
+    onSave(name.trim(), event)
+  }
   return (
     <Dialog
       title={title}
@@ -344,15 +354,22 @@ function NameDialog({
         </div>
       }
     >
-      <form id="team-name-form" onSubmit={(event) => onSave(name.trim(), event)}>
+      <form id="team-name-form" noValidate onSubmit={submit}>
         <label className="field">
-          <span className="field__label">{t('users:teams.name')}</span>
+          <span className="field__label">{t('users:teams.name')} *</span>
           <input
             className="field__input"
             value={name}
             required
+            aria-invalid={showError && !name.trim()}
+            aria-describedby={showError && !name.trim() ? 'team-name-error' : undefined}
             onChange={(event) => setName(event.target.value)}
           />
+          {showError && !name.trim() ? (
+            <span className="field__error" id="team-name-error">
+              {t('validation:required')}
+            </span>
+          ) : null}
         </label>
       </form>
     </Dialog>

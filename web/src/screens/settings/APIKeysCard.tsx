@@ -293,6 +293,7 @@ function CreateKeyDialog({
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [copied, setCopied] = useState<'key' | 'curl' | null>(null)
+  const [showErrors, setShowErrors] = useState(false)
 
   const key = created?.key ?? ''
   const curl =
@@ -302,7 +303,13 @@ function CreateKeyDialog({
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    if (pending || name.trim() === '' || code.length !== 6 || !scopeValid(scope)) return
+    setShowErrors(true)
+    if (pending) return
+    if (name.trim() === '' || code.length !== 6 || !scopeValid(scope)) {
+      const form = event.currentTarget
+      requestAnimationFrame(() => form.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus())
+      return
+    }
     setPending(true)
     setError(null)
     try {
@@ -348,7 +355,7 @@ function CreateKeyDialog({
               type="submit"
               form="api-key-create-form"
               className="settings__button settings__button--primary"
-              disabled={pending || name.trim() === '' || code.length !== 6 || !scopeValid(scope)}
+              disabled={pending}
             >
               {pending ? t('settings:apiKeys.creating') : t('settings:apiKeys.createConfirm')}
             </button>
@@ -357,16 +364,23 @@ function CreateKeyDialog({
       }
     >
       {created === null ? (
-        <form id="api-key-create-form" onSubmit={submit}>
+        <form id="api-key-create-form" noValidate onSubmit={submit}>
           <label className="field">
-            <span className="field__label">{t('settings:apiKeys.name')}</span>
+            <span className="field__label">{t('settings:apiKeys.name')} *</span>
             <input
               className="field__input"
               value={name}
               maxLength={64}
               required
+              aria-invalid={showErrors && !name.trim()}
+              aria-describedby={showErrors && !name.trim() ? 'api-key-name-error' : undefined}
               onChange={(event) => setName(event.target.value)}
             />
+            {showErrors && !name.trim() ? (
+              <span className="field__error" id="api-key-name-error">
+                {t('validation:required')}
+              </span>
+            ) : null}
           </label>
 
           <label className="field">
@@ -389,12 +403,18 @@ function CreateKeyDialog({
             <RoleSelect value={role} onChange={setRole} />
           </label>
           <RoleDescription role={role} />
-          <ScopeFields scope={scope} onChange={setScope} groups={groups} servers={servers} />
+          <ScopeFields
+            scope={scope}
+            onChange={setScope}
+            groups={groups}
+            servers={servers}
+            showErrors={showErrors}
+          />
 
           <p className="settings__notice">{t('settings:apiKeys.limits')}</p>
 
           <label className="field">
-            <span className="field__label">{t('settings:apiKeys.code')}</span>
+            <span className="field__label">{t('settings:apiKeys.code')} *</span>
             <input
               className="field__input"
               type="text"
@@ -402,10 +422,18 @@ function CreateKeyDialog({
               autoComplete="one-time-code"
               pattern="[0-9]*"
               maxLength={6}
+              required
               value={code}
+              aria-invalid={showErrors && code.length !== 6}
+              aria-describedby={showErrors && code.length !== 6 ? 'api-key-code-error' : undefined}
               onChange={(event) => setCode(event.target.value.replace(/\D/g, '').slice(0, 6))}
             />
             <span className="settings__hint">{t('settings:apiKeys.codeHint')}</span>
+            {showErrors && code.length !== 6 ? (
+              <span className="field__error" id="api-key-code-error">
+                {t('validation:codeLength')}
+              </span>
+            ) : null}
           </label>
 
           {error !== null ? (

@@ -13,6 +13,12 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+## [0.4.18] - 2026-10-23
+
+### Cambiado
+
+- Los formularios del panel (invitaciones, accesos, equipos, grupos, claves de API, inicio de sesión único) comprueban los campos obligatorios antes de enviar y muestran el problema bajo el campo; los errores de validación del servidor se explican campo a campo. El stack o contenedor de un acceso se elige de la lista del servidor (escribir el nombre sigue disponible como alternativa).
+
 ## [0.4.17] - 2026-10-23
 
 ### Cambiado
@@ -483,7 +489,8 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
   `.gitattributes` y `.gitignore`.
 - Licencia WNCL-1.0 aplicada: archivo `LICENSE` y sección de créditos en los README.
 
-[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.4.17...HEAD
+[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.4.18...HEAD
+[0.4.18]: https://github.com/catlinux/Talaia/releases/tag/v0.4.18
 [0.4.17]: https://github.com/catlinux/Talaia/releases/tag/v0.4.17
 [0.4.16]: https://github.com/catlinux/Talaia/releases/tag/v0.4.16
 [0.4.15]: https://github.com/catlinux/Talaia/releases/tag/v0.4.15

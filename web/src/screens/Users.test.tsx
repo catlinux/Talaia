@@ -126,7 +126,10 @@ describe('Users screen', () => {
     await i18n.changeLanguage('en')
   })
 
-  afterEach(() => cleanup())
+  afterEach(() => {
+    cleanup()
+    vi.unstubAllGlobals()
+  })
 
   it('lists users, roles and status', async () => {
     renderUsers(fakeUsers([account()]))
@@ -142,7 +145,10 @@ describe('Users screen', () => {
     renderUsers(fakeUsers([account()]))
 
     fireEvent.click(await screen.findByRole('button', { name: 'Invite user' }))
-    fireEvent.change(screen.getByLabelText('Username'), { target: { value: 'new-user' } })
+    fireEvent.change(screen.getByLabelText(/^Username/), { target: { value: 'new-user' } })
+    fireEvent.change(screen.getByLabelText(/^Email/), {
+      target: { value: 'new@example.com' },
+    })
     fireEvent.click(screen.getByRole('button', { name: 'Create invitation' }))
 
     expect(await screen.findByText(/\/invite#secret$/)).toBeTruthy()
@@ -151,6 +157,80 @@ describe('Users screen', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Invite user' }))
     expect(screen.queryByText(/\/invite#secret$/)).toBeNull()
+  })
+
+  it('blocks an empty stack name and shows the inline message', async () => {
+    const invites = fakeInvites()
+    renderUsers(fakeUsers([account()]), invites)
+    fireEvent.click(await screen.findByRole('button', { name: 'Invite user' }))
+    fireEvent.change(screen.getByLabelText(/^Username/), { target: { value: 'new-user' } })
+    fireEvent.change(screen.getByLabelText(/^Email/), {
+      target: { value: 'new@example.com' },
+    })
+    fireEvent.change(screen.getByLabelText('Role'), { target: { value: 'app_operator' } })
+    fireEvent.change(screen.getByLabelText('Scope'), { target: { value: 'stack' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Create invitation' }))
+
+    expect(await screen.findByText('Stack or container name is required.')).toBeTruthy()
+    expect(invites.create).not.toHaveBeenCalled()
+  })
+
+  it('shows a specific server validation message for an invite error', async () => {
+    const invites = fakeInvites()
+    invites.create = vi.fn(() =>
+      Promise.reject(new ApiError('invalid_request', 400, 'scope.name', 'required')),
+    )
+    renderUsers(fakeUsers([account()]), invites)
+    fireEvent.click(await screen.findByRole('button', { name: 'Invite user' }))
+    fireEvent.change(screen.getByLabelText(/^Username/), { target: { value: 'new-user' } })
+    fireEvent.change(screen.getByLabelText(/^Email/), {
+      target: { value: 'new@example.com' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Create invitation' }))
+
+    expect((await screen.findByRole('alert')).textContent).toBe(
+      'Stack or container name is required.',
+    )
+  })
+
+  it('offers the server stack list in the invite dialog', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() =>
+        Promise.resolve(
+          new Response(
+            JSON.stringify({
+              connected: true,
+              stacks: ['web'],
+              adopted: [],
+              broken: [],
+              adoptable: [],
+            }),
+            { status: 200 },
+          ),
+        ),
+      ),
+    )
+    renderUsers(fakeUsers([account()]))
+    fireEvent.click(await screen.findByRole('button', { name: 'Invite user' }))
+    fireEvent.change(screen.getByLabelText('Role'), { target: { value: 'app_operator' } })
+    fireEvent.change(screen.getByLabelText('Scope'), { target: { value: 'stack' } })
+    expect(await screen.findByRole('option', { name: 'web' })).toBeTruthy()
+    vi.unstubAllGlobals()
+  })
+
+  it('falls back to exact-name text entry when the stack list fails', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => Promise.reject(new Error('offline'))),
+    )
+    renderUsers(fakeUsers([account()]))
+    fireEvent.click(await screen.findByRole('button', { name: 'Invite user' }))
+    fireEvent.change(screen.getByLabelText('Role'), { target: { value: 'app_operator' } })
+    fireEvent.change(screen.getByLabelText('Scope'), { target: { value: 'stack' } })
+    expect(await screen.findByPlaceholderText('Name')).toBeTruthy()
+    expect(screen.getByText('Type the exact name')).toBeTruthy()
+    vi.unstubAllGlobals()
   })
 
   it('shows the explicit last administrator error', async () => {

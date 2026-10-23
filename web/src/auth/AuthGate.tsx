@@ -64,6 +64,20 @@ const errorKeys: Record<ApiErrorCode, string> = {
 
 /** errorMessage returns the translated text of a failed call. */
 export function errorMessage(t: TFunction, error: unknown): string {
+  if (error instanceof ApiError && error.code === 'invalid_request' && error.field) {
+    const fieldKey = error.field === 'bindings[0].scope.name' ? 'bindingScopeName' : error.field
+    const field = t(`validation:fields.${fieldKey}`, { defaultValue: '' })
+    if (field) {
+      const specific = t(`validation:sentences.${fieldKey}.${error.reason ?? 'unknown'}`, {
+        defaultValue: '',
+      })
+      if (specific) return specific
+      const reason = t(`validation:reasons.${error.reason ?? 'unknown'}`, {
+        defaultValue: t('validation:reasons.unknown'),
+      })
+      return t('validation:serverError', { field, reason })
+    }
+  }
   const code = error instanceof ApiError ? error.code : 'internal'
   return t(`errors:${errorKeys[code]}`)
 }
