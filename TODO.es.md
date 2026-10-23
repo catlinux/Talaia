@@ -104,6 +104,7 @@ tareas concretas de la fase actual y de la siguiente.
 - [x] Panel: pantalla Usuarios y permisos (maqueta 5), claves de API, ajustes OIDC, lista y descarga de grabaciones de terminal
 - [x] Grabación de sesiones de terminal (hecha en las fases 2 y 3)
 - [ ] Tras una actualización, el panel sigue mostrando la versión anterior: que se recargue solo (o avise de que hay que recargar) cuando el core se reinicie con una versión nueva
+- [ ] Diálogo de invitar: el campo de correo dice (opcional) pero lleva asterisco y bloquea el formulario; que sea realmente opcional (encontrado en la prueba real de la fase 4)
 - [ ] Docs EN/ES, revisión de seguridad (Opus), prueba real con un segundo usuario, cierre en 0.5.0
 
 ## Bloque de operación (decidido el 2026-10-20, antes de cerrar la fase 2)
