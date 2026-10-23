@@ -28,6 +28,7 @@
   "updateCheckPending": "The update check has not finished yet. Try again in a moment.",
   "forbidden": "You do not have permission to do this.",
   "lastAdmin": "You cannot disable the last active administrator.",
+  "bindingExists": "This assignment already exists.",
   "invalidInvite": "The invitation is not valid or has already been used.",
   "usernameTaken": "That username is already taken.",
   "emailTaken": "That email address is already in use.",

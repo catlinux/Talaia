@@ -10,9 +10,11 @@ import {
 import { useTranslation } from 'react-i18next'
 import type { TFunction } from 'i18next'
 
-import { createAuthApi, type AuthApi, type TotpPayload } from '../api/auth'
+import { createAuthApi, type AuthApi, type TotpPayload, type TotpSetup as Setup } from '../api/auth'
 import { ApiError, onSignedOut, type ApiErrorCode } from '../api/http'
+import { createInvitesApi, type InvitesApi } from '../api/invites'
 import type { MeApi } from '../api/me'
+import { InviteAccept } from './InviteAccept'
 import { Login } from './Login'
 import { RecoveryCodes } from './RecoveryCodes'
 import { TotpSetup } from './TotpSetup'
@@ -47,6 +49,7 @@ const errorKeys: Record<ApiErrorCode, string> = {
   update_check_pending: 'updateCheckPending',
   forbidden: 'forbidden',
   last_admin: 'lastAdmin',
+  binding_exists: 'bindingExists',
   invalid_invite: 'invalidInvite',
   username_taken: 'usernameTaken',
   email_taken: 'emailTaken',
@@ -79,8 +82,9 @@ export function useAuth(): AuthContextValue | null {
 
 type GateState =
   | { kind: 'loading' }
+  | { kind: 'invite'; token: string }
   | { kind: 'login'; expired?: boolean }
-  | { kind: 'setup'; username: string }
+  | { kind: 'setup'; username: string; initial?: Setup }
   | { kind: 'verify'; username: string }
   | { kind: 'codes'; username: string; codes: string[] }
   | { kind: 'ready'; username: string }
@@ -90,6 +94,8 @@ export interface AuthGateProps {
   api?: AuthApi
   /** meApi is injected by the tests; the panel builds its own otherwise. */
   meApi?: MeApi
+  /** inviteApi is injected by the tests; the panel builds its own otherwise. */
+  inviteApi?: InvitesApi
   children: ReactNode
 }
 
@@ -98,10 +104,17 @@ export interface AuthGateProps {
  * signed in and shows the sign-in, second-factor or recovery-code screens
  * until the session is complete.
  */
-export function AuthGate({ api, meApi, children }: AuthGateProps) {
+export function AuthGate({ api, meApi, inviteApi, children }: AuthGateProps) {
   const { t } = useTranslation('auth')
   const client = useMemo(() => api ?? createAuthApi(), [api])
-  const [state, setState] = useState<GateState>({ kind: 'loading' })
+  const invites = useMemo(() => inviteApi ?? createInvitesApi(), [inviteApi])
+  const initialInvite = useMemo(() => {
+    if (window.location.pathname !== '/invite') return null
+    return window.location.hash.replace(/^#/, '')
+  }, [])
+  const [state, setState] = useState<GateState>(() =>
+    initialInvite !== null ? { kind: 'invite', token: initialInvite } : { kind: 'loading' },
+  )
 
   const toLogin = useCallback(() => {
     // A call found no session: tell the user why the form is back.
@@ -109,6 +122,9 @@ export function AuthGate({ api, meApi, children }: AuthGateProps) {
   }, [])
 
   useEffect(() => {
+    if (initialInvite !== null) {
+      return
+    }
     let active = true
     client
       .session()
@@ -130,7 +146,7 @@ export function AuthGate({ api, meApi, children }: AuthGateProps) {
     return () => {
       active = false
     }
-  }, [client])
+  }, [client, initialInvite])
 
   // A later call that finds no session sends the user back to the form.
   useEffect(() => onSignedOut(toLogin), [toLogin])
@@ -227,6 +243,17 @@ export function AuthGate({ api, meApi, children }: AuthGateProps) {
     )
   }
 
+  if (state.kind === 'invite') {
+    return (
+      <InviteAccept
+        api={invites}
+        token={state.token}
+        onAccepted={(username, setup) => setState({ kind: 'setup', username, initial: setup })}
+        onLogin={() => setState({ kind: 'login' })}
+      />
+    )
+  }
+
   if (state.kind === 'login') {
     return (
       <Login
@@ -239,7 +266,7 @@ export function AuthGate({ api, meApi, children }: AuthGateProps) {
   }
 
   if (state.kind === 'setup') {
-    return <TotpSetup start={startSetup} confirm={confirmSetup} />
+    return <TotpSetup start={startSetup} confirm={confirmSetup} initial={state.initial} />
   }
 
   if (state.kind === 'verify') {

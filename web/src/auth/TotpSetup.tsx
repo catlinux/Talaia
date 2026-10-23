@@ -9,6 +9,8 @@ import { AuthFrame } from './AuthFrame'
 export interface TotpSetupProps {
   start: () => Promise<Setup>
   confirm: (code: string) => Promise<void>
+  /** initial is a secret the server has already created, as invitation acceptance does. */
+  initial?: Setup
 }
 
 /** groupSecret splits the base32 secret in blocks of four to read it out. */
@@ -17,9 +19,9 @@ export function groupSecret(secret: string): string {
 }
 
 /** TotpSetup shows the pending secret and confirms the first code. */
-export function TotpSetup({ start, confirm }: TotpSetupProps) {
+export function TotpSetup({ start, confirm, initial }: TotpSetupProps) {
   const { t } = useTranslation(['auth', 'errors'])
-  const [setup, setSetup] = useState<Setup | null>(null)
+  const [setup, setSetup] = useState<Setup | null>(initial ?? null)
   const [code, setCode] = useState('')
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -28,14 +30,14 @@ export function TotpSetup({ start, confirm }: TotpSetupProps) {
 
   useEffect(() => {
     // The ref keeps StrictMode's double effect from asking for two secrets.
-    if (requested.current) {
+    if (requested.current || initial !== undefined) {
       return
     }
     requested.current = true
     start()
       .then(setSetup)
       .catch((cause: unknown) => setError(errorMessage(t, cause)))
-  }, [start, t])
+  }, [initial, start, t])
 
   useEffect(() => {
     if (setup !== null) {

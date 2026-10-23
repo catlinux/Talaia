@@ -6,6 +6,11 @@ import type { AuditApi } from './api/audit'
 import type { FleetClient } from './api/client'
 import type { ContainersApi } from './api/containers'
 import type { JournalApi } from './api/journal'
+import type { UsersApi } from './api/users'
+import type { TeamsApi } from './api/teams'
+import type { GroupsApi } from './api/groups'
+import type { InvitesApi } from './api/invites'
+import type { ServersApi } from './api/servers'
 import type { ServicesApi } from './api/services'
 import type { SystemApi } from './api/system'
 import type { Server } from './api/types'
@@ -14,14 +19,22 @@ import { Audit } from './screens/Audit'
 import { Fleet } from './screens/Fleet'
 import { ServerScreen } from './screens/ServerScreen'
 import { Settings } from './screens/Settings'
+import { Users } from './screens/Users'
 import { useAuth } from './auth/AuthGate'
 import { usePermissions } from './auth/permissions'
-import { AuditIcon, FleetIcon, GearIcon, InfoIcon, SignOutIcon } from './components/icons'
+import {
+  AuditIcon,
+  FleetIcon,
+  GearIcon,
+  InfoIcon,
+  SignOutIcon,
+  UsersIcon,
+} from './components/icons'
 import { LanguageSelector } from './components/LanguageSelector'
 import { Logo } from './components/Logo'
 import { ThemeToggle } from './theme/ThemeToggle'
 
-type Screen = 'fleet' | 'settings' | 'audit' | 'about'
+type Screen = 'fleet' | 'users' | 'settings' | 'audit' | 'about'
 
 interface AppProps {
   /** Data source of the fleet screen. Tests inject their own client. */
@@ -38,6 +51,11 @@ interface AppProps {
   systemApi?: SystemApi
   /** Audit API of the audit screen. Tests inject their own. */
   auditApi?: AuditApi
+  usersApi?: UsersApi
+  teamsApi?: TeamsApi
+  groupsApi?: GroupsApi
+  invitesApi?: InvitesApi
+  serversApi?: ServersApi
 }
 
 /** initials returns up to two letters to draw the avatar of the signed-in user. */
@@ -53,11 +71,17 @@ export function App({
   journalApi,
   systemApi,
   auditApi,
+  usersApi,
+  teamsApi,
+  groupsApi,
+  invitesApi,
+  serversApi,
 }: AppProps) {
   const { t } = useTranslation(['common', 'auth'])
   const auth = useAuth()
   const { can } = usePermissions()
   const canAudit = can('audit.view')
+  const canUsers = can('users.manage')
   const [screen, setScreen] = useState<Screen>('fleet')
   // The server whose containers are open, if any; it replaces the fleet screen.
   const [openServer, setOpenServer] = useState<Server | null>(null)
@@ -83,6 +107,20 @@ export function App({
             <FleetIcon />
             {t('nav.fleet')}
           </button>
+          {canUsers ? (
+            <button
+              type="button"
+              className={screen === 'users' ? 'side__link side__link--active' : 'side__link'}
+              aria-current={screen === 'users' ? 'page' : undefined}
+              onClick={() => {
+                setScreen('users')
+                setOpenServer(null)
+              }}
+            >
+              <UsersIcon />
+              {t('nav.users')}
+            </button>
+          ) : null}
           <button
             type="button"
             className={screen === 'settings' ? 'side__link side__link--active' : 'side__link'}
@@ -150,6 +188,14 @@ export function App({
         <div className="shell__page" key={`${screen}-${openServer?.id ?? ''}`}>
           {screen === 'about' ? (
             <About />
+          ) : screen === 'users' ? (
+            <Users
+              usersApi={usersApi}
+              teamsApi={teamsApi}
+              groupsApi={groupsApi}
+              invitesApi={invitesApi}
+              serversApi={serversApi}
+            />
           ) : screen === 'settings' ? (
             <Settings api={systemApi} />
           ) : screen === 'audit' ? (

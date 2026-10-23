@@ -13,6 +13,12 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+## [0.4.12] - 2026-10-23
+
+### Añadido
+
+- Pantalla de Usuarios y permisos: usuarios, equipos y grupos de servidores, asignaciones de rol por ámbito (organización, grupo, servidor, stack, contenedor) con una descripción clara de lo que cada rol no puede hacer, desactivar y activar, e invitaciones por enlace (se muestra una vez, con la lista de pendientes). La persona invitada la acepta en `/invite#…`, elige contraseña y configura el segundo factor. En ca, es y en.
+
 ## [0.4.11] - 2026-10-23
 
 ### Cambiado
@@ -447,7 +453,8 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
   `.gitattributes` y `.gitignore`.
 - Licencia WNCL-1.0 aplicada: archivo `LICENSE` y sección de créditos en los README.
 
-[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.4.11...HEAD
+[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.4.12...HEAD
+[0.4.12]: https://github.com/catlinux/Talaia/releases/tag/v0.4.12
 [0.4.11]: https://github.com/catlinux/Talaia/releases/tag/v0.4.11
 [0.4.10]: https://github.com/catlinux/Talaia/releases/tag/v0.4.10
 [0.4.9]: https://github.com/catlinux/Talaia/releases/tag/v0.4.9

@@ -1,0 +1,167 @@
+{
+  "pageTitle": "Usuarios y permisos",
+  "pageSubtitle": "Personas, equipos y quién puede hacer qué.",
+  "loading": "Cargando usuarios…",
+  "title": "Usuarios",
+  "intro": "Cuentas del panel y los roles de cada una.",
+  "empty": "Todavía no hay usuarios.",
+  "noAccess": "Sin acceso",
+  "active": "Activo",
+  "disabled": "Desactivado",
+  "totpOn": "TOTP activo",
+  "totpOff": "TOTP pendiente",
+  "accessButton": "Acceso",
+  "edit": "Editar",
+  "enable": "Activar",
+  "disable": "Desactivar",
+  "table": {
+    "name": "Nombre",
+    "username": "Usuario",
+    "access": "Acceso",
+    "status": "Estado",
+    "actions": "Acciones",
+    "email": "Correo electrónico"
+  },
+  "invites": {
+    "title": "Invitaciones pendientes",
+    "empty": "No hay invitaciones pendientes.",
+    "expires": "Caduca {{date}}",
+    "revoke": "Revocar"
+  },
+  "access": {
+    "title": "Acceso de {{name}}",
+    "empty": "Este usuario no tiene asignaciones.",
+    "remove": "Quitar la asignación de {{role}}",
+    "role": "Rol",
+    "add": "Añadir acceso",
+    "addButton": "Añadir acceso"
+  },
+  "editDialog": {
+    "title": "Editar usuario",
+    "name": "Nombre visible",
+    "email": "Correo electrónico"
+  },
+  "toggle": {
+    "enableTitle": "¿Activar a {{name}}?",
+    "enableBody": "La cuenta podrá volver a entrar.",
+    "disableTitle": "¿Desactivar a {{name}}?",
+    "disableBody": "La cuenta queda desactivada y se revocan sus sesiones y claves."
+  },
+  "invite": {
+    "open": "Invitar usuario",
+    "title": "Invitar a un usuario",
+    "username": "Usuario",
+    "email": "Correo electrónico (opcional)",
+    "create": "Crear invitación",
+    "creating": "Creando…",
+    "once": "Comparte este enlace una sola vez. No se volverá a mostrar.",
+    "copy": "Copiar enlace",
+    "copied": "Enlace copiado",
+    "expires": "La invitación caduca el {{date}}."
+  },
+  "roles": {
+    "admin": {
+      "label": "Administrador",
+      "description": "Gestiona usuarios, servidores y ajustes de toda la organización."
+    },
+    "server_operator": {
+      "label": "Operador de servidor",
+      "description": "Gestiona uno o varios servidores. No puede gestionar usuarios ni ajustes."
+    },
+    "app_operator": {
+      "label": "Operador de aplicaciones",
+      "description": "Despliega stacks y contenedores. No puede editar archivos compose ni abrir terminales."
+    },
+    "viewer": {
+      "label": "Lector",
+      "description": "Consulta servidores, contenedores, registros y actualizaciones. No puede cambiar nada."
+    },
+    "metrics_only": {
+      "label": "Solo métricas",
+      "description": "Ve métricas de servidores y contenedores, sin archivos ni registros."
+    }
+  },
+  "scope": {
+    "type": "Ámbito",
+    "organization": "Toda la organización",
+    "group": "Grupo",
+    "server": "Servidor",
+    "stackName": "Nombre del stack",
+    "containerName": "Nombre del contenedor",
+    "namePlaceholder": "Nombre",
+    "groupValue": "Grupo {{name}}",
+    "serverValue": "Servidor {{name}}",
+    "stackValue": "{{name}} (stack en {{server}})",
+    "containerValue": "{{name}} (contenedor en {{server}})",
+    "types": {
+      "organization": "Toda la organización",
+      "group": "Grupo",
+      "server": "Servidor",
+      "stack": "Stack",
+      "container": "Contenedor"
+    }
+  },
+  "teams": {
+    "title": "Equipos",
+    "create": "Nuevo equipo",
+    "empty": "Todavía no hay equipos.",
+    "rename": "Renombrar equipo",
+    "renameShort": "Renombrar",
+    "delete": "Eliminar equipo",
+    "select": "Elige un equipo.",
+    "members": "Miembros",
+    "noMembers": "Este equipo no tiene miembros.",
+    "removeMember": "Quitar a {{name}}",
+    "addMember": "Añadir miembro",
+    "chooseUser": "Elige un usuario",
+    "add": "Añadir",
+    "assignments": "Acceso del equipo",
+    "name": "Nombre del equipo",
+    "deleteTitle": "¿Eliminar {{name}}?",
+    "deleteBody": "Se elimina el equipo y sus asignaciones. Sus miembros conservan sus cuentas."
+  },
+  "groups": {
+    "title": "Grupos de servidores",
+    "intro": "Los grupos facilitan asignar acceso a varios servidores a la vez.",
+    "create": "Nuevo grupo",
+    "empty": "Todavía no hay grupos.",
+    "rename": "Renombrar",
+    "delete": "Eliminar",
+    "name": "Nombre del grupo",
+    "deleteTitle": "¿Eliminar {{name}}?",
+    "deleteBody": "Los servidores del grupo siguen en la flota, pero pierden esta asignación.",
+    "assignTitle": "Asignar un servidor",
+    "assignIntro": "Elige el servidor y el grupo al que pertenece.",
+    "server": "Servidor",
+    "group": "Grupo",
+    "assign": "Asignar",
+    "unassign": "Quitar del grupo",
+    "assigned": "Servidor asignado al grupo.",
+    "unassigned": "Servidor quitado de su grupo."
+  },
+  "inviteAccept": {
+    "title": "Aceptar la invitación",
+    "loading": "Comprobando la invitación…",
+    "invalid": "Esta invitación no es válida o ha caducado.",
+    "goLogin": "Ir a iniciar sesión",
+    "intro": "Elige la contraseña de {{username}}.",
+    "password": "Contraseña",
+    "passwordHint": "Al menos 12 caracteres.",
+    "confirm": "Repite la contraseña",
+    "submit": "Crear cuenta",
+    "submitting": "Creando cuenta…",
+    "mismatch": "Las contraseñas no coinciden.",
+    "already": "¿Ya tienes cuenta?"
+  },
+  "actions": {
+    "cancel": "Cancelar",
+    "save": "Guardar",
+    "done": "Listo"
+  },
+  "dialog": {
+    "close": "Cerrar"
+  },
+  "tabs": {
+    "label": "Usuarios y permisos"
+  }
+}

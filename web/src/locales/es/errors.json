@@ -28,6 +28,7 @@
   "updateCheckPending": "La comprobación de actualizaciones aún no ha terminado. Vuelve a probar en un momento.",
   "forbidden": "No tienes permiso para hacer esto.",
   "lastAdmin": "No puedes desactivar al último administrador activo.",
+  "bindingExists": "Esta asignación ya existe.",
   "invalidInvite": "La invitación no es válida o ya se ha utilizado.",
   "usernameTaken": "Ese nombre de usuario ya está en uso.",
   "emailTaken": "Esa dirección de correo ya está en uso.",

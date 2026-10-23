@@ -22,6 +22,7 @@ const navFleet = { ca: 'Flota', es: 'Flota', en: 'Fleet' } as const
 const navSettings = { ca: 'Configuració', es: 'Ajustes', en: 'Settings' } as const
 const navAudit = { ca: 'Auditoria', es: 'Auditoría', en: 'Audit' } as const
 const navAbout = { ca: 'Sobre', es: 'Acerca de', en: 'About' } as const
+const navUsers = { ca: 'Usuaris', es: 'Usuarios', en: 'Users' } as const
 
 const adminPermissions: Permission[] = [
   'container.view',
@@ -199,7 +200,7 @@ describe('App', () => {
       within(nav)
         .getAllByRole('button')
         .map((button) => button.textContent),
-    ).toEqual([navFleet.en, navSettings.en, navAudit.en, navAbout.en])
+    ).toEqual([navFleet.en, navUsers.en, navSettings.en, navAudit.en, navAbout.en])
 
     fireEvent.click(screen.getByRole('button', { name: navSettings.en }))
 

@@ -18,6 +18,12 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.4.12] - 2026-10-23
+
+### Added
+
+- Users and permissions screen: users, teams and server groups, role assignments by scope (organization, group, server, stack, container) with a plain description of what each role cannot do, disabling and enabling, and invitations by link (shown once, with the pending list). People accept an invitation on `/invite#…`, choose a password and set up the second factor. In ca, es and en.
+
 ## [0.4.11] - 2026-10-23
 
 ### Changed
@@ -447,7 +453,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.4.11...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.4.12...HEAD
+[0.4.12]: https://github.com/catlinux/Talaia/releases/tag/v0.4.12
 [0.4.11]: https://github.com/catlinux/Talaia/releases/tag/v0.4.11
 [0.4.10]: https://github.com/catlinux/Talaia/releases/tag/v0.4.10
 [0.4.9]: https://github.com/catlinux/Talaia/releases/tag/v0.4.9

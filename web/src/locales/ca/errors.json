@@ -28,6 +28,7 @@
   "updateCheckPending": "La comprovació d'actualitzacions encara no ha acabat. Torna-ho a provar d'aquí a un moment.",
   "forbidden": "No tens permís per a fer això.",
   "lastAdmin": "No pots desactivar l'últim administrador actiu.",
+  "bindingExists": "Aquesta assignació ja existeix.",
   "invalidInvite": "La invitació no és vàlida o ja s'ha utilitzat.",
   "usernameTaken": "Aquest nom d'usuari ja està en ús.",
   "emailTaken": "Aquesta adreça de correu ja està en ús.",

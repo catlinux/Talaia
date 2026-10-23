@@ -1,0 +1,167 @@
+{
+  "pageTitle": "Usuaris i permisos",
+  "pageSubtitle": "Persones, equips i qui pot fer què.",
+  "loading": "Carregant usuaris…",
+  "title": "Usuaris",
+  "intro": "Comptes del panell i els rols de cadascun.",
+  "empty": "Encara no hi ha usuaris.",
+  "noAccess": "Sense accés",
+  "active": "Actiu",
+  "disabled": "Desactivat",
+  "totpOn": "TOTP actiu",
+  "totpOff": "TOTP pendent",
+  "accessButton": "Accés",
+  "edit": "Edita",
+  "enable": "Activa",
+  "disable": "Desactiva",
+  "table": {
+    "name": "Nom",
+    "username": "Usuari",
+    "access": "Accés",
+    "status": "Estat",
+    "actions": "Accions",
+    "email": "Correu electrònic"
+  },
+  "invites": {
+    "title": "Invitacions pendents",
+    "empty": "No hi ha invitacions pendents.",
+    "expires": "Caduca {{date}}",
+    "revoke": "Revoca"
+  },
+  "access": {
+    "title": "Accés de {{name}}",
+    "empty": "Aquest usuari no té assignacions.",
+    "remove": "Treu l'assignació de {{role}}",
+    "role": "Rol",
+    "add": "Afegeix accés",
+    "addButton": "Afegeix accés"
+  },
+  "editDialog": {
+    "title": "Edita l'usuari",
+    "name": "Nom visible",
+    "email": "Correu electrònic"
+  },
+  "toggle": {
+    "enableTitle": "Vols activar {{name}}?",
+    "enableBody": "El compte podrà tornar a entrar.",
+    "disableTitle": "Vols desactivar {{name}}?",
+    "disableBody": "El compte queda desactivat i se'n revoquen les sessions i les claus."
+  },
+  "invite": {
+    "open": "Convida un usuari",
+    "title": "Convida un usuari",
+    "username": "Usuari",
+    "email": "Correu electrònic (opcional)",
+    "create": "Crea la invitació",
+    "creating": "Creant…",
+    "once": "Comparteix aquest enllaç una sola vegada. No es tornarà a mostrar.",
+    "copy": "Copia l'enllaç",
+    "copied": "Enllaç copiat",
+    "expires": "La invitació caduca el {{date}}."
+  },
+  "roles": {
+    "admin": {
+      "label": "Administrador",
+      "description": "Gestiona usuaris, servidors i ajustos de tota l'organització."
+    },
+    "server_operator": {
+      "label": "Operador de servidor",
+      "description": "Gestiona un o més servidors. No pot gestionar usuaris ni ajustos."
+    },
+    "app_operator": {
+      "label": "Operador d'aplicacions",
+      "description": "Desplega stacks i contenidors. No pot editar fitxers compose ni obrir terminals."
+    },
+    "viewer": {
+      "label": "Lector",
+      "description": "Consulta servidors, contenidors, registres i actualitzacions. No pot canviar res."
+    },
+    "metrics_only": {
+      "label": "Només mètriques",
+      "description": "Veu mètriques de servidors i contenidors, sense fitxers ni registres."
+    }
+  },
+  "scope": {
+    "type": "Àmbit",
+    "organization": "Tota l'organització",
+    "group": "Grup",
+    "server": "Servidor",
+    "stackName": "Nom del stack",
+    "containerName": "Nom del contenidor",
+    "namePlaceholder": "Nom",
+    "groupValue": "Grup {{name}}",
+    "serverValue": "Servidor {{name}}",
+    "stackValue": "{{name}} (stack a {{server}})",
+    "containerValue": "{{name}} (contenidor a {{server}})",
+    "types": {
+      "organization": "Tota l'organització",
+      "group": "Grup",
+      "server": "Servidor",
+      "stack": "Stack",
+      "container": "Contenidor"
+    }
+  },
+  "teams": {
+    "title": "Equips",
+    "create": "Nou equip",
+    "empty": "Encara no hi ha equips.",
+    "rename": "Reanomena l'equip",
+    "renameShort": "Reanomena",
+    "delete": "Elimina l'equip",
+    "select": "Tria un equip.",
+    "members": "Membres",
+    "noMembers": "Aquest equip no té membres.",
+    "removeMember": "Treu {{name}}",
+    "addMember": "Afegeix membre",
+    "chooseUser": "Tria un usuari",
+    "add": "Afegeix",
+    "assignments": "Accés de l'equip",
+    "name": "Nom de l'equip",
+    "deleteTitle": "Vols eliminar {{name}}?",
+    "deleteBody": "S'elimina l'equip i les seves assignacions. Els membres conserven els comptes."
+  },
+  "groups": {
+    "title": "Grups de servidors",
+    "intro": "Els grups fan més fàcil assignar accés a diversos servidors alhora.",
+    "create": "Nou grup",
+    "empty": "Encara no hi ha grups.",
+    "rename": "Reanomena",
+    "delete": "Elimina",
+    "name": "Nom del grup",
+    "deleteTitle": "Vols eliminar {{name}}?",
+    "deleteBody": "Els servidors del grup continuen a la flota, però perden aquesta assignació.",
+    "assignTitle": "Assigna un servidor",
+    "assignIntro": "Tria el servidor i el grup al qual pertany.",
+    "server": "Servidor",
+    "group": "Grup",
+    "assign": "Assigna",
+    "unassign": "Treu del grup",
+    "assigned": "Servidor assignat al grup.",
+    "unassigned": "Servidor tret del seu grup."
+  },
+  "inviteAccept": {
+    "title": "Accepta la invitació",
+    "loading": "Comprovant la invitació…",
+    "invalid": "Aquesta invitació no és vàlida o ha caducat.",
+    "goLogin": "Ves a iniciar sessió",
+    "intro": "Tria la contrasenya de {{username}}.",
+    "password": "Contrasenya",
+    "passwordHint": "Com a mínim 12 caràcters.",
+    "confirm": "Repeteix la contrasenya",
+    "submit": "Crea el compte",
+    "submitting": "Creant el compte…",
+    "mismatch": "Les contrasenyes no coincideixen.",
+    "already": "Ja tens compte?"
+  },
+  "actions": {
+    "cancel": "Cancel·la",
+    "save": "Desa",
+    "done": "Fet"
+  },
+  "dialog": {
+    "close": "Tanca"
+  },
+  "tabs": {
+    "label": "Usuaris i permisos"
+  }
+}

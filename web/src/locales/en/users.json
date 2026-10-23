@@ -1,0 +1,167 @@
+{
+  "pageTitle": "Users and permissions",
+  "pageSubtitle": "People, teams and who can do what.",
+  "loading": "Loading users…",
+  "title": "Users",
+  "intro": "Accounts of the panel and the roles of each one.",
+  "empty": "There are no users yet.",
+  "noAccess": "No access",
+  "active": "Active",
+  "disabled": "Disabled",
+  "totpOn": "TOTP on",
+  "totpOff": "TOTP pending",
+  "accessButton": "Access",
+  "edit": "Edit",
+  "enable": "Enable",
+  "disable": "Disable",
+  "table": {
+    "name": "Name",
+    "username": "Username",
+    "access": "Access",
+    "status": "Status",
+    "actions": "Actions",
+    "email": "Email"
+  },
+  "invites": {
+    "title": "Pending invitations",
+    "empty": "There are no pending invitations.",
+    "expires": "Expires {{date}}",
+    "revoke": "Revoke"
+  },
+  "access": {
+    "title": "Access of {{name}}",
+    "empty": "This user has no assignments.",
+    "remove": "Remove assignment for {{role}}",
+    "role": "Role",
+    "add": "Add access",
+    "addButton": "Add access"
+  },
+  "editDialog": {
+    "title": "Edit user",
+    "name": "Display name",
+    "email": "Email"
+  },
+  "toggle": {
+    "enableTitle": "Enable {{name}}?",
+    "enableBody": "The account can sign in again.",
+    "disableTitle": "Disable {{name}}?",
+    "disableBody": "The account is disabled and its sessions and keys are revoked."
+  },
+  "invite": {
+    "open": "Invite user",
+    "title": "Invite a user",
+    "username": "Username",
+    "email": "Email (optional)",
+    "create": "Create invitation",
+    "creating": "Creating…",
+    "once": "Share this link once. It will not be shown again.",
+    "copy": "Copy link",
+    "copied": "Link copied",
+    "expires": "The invitation expires {{date}}."
+  },
+  "roles": {
+    "admin": {
+      "label": "Administrator",
+      "description": "Manages users, servers and settings for the whole organization."
+    },
+    "server_operator": {
+      "label": "Server operator",
+      "description": "Manages one or more servers. Cannot manage users or settings."
+    },
+    "app_operator": {
+      "label": "Application operator",
+      "description": "Deploys stacks and containers. Cannot edit compose files or open terminals."
+    },
+    "viewer": {
+      "label": "Viewer",
+      "description": "Reads servers, containers, logs and updates. Cannot change anything."
+    },
+    "metrics_only": {
+      "label": "Metrics only",
+      "description": "Sees server and container metrics, without files or logs."
+    }
+  },
+  "scope": {
+    "type": "Scope",
+    "organization": "Whole organization",
+    "group": "Group",
+    "server": "Server",
+    "stackName": "Stack name",
+    "containerName": "Container name",
+    "namePlaceholder": "Name",
+    "groupValue": "Group {{name}}",
+    "serverValue": "Server {{name}}",
+    "stackValue": "{{name}} (stack on {{server}})",
+    "containerValue": "{{name}} (container on {{server}})",
+    "types": {
+      "organization": "Whole organization",
+      "group": "Group",
+      "server": "Server",
+      "stack": "Stack",
+      "container": "Container"
+    }
+  },
+  "teams": {
+    "title": "Teams",
+    "create": "New team",
+    "empty": "There are no teams yet.",
+    "rename": "Rename team",
+    "renameShort": "Rename",
+    "delete": "Delete team",
+    "select": "Choose a team.",
+    "members": "Members",
+    "noMembers": "This team has no members.",
+    "removeMember": "Remove {{name}}",
+    "addMember": "Add member",
+    "chooseUser": "Choose a user",
+    "add": "Add",
+    "assignments": "Team access",
+    "name": "Team name",
+    "deleteTitle": "Delete {{name}}?",
+    "deleteBody": "The team and its assignments are deleted. Its members keep their accounts."
+  },
+  "groups": {
+    "title": "Server groups",
+    "intro": "Groups make it easier to assign access to several servers at once.",
+    "create": "New group",
+    "empty": "There are no groups yet.",
+    "rename": "Rename",
+    "delete": "Delete",
+    "name": "Group name",
+    "deleteTitle": "Delete {{name}}?",
+    "deleteBody": "Servers in this group stay in the fleet but lose this group assignment.",
+    "assignTitle": "Assign a server",
+    "assignIntro": "Choose the server, then the group it belongs to.",
+    "server": "Server",
+    "group": "Group",
+    "assign": "Assign",
+    "unassign": "Remove from group",
+    "assigned": "Server assigned to the group.",
+    "unassigned": "Server removed from its group."
+  },
+  "inviteAccept": {
+    "title": "Accept the invitation",
+    "loading": "Checking the invitation…",
+    "invalid": "This invitation is not valid or has expired.",
+    "goLogin": "Go to sign in",
+    "intro": "Choose the password for {{username}}.",
+    "password": "Password",
+    "passwordHint": "At least 12 characters.",
+    "confirm": "Repeat the password",
+    "submit": "Create account",
+    "submitting": "Creating account…",
+    "mismatch": "The passwords do not match.",
+    "already": "Already have an account?"
+  },
+  "actions": {
+    "cancel": "Cancel",
+    "save": "Save",
+    "done": "Done"
+  },
+  "dialog": {
+    "close": "Close"
+  },
+  "tabs": {
+    "label": "Users and permissions"
+  }
+}

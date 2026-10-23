@@ -35,6 +35,15 @@ export function FleetIcon({ className }: IconProps) {
   )
 }
 
+export function UsersIcon({ className }: IconProps) {
+  return (
+    <Icon className={className}>
+      <circle cx="9" cy="8" r="3.2" />
+      <path d="M3 20v-1.6A5.4 5.4 0 0 1 8.4 13H9a5.4 5.4 0 0 1 5.4 5.4V20M16 5a3 3 0 0 1 0 6M17 13a5 5 0 0 1 4 4.9V20" />
+    </Icon>
+  )
+}
+
 export function InfoIcon({ className }: IconProps) {
   return (
     <Icon className={className}>
