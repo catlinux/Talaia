@@ -18,6 +18,12 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.4.7] - 2026-10-23
+
+### Added
+
+- OpenID Connect client (not usable to sign in yet): discovery, authorization-code flow with PKCE, `state` and `nonce`, ID token verification, and the settings API `GET/PUT /api/v1/settings/oidc` (permission `settings.manage`; the client secret is stored encrypted and never returned). Only `https` issuers are accepted, except localhost. New dependency: `github.com/coreos/go-oidc/v3`.
+
 ## [0.4.6] - 2026-10-23
 
 ### Added
@@ -417,7 +423,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.4.6...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.4.7...HEAD
+[0.4.7]: https://github.com/catlinux/Talaia/releases/tag/v0.4.7
 [0.4.6]: https://github.com/catlinux/Talaia/releases/tag/v0.4.6
 [0.4.5]: https://github.com/catlinux/Talaia/releases/tag/v0.4.5
 [0.4.4]: https://github.com/catlinux/Talaia/releases/tag/v0.4.4

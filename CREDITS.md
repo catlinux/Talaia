@@ -29,6 +29,7 @@ The fonts are bundled into the web panel through the `@fontsource` packages list
 | connectrpc.com/connect/v2 | v2.0.1 | Apache-2.0 | https://pkg.go.dev/connectrpc.com/connect/v2@v2.0.1 |
 | github.com/cenkalti/backoff/v5 | v5.0.3 | MIT | https://pkg.go.dev/github.com/cenkalti/backoff/v5@v5.0.3 |
 | github.com/coder/websocket | v1.8.15 | ISC | https://pkg.go.dev/github.com/coder/websocket@v1.8.15 |
+| github.com/coreos/go-oidc/v3 | v3.21.0 | Apache-2.0 | https://pkg.go.dev/github.com/coreos/go-oidc/v3@v3.21.0 |
 | github.com/creack/pty | v1.1.24 | MIT | https://pkg.go.dev/github.com/creack/pty@v1.1.24 |
 | github.com/fxamacker/cbor/v2 | v2.9.4 | MIT | https://pkg.go.dev/github.com/fxamacker/cbor/v2@v2.9.4 |
 | github.com/go-acme/lego/v4 | v4.35.2 | MIT | https://pkg.go.dev/github.com/go-acme/lego/v4@v4.35.2 |

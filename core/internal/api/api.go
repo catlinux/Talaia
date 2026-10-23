@@ -88,6 +88,16 @@ func NewRouter(deps RouterDeps) http.Handler {
 				Agents:  deps.Agents,
 			}))
 			registerRoute(r, deps.Authz, http.MethodGet, "/audit", NewAuditHandler(AuditDeps{Entries: deps.AuditLog}))
+			// The first allowed browser origin is the configured public base URL.
+			publicURL := ""
+			if len(deps.Security.Origins) > 0 {
+				publicURL = deps.Security.Origins[0]
+			}
+			oidcSettings := newOIDCSettingsHandler(OIDCSettingsDeps{
+				Store: deps.Auth.Store, Box: deps.Auth.Box, Audit: deps.Auth.Store, PublicURL: publicURL,
+			})
+			registerRoute(r, deps.Authz, http.MethodGet, "/settings/oidc", http.HandlerFunc(oidcSettings.getSettings))
+			registerRoute(r, deps.Authz, http.MethodPut, "/settings/oidc", http.HandlerFunc(oidcSettings.updateSettings))
 			userAdmin := newUserAdminHandler(UserAdminDeps{
 				Store: deps.Auth.Store, Audit: deps.Auth.Store, TOTP: authHandler,
 				Limiter: authHandler.deps.Limiter, Now: authHandler.now,

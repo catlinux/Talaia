@@ -13,6 +13,12 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+## [0.4.7] - 2026-10-23
+
+### Añadido
+
+- Cliente OpenID Connect (aún no sirve para iniciar sesión): descubrimiento, flujo de código con PKCE, `state` y `nonce`, verificación del ID token, y la API de ajustes `GET/PUT /api/v1/settings/oidc` (permiso `settings.manage`; el secreto del cliente se guarda cifrado y nunca se devuelve). Solo se aceptan emisores `https`, salvo localhost. Dependencia nueva: `github.com/coreos/go-oidc/v3`.
+
 ## [0.4.6] - 2026-10-23
 
 ### Añadido
@@ -417,7 +423,8 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
   `.gitattributes` y `.gitignore`.
 - Licencia WNCL-1.0 aplicada: archivo `LICENSE` y sección de créditos en los README.
 
-[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.4.6...HEAD
+[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.4.7...HEAD
+[0.4.7]: https://github.com/catlinux/Talaia/releases/tag/v0.4.7
 [0.4.6]: https://github.com/catlinux/Talaia/releases/tag/v0.4.6
 [0.4.5]: https://github.com/catlinux/Talaia/releases/tag/v0.4.5
 [0.4.4]: https://github.com/catlinux/Talaia/releases/tag/v0.4.4
