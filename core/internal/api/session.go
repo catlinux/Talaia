@@ -53,6 +53,8 @@ type Session struct {
 // sessionKey is the type of the session context key.
 type sessionKey struct{}
 
+type sessionDeniedKey struct{}
+
 // SessionDeps are the collaborators of the session middleware.
 type SessionDeps struct {
 	Store       *store.Store
@@ -85,7 +87,7 @@ func Sessions(deps SessionDeps) func(http.Handler) http.Handler {
 			at := now()
 			cookie, cookieErr := r.Cookie(SessionCookieName)
 			if cookieErr == nil && cookie.Value != "" {
-				session, ok := loadSession(r, deps.Store, cookie.Value, at, idle)
+				session, denial, ok := loadSession(r, deps.Store, cookie.Value, at, idle)
 				if ok {
 					// The store only writes last_seen_at once a minute.
 					if err := deps.Store.TouchSession(r.Context(), session.ID, at); err != nil {
@@ -101,6 +103,9 @@ func Sessions(deps SessionDeps) func(http.Handler) http.Handler {
 				// The cookie points to nothing usable: drop it so the browser
 				// stops sending it.
 				http.SetCookie(w, sessionCookie("", ""))
+				if denial != "" {
+					r = r.WithContext(context.WithValue(r.Context(), sessionDeniedKey{}, denial))
+				}
 			}
 
 			if !apiKeyAuthPath(r.URL.Path) {
@@ -227,16 +232,37 @@ func auditAPIKeyDenied(r *http.Request, st *store.Store, keyID, reason string) {
 
 // loadSession returns the live session of a token, or false when it does not
 // exist, was revoked, has expired or has been idle for too long.
-func loadSession(r *http.Request, st *store.Store, token string, at time.Time, idle time.Duration) (Session, bool) {
+func loadSession(r *http.Request, st *store.Store, token string, at time.Time, idle time.Duration) (Session, string, bool) {
 	session, err := st.GetSessionByTokenHash(r.Context(), auth.HashToken(token))
 	if err != nil {
 		if !errors.Is(err, store.ErrNotFound) {
 			slog.Error("load session", "error", err)
+			return Session{}, "", false
 		}
-		return Session{}, false
+		revoked, revokedErr := st.GetRevokedSessionByTokenHash(r.Context(), auth.HashToken(token))
+		if revokedErr != nil {
+			if !errors.Is(revokedErr, store.ErrNotFound) {
+				slog.Error("load revoked session", "error", revokedErr)
+			}
+			return Session{}, "", false
+		}
+		if at.Sub(revoked.LastSeenAt) > idle {
+			return Session{}, "", false
+		}
+		user, userErr := st.GetUser(r.Context(), revoked.UserID)
+		if userErr != nil {
+			if !errors.Is(userErr, store.ErrNotFound) {
+				slog.Error("load revoked session user", "user_id", revoked.UserID, "error", userErr)
+			}
+			return Session{}, "", false
+		}
+		if !user.DisabledAt.IsZero() {
+			return Session{}, "account_disabled", false
+		}
+		return Session{}, "session_revoked", false
 	}
 	if at.Sub(session.LastSeenAt) > idle {
-		return Session{}, false
+		return Session{}, "", false
 	}
 
 	user, err := st.GetUser(r.Context(), session.UserID)
@@ -244,13 +270,20 @@ func loadSession(r *http.Request, st *store.Store, token string, at time.Time, i
 		if !errors.Is(err, store.ErrNotFound) {
 			slog.Error("load the session user", "user_id", session.UserID, "error", err)
 		}
-		return Session{}, false
+		return Session{}, "", false
 	}
 	if !user.DisabledAt.IsZero() {
-		return Session{}, false
+		return Session{}, "account_disabled", false
 	}
 
-	return Session{ID: session.ID, User: user, Stage: session.Stage, AuthKind: AuthKindSession}, true
+	return Session{ID: session.ID, User: user, Stage: session.Stage, AuthKind: AuthKindSession}, "", true
+}
+
+func sessionDeniedCode(ctx context.Context) string {
+	if code, ok := ctx.Value(sessionDeniedKey{}).(string); ok {
+		return code
+	}
+	return "session_required"
 }
 
 func withSession(ctx context.Context, session Session) context.Context {
@@ -268,7 +301,7 @@ func RequireFull(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		session, ok := sessionFromContext(r.Context())
 		if !ok {
-			writeError(w, http.StatusUnauthorized, "session_required")
+			writeError(w, http.StatusUnauthorized, sessionDeniedCode(r.Context()))
 			return
 		}
 		if session.Stage != store.StageFull {

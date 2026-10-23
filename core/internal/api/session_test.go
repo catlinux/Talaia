@@ -190,9 +190,14 @@ func TestSessionsMiddlewareLeavesBadSessionsAnonymous(t *testing.T) {
 				http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
 					_, attached = sessionFromContext(r.Context())
 				}))
+			anonymousRecorder := httptest.NewRecorder()
+			handler.ServeHTTP(anonymousRecorder, requestWithToken(token))
 
 			recorder := httptest.NewRecorder()
-			handler.ServeHTTP(recorder, requestWithToken(token))
+			guarded := Sessions(SessionDeps{Store: st, Now: clock.Now, IdleTimeout: 12 * time.Hour})(RequireFull(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				w.WriteHeader(http.StatusOK)
+			})))
+			guarded.ServeHTTP(recorder, requestWithToken(token))
 
 			if attached {
 				t.Error("a session was attached to a request that must be anonymous")
@@ -201,6 +206,16 @@ func TestSessionsMiddlewareLeavesBadSessionsAnonymous(t *testing.T) {
 			cookies := recorder.Result().Cookies()
 			if len(cookies) == 0 || cookies[0].Name != SessionCookieName || cookies[0].MaxAge >= 0 {
 				t.Errorf("the stale cookie was not cleared: %v", cookies)
+			}
+			wantCode := "session_required"
+			switch tt.name {
+			case "revoked session":
+				wantCode = "session_revoked"
+			case "disabled user":
+				wantCode = "account_disabled"
+			}
+			if recorder.Code != http.StatusUnauthorized || errorCode(t, recorder.Result()) != wantCode {
+				t.Errorf("denied request = %d, want 401 %s", recorder.Code, wantCode)
 			}
 		})
 	}

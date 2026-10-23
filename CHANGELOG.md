@@ -18,6 +18,12 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.4.19] - 2026-10-23
+
+### Changed
+
+- Disabling your own account answers `cannot_disable_self`, and a request made with the session of a disabled account or a revoked session answers `account_disabled` or `session_revoked` instead of `session_required`.
+
 ## [0.4.18] - 2026-10-23
 
 ### Changed
@@ -489,7 +495,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.4.18...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.4.19...HEAD
+[0.4.19]: https://github.com/catlinux/Talaia/releases/tag/v0.4.19
 [0.4.18]: https://github.com/catlinux/Talaia/releases/tag/v0.4.18
 [0.4.17]: https://github.com/catlinux/Talaia/releases/tag/v0.4.17
 [0.4.16]: https://github.com/catlinux/Talaia/releases/tag/v0.4.16

@@ -13,6 +13,12 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+## [0.4.19] - 2026-10-23
+
+### Cambiado
+
+- Desactivar tu propia cuenta responde `cannot_disable_self`, y una petición con la sesión de una cuenta desactivada o con una sesión revocada responde `account_disabled` o `session_revoked` en lugar de `session_required`.
+
 ## [0.4.18] - 2026-10-23
 
 ### Cambiado
@@ -489,7 +495,8 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
   `.gitattributes` y `.gitignore`.
 - Licencia WNCL-1.0 aplicada: archivo `LICENSE` y sección de créditos en los README.
 
-[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.4.18...HEAD
+[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.4.19...HEAD
+[0.4.19]: https://github.com/catlinux/Talaia/releases/tag/v0.4.19
 [0.4.18]: https://github.com/catlinux/Talaia/releases/tag/v0.4.18
 [0.4.17]: https://github.com/catlinux/Talaia/releases/tag/v0.4.17
 [0.4.16]: https://github.com/catlinux/Talaia/releases/tag/v0.4.16

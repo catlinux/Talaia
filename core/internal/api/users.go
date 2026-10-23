@@ -175,7 +175,7 @@ func (h *userAdminHandler) disableUser(w http.ResponseWriter, r *http.Request) {
 	userID := chi.URLParam(r, "userID")
 	session, _ := sessionFromContext(r.Context())
 	if userID == session.User.ID {
-		writeInvalid(w, "", "invalid_value")
+		writeError(w, http.StatusConflict, "cannot_disable_self")
 		return
 	}
 	if err := st.DisableUser(r.Context(), userID); err != nil {

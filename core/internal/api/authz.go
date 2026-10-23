@@ -188,7 +188,7 @@ func (a *Authorizer) requireRoute(route routePermission, next http.Handler) http
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		session, ok := sessionFromContext(r.Context())
 		if !ok || session.Stage != store.StageFull {
-			writeError(w, http.StatusUnauthorized, "session_required")
+			writeError(w, http.StatusUnauthorized, sessionDeniedCode(r.Context()))
 			return
 		}
 		if a == nil {

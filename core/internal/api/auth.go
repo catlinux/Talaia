@@ -164,7 +164,7 @@ func internal(w http.ResponseWriter, action string, err error) {
 func requirePending(w http.ResponseWriter, r *http.Request) (Session, bool) {
 	session, ok := sessionFromContext(r.Context())
 	if !ok {
-		writeError(w, http.StatusUnauthorized, "session_required")
+		writeError(w, http.StatusUnauthorized, sessionDeniedCode(r.Context()))
 		return Session{}, false
 	}
 	if session.Stage != store.StageMFAPending {

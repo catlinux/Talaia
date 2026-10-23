@@ -127,8 +127,12 @@ func TestUserAdministrationAPI(t *testing.T) {
 		t.Fatalf("enable bob status = %d, want 204", response.StatusCode)
 	}
 
-	if response := panel.post(t, "/api/v1/users/"+admin.ID+"/disable", nil); response.StatusCode != http.StatusBadRequest {
-		t.Fatalf("self disable status = %d, want 400", response.StatusCode)
+	if response := panel.post(t, "/api/v1/users/"+admin.ID+"/disable", nil); response.StatusCode != http.StatusConflict || errorCode(t, response) != "cannot_disable_self" {
+		t.Fatalf("self disable = %d %q, want 409 cannot_disable_self", response.StatusCode, errorCode(t, response))
+	}
+	stillEnabled, err := panel.store.GetUser(context.Background(), admin.ID)
+	if err != nil || !stillEnabled.DisabledAt.IsZero() {
+		t.Fatalf("self disable changed the user: %+v, %v", stillEnabled, err)
 	}
 
 	adminBindings := panel.get(t, "/api/v1/users/"+admin.ID+"/bindings")

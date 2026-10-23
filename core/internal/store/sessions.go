@@ -88,6 +88,23 @@ func (s *Store) GetSessionByTokenHash(ctx context.Context, tokenHash []byte) (Se
 	return session, nil
 }
 
+// GetRevokedSessionByTokenHash returns an unexpired session only when it has
+// been revoked, allowing callers to distinguish revocation from an unknown token.
+func (s *Store) GetRevokedSessionByTokenHash(ctx context.Context, tokenHash []byte) (Session, error) {
+	var session Session
+	err := s.pool.QueryRow(ctx,
+		`SELECT id, user_id, last_seen_at, revoked_at FROM session
+		 WHERE token_hash = $1 AND revoked_at IS NOT NULL AND expires_at > now()`, tokenHash).
+		Scan(&session.ID, &session.UserID, &session.LastSeenAt, &session.RevokedAt)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return Session{}, ErrNotFound
+	}
+	if err != nil {
+		return Session{}, fmt.Errorf("get revoked session: %w", err)
+	}
+	return session, nil
+}
+
 // TouchSession records activity at most once a minute. A session touched more
 // recently, or one that no longer exists, is left untouched and is not an error.
 func (s *Store) TouchSession(ctx context.Context, id string, now time.Time) error {
