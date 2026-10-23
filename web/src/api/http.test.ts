@@ -1,8 +1,12 @@
 import { describe, expect, it } from 'vitest'
 
-import { ApiError, createHttpClient } from './http'
+import { ApiError, createHttpClient, isSignedOut } from './http'
 
 describe('HTTP API errors', () => {
+  it.each(['account_disabled', 'session_revoked'] as const)('treats %s as signed out', (code) => {
+    expect(isSignedOut(new ApiError(code, 401))).toBe(true)
+  })
+
   it('preserves optional field and reason strings from invalid request bodies', async () => {
     const client = createHttpClient(
       async () =>

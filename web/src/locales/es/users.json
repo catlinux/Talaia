@@ -39,7 +39,7 @@
   "editDialog": {
     "title": "Editar usuario",
     "name": "Nombre visible",
-    "email": "Correo electrónico"
+    "email": "Correo electrónico (opcional)"
   },
   "toggle": {
     "enableTitle": "¿Activar a {{name}}?",

@@ -32,10 +32,19 @@
   "codeLength": "Introduce el código de seis dígitos.",
   "sentences": {
     "scope": {
-      "name": { "required": "El nombre del stack o contenedor es obligatorio." },
-      "server_id": { "unknown": "El servidor indicado no existe." }
+      "name": {
+        "required": "El nombre del stack o contenedor es obligatorio."
+      },
+      "server_id": {
+        "unknown": "El servidor indicado no existe."
+      }
     },
-    "bindingScopeName": { "required": "El nombre del stack o contenedor es obligatorio." },
-    "role": { "invalid_value": "El rol no es válido." }
-  }
+    "bindingScopeName": {
+      "required": "El nombre del stack o contenedor es obligatorio."
+    },
+    "role": {
+      "invalid_value": "El rol no es válido."
+    }
+  },
+  "emailInvalid": "Introduce una dirección de correo válida."
 }

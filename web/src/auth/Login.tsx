@@ -15,13 +15,13 @@ export interface LoginProps {
   /** onPasskey starts the discoverable passkey flow. */
   onPasskey?: () => Promise<void>
   /** expired tells the user the previous session ended on its own. */
-  expired?: boolean
+  expired?: 'expired' | 'revoked' | 'disabled'
   /** oidc is the public configuration of the single sign-on provider. */
   oidc?: OIDCLoginConfig | null
 }
 
 /** Login is the first screen: PIN for a trusted browser, password and passkeys. */
-export function Login({ onSubmit, onPin, onPasskey, expired = false, oidc }: LoginProps) {
+export function Login({ onSubmit, onPin, onPasskey, expired, oidc }: LoginProps) {
   const { t } = useTranslation(['auth', 'errors'])
   const [trustedDevice] = useState(() => readTrustedDevice())
   const [mode, setMode] = useState<'pin' | 'password'>(() =>
@@ -91,7 +91,7 @@ export function Login({ onSubmit, onPin, onPasskey, expired = false, oidc }: Log
         </h1>
         {error === null && expired && (
           <p className="auth__status" role="status">
-            {t('errors:sessionRequired')}
+            {t(expired === 'disabled' ? 'errors:accountDisabled' : expired === 'revoked' ? 'errors:sessionRevoked' : 'errors:sessionRequired')}
           </p>
         )}
         {oidcError ? (

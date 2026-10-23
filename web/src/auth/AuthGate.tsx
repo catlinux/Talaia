@@ -28,6 +28,9 @@ const errorKeys: Record<ApiErrorCode, string> = {
   invalid_credentials: 'invalidCredentials',
   mfa_required: 'mfaRequired',
   session_required: 'sessionRequired',
+  account_disabled: 'accountDisabled',
+  session_revoked: 'sessionRevoked',
+  cannot_disable_self: 'cannotDisableSelf',
   forbidden_origin: 'forbiddenOrigin',
   invalid_request: 'invalidRequest',
   weak_password: 'weakPassword',
@@ -98,11 +101,17 @@ export function useAuth(): AuthContextValue | null {
 type GateState =
   | { kind: 'loading' }
   | { kind: 'invite'; token: string }
-  | { kind: 'login'; expired?: boolean }
+  | { kind: 'login'; expired?: 'expired' | 'revoked' | 'disabled' }
   | { kind: 'setup'; username: string; initial?: Setup }
   | { kind: 'verify'; username: string }
   | { kind: 'codes'; username: string; codes: string[] }
   | { kind: 'ready'; username: string }
+
+function expiredReason(code: ApiErrorCode): 'expired' | 'revoked' | 'disabled' {
+  if (code === 'account_disabled') return 'disabled'
+  if (code === 'session_revoked') return 'revoked'
+  return 'expired'
+}
 
 export interface AuthGateProps {
   /** api is injected by the tests; the panel builds its own otherwise. */
@@ -138,9 +147,9 @@ export function AuthGate({ api, meApi, inviteApi, oidcApi, children }: AuthGateP
     initialInvite !== null ? { kind: 'invite', token: initialInvite } : { kind: 'loading' },
   )
 
-  const toLogin = useCallback(() => {
+  const toLogin = useCallback((code: ApiErrorCode) => {
     // A call found no session: tell the user why the form is back.
-    setState({ kind: 'login', expired: true })
+    setState({ kind: 'login', expired: expiredReason(code) })
   }, [])
 
   useEffect(() => {
@@ -160,9 +169,14 @@ export function AuthGate({ api, meApi, inviteApi, oidcApi, children }: AuthGateP
             : { kind: 'verify', username: session.username },
         )
       })
-      .catch(() => {
+      .catch((cause: unknown) => {
         if (active) {
-          setState({ kind: 'login' })
+          setState(
+            cause instanceof ApiError &&
+              (cause.code === 'account_disabled' || cause.code === 'session_revoked')
+              ? { kind: 'login', expired: expiredReason(cause.code) }
+              : { kind: 'login' },
+          )
         }
       })
     return () => {
@@ -299,7 +313,7 @@ export function AuthGate({ api, meApi, inviteApi, oidcApi, children }: AuthGateP
         onSubmit={login}
         onPin={client.pinLogin ? loginPin : undefined}
         onPasskey={client.beginPasskeyLogin && client.finishPasskeyLogin ? loginPasskey : undefined}
-        expired={state.expired === true}
+        expired={state.expired}
         oidc={oidcConfig}
       />
     )

@@ -35,5 +35,8 @@
   "invalidAPIKey": "La clave de API no es válida.",
   "sessionOpen": "La sesión sigue abierta; ciérrala antes de descargar su grabación.",
   "recordingCorrupt": "La grabación está dañada y no se puede descargar.",
-  "oidcDiscoveryFailed": "No se ha podido contactar con el proveedor de OpenID Connect."
+  "oidcDiscoveryFailed": "No se ha podido contactar con el proveedor de OpenID Connect.",
+  "accountDisabled": "Tu cuenta ha sido desactivada. Contacta con un administrador.",
+  "sessionRevoked": "Tu sesión ha sido revocada. Vuelve a iniciar sesión.",
+  "cannotDisableSelf": "No puedes desactivar tu propia cuenta."
 }

@@ -32,10 +32,19 @@
   "codeLength": "Introdueix el codi de sis dígits.",
   "sentences": {
     "scope": {
-      "name": { "required": "El nom de l’stack o contenidor és obligatori." },
-      "server_id": { "unknown": "El servidor indicat no existeix." }
+      "name": {
+        "required": "El nom de l’stack o contenidor és obligatori."
+      },
+      "server_id": {
+        "unknown": "El servidor indicat no existeix."
+      }
     },
-    "bindingScopeName": { "required": "El nom de l’stack o contenidor és obligatori." },
-    "role": { "invalid_value": "El rol no és vàlid." }
-  }
+    "bindingScopeName": {
+      "required": "El nom de l’stack o contenidor és obligatori."
+    },
+    "role": {
+      "invalid_value": "El rol no és vàlid."
+    }
+  },
+  "emailInvalid": "Introdueix una adreça de correu vàlida."
 }

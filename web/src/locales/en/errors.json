@@ -35,5 +35,8 @@
   "invalidAPIKey": "The API key is not valid.",
   "sessionOpen": "The session is still open; close it before downloading its recording.",
   "recordingCorrupt": "The recording is damaged and cannot be downloaded.",
-  "oidcDiscoveryFailed": "The OpenID Connect provider could not be reached."
+  "oidcDiscoveryFailed": "The OpenID Connect provider could not be reached.",
+  "accountDisabled": "Your account has been disabled. Contact an administrator.",
+  "sessionRevoked": "Your session has been revoked. Sign in again.",
+  "cannotDisableSelf": "You cannot disable your own account."
 }

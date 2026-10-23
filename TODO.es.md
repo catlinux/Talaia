@@ -104,9 +104,7 @@ tareas concretas de la fase actual y de la siguiente.
 - [x] Panel: pantalla Usuarios y permisos (maqueta 5), claves de API, ajustes OIDC, lista y descarga de grabaciones de terminal
 - [x] Grabación de sesiones de terminal (hecha en las fases 2 y 3)
 - [ ] Tras una actualización, el panel sigue mostrando la versión anterior: que se recargue solo (o avise de que hay que recargar) cuando el core se reinicie con una versión nueva
-- [ ] Diálogo de invitar: el campo de correo dice (opcional) pero lleva asterisco y bloquea el formulario; que sea realmente opcional (encontrado en la prueba real de la fase 4)
-- [ ] Desactivar tu propia cuenta responde un genérico «la petición no es válida»: responder un código concreto (no puedes desactivarte a ti mismo) con mensaje traducido (encontrado en la prueba real de la fase 4)
-- [ ] A un usuario con la cuenta desactivada (o la sesión revocada) le sale «sesión caducada»: el core debe responder un código distinto y el panel decir que la cuenta se ha desactivado o la sesión se ha revocado (encontrado en la prueba real de la fase 4)
+- [ ] Eliminar usuarios: solo los desactivados, confirmando con el nombre, borra asignaciones, claves y pertenencias a equipos, nunca al último administrador, el historial de auditoría conserva el nombre (pedido por el mantenedor en la prueba real de la fase 4)
 - [ ] Docs EN/ES, revisión de seguridad (Opus), prueba real con un segundo usuario, cierre en 0.5.0
 
 ## Bloque de operación (decidido el 2026-10-20, antes de cerrar la fase 2)

@@ -24,7 +24,7 @@ export interface CreatedInvite {
 /** InviteInput is what the Users screen sends to create an invitation. */
 export interface InviteInput {
   username: string
-  email: string
+  email?: string
   role: Role
   scope: Scope
 }
@@ -114,7 +114,7 @@ export function createInvitesApi(fetchImpl?: typeof fetch): InvitesApi {
     create: async (input) => {
       const body = await http.post<apiCreatedInvite>('/api/v1/users/invites', {
         username: input.username,
-        email: input.email,
+        ...(input.email ? { email: input.email } : {}),
         role: input.role,
         scope: apiScope(input.scope),
       })

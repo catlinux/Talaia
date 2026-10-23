@@ -159,6 +159,36 @@ describe('Users screen', () => {
     expect(screen.queryByText(/\/invite#secret$/)).toBeNull()
   })
 
+  it('creates an invitation without an email and rejects a malformed email', async () => {
+    const invites = fakeInvites()
+    renderUsers(fakeUsers([account()]), invites)
+    fireEvent.click(await screen.findByRole('button', { name: 'Invite user' }))
+    fireEvent.change(screen.getByLabelText(/^Username/), { target: { value: 'new-user' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Create invitation' }))
+
+    await waitFor(() => expect(invites.create).toHaveBeenCalledWith(expect.objectContaining({
+      username: 'new-user',
+    })))
+    expect(invites.create).toHaveBeenCalledWith(expect.objectContaining({ email: '' }))
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Done' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Invite user' }))
+    fireEvent.change(screen.getByLabelText(/^Username/), { target: { value: 'new-user' } })
+    fireEvent.change(screen.getByLabelText(/^Email/), { target: { value: 'bad-address' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Create invitation' }))
+    expect(await screen.findByText('Enter a valid email address.')).toBeTruthy()
+    expect(invites.create).toHaveBeenCalledTimes(1)
+  })
+
+  it('allows clearing the email when editing a user', async () => {
+    const usersApi = fakeUsers([account()])
+    renderUsers(usersApi)
+    fireEvent.click((await screen.findAllByRole('button', { name: 'Edit' }))[0]!)
+    fireEvent.change(screen.getByLabelText(/^Email/), { target: { value: '' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+    await waitFor(() => expect(usersApi.update).toHaveBeenCalledWith('u1', 'Ada', ''))
+  })
+
   it('blocks an empty stack name and shows the inline message', async () => {
     const invites = fakeInvites()
     renderUsers(fakeUsers([account()]), invites)
@@ -247,6 +277,14 @@ describe('Users screen', () => {
     expect(
       await screen.findByText('You cannot disable the last active administrator.'),
     ).toBeTruthy()
+  })
+
+  it('shows the cannot disable yourself error', async () => {
+    const usersApi = fakeUsers([account()], vi.fn(() => Promise.reject(new ApiError('cannot_disable_self', 409))))
+    renderUsers(usersApi)
+    fireEvent.click((await screen.findAllByRole('button', { name: 'Disable' }))[0]!)
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Disable' }))
+    expect(await screen.findByText('You cannot disable your own account.')).toBeTruthy()
   })
 
   it('adds and removes access', async () => {

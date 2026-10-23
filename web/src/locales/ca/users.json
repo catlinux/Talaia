@@ -39,7 +39,7 @@
   "editDialog": {
     "title": "Edita l'usuari",
     "name": "Nom visible",
-    "email": "Correu electrònic"
+    "email": "Correu electrònic (opcional)"
   },
   "toggle": {
     "enableTitle": "Vols activar {{name}}?",

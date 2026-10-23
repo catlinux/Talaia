@@ -226,6 +226,19 @@ describe('panel authentication', () => {
       'The session has expired. Sign in again.',
     )
   })
+
+  it.each([
+    ['account_disabled', 'Your account has been disabled. Contact an administrator.'],
+    ['session_revoked', 'Your session has been revoked. Sign in again.'],
+  ] as const)('shows the specific login message for %s', async (code, message) => {
+    renderPanel(fakeApi({ session: () => Promise.resolve({ username: 'admin', stage: 'full' }) }))
+    expect(await screen.findByText('vps-web-01')).toBeTruthy()
+    const stale = createAuthApi(() =>
+      Promise.resolve(new Response(JSON.stringify({ error: { code } }), { status: 401 })),
+    )
+    await stale.session().catch(() => undefined)
+    expect((await screen.findByRole('status')).textContent).toBe(message)
+  })
 })
 
 describe('validation error messages', () => {
@@ -244,5 +257,20 @@ describe('validation error messages', () => {
     expect(
       errorMessage(i18n.t, new ApiError('invalid_request', 400, 'not_a_field', 'required')),
     ).toBe('The request is not valid.')
+  })
+
+  it.each([
+    ['en', 'cannot_disable_self', 'You cannot disable your own account.'],
+    ['en', 'account_disabled', 'Your account has been disabled. Contact an administrator.'],
+    ['en', 'session_revoked', 'Your session has been revoked. Sign in again.'],
+    ['es', 'cannot_disable_self', 'No puedes desactivar tu propia cuenta.'],
+    ['es', 'account_disabled', 'Tu cuenta ha sido desactivada. Contacta con un administrador.'],
+    ['es', 'session_revoked', 'Tu sesión ha sido revocada. Vuelve a iniciar sesión.'],
+    ['ca', 'cannot_disable_self', 'No pots desactivar el teu propi compte.'],
+    ['ca', 'account_disabled', 'El teu compte s’ha desactivat. Contacta amb un administrador.'],
+    ['ca', 'session_revoked', 'S’ha revocat la teva sessió. Torna a iniciar sessió.'],
+  ] as const)('translates %s error code %s', async (language, code, expected) => {
+    await i18n.changeLanguage(language)
+    expect(errorMessage(i18n.t, new ApiError(code, 409))).toBe(expected)
   })
 })

@@ -9,6 +9,9 @@ export type ApiErrorCode =
   | 'invalid_credentials'
   | 'mfa_required'
   | 'session_required'
+  | 'account_disabled'
+  | 'session_revoked'
+  | 'cannot_disable_self'
   | 'forbidden_origin'
   | 'invalid_request'
   | 'weak_password'
@@ -46,6 +49,9 @@ const knownCodes: readonly ApiErrorCode[] = [
   'invalid_credentials',
   'mfa_required',
   'session_required',
+  'account_disabled',
+  'session_revoked',
+  'cannot_disable_self',
   'forbidden_origin',
   'invalid_request',
   'weak_password',
@@ -103,26 +109,27 @@ export class ApiError extends Error {
 export function isSignedOut(error: unknown): boolean {
   return (
     error instanceof ApiError &&
-    (error.code === 'session_required' || error.code === 'mfa_required')
+    (error.code === 'session_required' || error.code === 'mfa_required' ||
+      error.code === 'account_disabled' || error.code === 'session_revoked')
   )
 }
 
-const signedOutListeners = new Set<() => void>()
+const signedOutListeners = new Set<(code: ApiErrorCode) => void>()
 
 /**
  * onSignedOut registers a listener that runs when a call answers that the
  * session is gone, and returns the function that removes it.
  */
-export function onSignedOut(listener: () => void): () => void {
+export function onSignedOut(listener: (code: ApiErrorCode) => void): () => void {
   signedOutListeners.add(listener)
   return () => {
     signedOutListeners.delete(listener)
   }
 }
 
-function notifySignedOut(): void {
+function notifySignedOut(code: ApiErrorCode): void {
   for (const listener of signedOutListeners) {
-    listener()
+    listener(code)
   }
 }
 
@@ -207,7 +214,7 @@ export function createHttpClient(fetchImpl: typeof fetch = defaultFetch): HttpCl
       const details = errorDetails(payload)
       const error = new ApiError(errorCode(payload), response.status, details.field, details.reason)
       if (isSignedOut(error)) {
-        notifySignedOut()
+        notifySignedOut(error.code)
       }
       throw error
     }

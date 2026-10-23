@@ -66,12 +66,12 @@ export function UsersTab({
     event.preventDefault()
     if (editing === null) return
     setEditErrors(true)
-    if (!editing.email.trim()) {
+    if (editing.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(editing.email.trim())) {
       const form = event.currentTarget
       requestAnimationFrame(() => form.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus())
       return
     }
-    await run(() => usersApi.update(editing.user.id, editing.displayName, editing.email))
+    await run(() => usersApi.update(editing.user.id, editing.displayName, editing.email.trim()))
     setEditing(null)
   }
 
@@ -295,21 +295,20 @@ export function UsersTab({
               />
             </label>
             <label className="field">
-              <span className="field__label">{t('users:editDialog.email')} *</span>
+              <span className="field__label">{t('users:editDialog.email')}</span>
               <input
                 className="field__input"
                 type="email"
-                required
                 value={editing.email}
-                aria-invalid={editErrors && !editing.email.trim()}
+                aria-invalid={editErrors && !!editing.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(editing.email.trim())}
                 aria-describedby={
-                  editErrors && !editing.email.trim() ? 'edit-email-error' : undefined
+                  editErrors && !!editing.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(editing.email.trim()) ? 'edit-email-error' : undefined
                 }
                 onChange={(event) => setEditing({ ...editing, email: event.target.value })}
               />
-              {editErrors && !editing.email.trim() ? (
+              {editErrors && !!editing.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(editing.email.trim()) ? (
                 <span className="field__error" id="edit-email-error">
-                  {t('validation:required')}
+                  {t('validation:emailInvalid')}
                 </span>
               ) : null}
             </label>
@@ -394,7 +393,7 @@ function InviteDialog({
     setShowErrors(true)
     const invalid =
       !username.trim() ||
-      !email.trim() ||
+      (!!email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) ||
       ((scope.type === 'stack' || scope.type === 'container') && !scope.name?.trim())
     if (invalid) {
       const form = event.currentTarget
@@ -472,20 +471,18 @@ function InviteDialog({
             ) : null}
           </label>
           <label className="field">
-            <span className="field__label">{t('users:invite.email')} *</span>
+            <span className="field__label">{t('users:invite.email')}</span>
             <input
               className="field__input"
               type="email"
-              required
-              aria-required="true"
-              aria-invalid={showErrors && !email.trim()}
-              aria-describedby={showErrors && !email.trim() ? 'invite-email-error' : undefined}
+              aria-invalid={showErrors && !!email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())}
+              aria-describedby={showErrors && !!email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()) ? 'invite-email-error' : undefined}
               value={email}
               onChange={(event) => setEmail(event.target.value)}
             />
-            {showErrors && !email.trim() ? (
+            {showErrors && !!email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()) ? (
               <span className="field__error" id="invite-email-error">
-                {t('validation:required')}
+                {t('validation:emailInvalid')}
               </span>
             ) : null}
           </label>

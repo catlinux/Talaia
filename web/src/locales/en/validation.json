@@ -32,10 +32,19 @@
   "codeLength": "Enter the six-digit code.",
   "sentences": {
     "scope": {
-      "name": { "required": "Stack or container name is required." },
-      "server_id": { "unknown": "The selected server does not exist." }
+      "name": {
+        "required": "Stack or container name is required."
+      },
+      "server_id": {
+        "unknown": "The selected server does not exist."
+      }
     },
-    "bindingScopeName": { "required": "Stack or container name is required." },
-    "role": { "invalid_value": "The role is invalid." }
-  }
+    "bindingScopeName": {
+      "required": "Stack or container name is required."
+    },
+    "role": {
+      "invalid_value": "The role is invalid."
+    }
+  },
+  "emailInvalid": "Enter a valid email address."
 }

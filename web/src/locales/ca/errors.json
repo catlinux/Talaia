@@ -35,5 +35,8 @@
   "invalidAPIKey": "La clau d'API no és vàlida.",
   "sessionOpen": "La sessió encara és oberta; tanca-la abans de baixar-ne la gravació.",
   "recordingCorrupt": "La gravació està malmesa i no es pot baixar.",
-  "oidcDiscoveryFailed": "No s'ha pogut contactar amb el proveïdor d'OpenID Connect."
+  "oidcDiscoveryFailed": "No s'ha pogut contactar amb el proveïdor d'OpenID Connect.",
+  "accountDisabled": "El teu compte s’ha desactivat. Contacta amb un administrador.",
+  "sessionRevoked": "S’ha revocat la teva sessió. Torna a iniciar sessió.",
+  "cannotDisableSelf": "No pots desactivar el teu propi compte."
 }
