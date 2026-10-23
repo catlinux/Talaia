@@ -68,12 +68,20 @@ func newAuthHandler(deps AuthDeps) *authHandler {
 	if deps.Limiter == nil {
 		deps.Limiter = NewAuthRateLimiter()
 	}
-	return &authHandler{deps: deps, passkeys: newPasskeyWebAuthn(deps)}
+	return &authHandler{
+		deps: deps, passkeys: newPasskeyWebAuthn(deps),
+		oidc: newOIDCSettingsHandler(OIDCSettingsDeps{
+			Store: deps.Store, Box: deps.Box, Audit: deps.Store,
+		}),
+	}
 }
 
 func (h *authHandler) routes() http.Handler {
 	r := chi.NewRouter()
 	r.Post("/login", h.login)
+	r.Get("/oidc/config", h.oidcConfig)
+	r.Get("/oidc/start", h.oidcStart)
+	r.Get("/oidc/callback", h.oidcCallback)
 	r.Post("/totp/setup", h.totpSetup)
 	r.Post("/totp/confirm", h.totpConfirm)
 	r.Post("/totp", h.totpVerify)
@@ -101,6 +109,7 @@ func (h *authHandler) routes() http.Handler {
 type authHandler struct {
 	deps     AuthDeps
 	passkeys *webauthn.WebAuthn
+	oidc     *oidcSettingsHandler
 }
 
 // now returns the clock of the handler.

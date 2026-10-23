@@ -18,6 +18,12 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.4.8] - 2026-10-23
+
+### Added
+
+- OpenID Connect sign-in endpoints (`/api/v1/auth/oidc/config`, `/start`, `/callback`): the identity provider replaces the password only, the second factor (TOTP or passkey) is still required. There is no automatic account creation: the provider's verified email must match an existing active user, and the provider's `sub` is bound on the first login and is what counts from then on. Failures redirect to `/login?oidc_error=oidc_failed` without saying why and are audited as `oidc_login_denied`.
+
 ## [0.4.7] - 2026-10-23
 
 ### Added
@@ -423,7 +429,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.4.7...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.4.8...HEAD
+[0.4.8]: https://github.com/catlinux/Talaia/releases/tag/v0.4.8
 [0.4.7]: https://github.com/catlinux/Talaia/releases/tag/v0.4.7
 [0.4.6]: https://github.com/catlinux/Talaia/releases/tag/v0.4.6
 [0.4.5]: https://github.com/catlinux/Talaia/releases/tag/v0.4.5

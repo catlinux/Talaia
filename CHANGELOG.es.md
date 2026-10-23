@@ -13,6 +13,12 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+## [0.4.8] - 2026-10-23
+
+### Añadido
+
+- Endpoints de inicio de sesión con OpenID Connect (`/api/v1/auth/oidc/config`, `/start`, `/callback`): el proveedor de identidad sustituye solo a la contraseña, el segundo factor (TOTP o passkey) sigue siendo obligatorio. No hay alta automática: el correo verificado del proveedor debe coincidir con un usuario activo existente, y el `sub` del proveedor se vincula en el primer acceso y es el que cuenta a partir de entonces. Los fallos redirigen a `/login?oidc_error=oidc_failed` sin decir el motivo y se auditan como `oidc_login_denied`.
+
 ## [0.4.7] - 2026-10-23
 
 ### Añadido
@@ -423,7 +429,8 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
   `.gitattributes` y `.gitignore`.
 - Licencia WNCL-1.0 aplicada: archivo `LICENSE` y sección de créditos en los README.
 
-[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.4.7...HEAD
+[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.4.8...HEAD
+[0.4.8]: https://github.com/catlinux/Talaia/releases/tag/v0.4.8
 [0.4.7]: https://github.com/catlinux/Talaia/releases/tag/v0.4.7
 [0.4.6]: https://github.com/catlinux/Talaia/releases/tag/v0.4.6
 [0.4.5]: https://github.com/catlinux/Talaia/releases/tag/v0.4.5

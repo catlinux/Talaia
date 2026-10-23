@@ -1,9 +1,11 @@
 package api
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"strings"
+	"sync"
 	"unicode/utf8"
 
 	"github.com/catlinux/Talaia/core/internal/auth"
@@ -40,6 +42,10 @@ type oidcSettingsResponse struct {
 
 type oidcSettingsHandler struct {
 	deps OIDCSettingsDeps
+
+	mu       sync.Mutex
+	cached   *coreoidc.Provider
+	cacheKey string
 }
 
 func newOIDCSettingsHandler(deps OIDCSettingsDeps) *oidcSettingsHandler {
@@ -78,6 +84,55 @@ func (h *oidcSettingsHandler) redirectURL(r *http.Request) string {
 		base = "https://" + host
 	}
 	return base + coreoidc.RedirectPath
+}
+
+// provider builds a provider from a stored config and an already decrypted
+// secret. Login and settings both use it so discovery and redirect handling
+// cannot drift apart.
+func (h *oidcSettingsHandler) provider(ctx context.Context, config store.OIDCConfig, clientSecret, redirectURL string) (*coreoidc.Provider, error) {
+	return coreoidc.NewProvider(ctx, coreoidc.Config{
+		Issuer:       config.Issuer,
+		ClientID:     config.ClientID,
+		ClientSecret: clientSecret,
+		RedirectURL:  redirectURL,
+		Label:        config.ButtonLabel,
+	})
+}
+
+// storedProvider opens the encrypted client secret before building a provider.
+// The provider is reused while the stored configuration stays the same, so
+// login starts and callbacks share its discovery cache.
+func (h *oidcSettingsHandler) storedProvider(ctx context.Context, config store.OIDCConfig, redirectURL string) (*coreoidc.Provider, error) {
+	key := config.Issuer + "\x00" + config.ClientID + "\x00" + config.ButtonLabel + "\x00" +
+		redirectURL + "\x00" + string(config.ClientSecretEnc)
+	h.mu.Lock()
+	if h.cached != nil && h.cacheKey == key {
+		provider := h.cached
+		h.mu.Unlock()
+		return provider, nil
+	}
+	h.mu.Unlock()
+
+	secret := ""
+	if len(config.ClientSecretEnc) > 0 {
+		if h.deps.Box == nil {
+			return nil, errors.New("the oidc client secret cannot be opened without a secret box")
+		}
+		opened, err := h.deps.Box.Open(config.ClientSecretEnc)
+		if err != nil {
+			return nil, err
+		}
+		secret = string(opened)
+	}
+	provider, err := h.provider(ctx, config, secret, redirectURL)
+	if err != nil {
+		return nil, err
+	}
+	h.mu.Lock()
+	h.cached = provider
+	h.cacheKey = key
+	h.mu.Unlock()
+	return provider, nil
 }
 
 func (h *oidcSettingsHandler) getSettings(w http.ResponseWriter, r *http.Request) {
@@ -134,13 +189,9 @@ func (h *oidcSettingsHandler) updateSettings(w http.ResponseWriter, r *http.Requ
 	// Enabling the provider must be proven against discovery before the row is
 	// changed, so a typo cannot leave SSO enabled but unusable.
 	if request.Enabled {
-		if _, err := coreoidc.NewProvider(r.Context(), coreoidc.Config{
-			Issuer:       request.Issuer,
-			ClientID:     request.ClientID,
-			ClientSecret: request.ClientSecret,
-			RedirectURL:  h.redirectURL(r),
-			Label:        request.ButtonLabel,
-		}); err != nil {
+		if _, err := h.provider(r.Context(), store.OIDCConfig{
+			Issuer: request.Issuer, ClientID: request.ClientID, ButtonLabel: request.ButtonLabel,
+		}, request.ClientSecret, h.redirectURL(r)); err != nil {
 			writeError(w, http.StatusUnprocessableEntity, "oidc_discovery_failed")
 			return
 		}
