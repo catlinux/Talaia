@@ -337,6 +337,8 @@ func (h *userAdminHandler) writeStoreError(w http.ResponseWriter, err error) {
 		writeError(w, http.StatusConflict, "binding_exists")
 	case errors.Is(err, store.ErrEmailExists):
 		writeError(w, http.StatusConflict, "email_taken")
+	case errors.Is(err, store.ErrGroupNameExists), errors.Is(err, store.ErrTeamNameExists):
+		writeError(w, http.StatusConflict, "name_taken")
 	case errors.Is(err, store.ErrNotFound):
 		writeError(w, http.StatusNotFound, "not_found")
 	default:

@@ -18,6 +18,12 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.4.5] - 2026-10-23
+
+### Added
+
+- API for teams and server groups (permission `users.manage`): create, rename and delete them, add and remove team members, give teams role assignments, and put a server in a group so group-scoped assignments reach it. Removing the last administrator through a team is refused. Everything is audited.
+
 ## [0.4.4] - 2026-10-23
 
 ### Added
@@ -405,7 +411,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.4.4...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.4.5...HEAD
+[0.4.5]: https://github.com/catlinux/Talaia/releases/tag/v0.4.5
 [0.4.4]: https://github.com/catlinux/Talaia/releases/tag/v0.4.4
 [0.4.3]: https://github.com/catlinux/Talaia/releases/tag/v0.4.3
 [0.4.2]: https://github.com/catlinux/Talaia/releases/tag/v0.4.2
