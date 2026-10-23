@@ -96,6 +96,35 @@ func TestSingleStackCriterion(t *testing.T) {
 		ScopeType: store.ScopeStack, ScopeServerID: serverA, ScopeName: "web",
 	})
 
+	rawServers := panel.do(t, stackClient, http.MethodGet, "/api/v1/servers", nil)
+	var stackServers struct {
+		Servers []map[string]any `json:"servers"`
+	}
+	if err := json.NewDecoder(rawServers.Body).Decode(&stackServers); err != nil {
+		t.Fatalf("decode stack servers: %v", err)
+	}
+	if len(stackServers.Servers) != 1 {
+		t.Fatalf("stack servers = %v, want only %s", stackServers.Servers, serverA)
+	}
+	redacted := stackServers.Servers[0]
+	wantKeys := map[string]bool{"id": true, "name": true, "status": true, "limited": true}
+	if len(redacted) != len(wantKeys) {
+		t.Fatalf("redacted server keys = %v, want %v", redacted, wantKeys)
+	}
+	for key := range wantKeys {
+		if _, ok := redacted[key]; !ok {
+			t.Fatalf("redacted server is missing %q: %v", key, redacted)
+		}
+	}
+	for key := range redacted {
+		if !wantKeys[key] {
+			t.Fatalf("redacted server leaks %q: %v", key, redacted)
+		}
+	}
+	if redacted["id"] != serverA || redacted["status"] != "online" || redacted["limited"] != true {
+		t.Fatalf("redacted server = %v", redacted)
+	}
+
 	servers := decodePanelJSON[serversResponse](t, panel.do(t, stackClient, http.MethodGet, "/api/v1/servers", nil))
 	if len(servers.Servers) != 1 || servers.Servers[0].ID != serverA {
 		t.Fatalf("visible servers = %+v, want only %s", servers.Servers, serverA)
@@ -124,6 +153,11 @@ func TestSingleStackCriterion(t *testing.T) {
 	}
 	if len(me.Permissions.Servers) != 1 || me.Permissions.Servers[serverA] == nil {
 		t.Fatalf("me servers = %+v, want only %s", me.Permissions.Servers, serverA)
+	}
+	for _, permission := range me.Permissions.Servers[serverA] {
+		if permission == rbac.PermServerView {
+			t.Fatalf("me grants server.view on %s to a stack-only user", serverA)
+		}
 	}
 	if len(me.Permissions.Stacks[serverA]) != 1 || me.Permissions.Stacks[serverA]["web"] == nil {
 		t.Fatalf("me stacks = %+v, want only web", me.Permissions.Stacks)
@@ -223,6 +257,9 @@ func TestSingleStackCriterion(t *testing.T) {
 	if len(viewerServers.Servers) != 1 || viewerServers.Servers[0].ID != serverA {
 		t.Fatalf("viewer servers = %+v, want only %s", viewerServers.Servers, serverA)
 	}
+	if viewerServers.Servers[0].Live == nil || viewerServers.Servers[0].Limited {
+		t.Fatalf("viewer server = %+v, want the full entry", viewerServers.Servers[0])
+	}
 	viewerContainers := decodePanelJSON[containersResponse](t, panel.do(t, viewerClient, http.MethodGet,
 		"/api/v1/servers/"+serverA+"/containers", nil))
 	if len(viewerContainers.Containers) != 2 {
@@ -238,6 +275,11 @@ func TestSingleStackCriterion(t *testing.T) {
 	adminServers := decodePanelJSON[serversResponse](t, panel.do(t, panel.client, http.MethodGet, "/api/v1/servers", nil))
 	if len(adminServers.Servers) != 2 {
 		t.Fatalf("admin servers = %+v, want both", adminServers.Servers)
+	}
+	for _, server := range adminServers.Servers {
+		if server.Live == nil || server.Limited {
+			t.Fatalf("admin server = %+v, want the full entry", server)
+		}
 	}
 	adminStacks := decodePanelJSON[allStacksResponse](t, panel.do(t, panel.client, http.MethodGet, "/api/v1/stacks", nil))
 	if len(adminStacks.Stacks) != 3 {

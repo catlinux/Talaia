@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"log/slog"
 	"net/http"
@@ -10,6 +11,7 @@ import (
 	"github.com/go-chi/chi/v5"
 
 	"github.com/catlinux/Talaia/core/internal/hub"
+	"github.com/catlinux/Talaia/core/internal/rbac"
 	"github.com/catlinux/Talaia/core/internal/store"
 )
 
@@ -75,6 +77,38 @@ type serverEntry struct {
 	// AgentUpdateManual is true when a newer package exists but the agent is too
 	// old to update itself: it needs the command in agent_upgrade_command once.
 	AgentUpdateManual bool `json:"agent_update_manual"`
+	// Status and Limited are only set on entries redacted for a stack- or
+	// container-scoped user.
+	Status  string `json:"status,omitempty"`
+	Limited bool   `json:"limited,omitempty"`
+}
+
+const (
+	serverStatusOnline  = "online"
+	serverStatusOffline = "offline"
+)
+
+// MarshalJSON keeps a limited entry to the four public fields. The full entry
+// keeps its historic shape exactly.
+func (e serverEntry) MarshalJSON() ([]byte, error) {
+	if e.Limited {
+		return json.Marshal(struct {
+			ID      string `json:"id"`
+			Name    string `json:"name"`
+			Status  string `json:"status"`
+			Limited bool   `json:"limited"`
+		}{ID: e.ID, Name: e.Name, Status: e.Status, Limited: true})
+	}
+	type full serverEntry
+	return json.Marshal(full(e))
+}
+
+func limitedServerEntry(id, name string, online bool) serverEntry {
+	status := serverStatusOffline
+	if online {
+		status = serverStatusOnline
+	}
+	return serverEntry{ID: id, Name: name, Status: status, Limited: true}
 }
 
 // liveAgent is the state a connected agent reports.
@@ -138,6 +172,11 @@ func NewServersHandler(deps ServerDeps) http.Handler {
 			if !effective.CanSeeServer(server.ID, server.GroupID) {
 				continue
 			}
+			if !effective.Can(rbac.PermServerView, rbac.Target{ServerID: server.ID, GroupID: server.GroupID}) {
+				_, online := byServerID[server.ID]
+				entries = append(entries, limitedServerEntry(server.ID, server.Name, online && server.RevokedAt.IsZero()))
+				continue
+			}
 			entry := serverEntry{
 				ID:      server.ID,
 				Name:    server.Name,
@@ -172,6 +211,10 @@ func NewServersHandler(deps ServerDeps) http.Handler {
 			}
 			devID := devServerPrefix + agent.Hostname
 			if !effective.CanSeeServer(devID, "") {
+				continue
+			}
+			if !effective.Can(rbac.PermServerView, rbac.Target{ServerID: devID}) {
+				entries = append(entries, limitedServerEntry(devID, agent.Hostname, true))
 				continue
 			}
 			_, available := deps.Packages.ForAgent(agent)

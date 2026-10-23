@@ -18,6 +18,12 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.4.10] - 2026-10-23
+
+### Security
+
+- `GET /api/v1/servers` now returns only the name and whether it is online for users who reach a server only through a stack or container assignment; the host details (system, usage, kernel, updates, agent) need `server.view`.
+
 ## [0.4.9] - 2026-10-23
 
 ### Added
@@ -435,7 +441,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.4.9...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.4.10...HEAD
+[0.4.10]: https://github.com/catlinux/Talaia/releases/tag/v0.4.10
 [0.4.9]: https://github.com/catlinux/Talaia/releases/tag/v0.4.9
 [0.4.8]: https://github.com/catlinux/Talaia/releases/tag/v0.4.8
 [0.4.7]: https://github.com/catlinux/Talaia/releases/tag/v0.4.7
