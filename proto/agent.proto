@@ -322,6 +322,7 @@ message Container {
   string status = 5;          // human readable, as reported by Docker
   string compose_project = 6; // empty when not part of a Compose project
   string compose_service = 7;
+  string health = 8;          // healthy | unhealthy | starting; empty without a healthcheck
 }
 
 message ComposeProject {

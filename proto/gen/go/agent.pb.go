@@ -2364,6 +2364,7 @@ type Container struct {
 	Status         string                 `protobuf:"bytes,5,opt,name=status,proto3" json:"status,omitempty"`                                       // human readable, as reported by Docker
 	ComposeProject string                 `protobuf:"bytes,6,opt,name=compose_project,json=composeProject,proto3" json:"compose_project,omitempty"` // empty when not part of a Compose project
 	ComposeService string                 `protobuf:"bytes,7,opt,name=compose_service,json=composeService,proto3" json:"compose_service,omitempty"`
+	Health         string                 `protobuf:"bytes,8,opt,name=health,proto3" json:"health,omitempty"` // healthy | unhealthy | starting; empty without a healthcheck
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -2443,6 +2444,13 @@ func (x *Container) GetComposeProject() string {
 func (x *Container) GetComposeService() string {
 	if x != nil {
 		return x.ComposeService
+	}
+	return ""
+}
+
+func (x *Container) GetHealth() string {
+	if x != nil {
+		return x.Health
 	}
 	return ""
 }
@@ -3424,7 +3432,7 @@ const file_agent_proto_rawDesc = "" +
 	"\x0freboot_required\x18\x03 \x01(\bR\x0erebootRequired\x129\n" +
 	"\n" +
 	"checked_at\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\tcheckedAt\x12D\n" +
-	"\x10lists_updated_at\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\x0elistsUpdatedAt\"\xc5\x01\n" +
+	"\x10lists_updated_at\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\x0elistsUpdatedAt\"\xdd\x01\n" +
 	"\tContainer\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x14\n" +
@@ -3432,7 +3440,8 @@ const file_agent_proto_rawDesc = "" +
 	"\x05state\x18\x04 \x01(\tR\x05state\x12\x16\n" +
 	"\x06status\x18\x05 \x01(\tR\x06status\x12'\n" +
 	"\x0fcompose_project\x18\x06 \x01(\tR\x0ecomposeProject\x12'\n" +
-	"\x0fcompose_service\x18\a \x01(\tR\x0ecomposeService\"\xb6\x01\n" +
+	"\x0fcompose_service\x18\a \x01(\tR\x0ecomposeService\x12\x16\n" +
+	"\x06health\x18\b \x01(\tR\x06health\"\xb6\x01\n" +
 	"\x0eComposeProject\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1f\n" +
 	"\vworking_dir\x18\x02 \x01(\tR\n" +
