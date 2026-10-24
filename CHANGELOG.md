@@ -18,6 +18,12 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.5.9] - 2026-10-24
+
+### Added
+
+- Checks runner (not running yet): HTTP, TCP and TLS checks run from the core through the outbound guard every 30 seconds at least (8 at a time, never overlapping themselves), at most 3 redirects, a body is never kept, and they record latency, status code and the certificate expiry date even when the certificate is not valid. Stored errors are short fixed messages that never contain the URL or the response.
+
 ## [0.5.8] - 2026-10-24
 
 ### Added
@@ -598,7 +604,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.5.8...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.5.9...HEAD
+[0.5.9]: https://github.com/catlinux/Talaia/releases/tag/v0.5.9
 [0.5.8]: https://github.com/catlinux/Talaia/releases/tag/v0.5.8
 [0.5.7]: https://github.com/catlinux/Talaia/releases/tag/v0.5.7
 [0.5.6]: https://github.com/catlinux/Talaia/releases/tag/v0.5.6

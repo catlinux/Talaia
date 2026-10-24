@@ -13,6 +13,12 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+## [0.5.9] - 2026-10-24
+
+### Añadido
+
+- Ejecutor de comprobaciones (aún sin arrancar): las comprobaciones HTTP, TCP y TLS se ejecutan desde el core a través del guardián de salida cada 30 segundos como mínimo (8 a la vez, sin solaparse consigo mismas), con 3 redirecciones como máximo, sin guardar nunca el cuerpo, y registran latencia, código de estado y la fecha de caducidad del certificado aunque no sea válido. Los errores guardados son mensajes cortos y fijos que nunca contienen la URL ni la respuesta.
+
 ## [0.5.8] - 2026-10-24
 
 ### Añadido
@@ -598,7 +604,8 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
   `.gitattributes` y `.gitignore`.
 - Licencia WNCL-1.0 aplicada: archivo `LICENSE` y sección de créditos en los README.
 
-[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.5.8...HEAD
+[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.5.9...HEAD
+[0.5.9]: https://github.com/catlinux/Talaia/releases/tag/v0.5.9
 [0.5.8]: https://github.com/catlinux/Talaia/releases/tag/v0.5.8
 [0.5.7]: https://github.com/catlinux/Talaia/releases/tag/v0.5.7
 [0.5.6]: https://github.com/catlinux/Talaia/releases/tag/v0.5.6
