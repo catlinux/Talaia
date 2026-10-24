@@ -3,3 +3,92 @@ other = "Talaia"
 
 [app.starting]
 other = "iniciando Talaia {{.Version}}"
+
+[notify.test]
+other = "Notificación de prueba de Talaia"
+[notify.severity.warning]
+other = "Aviso"
+[notify.severity.critical]
+other = "Crítico"
+[notify.footer]
+other = "Notificación enviada por Talaia"
+
+[notify.server_offline.firing_title]
+other = "[{{.Severity}}] Servidor sin conexión en {{.Server}}"
+[notify.server_offline.firing_body]
+other = "Servidor sin conexión en {{.Server}}. {{.Subject}} {{.value}} {{.Stack}}"
+
+[notify.server_offline.resolved_title]
+other = "Servidor sin conexión resuelto en {{.Server}}"
+[notify.server_offline.resolved_body]
+other = "Servidor sin conexión resuelto en {{.Server}}. {{.Subject}} {{.Stack}}"
+
+[notify.cpu_high.firing_title]
+other = "[{{.Severity}}] Uso elevado de CPU en {{.Server}}"
+[notify.cpu_high.firing_body]
+other = "Uso elevado de CPU en {{.Server}}. {{.Subject}} {{.value}} {{.Stack}}"
+
+[notify.cpu_high.resolved_title]
+other = "Uso elevado de CPU resuelto en {{.Server}}"
+[notify.cpu_high.resolved_body]
+other = "Uso elevado de CPU resuelto en {{.Server}}. {{.Subject}} {{.Stack}}"
+
+[notify.mem_high.firing_title]
+other = "[{{.Severity}}] Uso elevado de memoria en {{.Server}}"
+[notify.mem_high.firing_body]
+other = "Uso elevado de memoria en {{.Server}}. {{.Subject}} {{.value}} {{.Stack}}"
+
+[notify.mem_high.resolved_title]
+other = "Uso elevado de memoria resuelto en {{.Server}}"
+[notify.mem_high.resolved_body]
+other = "Uso elevado de memoria resuelto en {{.Server}}. {{.Subject}} {{.Stack}}"
+
+[notify.disk_high.firing_title]
+other = "[{{.Severity}}] Uso elevado de disco en {{.Server}}"
+[notify.disk_high.firing_body]
+other = "Uso elevado de disco en {{.Server}}. {{.Subject}} {{.value}} {{.Stack}}"
+
+[notify.disk_high.resolved_title]
+other = "Uso elevado de disco resuelto en {{.Server}}"
+[notify.disk_high.resolved_body]
+other = "Uso elevado de disco resuelto en {{.Server}}. {{.Subject}} {{.Stack}}"
+
+[notify.container_down.firing_title]
+other = "[{{.Severity}}] Contenedor detenido en {{.Server}}"
+[notify.container_down.firing_body]
+other = "Contenedor detenido en {{.Server}}. {{.Subject}} {{.value}} {{.Stack}}"
+
+[notify.container_down.resolved_title]
+other = "Contenedor detenido resuelto en {{.Server}}"
+[notify.container_down.resolved_body]
+other = "Contenedor detenido resuelto en {{.Server}}. {{.Subject}} {{.Stack}}"
+
+[notify.container_unhealthy.firing_title]
+other = "[{{.Severity}}] Contenedor no saludable en {{.Server}}"
+[notify.container_unhealthy.firing_body]
+other = "Contenedor no saludable en {{.Server}}. {{.Subject}} {{.value}} {{.Stack}}"
+
+[notify.container_unhealthy.resolved_title]
+other = "Contenedor no saludable resuelto en {{.Server}}"
+[notify.container_unhealthy.resolved_body]
+other = "Contenedor no saludable resuelto en {{.Server}}. {{.Subject}} {{.Stack}}"
+
+[notify.check_failed.firing_title]
+other = "[{{.Severity}}] Comprobación fallida en {{.Server}}"
+[notify.check_failed.firing_body]
+other = "Comprobación fallida en {{.Server}}. {{.Subject}} {{.value}} {{.Stack}}"
+
+[notify.check_failed.resolved_title]
+other = "Comprobación fallida resuelto en {{.Server}}"
+[notify.check_failed.resolved_body]
+other = "Comprobación fallida resuelto en {{.Server}}. {{.Subject}} {{.Stack}}"
+
+[notify.cert_expiry.firing_title]
+other = "[{{.Severity}}] Certificado a punto de caducar en {{.Server}}"
+[notify.cert_expiry.firing_body]
+other = "Certificado a punto de caducar en {{.Server}}. {{.Subject}} {{.value}} {{.Stack}}"
+
+[notify.cert_expiry.resolved_title]
+other = "Certificado a punto de caducar resuelto en {{.Server}}"
+[notify.cert_expiry.resolved_body]
+other = "Certificado a punto de caducar resuelto en {{.Server}}. {{.Subject}} {{.Stack}}"

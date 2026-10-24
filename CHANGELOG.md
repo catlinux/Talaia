@@ -18,6 +18,12 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.5.10] - 2026-10-24
+
+### Added
+
+- Notification channels and delivery queue worker (not running yet): Telegram, ntfy, email (STARTTLS required or implicit TLS, never in clear), Discord and signed webhook (`X-Talaia-Signature`, HMAC-SHA256). Secrets are kept sealed and write-only, errors never contain URLs, tokens or passwords, every message is sent in the language of the channel (ca/es/en), failed deliveries are retried after 30 s, 2 min, 5 min and 15 min and a test message can be sent to a channel.
+
 ## [0.5.9] - 2026-10-24
 
 ### Added
@@ -604,7 +610,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.5.9...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.5.10...HEAD
+[0.5.10]: https://github.com/catlinux/Talaia/releases/tag/v0.5.10
 [0.5.9]: https://github.com/catlinux/Talaia/releases/tag/v0.5.9
 [0.5.8]: https://github.com/catlinux/Talaia/releases/tag/v0.5.8
 [0.5.7]: https://github.com/catlinux/Talaia/releases/tag/v0.5.7

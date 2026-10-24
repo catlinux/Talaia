@@ -13,6 +13,12 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+## [0.5.10] - 2026-10-24
+
+### Añadido
+
+- Canales de notificación y worker de la cola de envíos (aún sin arrancar): Telegram, ntfy, correo (STARTTLS obligatorio o TLS implícito, nunca en claro), Discord y webhook firmado (`X-Talaia-Signature`, HMAC-SHA256). Los secretos se guardan cifrados y de solo escritura, los errores nunca contienen URL, tokens ni contraseñas, cada mensaje se envía en el idioma del canal (ca/es/en), los envíos fallidos se reintentan a los 30 s, 2 min, 5 min y 15 min y se puede mandar un mensaje de prueba a un canal.
+
 ## [0.5.9] - 2026-10-24
 
 ### Añadido
@@ -604,7 +610,8 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
   `.gitattributes` y `.gitignore`.
 - Licencia WNCL-1.0 aplicada: archivo `LICENSE` y sección de créditos en los README.
 
-[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.5.9...HEAD
+[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.5.10...HEAD
+[0.5.10]: https://github.com/catlinux/Talaia/releases/tag/v0.5.10
 [0.5.9]: https://github.com/catlinux/Talaia/releases/tag/v0.5.9
 [0.5.8]: https://github.com/catlinux/Talaia/releases/tag/v0.5.8
 [0.5.7]: https://github.com/catlinux/Talaia/releases/tag/v0.5.7
