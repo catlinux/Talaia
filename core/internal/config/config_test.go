@@ -234,6 +234,28 @@ insecure_dev = true
 	}
 }
 
+func TestMetricsRetention(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "core.toml")
+	if err := os.WriteFile(path, []byte("database_url = \""+testDatabaseURL+"\"\n[metrics]\nserver_raw_hours = 72\ncontainer_1h_days = 120\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	cfg, err := load(lookupFrom(map[string]string{"TALAIA_CONFIG": path}), DefaultPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.Metrics.ServerRaw != 72*time.Hour || cfg.Metrics.Server5m != 30*24*time.Hour || cfg.Metrics.Container1h != 120*24*time.Hour || cfg.Metrics.ContainerRaw != 24*time.Hour {
+		t.Fatalf("metrics retention = %+v", cfg.Metrics)
+	}
+	for _, value := range []string{"0", "3651"} {
+		if err := os.WriteFile(path, []byte("database_url = \""+testDatabaseURL+"\"\n[metrics]\nserver_5m_days = "+value+"\n"), 0600); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := load(lookupFrom(map[string]string{"TALAIA_CONFIG": path}), DefaultPath); err == nil || !strings.Contains(err.Error(), "metrics.server_5m_days") {
+			t.Errorf("server_5m_days=%s error = %v", value, err)
+		}
+	}
+}
+
 func TestValidateCertificateHosts(t *testing.T) {
 	tests := []struct {
 		name    string

@@ -51,7 +51,7 @@ func testDatabase(t *testing.T) *store.Store {
 	if strings.Contains(databaseURL, "?") {
 		separator = "&"
 	}
-	scoped := databaseURL + separator + "search_path=" + url.QueryEscape(schema)
+	scoped := databaseURL + separator + "search_path=" + url.QueryEscape(schema+",public")
 	t.Setenv("TALAIA_DATABASE_URL", scoped)
 	t.Setenv("TALAIA_DATA_DIR", t.TempDir())
 

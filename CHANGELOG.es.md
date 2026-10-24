@@ -13,6 +13,12 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+## [0.5.3] - 2026-10-24
+
+### Añadido
+
+- Almacén del histórico de métricas (aún no se registra ni se muestra): la migración 0014 activa TimescaleDB y crea las tablas de muestras de servidor y de contenedor en resolución cruda, de 5 minutos y de 1 hora, con un registrador con búfer, el downsampling de los intervalos cerrados y la retención hechos por el propio core (solo funciones de TimescaleDB de licencia Apache). La retención se fija en la nueva sección `[metrics]` del archivo de configuración (por defecto: servidor 48 h / 30 d / 400 d, contenedor 24 h / 7 d / 90 d). **Talaia necesita ahora PostgreSQL con la extensión TimescaleDB**; las imágenes de `packaging/` ya la incluyen.
+
 ## [0.5.2] - 2026-10-24
 
 ### Añadido
@@ -562,7 +568,8 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
   `.gitattributes` y `.gitignore`.
 - Licencia WNCL-1.0 aplicada: archivo `LICENSE` y sección de créditos en los README.
 
-[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.5.2...HEAD
+[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.5.3...HEAD
+[0.5.3]: https://github.com/catlinux/Talaia/releases/tag/v0.5.3
 [0.5.2]: https://github.com/catlinux/Talaia/releases/tag/v0.5.2
 [0.5.1]: https://github.com/catlinux/Talaia/releases/tag/v0.5.1
 [0.5.0]: https://github.com/catlinux/Talaia/releases/tag/v0.5.0

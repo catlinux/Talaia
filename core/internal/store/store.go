@@ -4,9 +4,12 @@ package store
 import (
 	"context"
 	"embed"
+	"errors"
 	"fmt"
 	"io/fs"
+	"strings"
 
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgx/v5/stdlib"
 	"github.com/pressly/goose/v3"
@@ -57,6 +60,10 @@ func (s *Store) Migrate(ctx context.Context) error {
 		return fmt.Errorf("prepare migrations: %w", err)
 	}
 	if _, err := provider.Up(ctx); err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && (pgErr.Code == "0A000" || strings.Contains(strings.ToLower(pgErr.Message), "extension timescaledb is not available")) {
+			return fmt.Errorf("apply migrations: Talaia needs PostgreSQL with the TimescaleDB extension; use the image from packaging/core/compose.yaml: %w", err)
+		}
 		return fmt.Errorf("apply migrations: %w", err)
 	}
 	return nil

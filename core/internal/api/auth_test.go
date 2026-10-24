@@ -76,7 +76,7 @@ func schemaURL(databaseURL, schema string) string {
 	if strings.Contains(databaseURL, "?") {
 		separator = "&"
 	}
-	return databaseURL + separator + "search_path=" + url.QueryEscape(schema)
+	return databaseURL + separator + "search_path=" + url.QueryEscape(schema+",public")
 }
 
 // testClock is a clock the tests can move.

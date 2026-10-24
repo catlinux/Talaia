@@ -102,34 +102,56 @@ type Config struct {
 	UpdateAPIURL string
 	// HostDir is the directory shared with the host update helper.
 	HostDir string
+	Metrics MetricsRetention
+}
+
+// MetricsRetention configures how long each metrics resolution is kept.
+type MetricsRetention struct {
+	ServerRaw, Server5m, Server1h          time.Duration
+	ContainerRaw, Container5m, Container1h time.Duration
+}
+
+func defaultMetricsRetention() MetricsRetention {
+	return MetricsRetention{ServerRaw: 48 * time.Hour, Server5m: 30 * 24 * time.Hour, Server1h: 400 * 24 * time.Hour,
+		ContainerRaw: 24 * time.Hour, Container5m: 7 * 24 * time.Hour, Container1h: 90 * 24 * time.Hour}
 }
 
 // fileConfig mirrors the TOML document. Pointer fields tell an absent key
 // apart from an empty value, so defaults are only replaced when the key is set.
 type fileConfig struct {
-	PanelListen           *string   `toml:"panel_listen"`
-	AgentListen           *string   `toml:"agent_listen"`
-	DatabaseURL           *string   `toml:"database_url"`
-	LogLevel              *string   `toml:"log_level"`
-	DataDir               *string   `toml:"data_dir"`
-	WebDir                *string   `toml:"web_dir"`
-	DistDir               *string   `toml:"dist_dir"`
-	PanelPort             *string   `toml:"panel_port"`
-	AgentPort             *string   `toml:"agent_port"`
-	PublicHostnames       *[]string `toml:"public_hostnames"`
-	AllowedOrigins        *[]string `toml:"allowed_origins"`
-	InsecureDev           *bool     `toml:"insecure_dev"`
-	TerminalRecordingDays *int      `toml:"terminal_recording_days"`
-	DeviceMFAHours        *int      `toml:"device_mfa_hours"`
-	ACMEProvider          *string   `toml:"acme_provider"`
-	ACMEEmail             *string   `toml:"acme_email"`
-	ACMEDirectoryURL      *string   `toml:"acme_directory_url"`
-	ACMEChallengeDir      *string   `toml:"acme_challenge_dir"`
-	ACMEDNSCheck          *string   `toml:"acme_dns_check"`
-	UpdateRepo            *string   `toml:"update_repo"`
-	UpdateCheckInterval   *string   `toml:"update_check_interval"`
-	UpdateAPIURL          *string   `toml:"update_api_url"`
-	HostDir               *string   `toml:"host_dir"`
+	PanelListen           *string            `toml:"panel_listen"`
+	AgentListen           *string            `toml:"agent_listen"`
+	DatabaseURL           *string            `toml:"database_url"`
+	LogLevel              *string            `toml:"log_level"`
+	DataDir               *string            `toml:"data_dir"`
+	WebDir                *string            `toml:"web_dir"`
+	DistDir               *string            `toml:"dist_dir"`
+	PanelPort             *string            `toml:"panel_port"`
+	AgentPort             *string            `toml:"agent_port"`
+	PublicHostnames       *[]string          `toml:"public_hostnames"`
+	AllowedOrigins        *[]string          `toml:"allowed_origins"`
+	InsecureDev           *bool              `toml:"insecure_dev"`
+	TerminalRecordingDays *int               `toml:"terminal_recording_days"`
+	DeviceMFAHours        *int               `toml:"device_mfa_hours"`
+	ACMEProvider          *string            `toml:"acme_provider"`
+	ACMEEmail             *string            `toml:"acme_email"`
+	ACMEDirectoryURL      *string            `toml:"acme_directory_url"`
+	ACMEChallengeDir      *string            `toml:"acme_challenge_dir"`
+	ACMEDNSCheck          *string            `toml:"acme_dns_check"`
+	UpdateRepo            *string            `toml:"update_repo"`
+	UpdateCheckInterval   *string            `toml:"update_check_interval"`
+	UpdateAPIURL          *string            `toml:"update_api_url"`
+	HostDir               *string            `toml:"host_dir"`
+	Metrics               *fileMetricsConfig `toml:"metrics"`
+}
+
+type fileMetricsConfig struct {
+	ServerRawHours    *int `toml:"server_raw_hours"`
+	Server5mDays      *int `toml:"server_5m_days"`
+	Server1hDays      *int `toml:"server_1h_days"`
+	ContainerRawHours *int `toml:"container_raw_hours"`
+	Container5mDays   *int `toml:"container_5m_days"`
+	Container1hDays   *int `toml:"container_1h_days"`
 }
 
 // updateRepoPattern matches the owner/name form of a GitHub repository.
@@ -171,6 +193,7 @@ func load(lookup func(string) (string, bool), defaultPath string) (Config, error
 		UpdateRepo:            updates.DefaultRepo,
 		UpdateCheckInterval:   updates.DefaultInterval,
 		UpdateAPIURL:          updates.DefaultAPIURL,
+		Metrics:               defaultMetricsRetention(),
 	}
 
 	path := defaultPath
@@ -378,6 +401,30 @@ func applyFile(cfg *Config, path string, explicit bool) error {
 	}
 	if file.HostDir != nil {
 		cfg.HostDir = strings.TrimSpace(*file.HostDir)
+	}
+	if file.Metrics != nil {
+		values := []struct {
+			value  *int
+			target *time.Duration
+			unit   time.Duration
+			max    int
+			key    string
+		}{
+			{file.Metrics.ServerRawHours, &cfg.Metrics.ServerRaw, time.Hour, 3650 * 24, "server_raw_hours"},
+			{file.Metrics.Server5mDays, &cfg.Metrics.Server5m, 24 * time.Hour, 3650, "server_5m_days"},
+			{file.Metrics.Server1hDays, &cfg.Metrics.Server1h, 24 * time.Hour, 3650, "server_1h_days"},
+			{file.Metrics.ContainerRawHours, &cfg.Metrics.ContainerRaw, time.Hour, 3650 * 24, "container_raw_hours"},
+			{file.Metrics.Container5mDays, &cfg.Metrics.Container5m, 24 * time.Hour, 3650, "container_5m_days"},
+			{file.Metrics.Container1hDays, &cfg.Metrics.Container1h, 24 * time.Hour, 3650, "container_1h_days"},
+		}
+		for _, item := range values {
+			if item.value != nil {
+				if *item.value < 1 || *item.value > item.max {
+					return fmt.Errorf("metrics.%s must be between 1 and %d", item.key, item.max)
+				}
+				*item.target = time.Duration(*item.value) * item.unit
+			}
+		}
 	}
 	return nil
 }
