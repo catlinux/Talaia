@@ -25,6 +25,7 @@ import (
 
 	"github.com/catlinux/Talaia/agent/internal/config"
 	"github.com/catlinux/Talaia/agent/internal/enroll"
+	"github.com/catlinux/Talaia/agent/internal/inventory"
 	"github.com/catlinux/Talaia/agent/internal/jobs"
 	agentv1 "github.com/catlinux/Talaia/proto/gen/go"
 	"github.com/catlinux/Talaia/proto/gen/go/agentv1connect"
@@ -329,6 +330,75 @@ func TestInventoryUnchangedIgnoresContainerStatus(t *testing.T) {
 	}
 	if inventoryUnchanged(base("Up 5 minutes", "running"), base("Exited (0) 1 second ago", "exited")) {
 		t.Error("a changed container state must count as an inventory change")
+	}
+}
+
+func TestInventoryHealthChangeIsSignificant(t *testing.T) {
+	base := func(health string) *agentv1.Inventory {
+		return &agentv1.Inventory{Containers: []*agentv1.Container{{Id: "abc", Health: health}}}
+	}
+	if inventoryUnchanged(base("healthy"), base("unhealthy")) {
+		t.Fatal("a health change must count as an inventory change")
+	}
+}
+
+func TestLinkSendsInventoryAfterDockerEvent(t *testing.T) {
+	hub := &testHub{}
+	url := newTestServer(t, hub)
+	collector := &fakeCollector{inventory: inventoryWith("vps-test"), metrics: &agentv1.Metrics{}}
+	trigger := make(chan struct{})
+	connected := make(chan struct{}, 1)
+	eventServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		select {
+		case connected <- struct{}{}:
+		default:
+		}
+		select {
+		case <-trigger:
+		case <-r.Context().Done():
+			return
+		}
+		_, _ = w.Write([]byte(`{"status":"health_status: healthy"}`))
+		if flusher, ok := w.(http.Flusher); ok {
+			flusher.Flush()
+		}
+		<-r.Context().Done()
+	}))
+	t.Cleanup(eventServer.Close)
+	agentLink := NewInsecure(config.Config{CoreURL: url, LogLevel: "info"}, collector)
+	eventSource := inventory.NewDockerWithClient(eventServer.URL, eventServer.Client())
+	agentLink.events = eventSource
+	agentLink.HeartbeatInterval, agentLink.MetricsInterval, agentLink.InventoryInterval = time.Hour, time.Hour, time.Hour
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	done := make(chan error, 1)
+	go func() { done <- agentLink.Run(ctx) }()
+	waitFor(t, func() bool { return hub.inventoryCount() == 1 })
+	select {
+	case <-connected:
+	case <-time.After(time.Second):
+		t.Fatal("event watcher did not start")
+	}
+	changed := inventoryWith("vps-test")
+	changed.Containers = []*agentv1.Container{{Id: "abc", Health: "healthy"}}
+	collector.setInventory(changed)
+	close(trigger)
+	deadline := time.After(3 * time.Second)
+	for hub.inventoryCount() < 2 {
+		select {
+		case <-deadline:
+			t.Fatal("event did not cause an inventory send within 3 seconds")
+		case <-time.After(10 * time.Millisecond):
+		}
+	}
+	cancel()
+	select {
+	case err := <-done:
+		if err != nil {
+			t.Fatalf("Run = %v", err)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("Run did not stop")
 	}
 }
 

@@ -114,6 +114,24 @@ func TestDockerCollectsContainersAndProjects(t *testing.T) {
 	}
 }
 
+func TestContainerHealthParsing(t *testing.T) {
+	tests := []struct{ status, want string }{
+		{"Up 2 hours (healthy)", "healthy"},
+		{"Up 2 hours (unhealthy)", "unhealthy"},
+		{"Up 2 hours (health: starting)", "starting"},
+		{"Up 2 hours", ""},
+		{"Exited (0) 1 minute ago", ""},
+		{"", ""},
+	}
+	for _, tt := range tests {
+		t.Run(tt.status, func(t *testing.T) {
+			if got := containerHealth(tt.status); got != tt.want {
+				t.Fatalf("health = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestDockerNotAvailable(t *testing.T) {
 	tests := []struct {
 		name    string

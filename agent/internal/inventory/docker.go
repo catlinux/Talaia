@@ -46,6 +46,8 @@ type Docker struct {
 
 	// unavailableLogged keeps the "not available" message to one per agent.
 	unavailableLogged sync.Once
+	eventBackoffBase  time.Duration
+	eventBackoffMax   time.Duration
 }
 
 // NewDocker returns a Docker client that talks to the local socket.
@@ -63,7 +65,7 @@ func NewDocker() *Docker {
 // httpClient. Tests use it with an httptest server, because Windows has no unix
 // sockets.
 func NewDockerWithClient(baseURL string, httpClient *http.Client) *Docker {
-	return &Docker{baseURL: baseURL, httpClient: httpClient}
+	return &Docker{baseURL: baseURL, httpClient: httpClient, eventBackoffBase: time.Second, eventBackoffMax: 30 * time.Second}
 }
 
 type dockerVersion struct {
@@ -143,8 +145,22 @@ func (c dockerContainer) container() *agentv1.Container {
 		Image:          c.Image,
 		State:          c.State,
 		Status:         c.Status,
+		Health:         containerHealth(c.Status),
 		ComposeProject: c.Labels[composeProjectLabel],
 		ComposeService: c.Labels[composeServiceLabel],
+	}
+}
+
+func containerHealth(status string) string {
+	switch {
+	case strings.Contains(status, "(healthy)"):
+		return "healthy"
+	case strings.Contains(status, "(unhealthy)"):
+		return "unhealthy"
+	case strings.Contains(status, "(health: starting)"):
+		return "starting"
+	default:
+		return ""
 	}
 }
 

@@ -63,7 +63,8 @@ type Link struct {
 	// hostTerminal reports whether this agent accepts host terminal sessions.
 	hostTerminal bool
 	// stats samples the running containers; nil leaves it out.
-	stats ContainerStatsSource
+	stats  ContainerStatsSource
+	events interface{ WatchEvents(context.Context, func()) }
 
 	// Job events do not belong to the stream that carried the command: an apt
 	// upgrade can outlive several reconnects. They wait in jobQueue and the
@@ -149,6 +150,7 @@ func newLink(
 		InventoryInterval: 60 * time.Second,
 		StatsInterval:     15 * time.Second,
 		stats:             inventory.NewDocker(),
+		events:            inventory.NewDocker(),
 		RenewalInterval:   time.Hour,
 		BackoffBase:       time.Second,
 		BackoffMax:        60 * time.Second,
@@ -225,6 +227,15 @@ func (l *Link) session(ctx context.Context) error {
 	// A job that outlives the stream drops its events instead of blocking.
 	streamCtx, endStream := context.WithCancel(ctx)
 	defer endStream()
+	containerEvents := make(chan struct{}, 1)
+	if l.events != nil {
+		go l.events.WatchEvents(streamCtx, func() {
+			select {
+			case containerEvents <- struct{}{}:
+			default:
+			}
+		})
+	}
 	events := make(chan *agentv1.AgentMsg, 32)
 	emit := func(msg *agentv1.AgentMsg) {
 		select {
@@ -262,6 +273,8 @@ func (l *Link) session(ctx context.Context) error {
 	defer statsTicker.Stop()
 	// Sampling takes seconds, so it runs on its own and never overlaps itself.
 	var sampling atomic.Bool
+	var eventTimer *time.Timer
+	var eventC <-chan time.Time
 
 	// sendInventoryIfChanged collects the inventory and sends it when it differs
 	// from the last one. A failed collection is logged and retried later.
@@ -288,6 +301,26 @@ func (l *Link) session(ctx context.Context) error {
 		select {
 		case <-ctx.Done():
 			return nil
+
+		case <-containerEvents:
+			if eventTimer == nil {
+				eventTimer = time.NewTimer(2 * time.Second)
+			} else {
+				if !eventTimer.Stop() {
+					select {
+					case <-eventTimer.C:
+					default:
+					}
+				}
+				eventTimer.Reset(2 * time.Second)
+			}
+			eventC = eventTimer.C
+
+		case <-eventC:
+			eventC = nil
+			if err := sendInventoryIfChanged(); err != nil {
+				return err
+			}
 
 		case err := <-received:
 			if err == nil || errors.Is(err, io.EOF) {

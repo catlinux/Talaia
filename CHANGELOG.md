@@ -18,6 +18,12 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.5.2] - 2026-10-24
+
+### Added
+
+- The agent reports the health of each container (`healthy`, `unhealthy`, `starting`) and follows the Docker events (start, die, stop, kill, oom, destroy, health): a container that stops or fails its healthcheck reaches the core within about 2 seconds instead of up to a minute. If the event stream drops it reconnects with backoff; the 60-second inventory stays as a safety net.
+
 ## [0.5.1] - 2026-10-24
 
 ### Security
@@ -556,7 +562,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.5.1...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.5.2...HEAD
+[0.5.2]: https://github.com/catlinux/Talaia/releases/tag/v0.5.2
 [0.5.1]: https://github.com/catlinux/Talaia/releases/tag/v0.5.1
 [0.5.0]: https://github.com/catlinux/Talaia/releases/tag/v0.5.0
 [0.4.25]: https://github.com/catlinux/Talaia/releases/tag/v0.4.25
