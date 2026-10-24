@@ -35,6 +35,9 @@ const (
 	PermAuditView      Permission = "audit.view"
 	PermRecordingsView Permission = "recordings.view"
 	PermAPIKeysManage  Permission = "apikeys.manage"
+	PermAlertsView     Permission = "alerts.view"
+	PermAlertsSilence  Permission = "alerts.silence"
+	PermAlertsManage   Permission = "alerts.manage"
 )
 
 // AllPermissions lists every permission understood by this package.
@@ -46,6 +49,7 @@ var AllPermissions = []Permission{
 	PermHostTerminal, PermServerAgentUpdate,
 	PermServerRemove, PermServerEnroll, PermUsersManage, PermSettingsManage,
 	PermAuditView, PermRecordingsView, PermAPIKeysManage,
+	PermAlertsView, PermAlertsSilence, PermAlertsManage,
 }
 
 // ScopeType is the level at which a binding applies.
@@ -132,16 +136,16 @@ func Resolve(bindings []Binding) Effective {
 // be granted. It returns an empty scope for an unknown permission.
 func (p Permission) MinScope() ScopeType {
 	switch p {
-	case PermContainerView, PermContainerLogs, PermContainerControl, PermContainerTerminal:
+	case PermContainerView, PermContainerLogs, PermContainerControl, PermContainerTerminal, PermAlertsView:
 		return ScopeContainer
-	case PermStackView, PermStackDeploy, PermStackEdit, PermContainerRemove:
+	case PermStackView, PermStackDeploy, PermStackEdit, PermContainerRemove, PermAlertsSilence:
 		return ScopeStack
 	case PermServerView, PermResourcesManage, PermHostServicesView, PermHostServicesControl,
 		PermHostJournal, PermHostAptView, PermHostAptUpgrade, PermHostReboot,
 		PermHostTerminal, PermServerAgentUpdate:
 		return ScopeServer
 	case PermServerRemove, PermServerEnroll, PermUsersManage, PermSettingsManage,
-		PermAuditView, PermRecordingsView, PermAPIKeysManage:
+		PermAuditView, PermRecordingsView, PermAPIKeysManage, PermAlertsManage:
 		return ScopeOrganization
 	default:
 		return ""
@@ -165,18 +169,18 @@ func (r Role) Permissions() []Permission {
 			PermStackView, PermStackDeploy, PermStackEdit, PermContainerRemove,
 			PermServerView, PermResourcesManage, PermHostServicesView, PermHostServicesControl,
 			PermHostJournal, PermHostAptView, PermHostAptUpgrade, PermHostReboot,
-			PermHostTerminal, PermServerAgentUpdate,
+			PermHostTerminal, PermServerAgentUpdate, PermAlertsView, PermAlertsSilence,
 		}
 	case RoleAppOperator:
 		return allViewPermissions(
-			PermContainerLogs, PermContainerControl, PermStackDeploy,
+			PermContainerLogs, PermContainerControl, PermStackDeploy, PermAlertsSilence,
 		)
 	case RoleViewer:
 		return allViewPermissions(
 			PermContainerLogs, PermHostJournal, PermHostAptView, PermHostServicesView,
 		)
 	case RoleMetricsOnly:
-		return []Permission{PermServerView, PermStackView, PermContainerView}
+		return []Permission{PermServerView, PermStackView, PermContainerView, PermAlertsView}
 	default:
 		return nil
 	}
@@ -431,7 +435,7 @@ func (e Effective) Summary() Summary {
 func AllowedForAPIKey(permission Permission) bool {
 	switch permission {
 	case PermContainerTerminal, PermHostTerminal, PermUsersManage, PermSettingsManage,
-		PermHostReboot, PermAPIKeysManage:
+		PermHostReboot, PermAPIKeysManage, PermAlertsManage:
 		return false
 	default:
 		return true

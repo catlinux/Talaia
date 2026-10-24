@@ -18,6 +18,12 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.5.4] - 2026-10-24
+
+### Added
+
+- Alerts data layer (not reachable yet): permissions `alerts.view` (every role), `alerts.silence` (admin, server operator, app operator) and `alerts.manage` (admin only; API keys can never have it), and migration 0015 with the tables for rules (with the default rules: server offline 45 s, disk above 90 %, container down 20 s, container unhealthy 60 s, failed check, certificate expiring in 14 days), incidents (never two open incidents with the same fingerprint), watched containers, silences (30 days at most), HTTP/TCP/TLS checks, notification channels (secrets stored sealed and never read back) and a delivery queue with retries.
+
 ## [0.5.3] - 2026-10-24
 
 ### Added
@@ -568,7 +574,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.5.3...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.5.4...HEAD
+[0.5.4]: https://github.com/catlinux/Talaia/releases/tag/v0.5.4
 [0.5.3]: https://github.com/catlinux/Talaia/releases/tag/v0.5.3
 [0.5.2]: https://github.com/catlinux/Talaia/releases/tag/v0.5.2
 [0.5.1]: https://github.com/catlinux/Talaia/releases/tag/v0.5.1

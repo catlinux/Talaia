@@ -50,6 +50,32 @@ func TestEveryRoleScopeAndPermission(t *testing.T) {
 	}
 }
 
+func TestAlertPermissionsByRole(t *testing.T) {
+	cases := []struct {
+		role                  Role
+		view, silence, manage bool
+	}{
+		{RoleAdmin, true, true, true},
+		{RoleServerOperator, true, true, false},
+		{RoleAppOperator, true, true, false},
+		{RoleViewer, true, false, false},
+		{RoleMetricsOnly, true, false, false},
+	}
+	for _, tc := range cases {
+		permissions := tc.role.Permissions()
+		for _, check := range []struct {
+			permission Permission
+			want       bool
+		}{
+			{PermAlertsView, tc.view}, {PermAlertsSilence, tc.silence}, {PermAlertsManage, tc.manage},
+		} {
+			if got := roleGrants(tc.role, check.permission); got != check.want {
+				t.Errorf("role %s permission %s = %v, want %v (permissions %v)", tc.role, check.permission, got, check.want, permissions)
+			}
+		}
+	}
+}
+
 func TestMinimumLevelExamples(t *testing.T) {
 	target := Target{ServerID: "s1", GroupID: "g1", Stack: "st1", Container: "ct1"}
 
@@ -239,7 +265,7 @@ func TestVisibleContainers(t *testing.T) {
 
 func TestAllowedForAPIKey(t *testing.T) {
 	for _, permission := range []Permission{
-		PermContainerTerminal, PermHostTerminal, PermUsersManage, PermSettingsManage,
+		PermContainerTerminal, PermHostTerminal, PermUsersManage, PermSettingsManage, PermAlertsManage,
 		PermHostReboot, PermAPIKeysManage,
 	} {
 		if AllowedForAPIKey(permission) {
@@ -248,7 +274,7 @@ func TestAllowedForAPIKey(t *testing.T) {
 	}
 	for _, permission := range []Permission{
 		PermContainerView, PermContainerLogs, PermContainerControl, PermStackDeploy,
-		PermServerView, PermHostAptView, PermAuditView,
+		PermServerView, PermHostAptView, PermAuditView, PermAlertsView, PermAlertsSilence,
 	} {
 		if !AllowedForAPIKey(permission) {
 			t.Errorf("api key denied %s", permission)
@@ -307,6 +333,10 @@ func TestAPIKeyLimitIntersectsOwnerAndBlacklist(t *testing.T) {
 	bothAdmins := keyOrgAdmin.Limit(keyOrgAdmin)
 	if bothAdmins.Can(PermContainerTerminal, target) || bothAdmins.Can(PermHostTerminal, target) {
 		t.Fatal("admin API key got a terminal permission")
+	}
+	if !bothAdmins.Can(PermAlertsView, target) || !bothAdmins.Can(PermAlertsSilence, target) ||
+		bothAdmins.Can(PermAlertsManage, target) {
+		t.Fatal("API key alert permissions are wrong")
 	}
 
 	// The owner's current bindings are read on every check.

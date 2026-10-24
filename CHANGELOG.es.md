@@ -13,6 +13,12 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+## [0.5.4] - 2026-10-24
+
+### Añadido
+
+- Capa de datos de las alertas (aún sin acceso): permisos `alerts.view` (todos los roles), `alerts.silence` (administrador, operador de servidor y de app) y `alerts.manage` (solo administrador; las claves de API nunca lo tienen), y migración 0015 con las tablas de reglas (con las de por defecto: servidor sin señal 45 s, disco por encima del 90 %, contenedor caído 20 s, contenedor no saludable, comprobación fallida, certificado que caduca en 14 días), incidentes (nunca dos abiertos con la misma huella), contenedores vigilados, silencios (30 días como máximo), comprobaciones HTTP/TCP/TLS, canales de notificación (secretos guardados cifrados y sin lectura de vuelta) y una cola de envíos con reintentos.
+
 ## [0.5.3] - 2026-10-24
 
 ### Añadido
@@ -568,7 +574,8 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
   `.gitattributes` y `.gitignore`.
 - Licencia WNCL-1.0 aplicada: archivo `LICENSE` y sección de créditos en los README.
 
-[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.5.3...HEAD
+[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.5.4...HEAD
+[0.5.4]: https://github.com/catlinux/Talaia/releases/tag/v0.5.4
 [0.5.3]: https://github.com/catlinux/Talaia/releases/tag/v0.5.3
 [0.5.2]: https://github.com/catlinux/Talaia/releases/tag/v0.5.2
 [0.5.1]: https://github.com/catlinux/Talaia/releases/tag/v0.5.1

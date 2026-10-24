@@ -190,7 +190,6 @@ func (s *Store) CreateGroup(ctx context.Context, name string) (ServerGroup, erro
 	return group, nil
 }
 
-
 // GetGroup returns a server group by id.
 func (s *Store) GetGroup(ctx context.Context, id string) (ServerGroup, error) {
 	group, err := scanGroup(s.pool.QueryRow(ctx,
@@ -514,7 +513,6 @@ func (s *Store) ListRoleBindingsForUser(ctx context.Context, userID string) ([]R
 	return bindings, nil
 }
 
-
 // ListAllRoleBindings returns every binding, for the permissions screen.
 func (s *Store) ListAllRoleBindings(ctx context.Context) ([]RoleBinding, error) {
 	rows, err := s.pool.Query(ctx, `SELECT `+roleBindingColumns+` FROM role_binding ORDER BY created_at, id`)
@@ -623,9 +621,6 @@ func (s *Store) UpdateRoleBindingRole(ctx context.Context, id, role string) erro
 	}
 	return nil
 }
-
-
-
 
 // RemoveTeamMember removes a user from a team and enforces the last-admin
 // invariant when the team carries the only organization admin binding.
