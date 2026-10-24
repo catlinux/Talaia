@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
 // AlertRule is a configurable alert definition.
@@ -301,6 +302,36 @@ func (s *Store) listAlerts(ctx context.Context, q string, args []any) ([]Alert, 
 	}
 	return out, rows.Err()
 }
+
+// GetAlert returns one incident by id.
+func (s *Store) GetAlert(ctx context.Context, id string) (Alert, error) {
+	v, e := scanAlert(s.pool.QueryRow(ctx, `SELECT `+alertColumns+` FROM alert WHERE id=$1`, id))
+	if e != nil && !errors.Is(e, ErrNotFound) {
+		return v, fmt.Errorf("get alert: %w", e)
+	}
+	return v, e
+}
+
+// SetChannelStatus records the outcome of the last delivery attempt of a
+// channel: a success clears last_error and sets last_ok_at, a failure keeps the
+// (already redacted) message.
+func (s *Store) SetChannelStatus(ctx context.Context, id string, ok bool, message string, at time.Time) error {
+	var tag pgconn.CommandTag
+	var e error
+	if ok {
+		tag, e = s.pool.Exec(ctx, `UPDATE notification_channel SET last_error='',last_ok_at=$2 WHERE id=$1`, id, at)
+	} else {
+		tag, e = s.pool.Exec(ctx, `UPDATE notification_channel SET last_error=$2 WHERE id=$1`, id, message)
+	}
+	if e != nil {
+		return fmt.Errorf("set channel status: %w", e)
+	}
+	if tag.RowsAffected() == 0 {
+		return ErrNotFound
+	}
+	return nil
+}
+
 func (s *Store) GetAlertByFingerprint(ctx context.Context, fp string) (Alert, error) {
 	v, e := scanAlert(s.pool.QueryRow(ctx, `SELECT `+alertColumns+` FROM alert WHERE fingerprint=$1 ORDER BY started_at DESC LIMIT 1`, fp))
 	if e != nil && !errors.Is(e, ErrNotFound) {

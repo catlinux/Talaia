@@ -115,3 +115,32 @@ func TestChannelSecretAccessAndConcurrentDeliveryClaims(t *testing.T) {
 		t.Fatalf("delivery claimed %d times, want once", count)
 	}
 }
+
+func TestChannelStatusAndGetAlert(t *testing.T) {
+	s, ctx := alertTestStore(t)
+	channel, err := s.CreateNotificationChannel(ctx, NotificationChannel{Name: "status-channel", Type: "webhook", Enabled: true, Language: "en", Config: []byte(`{}`)}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	now := time.Now().UTC()
+	if err := s.SetChannelStatus(ctx, channel.ID, false, "boom", now); err != nil {
+		t.Fatal(err)
+	}
+	got, _ := s.GetNotificationChannel(ctx, channel.ID)
+	if got.LastError != "boom" || got.LastOKAt != nil {
+		t.Fatalf("after failure: %+v", got)
+	}
+	if err := s.SetChannelStatus(ctx, channel.ID, true, "", now); err != nil {
+		t.Fatal(err)
+	}
+	got, _ = s.GetNotificationChannel(ctx, channel.ID)
+	if got.LastError != "" || got.LastOKAt == nil {
+		t.Fatalf("after success: %+v", got)
+	}
+	if err := s.SetChannelStatus(ctx, "00000000-0000-0000-0000-000000000000", true, "", now); err != ErrNotFound {
+		t.Fatalf("unknown channel error = %v", err)
+	}
+	if _, err := s.GetAlert(ctx, "00000000-0000-0000-0000-000000000000"); err != ErrNotFound {
+		t.Fatalf("unknown alert error = %v", err)
+	}
+}
