@@ -5,6 +5,7 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"regexp"
 
 	"github.com/go-chi/chi/v5"
 
@@ -104,6 +105,29 @@ type routePermission struct {
 // routePerms is the single permission decision for every protected route.
 // Patterns are relative to /api/v1, matching the registration in api.go.
 var routePerms = map[routeKey]routePermission{
+	{http.MethodGet, "/alerts"}:                                              {mode: permAny},
+	{http.MethodGet, "/alerts/summary"}:                                      {mode: permAny},
+	{http.MethodPost, "/alerts/{alertID}/ack"}:                               {mode: permAny},
+	{http.MethodPost, "/alerts/{alertID}/unwatch"}:                           {mode: permAny},
+	{http.MethodGet, "/silences"}:                                            {mode: permAny},
+	{http.MethodPost, "/silences"}:                                           {mode: permAny},
+	{http.MethodDelete, "/silences/{silenceID}"}:                             {mode: permAny},
+	{http.MethodGet, "/alert-rules"}:                                         {mode: permExact, permission: rbac.PermAlertsView, target: targetOrganization},
+	{http.MethodPost, "/alert-rules"}:                                        {mode: permExact, permission: rbac.PermAlertsManage, target: targetOrganization, noAPIKey: true},
+	{http.MethodPatch, "/alert-rules/{ruleID}"}:                              {mode: permExact, permission: rbac.PermAlertsManage, target: targetOrganization, noAPIKey: true},
+	{http.MethodDelete, "/alert-rules/{ruleID}"}:                             {mode: permExact, permission: rbac.PermAlertsManage, target: targetOrganization, noAPIKey: true},
+	{http.MethodGet, "/checks"}:                                              {mode: permExact, permission: rbac.PermAlertsView, target: targetOrganization},
+	{http.MethodPost, "/checks"}:                                             {mode: permExact, permission: rbac.PermAlertsManage, target: targetOrganization, noAPIKey: true},
+	{http.MethodPatch, "/checks/{checkID}"}:                                  {mode: permExact, permission: rbac.PermAlertsManage, target: targetOrganization, noAPIKey: true},
+	{http.MethodDelete, "/checks/{checkID}"}:                                 {mode: permExact, permission: rbac.PermAlertsManage, target: targetOrganization, noAPIKey: true},
+	{http.MethodPost, "/checks/{checkID}/run"}:                               {mode: permExact, permission: rbac.PermAlertsManage, target: targetOrganization, noAPIKey: true},
+	{http.MethodGet, "/channels"}:                                            {mode: permExact, permission: rbac.PermAlertsManage, target: targetOrganization, noAPIKey: true},
+	{http.MethodPost, "/channels"}:                                           {mode: permExact, permission: rbac.PermAlertsManage, target: targetOrganization, noAPIKey: true},
+	{http.MethodPatch, "/channels/{channelID}"}:                              {mode: permExact, permission: rbac.PermAlertsManage, target: targetOrganization, noAPIKey: true},
+	{http.MethodDelete, "/channels/{channelID}"}:                             {mode: permExact, permission: rbac.PermAlertsManage, target: targetOrganization, noAPIKey: true},
+	{http.MethodPost, "/channels/{channelID}/test"}:                          {mode: permExact, permission: rbac.PermAlertsManage, target: targetOrganization, noAPIKey: true},
+	{http.MethodGet, "/settings/alerts"}:                                     {mode: permExact, permission: rbac.PermAlertsManage, target: targetOrganization, noAPIKey: true},
+	{http.MethodPut, "/settings/alerts"}:                                     {mode: permExact, permission: rbac.PermAlertsManage, target: targetOrganization, noAPIKey: true},
 	{http.MethodGet, "/servers"}:                                             {mode: permAny},
 	{http.MethodGet, "/me"}:                                                  {mode: permAny},
 	{http.MethodGet, "/stacks"}:                                              {mode: permAny},
@@ -471,4 +495,21 @@ func targetKindForTarget(target rbac.Target) targetKind {
 	default:
 		return targetOrganization
 	}
+}
+
+var uuidPattern = regexp.MustCompile(`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$`)
+
+// uuidParamGuard answers 404 when a path parameter that names a database row of
+// the alerts API is not a UUID, so a malformed id never reaches the database
+// as an error.
+func uuidParamGuard(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		for _, name := range []string{"alertID", "silenceID", "ruleID", "checkID", "channelID"} {
+			if value := chi.URLParam(r, name); value != "" && !uuidPattern.MatchString(value) {
+				writeError(w, http.StatusNotFound, "not_found")
+				return
+			}
+		}
+		next.ServeHTTP(w, r)
+	})
 }

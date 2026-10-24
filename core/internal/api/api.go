@@ -49,6 +49,8 @@ type RouterDeps struct {
 	Containers *ContainerDeps
 	// Metrics enables the historical metrics endpoints; nil leaves them out.
 	Metrics *MetricsDeps
+	// Alerts enables alert and silence endpoints; nil leaves them out.
+	Alerts *AlertsDeps
 	// Terminal enables the terminal endpoints; nil leaves them out. Build it with
 	// NewTerminalDeps.
 	Terminal *TerminalDeps
@@ -205,6 +207,31 @@ func NewRouter(deps RouterDeps) http.Handler {
 			if deps.Metrics != nil {
 				registerRoute(r, deps.Authz, http.MethodGet, "/servers/{serverID}/metrics", NewServerMetricsHandler(*deps.Metrics))
 				registerRoute(r, deps.Authz, http.MethodGet, "/servers/{serverID}/containers/{container}/metrics", NewContainerMetricsHandler(*deps.Metrics))
+			}
+			if deps.Alerts != nil {
+				registerRoute(r, deps.Authz, http.MethodGet, "/channels", uuidParamGuard(NewAlertChannelsHandler(*deps.Alerts)))
+				registerRoute(r, deps.Authz, http.MethodPost, "/channels", uuidParamGuard(NewAlertChannelCreateHandler(*deps.Alerts)))
+				registerRoute(r, deps.Authz, http.MethodPatch, "/channels/{channelID}", uuidParamGuard(NewAlertChannelUpdateHandler(*deps.Alerts)))
+				registerRoute(r, deps.Authz, http.MethodDelete, "/channels/{channelID}", uuidParamGuard(NewAlertChannelDeleteHandler(*deps.Alerts)))
+				registerRoute(r, deps.Authz, http.MethodPost, "/channels/{channelID}/test", uuidParamGuard(NewAlertChannelTestHandler(*deps.Alerts)))
+				registerRoute(r, deps.Authz, http.MethodGet, "/settings/alerts", uuidParamGuard(NewAlertSettingsHandler(*deps.Alerts)))
+				registerRoute(r, deps.Authz, http.MethodPut, "/settings/alerts", uuidParamGuard(NewAlertSettingsUpdateHandler(*deps.Alerts)))
+				registerRoute(r, deps.Authz, http.MethodGet, "/alert-rules", uuidParamGuard(NewAlertRulesHandler(*deps.Alerts)))
+				registerRoute(r, deps.Authz, http.MethodPost, "/alert-rules", uuidParamGuard(NewAlertRuleCreateHandler(*deps.Alerts)))
+				registerRoute(r, deps.Authz, http.MethodPatch, "/alert-rules/{ruleID}", uuidParamGuard(NewAlertRuleUpdateHandler(*deps.Alerts)))
+				registerRoute(r, deps.Authz, http.MethodDelete, "/alert-rules/{ruleID}", uuidParamGuard(NewAlertRuleDeleteHandler(*deps.Alerts)))
+				registerRoute(r, deps.Authz, http.MethodGet, "/checks", uuidParamGuard(NewAlertChecksHandler(*deps.Alerts)))
+				registerRoute(r, deps.Authz, http.MethodPost, "/checks", uuidParamGuard(NewAlertCheckCreateHandler(*deps.Alerts)))
+				registerRoute(r, deps.Authz, http.MethodPatch, "/checks/{checkID}", uuidParamGuard(NewAlertCheckUpdateHandler(*deps.Alerts)))
+				registerRoute(r, deps.Authz, http.MethodDelete, "/checks/{checkID}", uuidParamGuard(NewAlertCheckDeleteHandler(*deps.Alerts)))
+				registerRoute(r, deps.Authz, http.MethodPost, "/checks/{checkID}/run", uuidParamGuard(NewAlertCheckRunHandler(*deps.Alerts)))
+				registerRoute(r, deps.Authz, http.MethodGet, "/alerts", uuidParamGuard(NewAlertsHandler(*deps.Alerts)))
+				registerRoute(r, deps.Authz, http.MethodGet, "/alerts/summary", uuidParamGuard(NewAlertSummaryHandler(*deps.Alerts)))
+				registerRoute(r, deps.Authz, http.MethodPost, "/alerts/{alertID}/ack", uuidParamGuard(NewAlertAckHandler(*deps.Alerts)))
+				registerRoute(r, deps.Authz, http.MethodPost, "/alerts/{alertID}/unwatch", uuidParamGuard(NewAlertUnwatchHandler(*deps.Alerts)))
+				registerRoute(r, deps.Authz, http.MethodGet, "/silences", uuidParamGuard(NewSilenceListHandler(*deps.Alerts)))
+				registerRoute(r, deps.Authz, http.MethodPost, "/silences", uuidParamGuard(NewSilenceCreateHandler(*deps.Alerts)))
+				registerRoute(r, deps.Authz, http.MethodDelete, "/silences/{silenceID}", uuidParamGuard(NewSilenceDeleteHandler(*deps.Alerts)))
 			}
 			if deps.Enrollment != nil {
 				registerRoute(r, deps.Authz, http.MethodPost, "/servers/enrollment-tokens",

@@ -174,6 +174,7 @@ func newTestPanel(t *testing.T, options ...panelOption) *testPanel {
 	agents := &controlledAgents{}
 	dispatcher := &fakeDispatcher{}
 	alerts := &recordingAlertHooks{}
+	alertDeps := &AlertsDeps{Store: st, Box: box, Audit: st, Hooks: alerts, Checks: inertAlertChecks{}, Notifier: inertChannelTester{}, Servers: st, Now: clock.Now}
 	terminalAgent := &fakeTerminalAgent{}
 	terminalConfig := terminal.DefaultConfig()
 	terminalConfig.OpenTimeout = 2 * time.Second
@@ -199,6 +200,7 @@ func newTestPanel(t *testing.T, options ...panelOption) *testPanel {
 			Servers:    st,
 		},
 		System: &SystemDeps{},
+		Alerts: alertDeps,
 		Authz: NewAuthorizer(AuthorizerDeps{
 			Bindings: st,
 			Servers:  st,
@@ -254,6 +256,17 @@ func newTestPanel(t *testing.T, options ...panelOption) *testPanel {
 		alerts:        alerts,
 	}
 }
+
+type inertAlertChecks struct{}
+
+func (inertAlertChecks) Reload() {}
+func (inertAlertChecks) RunOnce(context.Context, store.AlertCheck) store.AlertCheckResult {
+	return store.AlertCheckResult{}
+}
+
+type inertChannelTester struct{}
+
+func (inertChannelTester) SendTest(context.Context, string) error { return nil }
 
 // newClient returns a client with its own cookie jar.
 func (p *testPanel) newClient(t *testing.T) *http.Client {

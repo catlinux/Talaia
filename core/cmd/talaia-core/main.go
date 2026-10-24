@@ -21,14 +21,17 @@ import (
 	"time"
 
 	"github.com/catlinux/Talaia/core/internal/acme"
+	"github.com/catlinux/Talaia/core/internal/alerts"
 	"github.com/catlinux/Talaia/core/internal/api"
 	"github.com/catlinux/Talaia/core/internal/auth"
 	"github.com/catlinux/Talaia/core/internal/ca"
+	"github.com/catlinux/Talaia/core/internal/checks"
 	"github.com/catlinux/Talaia/core/internal/config"
 	"github.com/catlinux/Talaia/core/internal/hub"
 	"github.com/catlinux/Talaia/core/internal/install"
 	"github.com/catlinux/Talaia/core/internal/jobs"
 	"github.com/catlinux/Talaia/core/internal/metrics"
+	"github.com/catlinux/Talaia/core/internal/notify"
 	"github.com/catlinux/Talaia/core/internal/store"
 	"github.com/catlinux/Talaia/core/internal/terminal"
 	"github.com/catlinux/Talaia/core/internal/updates"
@@ -107,6 +110,7 @@ type panelOptions struct {
 	Terminal       *api.TerminalDeps
 	Recordings     *api.RecordingDeps
 	Metrics        *api.MetricsDeps
+	Alerts         *api.AlertsDeps
 	System         *api.SystemDeps
 	Origins        []string
 	TLS            bool
@@ -156,6 +160,7 @@ func newCoreRouter(st *store.Store, agents api.LiveAgents, options panelOptions)
 		Terminal:           options.Terminal,
 		Recordings:         options.Recordings,
 		Metrics:            options.Metrics,
+		Alerts:             options.Alerts,
 		System:             options.System,
 		Authz: api.NewAuthorizer(api.AuthorizerDeps{
 			Bindings: st,
@@ -355,7 +360,26 @@ func serve() error {
 		agentHub.SetJobEvents(api.JobRecorder{Jobs: st})
 		agentHub.SetMetricsSink(metrics.NewFeed(recorder))
 		panel.Metrics = &api.MetricsDeps{Reader: st, Servers: st, Agents: agentHub, Now: time.Now}
-		panel.Containers = &api.ContainerDeps{Agents: agentHub, Dispatcher: agentHub, Jobs: st, Audit: st, Servers: st}
+		engine := alerts.New(st, alerts.NewHubSource(agentHub, st), nil)
+		runner := checks.New(checks.Options{Store: st, OnResult: engine.CheckResult})
+		worker := notify.New(notify.Options{Store: st, Box: box})
+		agentHub.SetAgentEvents(engine)
+		go func() {
+			if err := engine.Run(ctx); err != nil && ctx.Err() == nil {
+				logger.Error("alert engine stopped", "error", err)
+			}
+		}()
+		go func() {
+			if err := runner.Run(ctx); err != nil && ctx.Err() == nil {
+				logger.Error("checks runner stopped", "error", err)
+			}
+		}()
+		go worker.Run(ctx)
+		logger.Info("alert engine started")
+		logger.Info("checks started")
+		logger.Info("notifications started")
+		panel.Alerts = &api.AlertsDeps{Store: st, Box: box, Audit: st, Hooks: engine, Checks: runner, Notifier: worker, Servers: st, Now: time.Now}
+		panel.Containers = &api.ContainerDeps{Agents: agentHub, Dispatcher: agentHub, Jobs: st, Audit: st, Servers: st, Alerts: engine}
 
 		// Terminal sessions: the ones an earlier run left open are closed first.
 		if err := terminal.CloseOrphans(context.Background(), st); err != nil {
@@ -436,6 +460,7 @@ func serve() error {
 		}
 	} else {
 		logger.Warn("insecure development mode: no TLS and no agent authentication")
+		// Insecure agents have hostname identities and no server ids, so alert evaluation is unavailable.
 		agentHub := hub.NewInsecure()
 		agentHub.SetMetricsSink(metrics.NewFeed(recorder))
 		panel.Metrics = &api.MetricsDeps{Reader: st, Agents: agentHub, Now: time.Now}

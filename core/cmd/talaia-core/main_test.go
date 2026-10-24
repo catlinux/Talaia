@@ -28,9 +28,13 @@ import (
 	"connectrpc.com/connect/v2/connecthttp"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/catlinux/Talaia/core/internal/alerts"
+	"github.com/catlinux/Talaia/core/internal/api"
 	"github.com/catlinux/Talaia/core/internal/auth"
 	"github.com/catlinux/Talaia/core/internal/ca"
+	"github.com/catlinux/Talaia/core/internal/checks"
 	"github.com/catlinux/Talaia/core/internal/hub"
+	"github.com/catlinux/Talaia/core/internal/notify"
 	"github.com/catlinux/Talaia/core/internal/store"
 	agentv1 "github.com/catlinux/Talaia/proto/gen/go"
 	"github.com/catlinux/Talaia/proto/gen/go/agentv1connect"
@@ -100,6 +104,11 @@ func newTestCore(t *testing.T) *testCore {
 		Origins: []string{"https://localhost"},
 		TLS:     true,
 	}
+	engine := alerts.New(st, alerts.NewHubSource(h, st), nil)
+	h.SetAgentEvents(engine)
+	runner := checks.New(checks.Options{Store: st, OnResult: engine.CheckResult})
+	worker := notify.New(notify.Options{Store: st, Box: panel.Box})
+	panel.Alerts = &api.AlertsDeps{Store: st, Box: panel.Box, Audit: st, Hooks: engine, Checks: runner, Notifier: worker, Servers: st, Now: time.Now}
 
 	server := httptest.NewUnstartedServer(newAgentRouter(st, authority, h, ""))
 	server.TLS = &tls.Config{
@@ -578,6 +587,14 @@ func TestPanelAndAuthAPIOverTLS(t *testing.T) {
 	if !strings.Contains(string(body), "session_required") {
 		t.Errorf("servers body = %q, want the session_required code", body)
 	}
+	response, err = client.Get(core.panel.URL + "/api/v1/alerts")
+	if err != nil {
+		t.Fatalf("get alerts: %v", err)
+	}
+	_ = response.Body.Close()
+	if response.StatusCode != http.StatusUnauthorized {
+		t.Errorf("alerts status = %d, want 401", response.StatusCode)
+	}
 }
 
 func TestPanelAndAgentRoutesAreSeparate(t *testing.T) {
@@ -668,6 +685,14 @@ func TestPlainRouterServesThePanelAndTheAuthAPI(t *testing.T) {
 	_ = response.Body.Close()
 	if response.StatusCode != http.StatusNotFound {
 		t.Errorf("ca.pem status = %d, want 404 in insecure mode", response.StatusCode)
+	}
+	response, err = client.Get(server.URL + "/api/v1/alerts")
+	if err != nil {
+		t.Fatalf("get alerts in insecure mode: %v", err)
+	}
+	_ = response.Body.Close()
+	if response.StatusCode != http.StatusNotFound {
+		t.Errorf("alerts status = %d, want 404 in insecure mode", response.StatusCode)
 	}
 
 	// The protected server list is mounted here too.

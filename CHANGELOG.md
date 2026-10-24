@@ -18,6 +18,12 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.5.11] - 2026-10-24
+
+### Added
+
+- **Alerts are live in the core.** The alert engine, the checks runner and the notification worker start with the core, and the API serves them: `GET /api/v1/alerts` (active and history, filtered by what each user may see), `/alerts/summary`, acknowledge and stop-watching a container (`/alerts/{id}/ack`, `/unwatch`), silences (`/silences`, up to 30 days, with a reason), alert rules, HTTP/TCP/TLS checks (with run-now), notification channels with a test message, and the setting that allows private targets. Rules, checks, channels and the setting need the new `alerts.manage` permission (administrators only, never API keys); acknowledging and silencing need `alerts.silence`. Everything is audited and channel secrets are never returned. Without the panel screens (next steps) they are managed through the API.
+
 ## [0.5.10] - 2026-10-24
 
 ### Added
@@ -610,7 +616,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.5.10...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.5.11...HEAD
+[0.5.11]: https://github.com/catlinux/Talaia/releases/tag/v0.5.11
 [0.5.10]: https://github.com/catlinux/Talaia/releases/tag/v0.5.10
 [0.5.9]: https://github.com/catlinux/Talaia/releases/tag/v0.5.9
 [0.5.8]: https://github.com/catlinux/Talaia/releases/tag/v0.5.8

@@ -186,6 +186,11 @@ func TestSingleStackCriterion(t *testing.T) {
 		{http.MethodPost, "/apikeys"}:                                           true,
 		{http.MethodGet, "/apikeys"}:                                            true,
 		{http.MethodDelete, "/apikeys/{id}"}:                                    true,
+		// Lists filtered by visibility, and a creation whose scope is in the body.
+		{http.MethodGet, "/alerts"}:         true,
+		{http.MethodGet, "/alerts/summary"}: true,
+		{http.MethodGet, "/silences"}:       true,
+		{http.MethodPost, "/silences"}:      true,
 	}
 	for key := range routePerms {
 		if skipped[key] {

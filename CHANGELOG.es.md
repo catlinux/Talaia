@@ -13,6 +13,12 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+## [0.5.11] - 2026-10-24
+
+### Añadido
+
+- **Las alertas ya funcionan en el core.** El motor de alertas, las comprobaciones y el worker de notificaciones arrancan con el core, y la API los sirve: `GET /api/v1/alerts` (activas e historial, filtradas por lo que cada usuario puede ver), `/alerts/summary`, acusar recibo y dejar de vigilar un contenedor (`/alerts/{id}/ack`, `/unwatch`), silencios (`/silences`, hasta 30 días, con motivo), reglas de alerta, comprobaciones HTTP/TCP/TLS (con «ejecutar ahora»), canales de notificación con mensaje de prueba y el ajuste que permite destinos privados. Reglas, comprobaciones, canales y el ajuste exigen el nuevo permiso `alerts.manage` (solo administradores, nunca claves de API); acusar recibo y silenciar exigen `alerts.silence`. Todo se audita y los secretos de los canales nunca se devuelven. Mientras no estén las pantallas del panel (pasos siguientes) se gestionan por la API.
+
 ## [0.5.10] - 2026-10-24
 
 ### Añadido
@@ -610,7 +616,8 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
   `.gitattributes` y `.gitignore`.
 - Licencia WNCL-1.0 aplicada: archivo `LICENSE` y sección de créditos en los README.
 
-[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.5.10...HEAD
+[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.5.11...HEAD
+[0.5.11]: https://github.com/catlinux/Talaia/releases/tag/v0.5.11
 [0.5.10]: https://github.com/catlinux/Talaia/releases/tag/v0.5.10
 [0.5.9]: https://github.com/catlinux/Talaia/releases/tag/v0.5.9
 [0.5.8]: https://github.com/catlinux/Talaia/releases/tag/v0.5.8

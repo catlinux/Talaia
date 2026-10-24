@@ -95,6 +95,7 @@ func fullRouter(t *testing.T) http.Handler {
 		Enrollment:         &EnrollmentTokenDeps{},
 		Containers:         &ContainerDeps{Agents: agents, Servers: servers},
 		Metrics:            &MetricsDeps{Reader: fakeMetricsReader{}, Servers: servers, Agents: agents},
+		Alerts:             &AlertsDeps{Store: (*store.Store)(nil), Hooks: &recordingAlertHooks{}, Checks: inertAlertChecks{}, Notifier: inertChannelTester{}, Servers: servers},
 		Terminal:           NewTerminalDeps(TerminalDeps{}),
 		Recordings:         &RecordingDeps{},
 		System:             &SystemDeps{},
