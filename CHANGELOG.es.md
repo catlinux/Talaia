@@ -13,6 +13,12 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+## [0.5.7] - 2026-10-24
+
+### Seguridad
+
+- Guardián del tráfico saliente (aún sin uso): las comprobaciones y notificaciones de los próximos pasos se conectarán con un dialer que valida la dirección IP a la que realmente se conecta, de modo que un nombre que resuelva a una dirección privada (DNS rebinding) o una redirección no puedan alcanzar loopback, redes privadas, CGNAT, enlace local ni los metadatos de la nube (`169.254.169.254` sigue bloqueada aunque se permitan destinos privados), también en sus formas IPv4 mapeada, NAT64, 6to4 y Teredo. Ignora las variables de proxy del entorno, sigue como máximo 3 redirecciones y lee como máximo 64 KiB.
+
 ## [0.5.6] - 2026-10-24
 
 ### Añadido
@@ -586,7 +592,8 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
   `.gitattributes` y `.gitignore`.
 - Licencia WNCL-1.0 aplicada: archivo `LICENSE` y sección de créditos en los README.
 
-[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.5.6...HEAD
+[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.5.7...HEAD
+[0.5.7]: https://github.com/catlinux/Talaia/releases/tag/v0.5.7
 [0.5.6]: https://github.com/catlinux/Talaia/releases/tag/v0.5.6
 [0.5.5]: https://github.com/catlinux/Talaia/releases/tag/v0.5.5
 [0.5.4]: https://github.com/catlinux/Talaia/releases/tag/v0.5.4

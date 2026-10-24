@@ -18,6 +18,12 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.5.7] - 2026-10-24
+
+### Security
+
+- Outbound traffic guard (not used yet): the checks and notifications of the next steps will connect through a dialer that validates the IP address actually being connected to, so a name that resolves to a private address (DNS rebinding) or a redirect cannot reach loopback, private networks, CGNAT, link-local or cloud metadata addresses (`169.254.169.254` stays blocked even if private targets are allowed), including their IPv4-mapped, NAT64, 6to4 and Teredo forms. It ignores proxy environment variables, follows at most 3 redirects and reads at most 64 KiB.
+
 ## [0.5.6] - 2026-10-24
 
 ### Added
@@ -586,7 +592,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.5.6...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.5.7...HEAD
+[0.5.7]: https://github.com/catlinux/Talaia/releases/tag/v0.5.7
 [0.5.6]: https://github.com/catlinux/Talaia/releases/tag/v0.5.6
 [0.5.5]: https://github.com/catlinux/Talaia/releases/tag/v0.5.5
 [0.5.4]: https://github.com/catlinux/Talaia/releases/tag/v0.5.4
