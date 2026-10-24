@@ -105,6 +105,9 @@ of the current phase and the next one.
 - [x] Terminal session recording (done in phases 2 and 3)
 - [ ] After an update, the panel keeps showing the old version: make it reload itself (or show a "reload" notice) once the core restarts with a new version
 - [ ] Delete users: only disabled ones, confirmation by typing the name, removes assignments, keys and team memberships, never the last administrator, audit history keeps the name (asked by the maintainer in the phase 4 real test)
+- [ ] `GET /api/v1/servers` still returns `agent_latest_version` and `agent_upgrade_command` to users with limited access: omit them unless the user can view or update a server (found in the phase 4 real test)
+- [ ] API key dialog: the example command should contain the real key just created (it is on screen once anyway) and offer a PowerShell variant (`curl.exe` / `Invoke-RestMethod`) next to the Linux one (found in the phase 4 real test)
+- [ ] Access form: clear the stale error banner (for example "this assignment already exists") when the form is reopened or the inputs change
 - [ ] Docs EN/ES, security review (Opus), real test with a second user, close at 0.5.0
 
 ## Operations block (decided 2026-10-20, before closing phase 2)
@@ -134,3 +137,5 @@ Write new ideas here instead of adding them to the current phase.
 - Integration with Tailscale/Headscale to create the private network automatically
 - Cost dashboard per provider
 - Future option: Headscale or another VPN, to keep the panel or some machines private (decided by the maintainer on 2026-10-20 to leave it for later). Set aside for now: Headscale wants port 443 in production, which breaks the principle above, and a public core already reaches servers behind NAT because agents connect outward
+- Option to update the agents automatically after the core is updated (opt-in, one server at a time, stopping at the first failure), instead of the separate "update all agents" step
+- Optional redirect from plain HTTP to the panel's HTTPS address, so typing the host without `https://` or the port lands on the panel
