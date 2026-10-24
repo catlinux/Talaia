@@ -11,6 +11,7 @@ import caFleet from '../locales/ca/fleet.json'
 import caMetrics from '../locales/ca/metrics.json'
 import caServer from '../locales/ca/server.json'
 import caAlerts from '../locales/ca/alerts.json'
+import caAlertsSettings from '../locales/ca/alertsSettings.json'
 import caSettings from '../locales/ca/settings.json'
 import caUsers from '../locales/ca/users.json'
 import caValidation from '../locales/ca/validation.json'
@@ -23,6 +24,7 @@ import enFleet from '../locales/en/fleet.json'
 import enMetrics from '../locales/en/metrics.json'
 import enServer from '../locales/en/server.json'
 import enAlerts from '../locales/en/alerts.json'
+import enAlertsSettings from '../locales/en/alertsSettings.json'
 import enSettings from '../locales/en/settings.json'
 import enUsers from '../locales/en/users.json'
 import enValidation from '../locales/en/validation.json'
@@ -35,6 +37,7 @@ import esFleet from '../locales/es/fleet.json'
 import esMetrics from '../locales/es/metrics.json'
 import esServer from '../locales/es/server.json'
 import esAlerts from '../locales/es/alerts.json'
+import esAlertsSettings from '../locales/es/alertsSettings.json'
 import esSettings from '../locales/es/settings.json'
 import esUsers from '../locales/es/users.json'
 import esValidation from '../locales/es/validation.json'
@@ -60,6 +63,7 @@ void i18n
         server: caServer,
         settings: caSettings,
         alerts: caAlerts,
+        alertsSettings: caAlertsSettings,
         users: caUsers,
         auth: caAuth,
         errors: caErrors,
@@ -74,6 +78,7 @@ void i18n
         server: esServer,
         settings: esSettings,
         alerts: esAlerts,
+        alertsSettings: esAlertsSettings,
         users: esUsers,
         auth: esAuth,
         errors: esErrors,
@@ -88,6 +93,7 @@ void i18n
         server: enServer,
         settings: enSettings,
         alerts: enAlerts,
+        alertsSettings: enAlertsSettings,
         users: enUsers,
         auth: enAuth,
         errors: enErrors,

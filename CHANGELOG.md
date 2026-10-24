@@ -18,6 +18,12 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.5.13] - 2026-10-24
+
+### Added
+
+- **Alert settings in the panel**: a new *Alerts* page in Settings (administrators only) to manage the alert rules (the built-in ones can be edited and disabled but not deleted), the HTTP/TCP/TLS checks (with *Run now* and the last result) and the notification channels (Telegram, ntfy, email, Discord, webhook) with a *Send test* button. Channel secrets are write-only: once saved they are never shown again, only replaced. It also holds the switch that lets checks and notifications reach private networks.
+
 ## [0.5.12] - 2026-10-24
 
 ### Added
@@ -622,7 +628,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.5.12...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.5.13...HEAD
+[0.5.13]: https://github.com/catlinux/Talaia/releases/tag/v0.5.13
 [0.5.12]: https://github.com/catlinux/Talaia/releases/tag/v0.5.12
 [0.5.11]: https://github.com/catlinux/Talaia/releases/tag/v0.5.11
 [0.5.10]: https://github.com/catlinux/Talaia/releases/tag/v0.5.10

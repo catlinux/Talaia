@@ -13,6 +13,12 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+## [0.5.13] - 2026-10-24
+
+### Añadido
+
+- **Ajustes de alertas en el panel**: una nueva página *Alertas* en Ajustes (solo administradores) para gestionar las reglas de alerta (las integradas se pueden editar y desactivar pero no borrar), las comprobaciones HTTP/TCP/TLS (con *Ejecutar ahora* y el último resultado) y los canales de notificación (Telegram, ntfy, correo, Discord, webhook) con un botón *Enviar prueba*. Los secretos de los canales son de solo escritura: una vez guardados no se vuelven a mostrar, solo se sustituyen. Incluye también el interruptor que permite a las comprobaciones y notificaciones llegar a redes privadas.
+
 ## [0.5.12] - 2026-10-24
 
 ### Añadido
@@ -622,7 +628,8 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
   `.gitattributes` y `.gitignore`.
 - Licencia WNCL-1.0 aplicada: archivo `LICENSE` y sección de créditos en los README.
 
-[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.5.12...HEAD
+[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.5.13...HEAD
+[0.5.13]: https://github.com/catlinux/Talaia/releases/tag/v0.5.13
 [0.5.12]: https://github.com/catlinux/Talaia/releases/tag/v0.5.12
 [0.5.11]: https://github.com/catlinux/Talaia/releases/tag/v0.5.11
 [0.5.10]: https://github.com/catlinux/Talaia/releases/tag/v0.5.10

@@ -1,0 +1,284 @@
+{
+  "eyebrow": "Operations",
+  "title": "Alerts",
+  "intro": "Tune the rules, the checks that feed them and the channels that deliver them.",
+  "actions": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "edit": "Edit",
+    "delete": "Delete"
+  },
+  "common": {
+    "enabled": "Enabled",
+    "disabled": "Disabled",
+    "never": "Never"
+  },
+  "severity": {
+    "warning": "Warning",
+    "critical": "Critical"
+  },
+  "scopes": {
+    "organization": "Organization",
+    "group": "Group",
+    "server": "Server",
+    "stack": "Stack",
+    "container": "Container"
+  },
+  "languages": {
+    "ca": "Catalan",
+    "es": "Spanish",
+    "en": "English"
+  },
+  "types": {
+    "server_offline": {
+      "name": "Server offline",
+      "hint": "Fires when a server stops reporting for the configured time."
+    },
+    "cpu_high": {
+      "name": "CPU high",
+      "hint": "Fires when CPU stays above the threshold for the configured duration."
+    },
+    "mem_high": {
+      "name": "Memory high",
+      "hint": "Fires when memory stays above the threshold for the configured duration."
+    },
+    "disk_high": {
+      "name": "Disk high",
+      "hint": "Fires when disk usage stays above the threshold for the configured duration."
+    },
+    "container_down": {
+      "name": "Container down",
+      "hint": "Fires when a watched container has been stopped for the configured time."
+    },
+    "container_unhealthy": {
+      "name": "Container unhealthy",
+      "hint": "Fires when a container remains unhealthy for the configured time."
+    },
+    "check_failed": {
+      "name": "Health check failed",
+      "hint": "Fires after a check fails the configured number of times in a row."
+    },
+    "cert_expiry": {
+      "name": "Certificate expiring",
+      "hint": "Fires when an agent certificate is close to its expiry date."
+    }
+  },
+  "params": {
+    "seconds": "Seconds",
+    "secondsHint": "Between {{min}} and {{max}} seconds.",
+    "threshold": "Threshold (%)",
+    "thresholdHint": "Between {{min}} and {{max}}%.",
+    "for_seconds": "Duration (seconds)",
+    "for_secondsHint": "Between {{min}} and {{max}} seconds above the threshold.",
+    "consecutive_failures": "Consecutive failures",
+    "consecutive_failuresHint": "Between {{min}} and {{max}} failed checks.",
+    "days": "Days before expiry",
+    "daysHint": "Warn between {{min}} and {{max}} days before the certificate expires."
+  },
+  "repeat": {
+    "0": "Never",
+    "300": "Every 5 minutes",
+    "900": "Every 15 minutes",
+    "3600": "Every hour",
+    "21600": "Every 6 hours",
+    "86400": "Every 24 hours"
+  },
+  "validation": {
+    "fixFields": "Check the marked fields before saving.",
+    "name": "Write a name within the allowed length.",
+    "scope": "Choose the server, group or name this rule applies to.",
+    "params": "Use whole numbers inside the allowed range.",
+    "target": "Write a valid target for this check.",
+    "http": "Use whole seconds and expected codes such as 200 or 200-299.",
+    "secret": "Fill in the secret fields required by this channel."
+  },
+  "rules": {
+    "title": "Rules",
+    "intro": "What raises an alert, how severe it is and where it applies.",
+    "add": "Add rule",
+    "loading": "Loading rules…",
+    "empty": "There are no alert rules yet.",
+    "builtin": "Built-in",
+    "created": "Rule created.",
+    "updated": "Rule updated.",
+    "deleted": "Rule deleted.",
+    "toggle": "Enable or disable {{name}}",
+    "createTitle": "New alert rule",
+    "editTitle": "Edit alert rule",
+    "deleteTitle": "Delete the rule {{name}}?",
+    "deleteBody": "Rules that are deleted stop raising alerts. Built-in rules cannot be deleted.",
+    "table": {
+      "name": "Rule",
+      "type": "Type",
+      "severity": "Severity",
+      "scope": "Scope",
+      "enabled": "Enabled",
+      "actions": "Actions"
+    },
+    "form": {
+      "name": "Name",
+      "type": "Rule type",
+      "severity": "Severity",
+      "scope": "Applies to",
+      "group": "Group",
+      "server": "Server",
+      "stackName": "Stack name",
+      "containerName": "Container name",
+      "chooseGroup": "Choose a group",
+      "chooseServer": "Choose a server",
+      "parameters": "Parameters",
+      "repeat": "Repeat while firing",
+      "channels": "Channels",
+      "channelsHint": "Leave all unchecked to send through every active channel.",
+      "noChannels": "There are no channels yet; alerts will use the default delivery.",
+      "enabled": "This rule is enabled"
+    }
+  },
+  "checks": {
+    "title": "Checks",
+    "intro": "HTTP, TCP and TLS probes that can trigger the rules.",
+    "add": "Add check",
+    "loading": "Loading checks…",
+    "empty": "There are no checks yet.",
+    "created": "Check created.",
+    "updated": "Check updated.",
+    "deleted": "Check deleted.",
+    "toggle": "Enable or disable {{name}}",
+    "run": "Run now",
+    "running": "Running…",
+    "runOk": "The check {{name}} passed.",
+    "runFail": "The check {{name}} failed: {{error}}",
+    "interval": "Every {{seconds}} seconds",
+    "createTitle": "New check",
+    "editTitle": "Edit check",
+    "deleteTitle": "Delete the check {{name}}?",
+    "deleteBody": "The check stops running and its results are no longer updated.",
+    "kinds": {
+      "http": "HTTP",
+      "tcp": "TCP",
+      "tls": "TLS"
+    },
+    "result": {
+      "never": "Never run",
+      "ok": "OK",
+      "fail": "Failed",
+      "latency": "{{ms}} ms",
+      "status": "HTTP {{code}}",
+      "certDays": "Certificate: {{days}} days",
+      "unknownError": "unknown error"
+    },
+    "table": {
+      "name": "Check",
+      "kind": "Kind",
+      "target": "Target",
+      "interval": "Interval",
+      "result": "Last result",
+      "actions": "Actions"
+    },
+    "form": {
+      "name": "Name",
+      "kind": "Kind",
+      "interval": "Interval (seconds)",
+      "intervalHint": "At least 30 seconds and at most 24 hours.",
+      "target": "Target",
+      "targetPlaceholder": {
+        "http": "https://example.com/health",
+        "tcp": "example.com:443",
+        "tls": "example.com:443"
+      },
+      "targetHint": {
+        "http": "Full URL including the scheme.",
+        "tcp": "Host and port, for example example.com:443.",
+        "tls": "Host and port; the certificate is validated during the handshake."
+      },
+      "method": "HTTP method",
+      "timeout": "Timeout (seconds)",
+      "timeoutHint": "Between 1 and 10 seconds.",
+      "expectedCodes": "Expected codes",
+      "expectedCodesHint": "Comma-separated codes or ranges, for example 200, 301-399.",
+      "server": "Run on",
+      "anyServer": "Core only",
+      "serverHint": "Associating a server lets the check use its network context.",
+      "enabled": "This check is enabled"
+    }
+  },
+  "channels": {
+    "title": "Channels",
+    "intro": "Where notifications go and which language they use.",
+    "add": "Add channel",
+    "loading": "Loading channels…",
+    "empty": "There are no notification channels yet.",
+    "created": "Channel created.",
+    "updated": "Channel updated.",
+    "deleted": "Channel deleted.",
+    "toggle": "Enable or disable {{name}}",
+    "test": "Send test",
+    "testing": "Sending…",
+    "testOk": "The test notification to {{name}} was delivered.",
+    "testFail": "The test notification to {{name}} failed: {{error}}",
+    "unknownError": "unknown error",
+    "neverUsed": "Never used",
+    "lastOk": "OK · {{date}}",
+    "secretSaved": "Secret saved",
+    "createTitle": "New notification channel",
+    "editTitle": "Edit notification channel",
+    "deleteTitle": "Delete the channel {{name}}?",
+    "deleteBody": "Pending notifications for this channel will no longer be delivered.",
+    "table": {
+      "name": "Channel",
+      "type": "Type",
+      "language": "Language",
+      "enabled": "Enabled",
+      "status": "Last status",
+      "actions": "Actions"
+    },
+    "types": {
+      "telegram": "Telegram",
+      "ntfy": "ntfy",
+      "email": "Email",
+      "discord": "Discord",
+      "webhook": "Webhook"
+    },
+    "form": {
+      "name": "Name",
+      "type": "Type",
+      "language": "Language",
+      "enabled": "This channel is enabled",
+      "chatId": "Chat ID",
+      "server": "Server URL",
+      "priority": "Priority",
+      "host": "SMTP host",
+      "port": "SMTP port",
+      "from": "From address",
+      "to": "Recipients",
+      "toHint": "Separate addresses with commas.",
+      "tlsMode": "TLS mode",
+      "starttls": "STARTTLS",
+      "tls": "Implicit TLS",
+      "tlsHint": "Plain-text SMTP is never used.",
+      "secret": "Secret",
+      "secretSaved": "Secret saved",
+      "replace": "Replace",
+      "botToken": "Bot token",
+      "topic": "Topic",
+      "accessToken": "Access token",
+      "optional": "Optional.",
+      "username": "Username",
+      "password": "Password",
+      "webhookUrl": "Discord webhook URL",
+      "endpointUrl": "Endpoint URL",
+      "hmac": "HMAC secret",
+      "hmacHint": "Optional; signs the payload with HMAC-SHA256.",
+      "signatureHint": "The signature travels in the X-Talaia-Signature header over timestamp and body."
+    }
+  },
+  "privateTargets": {
+    "title": "Private networks",
+    "intro": "By default checks and notifications cannot reach loopback, private or link-local addresses.",
+    "loading": "Loading policy…",
+    "allow": "Allow checks and notifications to reach private networks",
+    "warning": "Only enable this when the core and the targets live in a trusted network. It widens what a misconfigured check or webhook can reach.",
+    "cloudMetadata": "Cloud metadata addresses always stay blocked, whatever this setting says.",
+    "saved": "Private-network policy saved."
+  }
+}

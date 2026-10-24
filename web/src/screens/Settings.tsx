@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
+import { createAlertsAdminApi, type AlertsAdminApi } from '../api/alertsAdmin'
 import { createAuthApi, type AccessApi } from '../api/auth'
 import { createAPIKeysApi, type APIKeysApi } from '../api/apikeys'
 import { createGroupsApi, type Group, type GroupsApi } from '../api/groups'
@@ -22,6 +23,7 @@ import { errorMessage } from '../auth/AuthGate'
 import { usePermissions } from '../auth/permissions'
 import { ManualUpgrade } from './server/ManualUpgrade'
 import { AccessCard } from './settings/AccessCard'
+import { AlertsSettings } from './settings/AlertsSettings'
 import { APIKeysCard } from './settings/APIKeysCard'
 import { OIDCSettingsCard } from './settings/OIDCSettingsCard'
 
@@ -46,6 +48,8 @@ interface SettingsProps {
   oidcApi?: OIDCApi
   /** groupsApi supplies the group names of the key scope selector. */
   groupsApi?: GroupsApi
+  /** alertsApi manages alert rules, checks, channels and settings. */
+  alertsApi?: AlertsAdminApi
   /** pollMs overrides the polling interval, for the tests. */
   pollMs?: number
 }
@@ -61,6 +65,7 @@ const defaultAccessApi = createAuthApi()
 const defaultKeysApi = createAPIKeysApi()
 const defaultOIDCApi = createOIDCApi()
 const defaultGroupsApi = createGroupsApi()
+const defaultAlertsApi = createAlertsAdminApi()
 
 /** shortSHA returns the seven characters the panel shows of a commit. */
 function shortSHA(sha: string): string {
@@ -150,6 +155,7 @@ export function Settings({
   keysApi,
   oidcApi,
   groupsApi,
+  alertsApi,
   pollMs = pollEvery,
 }: SettingsProps) {
   const { t, i18n } = useTranslation(['settings', 'errors'])
@@ -163,6 +169,7 @@ export function Settings({
   const keys = keysApi ?? (api === defaultApi ? defaultKeysApi : undefined)
   const oidc = oidcApi ?? (api === defaultApi ? defaultOIDCApi : undefined)
   const groupsClient = groupsApi ?? (api === defaultApi ? defaultGroupsApi : undefined)
+  const alertsAdmin = alertsApi ?? (api === defaultApi ? defaultAlertsApi : undefined)
   const [view, setView] = useState<View>({ status: 'loading' })
   const [confirming, setConfirming] = useState(false)
   const [requesting, setRequesting] = useState(false)
@@ -188,6 +195,7 @@ export function Settings({
 
   const showServers = canSettings && api.listServers !== undefined
   const canUsers = !permissionsLoading && can('users.manage')
+  const canAlerts = !permissionsLoading && can('alerts.manage' as never)
   const canAgentUpdate = canSettings && can('server.agent_update')
   const canUpdateAgent = canAgentUpdate && api.updateAgent !== undefined
   const canUpdateAll = canAgentUpdate && api.updateAllAgents !== undefined
@@ -216,7 +224,7 @@ export function Settings({
   }, [api, canSettings, t])
 
   useEffect(() => {
-    if (!keys || !groupsClient || !canUsers) return
+    if (!groupsClient || (!canUsers && !canAlerts)) return
     let cancelled = false
     groupsClient.list().then(
       (next) => {
@@ -229,7 +237,7 @@ export function Settings({
     return () => {
       cancelled = true
     }
-  }, [canUsers, groupsClient, keys])
+  }, [canAlerts, canUsers, groupsClient])
 
   useEffect(() => {
     if (!canSettings) {
@@ -602,6 +610,10 @@ export function Settings({
       ) : null}
 
       {canSettings && oidc !== undefined ? <OIDCSettingsCard api={oidc} /> : null}
+
+      {canAlerts && alertsAdmin !== undefined ? (
+        <AlertsSettings api={alertsAdmin} servers={servers ?? []} groups={groups} />
+      ) : null}
 
       {canSettings && system !== null && update !== null ? (
         <>

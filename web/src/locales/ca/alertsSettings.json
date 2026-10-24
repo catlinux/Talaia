@@ -1,0 +1,284 @@
+{
+  "eyebrow": "Operacions",
+  "title": "Alertes",
+  "intro": "Ajusta les regles, les comprovacions que les alimenten i els canals que les envien.",
+  "actions": {
+    "save": "Desa",
+    "cancel": "Cancel·la",
+    "edit": "Edita",
+    "delete": "Elimina"
+  },
+  "common": {
+    "enabled": "Activada",
+    "disabled": "Desactivada",
+    "never": "Mai"
+  },
+  "severity": {
+    "warning": "Avís",
+    "critical": "Crítica"
+  },
+  "scopes": {
+    "organization": "Organització",
+    "group": "Grup",
+    "server": "Servidor",
+    "stack": "Stack",
+    "container": "Contenidor"
+  },
+  "languages": {
+    "ca": "Català",
+    "es": "Castellà",
+    "en": "Anglès"
+  },
+  "types": {
+    "server_offline": {
+      "name": "Servidor sense connexió",
+      "hint": "S'activa quan un servidor deixa d'informar durant el temps configurat."
+    },
+    "cpu_high": {
+      "name": "CPU alta",
+      "hint": "S'activa quan la CPU es manté per sobre del llindar durant el temps configurat."
+    },
+    "mem_high": {
+      "name": "Memòria alta",
+      "hint": "S'activa quan la memòria es manté per sobre del llindar durant el temps configurat."
+    },
+    "disk_high": {
+      "name": "Disc alt",
+      "hint": "S'activa quan l'ús del disc es manté per sobre del llindar durant el temps configurat."
+    },
+    "container_down": {
+      "name": "Contenidor aturat",
+      "hint": "S'activa quan un contenidor vigilat fa el temps configurat aturat."
+    },
+    "container_unhealthy": {
+      "name": "Contenidor no saludable",
+      "hint": "S'activa quan un contenidor fa el temps configurat sense estar saludable."
+    },
+    "check_failed": {
+      "name": "Comprovació fallida",
+      "hint": "S'activa després que una comprovació falli el nombre de vegades consecutives configurat."
+    },
+    "cert_expiry": {
+      "name": "Certificat a punt de caducar",
+      "hint": "S'activa quan el certificat d'un agent s'acosta a la data de caducitat."
+    }
+  },
+  "params": {
+    "seconds": "Segons",
+    "secondsHint": "Entre {{min}} i {{max}} segons.",
+    "threshold": "Llindar (%)",
+    "thresholdHint": "Entre {{min}} i {{max}}%.",
+    "for_seconds": "Durada (segons)",
+    "for_secondsHint": "Entre {{min}} i {{max}} segons per sobre del llindar.",
+    "consecutive_failures": "Fallades consecutives",
+    "consecutive_failuresHint": "Entre {{min}} i {{max}} comprovacions fallides.",
+    "days": "Dies abans de caducar",
+    "daysHint": "Avisa entre {{min}} i {{max}} dies abans que caduqui el certificat."
+  },
+  "repeat": {
+    "0": "Mai",
+    "300": "Cada 5 minuts",
+    "900": "Cada 15 minuts",
+    "3600": "Cada hora",
+    "21600": "Cada 6 hores",
+    "86400": "Cada 24 hores"
+  },
+  "validation": {
+    "fixFields": "Revisa els camps marcats abans de desar.",
+    "name": "Escriu un nom dins de la longitud permesa.",
+    "scope": "Tria el servidor, el grup o el nom al qual s'aplica aquesta regla.",
+    "params": "Fes servir nombres enters dins del rang permès.",
+    "target": "Escriu un objectiu vàlid per a aquesta comprovació.",
+    "http": "Fes servir segons enters i codis com 200 o 200-299.",
+    "secret": "Omple els camps secrets que requereix aquest canal."
+  },
+  "rules": {
+    "title": "Regles",
+    "intro": "Què genera una alerta, quina gravetat té i on s'aplica.",
+    "add": "Afegeix una regla",
+    "loading": "Carregant les regles…",
+    "empty": "Encara no hi ha regles d'alerta.",
+    "builtin": "Integrada",
+    "created": "Regla creada.",
+    "updated": "Regla actualitzada.",
+    "deleted": "Regla eliminada.",
+    "toggle": "Activa o desactiva {{name}}",
+    "createTitle": "Nova regla d'alerta",
+    "editTitle": "Edita la regla d'alerta",
+    "deleteTitle": "Vols eliminar la regla {{name}}?",
+    "deleteBody": "Les regles eliminades deixen de generar alertes. Les regles integrades no es poden eliminar.",
+    "table": {
+      "name": "Regla",
+      "type": "Tipus",
+      "severity": "Gravetat",
+      "scope": "Àmbit",
+      "enabled": "Activada",
+      "actions": "Accions"
+    },
+    "form": {
+      "name": "Nom",
+      "type": "Tipus de regla",
+      "severity": "Gravetat",
+      "scope": "S'aplica a",
+      "group": "Grup",
+      "server": "Servidor",
+      "stackName": "Nom del stack",
+      "containerName": "Nom del contenidor",
+      "chooseGroup": "Tria un grup",
+      "chooseServer": "Tria un servidor",
+      "parameters": "Paràmetres",
+      "repeat": "Repeteix mentre està activa",
+      "channels": "Canals",
+      "channelsHint": "Deixa-ho tot desmarcat per enviar-ho per tots els canals actius.",
+      "noChannels": "Encara no hi ha canals; les alertes faran servir l'enviament per defecte.",
+      "enabled": "Aquesta regla està activada"
+    }
+  },
+  "checks": {
+    "title": "Comprovacions",
+    "intro": "Sondes HTTP, TCP i TLS que poden activar les regles.",
+    "add": "Afegeix una comprovació",
+    "loading": "Carregant les comprovacions…",
+    "empty": "Encara no hi ha comprovacions.",
+    "created": "Comprovació creada.",
+    "updated": "Comprovació actualitzada.",
+    "deleted": "Comprovació eliminada.",
+    "toggle": "Activa o desactiva {{name}}",
+    "run": "Executa ara",
+    "running": "Executant…",
+    "runOk": "La comprovació {{name}} ha passat.",
+    "runFail": "La comprovació {{name}} ha fallat: {{error}}",
+    "interval": "Cada {{seconds}} segons",
+    "createTitle": "Nova comprovació",
+    "editTitle": "Edita la comprovació",
+    "deleteTitle": "Vols eliminar la comprovació {{name}}?",
+    "deleteBody": "La comprovació deixa d'executar-se i els seus resultats ja no s'actualitzen.",
+    "kinds": {
+      "http": "HTTP",
+      "tcp": "TCP",
+      "tls": "TLS"
+    },
+    "result": {
+      "never": "Mai executada",
+      "ok": "Correcta",
+      "fail": "Fallida",
+      "latency": "{{ms}} ms",
+      "status": "HTTP {{code}}",
+      "certDays": "Certificat: {{days}} dies",
+      "unknownError": "error desconegut"
+    },
+    "table": {
+      "name": "Comprovació",
+      "kind": "Tipus",
+      "target": "Objectiu",
+      "interval": "Interval",
+      "result": "Darrer resultat",
+      "actions": "Accions"
+    },
+    "form": {
+      "name": "Nom",
+      "kind": "Tipus",
+      "interval": "Interval (segons)",
+      "intervalHint": "Com a mínim 30 segons i com a màxim 24 hores.",
+      "target": "Objectiu",
+      "targetPlaceholder": {
+        "http": "https://example.com/health",
+        "tcp": "example.com:443",
+        "tls": "example.com:443"
+      },
+      "targetHint": {
+        "http": "URL completa amb l'esquema.",
+        "tcp": "Amfitrió i port, per exemple example.com:443.",
+        "tls": "Amfitrió i port; el certificat es valida durant la connexió."
+      },
+      "method": "Mètode HTTP",
+      "timeout": "Temps d'espera (segons)",
+      "timeoutHint": "Entre 1 i 10 segons.",
+      "expectedCodes": "Codis esperats",
+      "expectedCodesHint": "Codis o rangs separats per comes, per exemple 200, 301-399.",
+      "server": "Executa a",
+      "anyServer": "Només el nucli",
+      "serverHint": "Associar un servidor permet que la comprovació faci servir el seu context de xarxa.",
+      "enabled": "Aquesta comprovació està activada"
+    }
+  },
+  "channels": {
+    "title": "Canals",
+    "intro": "On van les notificacions i en quin idioma.",
+    "add": "Afegeix un canal",
+    "loading": "Carregant els canals…",
+    "empty": "Encara no hi ha canals de notificació.",
+    "created": "Canal creat.",
+    "updated": "Canal actualitzat.",
+    "deleted": "Canal eliminat.",
+    "toggle": "Activa o desactiva {{name}}",
+    "test": "Envia una prova",
+    "testing": "Enviant…",
+    "testOk": "La notificació de prova a {{name}} s'ha lliurat.",
+    "testFail": "La notificació de prova a {{name}} ha fallat: {{error}}",
+    "unknownError": "error desconegut",
+    "neverUsed": "Mai utilitzat",
+    "lastOk": "Correcte · {{date}}",
+    "secretSaved": "Secret desat",
+    "createTitle": "Nou canal de notificació",
+    "editTitle": "Edita el canal de notificació",
+    "deleteTitle": "Vols eliminar el canal {{name}}?",
+    "deleteBody": "Les notificacions pendents d'aquest canal ja no es lliuraran.",
+    "table": {
+      "name": "Canal",
+      "type": "Tipus",
+      "language": "Idioma",
+      "enabled": "Activat",
+      "status": "Darrer estat",
+      "actions": "Accions"
+    },
+    "types": {
+      "telegram": "Telegram",
+      "ntfy": "ntfy",
+      "email": "Correu electrònic",
+      "discord": "Discord",
+      "webhook": "Webhook"
+    },
+    "form": {
+      "name": "Nom",
+      "type": "Tipus",
+      "language": "Idioma",
+      "enabled": "Aquest canal està activat",
+      "chatId": "ID del xat",
+      "server": "URL del servidor",
+      "priority": "Prioritat",
+      "host": "Amfitrió SMTP",
+      "port": "Port SMTP",
+      "from": "Adreça remitent",
+      "to": "Destinataris",
+      "toHint": "Separa les adreces amb comes.",
+      "tlsMode": "Mode TLS",
+      "starttls": "STARTTLS",
+      "tls": "TLS implícit",
+      "tlsHint": "Mai es fa servir SMTP en text pla.",
+      "secret": "Secret",
+      "secretSaved": "Secret desat",
+      "replace": "Substitueix",
+      "botToken": "Token del bot",
+      "topic": "Tema",
+      "accessToken": "Token d'accés",
+      "optional": "Opcional.",
+      "username": "Usuari",
+      "password": "Contrasenya",
+      "webhookUrl": "URL del webhook de Discord",
+      "endpointUrl": "URL del punt de destinació",
+      "hmac": "Secret HMAC",
+      "hmacHint": "Opcional; signa la càrrega amb HMAC-SHA256.",
+      "signatureHint": "La signatura viatja a la capçalera X-Talaia-Signature sobre la marca de temps i el cos."
+    }
+  },
+  "privateTargets": {
+    "title": "Xarxes privades",
+    "intro": "Per defecte, les comprovacions i les notificacions no poden arribar a adreces de bucle local, privades o link-local.",
+    "loading": "Carregant la política…",
+    "allow": "Permet que les comprovacions i les notificacions arribin a xarxes privades",
+    "warning": "Activa-ho només quan el nucli i els objectius siguin en una xarxa de confiança. Amplia què pot arribar a tocar una comprovació o un webhook mal configurats.",
+    "cloudMetadata": "Les adreces de metadades al núvol continuen bloquejades sempre, digui el que digui aquesta opció.",
+    "saved": "Política de xarxes privades desada."
+  }
+}

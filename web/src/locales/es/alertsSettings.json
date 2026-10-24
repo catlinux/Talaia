@@ -1,0 +1,284 @@
+{
+  "eyebrow": "Operaciones",
+  "title": "Alertas",
+  "intro": "Ajusta las reglas, las comprobaciones que las alimentan y los canales que las envían.",
+  "actions": {
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "edit": "Editar",
+    "delete": "Eliminar"
+  },
+  "common": {
+    "enabled": "Activada",
+    "disabled": "Desactivada",
+    "never": "Nunca"
+  },
+  "severity": {
+    "warning": "Aviso",
+    "critical": "Crítica"
+  },
+  "scopes": {
+    "organization": "Organización",
+    "group": "Grupo",
+    "server": "Servidor",
+    "stack": "Stack",
+    "container": "Contenedor"
+  },
+  "languages": {
+    "ca": "Catalán",
+    "es": "Español",
+    "en": "Inglés"
+  },
+  "types": {
+    "server_offline": {
+      "name": "Servidor sin conexión",
+      "hint": "Se activa cuando un servidor deja de informar durante el tiempo configurado."
+    },
+    "cpu_high": {
+      "name": "CPU alta",
+      "hint": "Se activa cuando la CPU se mantiene por encima del umbral durante el tiempo configurado."
+    },
+    "mem_high": {
+      "name": "Memoria alta",
+      "hint": "Se activa cuando la memoria se mantiene por encima del umbral durante el tiempo configurado."
+    },
+    "disk_high": {
+      "name": "Disco alto",
+      "hint": "Se activa cuando el uso del disco se mantiene por encima del umbral durante el tiempo configurado."
+    },
+    "container_down": {
+      "name": "Contenedor parado",
+      "hint": "Se activa cuando un contenedor vigilado lleva el tiempo configurado parado."
+    },
+    "container_unhealthy": {
+      "name": "Contenedor no saludable",
+      "hint": "Se activa cuando un contenedor lleva el tiempo configurado sin estar saludable."
+    },
+    "check_failed": {
+      "name": "Comprobación fallida",
+      "hint": "Se activa después de que una comprobación falle el número de veces consecutivas configurado."
+    },
+    "cert_expiry": {
+      "name": "Certificado a punto de caducar",
+      "hint": "Se activa cuando el certificado de un agente se acerca a su fecha de caducidad."
+    }
+  },
+  "params": {
+    "seconds": "Segundos",
+    "secondsHint": "Entre {{min}} y {{max}} segundos.",
+    "threshold": "Umbral (%)",
+    "thresholdHint": "Entre {{min}} y {{max}}%.",
+    "for_seconds": "Duración (segundos)",
+    "for_secondsHint": "Entre {{min}} y {{max}} segundos por encima del umbral.",
+    "consecutive_failures": "Fallos consecutivos",
+    "consecutive_failuresHint": "Entre {{min}} y {{max}} comprobaciones fallidas.",
+    "days": "Días antes de caducar",
+    "daysHint": "Avisa entre {{min}} y {{max}} días antes de que caduque el certificado."
+  },
+  "repeat": {
+    "0": "Nunca",
+    "300": "Cada 5 minutos",
+    "900": "Cada 15 minutos",
+    "3600": "Cada hora",
+    "21600": "Cada 6 horas",
+    "86400": "Cada 24 horas"
+  },
+  "validation": {
+    "fixFields": "Revisa los campos marcados antes de guardar.",
+    "name": "Escribe un nombre dentro de la longitud permitida.",
+    "scope": "Elige el servidor, el grupo o el nombre al que se aplica esta regla.",
+    "params": "Usa números enteros dentro del rango permitido.",
+    "target": "Escribe un objetivo válido para esta comprobación.",
+    "http": "Usa segundos enteros y códigos como 200 o 200-299.",
+    "secret": "Rellena los campos secretos que requiere este canal."
+  },
+  "rules": {
+    "title": "Reglas",
+    "intro": "Qué genera una alerta, qué gravedad tiene y dónde se aplica.",
+    "add": "Añadir regla",
+    "loading": "Cargando las reglas…",
+    "empty": "Todavía no hay reglas de alerta.",
+    "builtin": "Integrada",
+    "created": "Regla creada.",
+    "updated": "Regla actualizada.",
+    "deleted": "Regla eliminada.",
+    "toggle": "Activa o desactiva {{name}}",
+    "createTitle": "Nueva regla de alerta",
+    "editTitle": "Editar la regla de alerta",
+    "deleteTitle": "¿Eliminar la regla {{name}}?",
+    "deleteBody": "Las reglas eliminadas dejan de generar alertas. Las reglas integradas no se pueden eliminar.",
+    "table": {
+      "name": "Regla",
+      "type": "Tipo",
+      "severity": "Gravedad",
+      "scope": "Ámbito",
+      "enabled": "Activada",
+      "actions": "Acciones"
+    },
+    "form": {
+      "name": "Nombre",
+      "type": "Tipo de regla",
+      "severity": "Gravedad",
+      "scope": "Se aplica a",
+      "group": "Grupo",
+      "server": "Servidor",
+      "stackName": "Nombre del stack",
+      "containerName": "Nombre del contenedor",
+      "chooseGroup": "Elige un grupo",
+      "chooseServer": "Elige un servidor",
+      "parameters": "Parámetros",
+      "repeat": "Repetir mientras está activa",
+      "channels": "Canales",
+      "channelsHint": "Deja todo desmarcado para enviar por todos los canales activos.",
+      "noChannels": "Todavía no hay canales; las alertas usarán el envío por defecto.",
+      "enabled": "Esta regla está activada"
+    }
+  },
+  "checks": {
+    "title": "Comprobaciones",
+    "intro": "Sondas HTTP, TCP y TLS que pueden activar las reglas.",
+    "add": "Añadir comprobación",
+    "loading": "Cargando las comprobaciones…",
+    "empty": "Todavía no hay comprobaciones.",
+    "created": "Comprobación creada.",
+    "updated": "Comprobación actualizada.",
+    "deleted": "Comprobación eliminada.",
+    "toggle": "Activa o desactiva {{name}}",
+    "run": "Ejecutar ahora",
+    "running": "Ejecutando…",
+    "runOk": "La comprobación {{name}} ha pasado.",
+    "runFail": "La comprobación {{name}} ha fallado: {{error}}",
+    "interval": "Cada {{seconds}} segundos",
+    "createTitle": "Nueva comprobación",
+    "editTitle": "Editar la comprobación",
+    "deleteTitle": "¿Eliminar la comprobación {{name}}?",
+    "deleteBody": "La comprobación deja de ejecutarse y sus resultados ya no se actualizan.",
+    "kinds": {
+      "http": "HTTP",
+      "tcp": "TCP",
+      "tls": "TLS"
+    },
+    "result": {
+      "never": "Nunca ejecutada",
+      "ok": "Correcta",
+      "fail": "Fallida",
+      "latency": "{{ms}} ms",
+      "status": "HTTP {{code}}",
+      "certDays": "Certificado: {{days}} días",
+      "unknownError": "error desconocido"
+    },
+    "table": {
+      "name": "Comprobación",
+      "kind": "Tipo",
+      "target": "Objetivo",
+      "interval": "Intervalo",
+      "result": "Último resultado",
+      "actions": "Acciones"
+    },
+    "form": {
+      "name": "Nombre",
+      "kind": "Tipo",
+      "interval": "Intervalo (segundos)",
+      "intervalHint": "Como mínimo 30 segundos y como máximo 24 horas.",
+      "target": "Objetivo",
+      "targetPlaceholder": {
+        "http": "https://example.com/health",
+        "tcp": "example.com:443",
+        "tls": "example.com:443"
+      },
+      "targetHint": {
+        "http": "URL completa con el esquema.",
+        "tcp": "Host y puerto, por ejemplo example.com:443.",
+        "tls": "Host y puerto; el certificado se valida durante la conexión."
+      },
+      "method": "Método HTTP",
+      "timeout": "Tiempo de espera (segundos)",
+      "timeoutHint": "Entre 1 y 10 segundos.",
+      "expectedCodes": "Códigos esperados",
+      "expectedCodesHint": "Códigos o rangos separados por comas, por ejemplo 200, 301-399.",
+      "server": "Ejecutar en",
+      "anyServer": "Solo el núcleo",
+      "serverHint": "Asociar un servidor permite que la comprobación use su contexto de red.",
+      "enabled": "Esta comprobación está activada"
+    }
+  },
+  "channels": {
+    "title": "Canales",
+    "intro": "Adónde van las notificaciones y en qué idioma.",
+    "add": "Añadir canal",
+    "loading": "Cargando los canales…",
+    "empty": "Todavía no hay canales de notificación.",
+    "created": "Canal creado.",
+    "updated": "Canal actualizado.",
+    "deleted": "Canal eliminado.",
+    "toggle": "Activa o desactiva {{name}}",
+    "test": "Enviar prueba",
+    "testing": "Enviando…",
+    "testOk": "La notificación de prueba a {{name}} se ha entregado.",
+    "testFail": "La notificación de prueba a {{name}} ha fallado: {{error}}",
+    "unknownError": "error desconocido",
+    "neverUsed": "Nunca usado",
+    "lastOk": "Correcto · {{date}}",
+    "secretSaved": "Secreto guardado",
+    "createTitle": "Nuevo canal de notificación",
+    "editTitle": "Editar el canal de notificación",
+    "deleteTitle": "¿Eliminar el canal {{name}}?",
+    "deleteBody": "Las notificaciones pendientes de este canal ya no se entregarán.",
+    "table": {
+      "name": "Canal",
+      "type": "Tipo",
+      "language": "Idioma",
+      "enabled": "Activado",
+      "status": "Último estado",
+      "actions": "Acciones"
+    },
+    "types": {
+      "telegram": "Telegram",
+      "ntfy": "ntfy",
+      "email": "Correo electrónico",
+      "discord": "Discord",
+      "webhook": "Webhook"
+    },
+    "form": {
+      "name": "Nombre",
+      "type": "Tipo",
+      "language": "Idioma",
+      "enabled": "Este canal está activado",
+      "chatId": "ID del chat",
+      "server": "URL del servidor",
+      "priority": "Prioridad",
+      "host": "Host SMTP",
+      "port": "Puerto SMTP",
+      "from": "Dirección remitente",
+      "to": "Destinatarios",
+      "toHint": "Separa las direcciones con comas.",
+      "tlsMode": "Modo TLS",
+      "starttls": "STARTTLS",
+      "tls": "TLS implícito",
+      "tlsHint": "Nunca se usa SMTP en texto plano.",
+      "secret": "Secreto",
+      "secretSaved": "Secreto guardado",
+      "replace": "Sustituir",
+      "botToken": "Token del bot",
+      "topic": "Tema",
+      "accessToken": "Token de acceso",
+      "optional": "Opcional.",
+      "username": "Usuario",
+      "password": "Contraseña",
+      "webhookUrl": "URL del webhook de Discord",
+      "endpointUrl": "URL del punto de destino",
+      "hmac": "Secreto HMAC",
+      "hmacHint": "Opcional; firma la carga con HMAC-SHA256.",
+      "signatureHint": "La firma viaja en la cabecera X-Talaia-Signature sobre la marca de tiempo y el cuerpo."
+    }
+  },
+  "privateTargets": {
+    "title": "Redes privadas",
+    "intro": "Por defecto, las comprobaciones y las notificaciones no pueden llegar a direcciones de bucle local, privadas o link-local.",
+    "loading": "Cargando la política…",
+    "allow": "Permitir que las comprobaciones y las notificaciones lleguen a redes privadas",
+    "warning": "Actívalo solo cuando el núcleo y los objetivos estén en una red de confianza. Amplía a qué puede llegar una comprobación o un webhook mal configurados.",
+    "cloudMetadata": "Las direcciones de metadatos en la nube siguen bloqueadas siempre, diga lo que diga esta opción.",
+    "saved": "Política de redes privadas guardada."
+  }
+}

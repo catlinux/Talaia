@@ -430,3 +430,264 @@
     max-width: none;
   }
 }
+
+/* Settings -> Alerts administration. */
+.alerts-settings {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.alerts-settings__head {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.alerts-settings__eyebrow {
+  margin: 0;
+  color: var(--accent);
+  font-family: var(--f-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.alerts-settings__title {
+  margin: 0;
+  font-size: clamp(1.4rem, 2.8vw, 1.9rem);
+  letter-spacing: -0.02em;
+}
+
+.alerts-admin__card .settings__card-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.alerts-admin__card h3 {
+  font-size: 1.05rem;
+}
+
+.alerts-admin__actions,
+.alerts-admin__row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.alerts-admin__form {
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+}
+
+.alerts-admin__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 12px;
+}
+
+.alerts-admin__fieldset {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 13px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+}
+
+.alerts-admin__fieldset legend {
+  padding: 0 4px;
+}
+
+.alerts-admin__switch,
+.alerts-admin__policy {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  cursor: pointer;
+}
+
+.alerts-admin__switch input,
+.alerts-admin__policy input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent);
+}
+
+.alerts-admin__switch--inline {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.alerts-admin__choices {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 7px;
+}
+
+.alerts-admin__choice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 9px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  cursor: pointer;
+}
+
+.alerts-admin__choice input {
+  accent-color: var(--accent);
+}
+
+.alerts-admin__choice-type {
+  margin-left: auto;
+  color: var(--muted);
+  font-family: var(--f-mono);
+  font-size: 0.66rem;
+  text-transform: uppercase;
+}
+
+.alerts-admin__name {
+  display: block;
+  font-weight: 600;
+}
+
+.alerts-admin__builtin,
+.alerts-admin__type {
+  display: inline-flex;
+  margin-top: 3px;
+  padding: 1px 7px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--muted);
+  font-family: var(--f-mono);
+  font-size: 0.64rem;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.alerts-admin__severity {
+  display: inline-flex;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-family: var(--f-mono);
+  font-size: 0.68rem;
+  font-weight: 600;
+}
+
+.alerts-admin__severity--critical {
+  background: var(--crit-soft);
+  color: var(--crit);
+}
+
+.alerts-admin__severity--warning {
+  background: var(--warn-soft);
+  color: var(--warn);
+}
+
+.alerts-admin__code {
+  overflow-wrap: anywhere;
+  font-family: var(--f-mono);
+  font-size: 0.76rem;
+}
+
+.alerts-admin__result {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px 9px;
+  font-size: 0.78rem;
+}
+
+.alerts-admin__error-text {
+  display: -webkit-box;
+  overflow: hidden;
+  max-width: 26ch;
+  color: var(--crit);
+  font-size: 0.76rem;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+.alerts-admin__secret-saved {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 9px;
+}
+
+.alerts-admin__secret-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.alerts-admin__secret-fields .alerts-admin__grid {
+  width: 100%;
+}
+
+.settings__notice--error {
+  border-color: color-mix(in srgb, var(--crit) 40%, transparent);
+  background: var(--crit-soft);
+  color: var(--crit);
+}
+
+.settings__message--warning {
+  padding: 9px 11px;
+  border-left: 3px solid var(--warn);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  background: var(--warn-soft);
+  color: var(--ink);
+  font-size: 0.84rem;
+}
+
+@media (max-width: 760px) {
+  .alerts-admin__grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .alerts-admin__card .settings__card-head,
+  .alerts-admin__actions,
+  .alerts-admin__row-actions {
+    width: 100%;
+  }
+
+  .alerts-admin__card .settings__card-head > button,
+  .alerts-admin__actions .settings__button,
+  .alerts-admin__row-actions .settings__button {
+    flex: 1 1 auto;
+  }
+
+  .alerts-admin__error-text {
+    max-width: none;
+  }
+}
+
+/* Delete buttons inside the settings tables are outlined: the solid red is kept
+   for the confirmation dialog, where the destructive step really happens. */
+table .settings__button--danger {
+  background: transparent;
+  color: var(--crit);
+  border: 1px solid color-mix(in srgb, var(--crit) 55%, transparent);
+}
+
+table .settings__button--danger:hover:not(:disabled) {
+  background: var(--crit-soft);
+  color: var(--crit);
+}
+
+table td code,
+table td .mono {
+  overflow-wrap: anywhere;
+}

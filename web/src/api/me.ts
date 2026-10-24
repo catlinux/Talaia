@@ -27,6 +27,9 @@ export type Permission =
   | 'audit.view'
   | 'recordings.view'
   | 'apikeys.manage'
+  | 'alerts.view'
+  | 'alerts.silence'
+  | 'alerts.manage'
 
 /** MeUser is the signed-in account. */
 export interface MeUser {
