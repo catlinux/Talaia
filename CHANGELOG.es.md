@@ -13,6 +13,12 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+## [0.5.6] - 2026-10-24
+
+### Añadido
+
+- Gráficos de histórico en el panel: la pestaña **Resumen** de un servidor muestra CPU, memoria, disco y red en 1 h, 6 h, 24 h, 7 d o 30 d (se refresca cada 30 s, con el valor actual, un tooltip que sigue al puntero o al teclado, huecos donde no hay datos y un resumen en texto para lectores de pantalla), y la pantalla del stack muestra una mini gráfica de CPU y memoria por contenedor. Los gráficos los dibuja el propio panel en SVG, en ca/es/en y en los temas claro y oscuro. Quien no puede ver las métricas de un servidor no ve la sección.
+
 ## [0.5.5] - 2026-10-24
 
 ### Añadido
@@ -580,7 +586,8 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
   `.gitattributes` y `.gitignore`.
 - Licencia WNCL-1.0 aplicada: archivo `LICENSE` y sección de créditos en los README.
 
-[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.5.5...HEAD
+[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.5.6...HEAD
+[0.5.6]: https://github.com/catlinux/Talaia/releases/tag/v0.5.6
 [0.5.5]: https://github.com/catlinux/Talaia/releases/tag/v0.5.5
 [0.5.4]: https://github.com/catlinux/Talaia/releases/tag/v0.5.4
 [0.5.3]: https://github.com/catlinux/Talaia/releases/tag/v0.5.3

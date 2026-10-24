@@ -2,6 +2,7 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-li
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { Container, ContainersApi, Job } from '../../api/containers'
+import type { MetricsApi } from '../../api/metrics'
 import i18n from '../../i18n'
 import { StackScreen } from './StackScreen'
 
@@ -64,12 +65,14 @@ interface RenderOptions {
   dockerAvailable?: boolean
   onBack?: () => void
   onChanged?: () => void
+  metricsApi?: MetricsApi
 }
 
 function renderScreen(api: ContainersApi, options: RenderOptions = {}) {
   render(
     <StackScreen
       api={api}
+      metricsApi={options.metricsApi}
       server={server}
       name="shop"
       adopted={options.adopted ?? false}
@@ -88,6 +91,26 @@ describe('StackScreen', () => {
   beforeEach(async () => {
     localStorage.clear()
     await i18n.changeLanguage('en')
+  })
+
+  it('shows CPU and memory sparklines for each container when metrics are provided', async () => {
+    const metricsApi = {
+      server: vi.fn(),
+      container: vi.fn().mockResolvedValue({
+        resolution: 'raw',
+        from: '',
+        to: '',
+        points: [
+          { time: '2026-10-24T10:00:00Z', cpu: 10, mem_used: 1_000_000 },
+          { time: '2026-10-24T10:01:00Z', cpu: 20, mem_used: 2_000_000 },
+        ],
+      }),
+    } as unknown as MetricsApi
+    renderScreen(apiWith(), { metricsApi })
+    await waitFor(() =>
+      expect(document.querySelectorAll('.stack-metrics .sparkline')).toHaveLength(2),
+    )
+    expect(metricsApi.container).toHaveBeenCalledWith('srv-1', 'shop-web-1', '1h')
   })
 
   afterEach(() => {

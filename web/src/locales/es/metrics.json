@@ -1,0 +1,32 @@
+{
+  "range": {
+    "label": "Intervalo de tiempo",
+    "1h": "1 h",
+    "6h": "6 h",
+    "24h": "24 h",
+    "7d": "7 días",
+    "30d": "30 días"
+  },
+  "history": {
+    "title": "Historial"
+  },
+  "chart": {
+    "cpu": "CPU",
+    "memory": "Memoria",
+    "disk": "Disco",
+    "network": "Red",
+    "loading": "Cargando métricas…",
+    "empty": "Aún no hay datos",
+    "error": "No se han podido cargar las métricas.",
+    "summary": "Mínimo {{min}}, media {{avg}}, máximo {{max}}",
+    "memoryTotal": "{{used}} de {{total}}",
+    "networkLatest": "↓ {{rx}} · ↑ {{tx}}"
+  },
+  "series": {
+    "cpu": "CPU",
+    "used": "Usado",
+    "total": "Total",
+    "receive": "Recibido",
+    "transmit": "Enviado"
+  }
+}

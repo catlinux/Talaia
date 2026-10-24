@@ -5,6 +5,8 @@ import type { AptSummary } from '../../api/types'
 import { formatBytes, formatNumber, formatPercent } from '../fleet/format'
 import { Meter } from '../fleet/Meter'
 import { UseGauge } from './UseGauge'
+import type { MetricsApi } from '../../api/metrics'
+import { HistorySection } from './HistorySection'
 
 /** ServerTab is one tab of the server screen. */
 export type ServerTab = 'overview' | 'containers' | 'services' | 'logs' | 'updates'
@@ -38,6 +40,8 @@ export interface OverviewServer {
 
 interface OverviewTabProps {
   server: OverviewServer
+  serverId?: string
+  metricsApi?: MetricsApi
   /** The separate props win over the same fields on server. */
   agentVersion?: string
   agentUpdateAvailable?: boolean
@@ -82,6 +86,8 @@ function formatUptime(seconds: number, language: string, t: TFunction): string {
  */
 export function OverviewTab({
   server,
+  serverId,
+  metricsApi,
   agentVersion,
   agentUpdateAvailable,
   agentUpdateManual,
@@ -236,6 +242,8 @@ export function OverviewTab({
           value={diskPercent === null ? unknown : diskValue}
         />
       </div>
+
+      {metricsApi && serverId ? <HistorySection api={metricsApi} serverId={serverId} /> : null}
 
       {visibleAttention.length > 0 ? (
         <section className="overview__attention" aria-labelledby="overview-attention-title">

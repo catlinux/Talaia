@@ -3,26 +3,47 @@ import { describe, expect, it } from 'vitest'
 import caAbout from './ca/about.json'
 import caCommon from './ca/common.json'
 import caErrors from './ca/errors.json'
+import caMetrics from './ca/metrics.json'
 import caSettings from './ca/settings.json'
 import enAbout from './en/about.json'
 import enCommon from './en/common.json'
 import enErrors from './en/errors.json'
+import enMetrics from './en/metrics.json'
 import enSettings from './en/settings.json'
 import esAbout from './es/about.json'
 import esCommon from './es/common.json'
 import esErrors from './es/errors.json'
+import esMetrics from './es/metrics.json'
 import esSettings from './es/settings.json'
 
 const languages = ['ca', 'es', 'en'] as const
-const namespaces = ['common', 'about', 'settings', 'errors'] as const
+const namespaces = ['common', 'about', 'settings', 'errors', 'metrics'] as const
 
 type Language = (typeof languages)[number]
 type Namespace = (typeof namespaces)[number]
 
 const resources: Record<Language, Record<Namespace, unknown>> = {
-  ca: { common: caCommon, about: caAbout, settings: caSettings, errors: caErrors },
-  es: { common: esCommon, about: esAbout, settings: esSettings, errors: esErrors },
-  en: { common: enCommon, about: enAbout, settings: enSettings, errors: enErrors },
+  ca: {
+    common: caCommon,
+    about: caAbout,
+    settings: caSettings,
+    errors: caErrors,
+    metrics: caMetrics,
+  },
+  es: {
+    common: esCommon,
+    about: esAbout,
+    settings: esSettings,
+    errors: esErrors,
+    metrics: esMetrics,
+  },
+  en: {
+    common: enCommon,
+    about: enAbout,
+    settings: enSettings,
+    errors: enErrors,
+    metrics: enMetrics,
+  },
 }
 
 function keyPaths(value: unknown, prefix = ''): string[] {

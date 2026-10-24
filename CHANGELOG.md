@@ -18,6 +18,12 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.5.6] - 2026-10-24
+
+### Added
+
+- History charts in the panel: the **Overview** tab of a server shows CPU, memory, disk and network over 1 h, 6 h, 24 h, 7 d or 30 d (refreshed every 30 s, with the current value, a tooltip that follows the pointer or the keyboard, gaps where there is no data and a text summary for screen readers), and the stack screen shows a CPU and memory sparkline per container. The charts are drawn in SVG by the panel itself, in ca/es/en and in the light and dark themes. Users who cannot see a server's metrics do not see the section.
+
 ## [0.5.5] - 2026-10-24
 
 ### Added
@@ -580,7 +586,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.5.5...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.5.6...HEAD
+[0.5.6]: https://github.com/catlinux/Talaia/releases/tag/v0.5.6
 [0.5.5]: https://github.com/catlinux/Talaia/releases/tag/v0.5.5
 [0.5.4]: https://github.com/catlinux/Talaia/releases/tag/v0.5.4
 [0.5.3]: https://github.com/catlinux/Talaia/releases/tag/v0.5.3

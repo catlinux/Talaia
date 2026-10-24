@@ -28,6 +28,7 @@ import {
   type ServersApi,
 } from '../api/servers'
 import { createServicesApi, type ServiceUnit, type ServicesApi } from '../api/services'
+import { createMetricsApi, type MetricsApi } from '../api/metrics'
 import { createTerminalApi, type TerminalApi } from '../api/terminal'
 import type { AptSummary } from '../api/types'
 import { errorMessage } from '../auth/AuthGate'
@@ -101,6 +102,7 @@ const defaultTerminalApi = createTerminalApi()
 const defaultServersApi = createServersApi()
 const defaultAptApi = createAptApi()
 const defaultServicesApi = createServicesApi()
+const defaultMetricsApi = createMetricsApi()
 const defaultJournalApi = createJournalApi()
 
 interface ServerScreenProps {
@@ -145,6 +147,7 @@ interface ServerScreenProps {
   aptApi?: AptApi
   /** servicesApi lists systemd services and runs actions; the panel uses the real one. */
   servicesApi?: ServicesApi
+  metricsApi?: MetricsApi
   /** journalApi reads the systemd journal; the panel uses the real one. */
   journalApi?: JournalApi
   /** pollMs overrides the job polling interval, for the tests. */
@@ -218,6 +221,7 @@ export function ServerScreen({
   serversApi = defaultServersApi,
   aptApi = defaultAptApi,
   servicesApi = defaultServicesApi,
+  metricsApi = defaultMetricsApi,
   journalApi = defaultJournalApi,
   pollMs = pollEvery,
 }: ServerScreenProps) {
@@ -496,6 +500,7 @@ export function ServerScreen({
     return (
       <StackScreen
         api={api}
+        metricsApi={metricsApi}
         server={server}
         name={openStack.name}
         adopted={openStack.adopted}
@@ -665,6 +670,8 @@ export function ServerScreen({
         >
           <OverviewTab
             server={overviewServer}
+            serverId={server.id}
+            metricsApi={metricsApi}
             agentVersion={agentVersion}
             agentUpdateAvailable={agentUpdateAvailable}
             agentUpdateManual={agentUpdateManual}

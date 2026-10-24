@@ -1,0 +1,32 @@
+{
+  "range": {
+    "label": "Time range",
+    "1h": "1 h",
+    "6h": "6 h",
+    "24h": "24 h",
+    "7d": "7 d",
+    "30d": "30 d"
+  },
+  "history": {
+    "title": "History"
+  },
+  "chart": {
+    "cpu": "CPU",
+    "memory": "Memory",
+    "disk": "Disk",
+    "network": "Network",
+    "loading": "Loading metrics…",
+    "empty": "No data yet",
+    "error": "Metrics could not be loaded.",
+    "summary": "Minimum {{min}}, average {{avg}}, maximum {{max}}",
+    "memoryTotal": "{{used}} of {{total}}",
+    "networkLatest": "↓ {{rx}} · ↑ {{tx}}"
+  },
+  "series": {
+    "cpu": "CPU",
+    "used": "Used",
+    "total": "Total",
+    "receive": "Receive",
+    "transmit": "Transmit"
+  }
+}

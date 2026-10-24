@@ -1,7 +1,10 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import type { Container, ContainersApi, StackAction } from '../../api/containers'
+import type { MetricsApi, MetricsResponse } from '../../api/metrics'
+import { Sparkline } from '../../components/chart/Sparkline'
+import type { ChartPoint } from '../../components/chart/TimeSeriesChart'
 import { isSignedOut } from '../../api/http'
 import { errorMessage } from '../../auth/AuthGate'
 import { usePermissions } from '../../auth/permissions'
@@ -13,6 +16,7 @@ import { TimedOut, waitForJob } from './waitForJob'
 
 interface StackScreenProps {
   api: ContainersApi
+  metricsApi?: MetricsApi
   server: { id: string; name: string }
   name: string
   adopted: boolean
@@ -37,6 +41,7 @@ type Outcome = { kind: 'working' } | { kind: 'done' } | { kind: 'failed'; messag
  */
 export function StackScreen({
   api,
+  metricsApi,
   server,
   name,
   adopted,
@@ -48,7 +53,7 @@ export function StackScreen({
   onBack,
   onChanged,
 }: StackScreenProps) {
-  const { t, i18n } = useTranslation(['server', 'errors'])
+  const { t, i18n } = useTranslation(['server', 'errors', 'metrics'])
   const language = i18n.resolvedLanguage ?? i18n.language
   const { can } = usePermissions()
   const scope = { serverId: server.id, stack: name }
@@ -60,6 +65,32 @@ export function StackScreen({
   // chosen is null until the reader picks a container: the first one is shown.
   const [chosen, setChosen] = useState<string | null>(null)
   const alive = useRef(true)
+  const [history, setHistory] = useState<Record<string, MetricsResponse>>({})
+  const own = useMemo(
+    () => containers.filter((container) => container.composeProject === name),
+    [containers, name],
+  )
+
+  useEffect(() => {
+    if (!metricsApi || own.length === 0) return
+    let cancelled = false
+    const queue = [...own]
+    const workers = Array.from({ length: Math.min(6, queue.length) }, async () => {
+      while (queue.length && !cancelled) {
+        const container = queue.shift()!
+        try {
+          const result = await metricsApi.container(server.id, container.name, '1h')
+          if (!cancelled) setHistory((current) => ({ ...current, [container.id]: result }))
+        } catch {
+          /* Individual container metrics are optional. */
+        }
+      }
+    })
+    void Promise.all(workers)
+    return () => {
+      cancelled = true
+    }
+  }, [metricsApi, server.id, own])
 
   useEffect(() => {
     alive.current = true
@@ -68,7 +99,6 @@ export function StackScreen({
     }
   }, [])
 
-  const own = containers.filter((container) => container.composeProject === name)
   const running = own.filter((container) => container.state === 'running').length
   const selected = chosen !== null ? chosen : (own[0]?.name ?? '')
   const logContainer = own.some((container) => container.name === selected) ? selected : ''
@@ -299,6 +329,24 @@ export function StackScreen({
                         <tr key={container.id}>
                           <td>
                             <code>{container.name}</code>
+                            {metricsApi ? (
+                              <div className="stack-metrics">
+                                <span>{t('metrics:series.cpu')}</span>
+                                <Sparkline
+                                  color="accent"
+                                  points={metricSeries(history[container.id], 'cpu')}
+                                />
+                                <span>{latestMetric(history[container.id], 'cpu', language)}</span>
+                                <span>{t('metrics:chart.memory')}</span>
+                                <Sparkline
+                                  color="ok"
+                                  points={metricSeries(history[container.id], 'mem_used')}
+                                />
+                                <span>
+                                  {latestMetric(history[container.id], 'mem_used', language)}
+                                </span>
+                              </div>
+                            ) : null}
                           </td>
                           <td>
                             <span
@@ -374,4 +422,20 @@ export function StackScreen({
       )}
     </section>
   )
+}
+
+function metricSeries(data: MetricsResponse | undefined, key: 'cpu' | 'mem_used'): ChartPoint[] {
+  return (data?.points ?? [])
+    .map((point) => ({ t: Date.parse(point.time), v: point[key] }))
+    .filter((point) => Number.isFinite(point.t))
+}
+
+function latestMetric(
+  data: MetricsResponse | undefined,
+  key: 'cpu' | 'mem_used',
+  language: string,
+): string {
+  const value = data?.points.at(-1)?.[key]
+  if (value === null || value === undefined) return ''
+  return key === 'cpu' ? formatPercent(value, language) : formatBytes(value, language)
 }

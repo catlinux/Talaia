@@ -1,0 +1,32 @@
+{
+  "range": {
+    "label": "Interval de temps",
+    "1h": "1 h",
+    "6h": "6 h",
+    "24h": "24 h",
+    "7d": "7 dies",
+    "30d": "30 dies"
+  },
+  "history": {
+    "title": "Historial"
+  },
+  "chart": {
+    "cpu": "CPU",
+    "memory": "Memòria",
+    "disk": "Disc",
+    "network": "Xarxa",
+    "loading": "Carregant mètriques…",
+    "empty": "Encara no hi ha dades",
+    "error": "No s’han pogut carregar les mètriques.",
+    "summary": "Mínim {{min}}, mitjana {{avg}}, màxim {{max}}",
+    "memoryTotal": "{{used}} de {{total}}",
+    "networkLatest": "↓ {{rx}} · ↑ {{tx}}"
+  },
+  "series": {
+    "cpu": "CPU",
+    "used": "Utilitzat",
+    "total": "Total",
+    "receive": "Rebut",
+    "transmit": "Enviat"
+  }
+}
