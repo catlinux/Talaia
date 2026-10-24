@@ -21,9 +21,8 @@
 </p>
 
 > [!WARNING]
-> Talaia is in active development. Phase 3 (whole server) closed in 0.4.0. Phase 4 (users, permissions,
-> API keys, OIDC, recordings and talaiactl) is implemented, but it is not closed yet: it still needs the
-> security review and the real test with a second user. Follow the [roadmap](ROADMAP.md) for what comes next.
+> Talaia is in active development. Phase 4 (users, permissions, API keys, OIDC, recordings and
+> `talaiactl`) closed in 0.5.0. Follow the [roadmap](ROADMAP.md) for what comes next.
 
 ---
 
@@ -139,10 +138,13 @@ Each feature is tagged with the release where it is planned. See [ROADMAP.md](RO
 | Monitoring and alerts | — | Metrics history, alert rules, HTTP/TCP checks, certificate expiry, Telegram/ntfy/email/Discord/webhook | Public status page |
 | Backups | — | restic plans, consistent database dumps, S3/B2/SFTP, restore from the panel | Automatic monthly restore test |
 | Fleet automation | — | Bulk actions, scheduled procedures, GitOps sync | Ansible playbooks, VPS provisioning via provider APIs |
-| Users and security | Single user with 2FA, trusted-device PIN, passkeys, audit log and recorded terminals (0.4.0) | Users, teams, server groups, scoped roles, invitations, API keys, OIDC SSO and talaiactl (implemented for 0.5.0; phase not closed) | — |
+| Users and security | Single user with 2FA, trusted-device PIN, passkeys, audit log and recorded terminals (0.4.0) | Users, teams, server groups, scoped roles, invitations, API keys, OIDC SSO and talaiactl (0.5.0) | — |
 
 > **Phase 3 status.** Closed in 0.4.0 after a real test on two servers and its security review. The guide
 > is [docs/en/server.md](docs/en/server.md).
+>
+> **Phase 4 status.** Closed in 0.5.0 after a real test with a second user. The guide is
+> [docs/en/permissions.md](docs/en/permissions.md).
 
 ## Architecture
 
@@ -312,7 +314,8 @@ While in development (`0.y.z`), each completed roadmap phase raises the minor ve
 | 0.2.0 | Phase 1: agent, connection and inventory |
 | 0.3.0 | Phase 2: containers and stacks |
 | **0.4.0** | **Phase 3: whole server — MVP** |
-| 0.5.0 – 0.9.0 | Phases 4 to 8 |
+| **0.5.0** | **Phase 4: users, permissions and audit** |
+| 0.6.0 – 0.9.0 | Phases 5 to 8 |
 | **1.0.0** | **Phase 9: first stable release** |
 
 Patch versions (`z`) are used for fixes and small changes inside a phase.

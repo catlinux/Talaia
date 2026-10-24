@@ -18,6 +18,12 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-10-24
+
+### Changed
+
+- Phase 4 (users, permissions and audit) closed after a real test with a second user: roles by scope, teams and groups, invitations, API keys, OIDC, recordings and `talaiactl`. Guide: `docs/en/permissions.md`.
+
 ## [0.4.25] - 2026-10-24
 
 ### Added
@@ -539,7 +545,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.4.25...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/catlinux/Talaia/releases/tag/v0.5.0
 [0.4.25]: https://github.com/catlinux/Talaia/releases/tag/v0.4.25
 [0.4.24]: https://github.com/catlinux/Talaia/releases/tag/v0.4.24
 [0.4.23]: https://github.com/catlinux/Talaia/releases/tag/v0.4.23
