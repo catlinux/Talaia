@@ -72,31 +72,33 @@ func userCreateCommand(args []string, in io.Reader, stdout, stderr io.Writer) er
 	return nil
 }
 
-// userReset2FACommand clears the second factor of the only user and closes all
-// its sessions, for when the authenticator is lost.
+// userReset2FACommand clears the second factor of a user and closes all its
+// sessions, for when the authenticator is lost.
 func userReset2FACommand(args []string, stdout, stderr io.Writer) error {
 	flags := flag.NewFlagSet("user reset-2fa", flag.ContinueOnError)
 	flags.SetOutput(stderr)
+	username := flags.String("username", "", "user to reset (needed when there are several users)")
 	if err := flags.Parse(args); err != nil {
 		return err
 	}
 	if flags.NArg() != 0 {
-		return errors.New("usage: talaia-core user reset-2fa")
+		return errors.New("usage: talaia-core user reset-2fa [--username <name>]")
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), commandTimeout)
 	defer cancel()
 
-	cfg, st, err := openCore(ctx)
+	_, st, err := openCore(ctx)
 	if err != nil {
 		return err
 	}
 	defer func() { _ = st.Close() }()
 
-	userID, err := singleUserID(ctx, cfg.DatabaseURL)
+	userIDs, err := resolveUserIDs(ctx, st, *username, false)
 	if err != nil {
 		return err
 	}
+	userID := userIDs[0]
 	if err := st.ResetTOTP(ctx, userID); err != nil {
 		return err
 	}
@@ -115,6 +117,49 @@ func userReset2FACommand(args []string, stdout, stderr io.Writer) error {
 	}
 
 	fmt.Fprintf(stdout, "two-factor authentication reset; %d session(s) revoked\n", revoked)
+	return nil
+}
+
+// userUnlockCommand clears the failed-attempt counter and the lock of a user,
+// for when the sign-in was blocked by too many wrong passwords or codes. The
+// per-address limit lives in memory and is cleared by restarting the core.
+func userUnlockCommand(args []string, stdout, stderr io.Writer) error {
+	flags := flag.NewFlagSet("user unlock", flag.ContinueOnError)
+	flags.SetOutput(stderr)
+	username := flags.String("username", "", "user to unlock (needed when there are several users)")
+	if err := flags.Parse(args); err != nil {
+		return err
+	}
+	if flags.NArg() != 0 {
+		return errors.New("usage: talaia-core user unlock [--username <name>]")
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), commandTimeout)
+	defer cancel()
+
+	_, st, err := openCore(ctx)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = st.Close() }()
+
+	userIDs, err := resolveUserIDs(ctx, st, *username, false)
+	if err != nil {
+		return err
+	}
+	if err := st.ResetFailures(ctx, userIDs[0]); err != nil {
+		return err
+	}
+	if err := st.AppendAudit(ctx, store.AuditEvent{
+		Actor:   cliActor,
+		Action:  "user_unlocked",
+		Result:  "success",
+		Details: map[string]any{"user_id": userIDs[0]},
+	}); err != nil {
+		return err
+	}
+
+	fmt.Fprintln(stdout, "the sign-in lock was cleared")
 	return nil
 }
 

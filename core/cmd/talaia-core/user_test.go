@@ -299,3 +299,72 @@ func TestSingleUserCommandsWithoutAUser(t *testing.T) {
 		t.Error("session revoke-all worked without a user")
 	}
 }
+
+func TestUserCommandsWithSeveralUsers(t *testing.T) {
+	st := testDatabase(t)
+	ctx := context.Background()
+	admin := createCommandUser(t, st)
+	otherID, err := st.CreateUserFull(ctx, "marc", auth.HashPassword("correct horse battery staple"), "Marc", "")
+	if err != nil {
+		t.Fatalf("create the second user: %v", err)
+	}
+	if err := st.SetTOTP(ctx, otherID.ID, auth.GenerateSecret()); err != nil {
+		t.Fatalf("set totp: %v", err)
+	}
+	if err := st.EnableTOTP(ctx, otherID.ID, auth.Step(time.Now())); err != nil {
+		t.Fatalf("enable totp: %v", err)
+	}
+
+	var stdout, stderr bytes.Buffer
+	for name, run := range map[string]func([]string) error{
+		"reset-2fa": func(args []string) error { return userReset2FACommand(args, &stdout, &stderr) },
+		"unlock":    func(args []string) error { return userUnlockCommand(args, &stdout, &stderr) },
+	} {
+		if err := run(nil); err == nil || !strings.Contains(err.Error(), "--username") {
+			t.Errorf("%s without a name = %v, want a message asking for --username", name, err)
+		}
+		if err := run([]string{"--username", "nobody"}); err == nil || !strings.Contains(err.Error(), "no user named") {
+			t.Errorf("%s with an unknown name = %v", name, err)
+		}
+	}
+	// Nothing was touched by the refusals.
+	if after, _ := st.GetUser(ctx, admin.ID); after.TOTPEnabledAt.IsZero() {
+		t.Fatal("a refused command cleared the second factor of another user")
+	}
+
+	if err := userReset2FACommand([]string{"--username", "marc"}, &stdout, &stderr); err != nil {
+		t.Fatalf("reset-2fa marc: %v", err)
+	}
+	marc, _ := st.GetUser(ctx, otherID.ID)
+	admin, _ = st.GetUser(ctx, admin.ID)
+	if !marc.TOTPEnabledAt.IsZero() || admin.TOTPEnabledAt.IsZero() {
+		t.Errorf("reset-2fa must touch only marc: marc=%v admin=%v", marc.TOTPEnabledAt, admin.TOTPEnabledAt)
+	}
+}
+
+func TestUserUnlockCommand(t *testing.T) {
+	st := testDatabase(t)
+	ctx := context.Background()
+	user := createCommandUser(t, st)
+	for range 5 {
+		if err := st.RecordFailure(ctx, user.ID, 3, 15*time.Minute); err != nil {
+			t.Fatalf("record failure: %v", err)
+		}
+	}
+	locked, _ := st.GetUser(ctx, user.ID)
+	if locked.LockedUntil.IsZero() {
+		t.Fatal("the user was not locked by the failures")
+	}
+
+	var stdout, stderr bytes.Buffer
+	if err := userUnlockCommand(nil, &stdout, &stderr); err != nil {
+		t.Fatalf("user unlock: %v", err)
+	}
+	after, _ := st.GetUser(ctx, user.ID)
+	if !after.LockedUntil.IsZero() || after.FailedAttempts != 0 {
+		t.Errorf("the lock survived: %+v", after)
+	}
+	if !findAuditAction(t, st, "user_unlocked") {
+		t.Error("the unlock was not audited")
+	}
+}

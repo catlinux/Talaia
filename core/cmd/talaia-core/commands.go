@@ -10,8 +10,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jackc/pgx/v5"
-
 	"github.com/catlinux/Talaia/core/internal/ca"
 	"github.com/catlinux/Talaia/core/internal/config"
 	"github.com/catlinux/Talaia/core/internal/install"
@@ -38,8 +36,9 @@ Commands:
   server upgrade-command              print the command that updates the agent on a server
   server revoke <id>                  revoke an enrolled server
   user create --username <name>       create the administrator (asks for the password)
-  user reset-2fa                      clear the second factor of the administrator
-  session revoke-all                  revoke every panel session
+  user reset-2fa [--username <name>]  clear the second factor of a user (name needed with several users)
+  user unlock [--username <name>]     clear the failed sign-in lock of a user
+  session revoke-all [--username <n>] revoke the panel sessions of a user, or of everyone
   terminal list                       list the terminal sessions and their recordings
   terminal export <id>                print the recording of a session (asciicast v2)
   dns                                 serve the DNS-01 challenges delegated to this server
@@ -116,6 +115,12 @@ func runUser(args []string, in io.Reader, stdout, stderr io.Writer) int {
 			return 1
 		}
 		return 0
+	case "unlock":
+		if err := userUnlockCommand(args[1:], stdout, stderr); err != nil {
+			fmt.Fprintf(stderr, "user unlock: %v\n", err)
+			return 1
+		}
+		return 0
 	case "reset-2fa":
 		if err := userReset2FACommand(args[1:], stdout, stderr); err != nil {
 			fmt.Fprintf(stderr, "user reset-2fa: %v\n", err)
@@ -169,54 +174,71 @@ func openCore(ctx context.Context) (config.Config, *store.Store, error) {
 	return cfg, st, nil
 }
 
-// singleUserID returns the id of the only administrator. The store has no list
-// method and this phase allows a single user, so it is one query against the
-// database the command is already using.
-func singleUserID(ctx context.Context, databaseURL string) (string, error) {
-	conn, err := pgx.Connect(ctx, databaseURL)
-	if err != nil {
-		return "", fmt.Errorf("connect to the database: %w", err)
+// resolveUserIDs returns the ids the user commands act on: the named user, or
+// the only user when there is exactly one. With several users and no name it
+// refuses, so a command never hits an arbitrary account.
+func resolveUserIDs(ctx context.Context, st *store.Store, username string, allWhenSeveral bool) ([]string, error) {
+	if username = strings.TrimSpace(username); username != "" {
+		user, err := st.GetUserByUsername(ctx, username)
+		if errors.Is(err, store.ErrNotFound) {
+			return nil, fmt.Errorf("there is no user named %q", username)
+		}
+		if err != nil {
+			return nil, fmt.Errorf("look up the user: %w", err)
+		}
+		return []string{user.ID}, nil
 	}
-	defer func() { _ = conn.Close(ctx) }()
 
-	var id string
-	err = conn.QueryRow(ctx, `SELECT id FROM app_user LIMIT 1`).Scan(&id)
-	if errors.Is(err, pgx.ErrNoRows) {
-		return "", errors.New("there is no user yet: run talaia-core user create first")
-	}
+	users, err := st.ListUsers(ctx)
 	if err != nil {
-		return "", fmt.Errorf("look up the user: %w", err)
+		return nil, fmt.Errorf("list the users: %w", err)
 	}
-	return id, nil
+	switch {
+	case len(users) == 0:
+		return nil, errors.New("there is no user yet: run talaia-core user create first")
+	case len(users) > 1 && !allWhenSeveral:
+		return nil, errors.New("there are several users: pass --username <name>")
+	}
+	ids := make([]string, 0, len(users))
+	for _, user := range users {
+		ids = append(ids, user.ID)
+	}
+	return ids, nil
 }
 
-// sessionRevokeAllCommand revokes every panel session of the only user.
+// sessionRevokeAllCommand revokes the panel sessions of one user, or of every
+// user when no name is given.
 func sessionRevokeAllCommand(args []string, stdout, stderr io.Writer) error {
 	flags := flag.NewFlagSet("session revoke-all", flag.ContinueOnError)
 	flags.SetOutput(stderr)
+	username := flags.String("username", "", "revoke only the sessions of this user (default: everyone)")
 	if err := flags.Parse(args); err != nil {
 		return err
 	}
 	if flags.NArg() != 0 {
-		return errors.New("usage: talaia-core session revoke-all")
+		return errors.New("usage: talaia-core session revoke-all [--username <name>]")
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), commandTimeout)
 	defer cancel()
 
-	cfg, st, err := openCore(ctx)
+	_, st, err := openCore(ctx)
 	if err != nil {
 		return err
 	}
 	defer func() { _ = st.Close() }()
 
-	userID, err := singleUserID(ctx, cfg.DatabaseURL)
+	userIDs, err := resolveUserIDs(ctx, st, *username, true)
 	if err != nil {
 		return err
 	}
-	revoked, err := st.RevokeUserSessions(ctx, userID, "")
-	if err != nil {
-		return err
+	revoked := 0
+	for _, userID := range userIDs {
+		count, err := st.RevokeUserSessions(ctx, userID, "")
+		if err != nil {
+			return err
+		}
+		revoked += count
 	}
 
 	if err := st.AppendAudit(ctx, store.AuditEvent{
