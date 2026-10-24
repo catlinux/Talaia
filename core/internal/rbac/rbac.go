@@ -185,6 +185,11 @@ func (r Role) Permissions() []Permission {
 func allViewPermissions(extra ...Permission) []Permission {
 	permissions := make([]Permission, 0, 8+len(extra))
 	for _, permission := range AllPermissions {
+		// Recordings hold the output of root shells, so reading them stays an
+		// administrator power even though the permission is named like a view.
+		if permission == PermRecordingsView {
+			continue
+		}
 		if len(permission) >= 5 && string(permission)[len(permission)-5:] == ".view" {
 			permissions = append(permissions, permission)
 		}

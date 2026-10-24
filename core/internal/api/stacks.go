@@ -321,6 +321,19 @@ func NewStackActionHandler(deps ContainerDeps) http.Handler {
 			writeError(w, http.StatusBadRequest, "confirmation_required")
 			return
 		}
+		// Removing or forgetting a stack changes what is deployed, like editing
+		// its compose file, so stack.deploy alone is not enough.
+		if request.Action == "remove" || request.Action == "forget" {
+			target, err := targetFromRequest(r, targetStack)
+			if err != nil {
+				internal(w, "build stack target", err)
+				return
+			}
+			if !authorize(r, rbac.PermStackEdit, target) {
+				denyRequest(w, r, rbac.PermStackEdit, target, http.StatusForbidden, "forbidden")
+				return
+			}
+		}
 		if !managedStack(w, deps, serverID, name) {
 			return
 		}

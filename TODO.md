@@ -105,6 +105,11 @@ of the current phase and the next one.
 - [x] Terminal session recording (done in phases 2 and 3)
 - [ ] After an update, the panel keeps showing the old version: make it reload itself (or show a "reload" notice) once the core restarts with a new version
 - [x] Docs EN/ES, security review (done by Sonnet, to repeat with Opus if wanted), real test with a second user, close at 0.5.0 (closed by the maintainer, 2026-10-24)
+- [ ] Security follow-ups of the phase 4 review (Opus, 2026-10-24), all low:
+  - [ ] OIDC: when no public URL is configured the redirect URI is built from the request `Host`; refuse to enable OIDC without a public URL (the identity provider's redirect allow-list already blocks abuse)
+  - [ ] OIDC: the `http://localhost` issuer exception exists for tests; allow it only in development builds so an administrator cannot point discovery at local services
+  - [ ] Every denied request writes an `authz_denied` audit row: rate-limit or aggregate them per user so a signed-in user cannot grow the audit table at will
+  - [ ] Jobs remember their creator by username; store the user id too so a deleted user's name, reused later, never reaches old job output
 
 ## Operations block (decided 2026-10-20, before closing phase 2)
 

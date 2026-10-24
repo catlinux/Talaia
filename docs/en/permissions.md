@@ -32,13 +32,13 @@ server and above.
 
 These are the only roles. Custom roles are not part of this version.
 
-| Role                                    | What it can do                                                                                                                                                                                                                            | What it cannot do                                                                                                                                        |
-| --------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Administrator** (`admin`)             | Everything allowed by the scope: users, settings, servers, stacks, containers, host operations, audit and recordings                                                                                                                      | Nothing inside Talaia, but it is equivalent to root on managed servers (see below)                                                                       |
-| **Server operator** (`server_operator`) | Containers (view, logs, start/stop/restart, terminal), Docker resources, stacks (view, deploy, edit, remove containers), and the whole server: services, journal, apt, reboot, host terminal, agent updates                               | Manage users, teams, groups, invitations or API keys; change settings or OIDC; remove or enroll servers; read the audit log or recordings                |
-| **App operator** (`app_operator`)       | View containers, stacks and servers; at server scope read services, apt status and the journal; at organization scope read audit and recordings; read container logs; start/stop/restart containers; deploy stacks (up/down/restart/pull) | Edit or adopt a Compose file; open a container or host terminal; change host services, apt or reboot; remove or enroll servers; manage users or settings |
-| **Viewer** (`viewer`)                   | Read servers, stacks, containers and logs; when the scope reaches the server, read services, apt status and the journal; at organization scope, read the audit log and recordings                                                         | Change containers or stacks, open terminals, edit compose files, run host actions, remove or enroll servers, manage users or settings                    |
-| **Metrics only** (`metrics_only`)       | Server, stack and container status and metrics                                                                                                                                                                                            | Logs, services, journal, apt, terminals, audit, recordings, any change and any administration                                                            |
+| Role                                    | What it can do                                                                                                                                                                                                        | What it cannot do                                                                                                                                                                                    |
+| --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Administrator** (`admin`)             | Everything allowed by the scope: users, settings, servers, stacks, containers, host operations, audit and recordings                                                                                                  | Nothing inside Talaia, but it is equivalent to root on managed servers (see below)                                                                                                                   |
+| **Server operator** (`server_operator`) | Containers (view, logs, start/stop/restart, terminal), Docker resources, stacks (view, deploy, edit, remove containers), and the whole server: services, journal, apt, reboot, host terminal, agent updates           | Manage users, teams, groups, invitations or API keys; change settings or OIDC; remove or enroll servers; read the audit log or recordings                                                            |
+| **App operator** (`app_operator`)       | View containers, stacks and servers; at server scope read services and apt status; at organization scope read the audit log; read container logs; start/stop/restart containers; deploy stacks (up/down/restart/pull) | Edit, adopt, remove or forget a stack; read the journal; open a container or host terminal; change host services, apt or reboot; read recordings; remove or enroll servers; manage users or settings |
+| **Viewer** (`viewer`)                   | Read servers, stacks, containers and logs; when the scope reaches the server, read services, apt status and the journal; at organization scope, read the audit log                                                    | Change containers or stacks, open terminals, edit compose files, run host actions, read recordings, remove or enroll servers, manage users or settings                                               |
+| **Metrics only** (`metrics_only`)       | Server, stack and container status and metrics                                                                                                                                                                        | Logs, services, journal, apt, terminals, audit, recordings, any change and any administration                                                                                                        |
 
 The role's permissions are filtered by the assignment scope. For example, an administrator assigned
 only to a stack gets the stack-level part of the administrator role, not users or host access.
@@ -107,8 +107,9 @@ The core decides, not the panel. The panel only hides controls the user cannot u
 
 Talaia always keeps at least one active user with the organization administrator role, directly or
 through a team. The core refuses to disable the last one, or to remove or demote the last
-organization-admin binding (including through a team), with `409 last_admin`. There is no user deletion
-endpoint in this version. Users also cannot disable their own account.
+organization-admin binding (including through a team), with `409 last_admin`. Users cannot disable or
+delete their own account. A user can only be deleted once disabled, typing the username to confirm; the
+account, its access, API keys and team memberships go, and the audit history keeps the name.
 
 ## Invitations
 
@@ -176,7 +177,7 @@ Use HTTPS for the issuer, except `http://localhost` or `http://127.0.0.1` in dev
 
 ## Terminal recordings
 
-Users with `recordings.view` (organization scope) find **Audit > Recordings**. The table shows when,
+Only administrators (`recordings.view`, which no other role has) find **Audit > Recordings**. The table shows when,
 who, server, container or host, duration, close reason and a privileged badge. Finished sessions have
 a **Download .cast** link.
 

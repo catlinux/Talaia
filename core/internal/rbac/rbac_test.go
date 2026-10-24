@@ -350,3 +350,16 @@ func TestAPIKeyLimitVisibilityIntersection(t *testing.T) {
 		t.Fatalf("owner-limited stacks = %v %v", all, names)
 	}
 }
+
+func TestRecordingsAreAdminOnly(t *testing.T) {
+	for _, role := range []Role{RoleServerOperator, RoleAppOperator, RoleViewer, RoleMetricsOnly} {
+		effective := Resolve([]Binding{{Scope: Scope{Type: ScopeOrganization}, Role: role}})
+		if effective.Can(PermRecordingsView, Target{}) {
+			t.Errorf("%s on the organization can read terminal recordings", role)
+		}
+	}
+	admin := Resolve([]Binding{{Scope: Scope{Type: ScopeOrganization}, Role: RoleAdmin}})
+	if !admin.Can(PermRecordingsView, Target{}) {
+		t.Error("the administrator cannot read terminal recordings")
+	}
+}

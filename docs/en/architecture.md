@@ -225,8 +225,8 @@ above. An assignment applies to its node and everything below it.
 |---|---|
 | `admin` | All permissions |
 | `server_operator` | All container, stack and server permissions (including container and host terminals), but not organization permissions |
-| `app_operator` | All `.view` permissions, plus `container.logs`, `container.control` and `stack.deploy` |
-| `viewer` | All `.view` permissions, plus `container.logs` |
+| `app_operator` | All `.view` permissions except `recordings.view`, plus `container.logs`, `container.control` and `stack.deploy` |
+| `viewer` | All `.view` permissions except `recordings.view`, plus `container.logs` and `host.journal` |
 | `metrics_only` | `server.view`, `stack.view`, `container.view` |
 
 The role's list is still filtered by the minimum scope of each permission. `audit.view` and
@@ -246,7 +246,8 @@ A group has no separate permission set; a binding there applies to its servers a
 
 `app_operator` deliberately lacks `stack.edit`, `container.terminal` and `host.terminal`: a Compose file
 runs as root and a privileged shell reaches the host. Deploying files that already exist is allowed;
-changing them or opening a terminal is not. A `server_operator` bound to a stack gets no host endpoints,
+changing them, removing or forgetting the stack (both need `stack.edit`) or opening a terminal is not.
+Terminal recordings hold the output of root shells, so `recordings.view` belongs to `admin` only. A `server_operator` bound to a stack gets no host endpoints,
 but `stack.edit` is still root-equivalent through Compose and must be treated as such.
 
 ### 5.2 Enforcement

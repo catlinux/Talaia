@@ -18,6 +18,17 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.5.1] - 2026-10-24
+
+### Security
+
+- Removing or forgetting a stack now needs `stack.edit`: an app operator (who only has `stack.deploy`) could delete the files of a stack they could not edit. Found in the phase 4 security review.
+- Terminal recordings (`recordings.view`) are for administrators only: viewers and app operators on the whole organization could download every recording, including the output of root shells on the hosts.
+
+### Fixed
+
+- Permission docs: the app operator does not read the journal, users can be deleted once disabled, and the role tables reflect the two changes above.
+
 ## [0.5.0] - 2026-10-24
 
 ### Changed
@@ -545,7 +556,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.5.1...HEAD
+[0.5.1]: https://github.com/catlinux/Talaia/releases/tag/v0.5.1
 [0.5.0]: https://github.com/catlinux/Talaia/releases/tag/v0.5.0
 [0.4.25]: https://github.com/catlinux/Talaia/releases/tag/v0.4.25
 [0.4.24]: https://github.com/catlinux/Talaia/releases/tag/v0.4.24

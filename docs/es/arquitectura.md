@@ -232,8 +232,8 @@ y de los niveles superiores. Una asignación se aplica a su nodo y a todo lo que
 |---|---|
 | `admin` | Todos los permisos |
 | `server_operator` | Todos los permisos de contenedor, stack y servidor (incluidas las terminales de contenedor y del anfitrión), pero no los de organización |
-| `app_operator` | Todos los permisos `.view`, más `container.logs`, `container.control` y `stack.deploy` |
-| `viewer` | Todos los permisos `.view`, más `container.logs` |
+| `app_operator` | Todos los permisos `.view` salvo `recordings.view`, más `container.logs`, `container.control` y `stack.deploy` |
+| `viewer` | Todos los permisos `.view` salvo `recordings.view`, más `container.logs` y `host.journal` |
 | `metrics_only` | `server.view`, `stack.view`, `container.view` |
 
 La lista del rol se filtra además por el ámbito mínimo de cada permiso. `audit.view` y
@@ -254,7 +254,9 @@ descendientes.
 
 `app_operator` carece a propósito de `stack.edit`, `container.terminal` y `host.terminal`: un archivo
 Compose se ejecuta como root y un shell privilegiado llega al host. Puede desplegar archivos que ya
-existen; cambiarlos o abrir una terminal no. Un `server_operator` asignado a un stack no recibe endpoints
+existen; cambiarlos, borrar u olvidar el stack (ambos exigen `stack.edit`) o abrir una terminal no. Las
+grabaciones de terminal contienen la salida de shells de root, así que `recordings.view` es solo de
+`admin`. Un `server_operator` asignado a un stack no recibe endpoints
 del host, pero `stack.edit` sigue equivaliendo a root a través de Compose y debe tratarse como tal.
 
 ### 5.2 Aplicación

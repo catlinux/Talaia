@@ -220,6 +220,19 @@ func TestSingleStackCriterion(t *testing.T) {
 		}
 	}
 
+	// stack.deploy runs what is deployed but never removes or forgets the stack.
+	for _, action := range []string{"remove", "forget"} {
+		before := len(panel.dispatcher.sent())
+		response := panel.do(t, stackClient, http.MethodPost, "/api/v1/servers/"+serverA+"/stacks/web/actions",
+			map[string]any{"action": action, "confirm": true})
+		if response.StatusCode != http.StatusForbidden {
+			t.Errorf("app operator %s own stack: status = %d, want 403", action, response.StatusCode)
+		}
+		if got := len(panel.dispatcher.sent()); got != before {
+			t.Errorf("app operator %s own stack dispatched a command", action)
+		}
+	}
+
 	otherJob, err := panel.store.CreateJob(context.Background(), serverA, "container_logs",
 		map[string]any{"container": "web"}, "admin")
 	if err != nil {

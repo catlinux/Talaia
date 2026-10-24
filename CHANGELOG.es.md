@@ -13,6 +13,17 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+## [0.5.1] - 2026-10-24
+
+### Seguridad
+
+- Borrar u olvidar un stack exige ahora `stack.edit`: un operador de app (que solo tiene `stack.deploy`) podía borrar los archivos de un stack que no podía editar. Encontrado en la revisión de seguridad de la fase 4.
+- Las grabaciones de terminal (`recordings.view`) son solo para administradores: lectores y operadores de app con ámbito de organización podían descargar todas las grabaciones, incluida la salida de shells de root en los hosts.
+
+### Corregido
+
+- Documentación de permisos: el operador de app no lee el journal, los usuarios se pueden borrar una vez desactivados y las tablas de roles reflejan los dos cambios anteriores.
+
 ## [0.5.0] - 2026-10-24
 
 ### Cambiado
@@ -545,7 +556,8 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
   `.gitattributes` y `.gitignore`.
 - Licencia WNCL-1.0 aplicada: archivo `LICENSE` y sección de créditos en los README.
 
-[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.5.0...HEAD
+[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.5.1...HEAD
+[0.5.1]: https://github.com/catlinux/Talaia/releases/tag/v0.5.1
 [0.5.0]: https://github.com/catlinux/Talaia/releases/tag/v0.5.0
 [0.4.25]: https://github.com/catlinux/Talaia/releases/tag/v0.4.25
 [0.4.24]: https://github.com/catlinux/Talaia/releases/tag/v0.4.24

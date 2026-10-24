@@ -105,6 +105,11 @@ tareas concretas de la fase actual y de la siguiente.
 - [x] Grabación de sesiones de terminal (hecha en las fases 2 y 3)
 - [ ] Tras una actualización, el panel sigue mostrando la versión anterior: que se recargue solo (o avise de que hay que recargar) cuando el core se reinicie con una versión nueva
 - [x] Docs EN/ES, revisión de seguridad (hecha con Sonnet, repetible con Opus si se quiere), prueba real con un segundo usuario, cierre en 0.5.0 (cerrada por el mantenedor, 2026-10-24)
+- [ ] Seguimiento de seguridad de la revisión de la fase 4 (Opus, 2026-10-24), todo de gravedad baja:
+  - [ ] OIDC: sin URL pública configurada, la URI de redirección se construye con el `Host` de la petición; no permitir activar OIDC sin URL pública (la lista de redirecciones del proveedor ya bloquea el abuso)
+  - [ ] OIDC: la excepción de emisor `http://localhost` es para pruebas; permitirla solo en compilaciones de desarrollo para que un administrador no pueda dirigir el descubrimiento a servicios locales
+  - [ ] Cada petición denegada escribe un `authz_denied` en la auditoría: limitarlos o agruparlos por usuario para que un usuario con sesión no pueda hacer crecer la tabla a voluntad
+  - [ ] Los trabajos guardan su creador por nombre de usuario; guardar también el id para que el nombre de un usuario borrado, reutilizado después, nunca llegue a la salida de trabajos antiguos
 
 ## Bloque de operación (decidido el 2026-10-20, antes de cerrar la fase 2)
 
