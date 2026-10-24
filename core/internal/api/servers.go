@@ -228,10 +228,17 @@ func NewServersHandler(deps ServerDeps) http.Handler {
 			})
 		}
 
+		latestVersion, upgradeCommand := "", ""
+		for _, entry := range entries {
+			if !entry.Limited {
+				latestVersion, upgradeCommand = deps.Packages.LatestVersion(), deps.Packages.UpgradeCommand
+				break
+			}
+		}
 		writeJSON(w, http.StatusOK, serversResponse{
 			Servers:             entries,
-			AgentLatestVersion:  deps.Packages.LatestVersion(),
-			AgentUpgradeCommand: deps.Packages.UpgradeCommand,
+			AgentLatestVersion:  latestVersion,
+			AgentUpgradeCommand: upgradeCommand,
 		})
 	})
 }

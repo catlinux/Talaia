@@ -104,8 +104,6 @@ of the current phase and the next one.
 - [x] Panel: Users and permissions screen (mockup 5), API keys, OIDC settings, terminal recordings list and download
 - [x] Terminal session recording (done in phases 2 and 3)
 - [ ] After an update, the panel keeps showing the old version: make it reload itself (or show a "reload" notice) once the core restarts with a new version
-- [ ] Delete users: only disabled ones, confirmation by typing the name, removes assignments, keys and team memberships, never the last administrator, audit history keeps the name (asked by the maintainer in the phase 4 real test)
-- [ ] `GET /api/v1/servers` still returns `agent_latest_version` and `agent_upgrade_command` to users with limited access: omit them unless the user can view or update a server (found in the phase 4 real test)
 - [ ] API key dialog: the example command should contain the real key just created (it is on screen once anyway) and offer a PowerShell variant (`curl.exe` / `Invoke-RestMethod`) next to the Linux one (found in the phase 4 real test)
 - [ ] Access form: clear the stale error banner (for example "this assignment already exists") when the form is reopened or the inputs change
 - [ ] Docs EN/ES, security review (Opus), real test with a second user, close at 0.5.0

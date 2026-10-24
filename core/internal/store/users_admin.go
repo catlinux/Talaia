@@ -18,6 +18,7 @@ var ErrEmailExists = errors.New("email already exists")
 // ErrOIDCSubjectExists is returned when an OIDC subject is already linked to
 // another user.
 var ErrOIDCSubjectExists = errors.New("oidc subject already exists")
+var ErrUserNotDisabled = errors.New("user is not disabled")
 
 const oidcSubjectIndex = "app_user_oidc_subject_idx"
 
@@ -91,7 +92,6 @@ func (s *Store) UpdateUser(ctx context.Context, id, displayName, email string) e
 	}
 	return nil
 }
-
 
 // GetUserByEmail returns the user with that email, or ErrNotFound. The lookup
 // is case-insensitive because the stored address is lower-case.
@@ -212,6 +212,54 @@ func (s *Store) DisableUser(ctx context.Context, id string) error {
 	return nil
 }
 
+// DeleteUser permanently removes a disabled user and credentials tied to it.
+func (s *Store) DeleteUser(ctx context.Context, id string) error {
+	tx, err := s.pool.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("begin delete user: %w", err)
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+	if err := lockLastAdmin(ctx, tx); err != nil {
+		return err
+	}
+	var disabledAt *time.Time
+	err = tx.QueryRow(ctx, `SELECT disabled_at FROM app_user WHERE id = $1 FOR UPDATE`, id).Scan(&disabledAt)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return ErrNotFound
+	}
+	if err != nil {
+		return fmt.Errorf("lock user %q: %w", id, err)
+	}
+	if disabledAt == nil {
+		return ErrUserNotDisabled
+	}
+	var admin bool
+	if err := tx.QueryRow(ctx, `SELECT EXISTS (SELECT 1 FROM role_binding WHERE subject_type='user' AND subject_id=$1 AND scope_type='organization' AND role='admin') OR EXISTS (SELECT 1 FROM team_member tm JOIN role_binding b ON b.subject_type='team' AND b.subject_id=tm.team_id WHERE tm.user_id=$1 AND b.scope_type='organization' AND b.role='admin')`, id).Scan(&admin); err != nil {
+		return fmt.Errorf("check user admin binding: %w", err)
+	}
+	if _, err := tx.Exec(ctx, `DELETE FROM role_binding WHERE subject_type='api_key' AND subject_id IN (SELECT id FROM api_key WHERE owner_id=$1)`, id); err != nil {
+		return fmt.Errorf("delete user key bindings: %w", err)
+	}
+	if _, err := tx.Exec(ctx, `DELETE FROM role_binding WHERE subject_type='user' AND subject_id=$1`, id); err != nil {
+		return fmt.Errorf("delete user bindings: %w", err)
+	}
+	if _, err := tx.Exec(ctx, `DELETE FROM team_member WHERE user_id=$1`, id); err != nil {
+		return fmt.Errorf("delete user team memberships: %w", err)
+	}
+	if _, err := tx.Exec(ctx, `DELETE FROM app_user WHERE id=$1`, id); err != nil {
+		return fmt.Errorf("delete user %q: %w", id, err)
+	}
+	if admin {
+		if err := ensureAdminRemains(ctx, tx); err != nil {
+			return err
+		}
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return fmt.Errorf("commit delete user: %w", err)
+	}
+	return nil
+}
+
 // EnableUser clears the disabled flag. It does not restore sessions, devices or
 // API keys revoked by DisableUser.
 func (s *Store) EnableUser(ctx context.Context, id string) error {
@@ -224,7 +272,6 @@ func (s *Store) EnableUser(ctx context.Context, id string) error {
 	}
 	return nil
 }
-
 
 func userHasOrganizationAdmin(ctx context.Context, tx pgx.Tx, id string) (bool, error) {
 	var exists bool

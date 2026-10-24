@@ -125,3 +125,88 @@ func TestUserProfileAndOIDC(t *testing.T) {
 		t.Fatalf("user %s is missing from ListUsers", user.ID)
 	}
 }
+
+func TestDeleteUserRemovesCredentialsAndMembershipsButKeepsAudit(t *testing.T) {
+	s := newTestStore(t)
+	ctx := context.Background()
+	user := newRBACTestUser(t, s, "delete")
+	admin := newRBACTestUser(t, s, "delete-admin")
+	mustCreateBinding(t, s, RoleBinding{SubjectType: SubjectUser, SubjectID: admin.ID,
+		ScopeType: ScopeOrganization, Role: RoleAdmin, CreatedBy: "test"})
+	userBinding := mustCreateBinding(t, s, RoleBinding{SubjectType: SubjectUser, SubjectID: user.ID,
+		ScopeType: ScopeOrganization, Role: RoleViewer, CreatedBy: "test"})
+	sessionID, err := s.CreateSession(ctx, user.ID, []byte(uniqueTestName("delete-session")), StageFull,
+		time.Now().Add(time.Hour), "192.0.2.10", "test")
+	if err != nil {
+		t.Fatalf("create session: %v", err)
+	}
+	key, err := s.CreateAPIKey(ctx, uniqueTestName("delete-key"), []byte(uniqueTestName("secret")), "test", user.ID, time.Now().Add(time.Hour))
+	if err != nil {
+		t.Fatalf("create key: %v", err)
+	}
+	keyBinding := mustCreateBinding(t, s, RoleBinding{SubjectType: SubjectAPIKey, SubjectID: key.ID,
+		ScopeType: ScopeOrganization, Role: RoleViewer, CreatedBy: "test"})
+	team, err := s.CreateTeam(ctx, uniqueTestName("delete-team"))
+	if err != nil {
+		t.Fatalf("create team: %v", err)
+	}
+	if err := s.AddTeamMember(ctx, team.ID, user.ID); err != nil {
+		t.Fatalf("add team member: %v", err)
+	}
+	t.Cleanup(func() { _, _ = s.pool.Exec(context.Background(), `DELETE FROM team WHERE id=$1`, team.ID) })
+	if err := s.AppendAudit(ctx, AuditEvent{Actor: user.Username, ActorID: user.ID, Action: "before_delete", Result: "success"}); err != nil {
+		t.Fatalf("append audit: %v", err)
+	}
+	if err := s.DisableUser(ctx, user.ID); err != nil {
+		t.Fatalf("disable user: %v", err)
+	}
+	if err := s.DeleteUser(ctx, user.ID); err != nil {
+		t.Fatalf("delete user: %v", err)
+	}
+	if _, err := s.GetUser(ctx, user.ID); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("get deleted user error = %v", err)
+	}
+	for _, binding := range []RoleBinding{userBinding, keyBinding} {
+		var count int
+		if err := s.pool.QueryRow(ctx, `SELECT count(*) FROM role_binding WHERE id=$1`, binding.ID).Scan(&count); err != nil || count != 0 {
+			t.Errorf("binding %s count = %d, err %v", binding.ID, count, err)
+		}
+	}
+	var sessions, keys, members, audits int
+	if err := s.pool.QueryRow(ctx, `SELECT count(*) FROM session WHERE id=$1`, sessionID).Scan(&sessions); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.pool.QueryRow(ctx, `SELECT count(*) FROM api_key WHERE id=$1`, key.ID).Scan(&keys); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.pool.QueryRow(ctx, `SELECT count(*) FROM team_member WHERE user_id=$1`, user.ID).Scan(&members); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.pool.QueryRow(ctx, `SELECT count(*) FROM audit_event WHERE actor_id=$1`, user.ID).Scan(&audits); err != nil {
+		t.Fatal(err)
+	}
+	if sessions != 0 || keys != 0 || members != 0 || audits != 1 {
+		t.Fatalf("sessions=%d keys=%d members=%d audits=%d", sessions, keys, members, audits)
+	}
+}
+
+func TestDeleteUserRequiresDisabledAndPreservesLastAdmin(t *testing.T) {
+	s := newTestStore(t)
+	ctx := context.Background()
+	active := newRBACTestUser(t, s, "delete-active")
+	if err := s.DeleteUser(ctx, active.ID); !errors.Is(err, ErrUserNotDisabled) {
+		t.Fatalf("active delete error = %v", err)
+	}
+	user := newRBACTestUser(t, s, "delete-last-admin")
+	otherAdmin := newRBACTestUser(t, s, "delete-other-admin")
+	mustCreateBinding(t, s, RoleBinding{SubjectType: SubjectUser, SubjectID: user.ID,
+		ScopeType: ScopeOrganization, Role: RoleAdmin, CreatedBy: "test"})
+	mustCreateBinding(t, s, RoleBinding{SubjectType: SubjectUser, SubjectID: otherAdmin.ID,
+		ScopeType: ScopeOrganization, Role: RoleAdmin, CreatedBy: "test"})
+	if _, err := s.pool.Exec(ctx, `UPDATE app_user SET disabled_at=now() WHERE id IN ($1,$2)`, user.ID, otherAdmin.ID); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.DeleteUser(ctx, user.ID); !errors.Is(err, ErrLastAdmin) {
+		t.Fatalf("last admin delete error = %v", err)
+	}
+}

@@ -274,6 +274,37 @@ func TestServersEndpointMergesTheLiveAgents(t *testing.T) {
 	}
 }
 
+func TestServersUpdateInfoRemainsForAdminAndServerViewer(t *testing.T) {
+	server := store.Server{ID: "server-update-info", Name: "server"}
+	for _, test := range []struct {
+		name     string
+		bindings []rbac.Binding
+	}{
+		{name: "admin", bindings: []rbac.Binding{{Scope: rbac.Scope{Type: rbac.ScopeOrganization}, Role: rbac.RoleAdmin}}},
+		{name: "server viewer", bindings: []rbac.Binding{{Scope: rbac.Scope{Type: rbac.ScopeServer, ServerID: server.ID}, Role: rbac.RoleViewer}}},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			effective := rbac.Resolve(test.bindings)
+			handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				NewServersHandler(ServerDeps{
+					Servers:  fakeServers{servers: []store.Server{server}},
+					Agents:   fakeAgents{},
+					Packages: AgentPackages{Version: "1.2.3", UpgradeCommand: "upgrade-agent"},
+				}).ServeHTTP(w, r.WithContext(withEffective(r.Context(), effective)))
+			})
+			recorder := httptest.NewRecorder()
+			handler.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/api/v1/servers", nil))
+			var body serversResponse
+			if err := json.Unmarshal(recorder.Body.Bytes(), &body); err != nil {
+				t.Fatal(err)
+			}
+			if body.AgentLatestVersion != "1.2.3" || body.AgentUpgradeCommand != "upgrade-agent" {
+				t.Fatalf("update info = %q, %q", body.AgentLatestVersion, body.AgentUpgradeCommand)
+			}
+		})
+	}
+}
+
 func TestRemoveServerRequiresConfirmation(t *testing.T) {
 	removal := &fakeServerRemoval{server: store.Server{ID: "srv-1", Name: "vps-web-01"}}
 	handler := removeServerHandler(ServerDeps{Remover: removal})

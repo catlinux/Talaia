@@ -62,6 +62,10 @@ type userUpdateRequest struct {
 	Email       string `json:"email"`
 }
 
+type deleteUserRequest struct {
+	ConfirmUsername string `json:"confirm_username"`
+}
+
 type bindingRequest struct {
 	Role  string     `json:"role"`
 	Scope adminScope `json:"scope"`
@@ -183,6 +187,43 @@ func (h *userAdminHandler) disableUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	h.audit(r, "user_disable", userScope(userID), map[string]any{"user_id": userID})
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (h *userAdminHandler) deleteUser(w http.ResponseWriter, r *http.Request) {
+	st, ok := h.storeOrError(w)
+	if !ok {
+		return
+	}
+	var request deleteUserRequest
+	if err := decodeJSON(w, r, &request); err != nil {
+		writeInvalid(w, "", "body")
+		return
+	}
+	userID := chi.URLParam(r, "userID")
+	session, _ := sessionFromContext(r.Context())
+	if userID == session.User.ID {
+		writeError(w, http.StatusConflict, "cannot_delete_self")
+		return
+	}
+	user, err := st.GetUser(r.Context(), userID)
+	if err != nil {
+		h.writeStoreError(w, err)
+		return
+	}
+	if request.ConfirmUsername == "" {
+		writeInvalid(w, "confirm_username", "required")
+		return
+	}
+	if request.ConfirmUsername != user.Username {
+		writeInvalid(w, "confirm_username", "invalid_value")
+		return
+	}
+	if err := st.DeleteUser(r.Context(), userID); err != nil {
+		h.writeStoreError(w, err)
+		return
+	}
+	h.audit(r, "user_delete", userScope(userID), map[string]any{"user_id": userID, "username": user.Username})
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -372,6 +413,8 @@ func (h *userAdminHandler) writeStoreError(w http.ResponseWriter, err error) {
 		writeError(w, http.StatusConflict, "name_taken")
 	case errors.Is(err, store.ErrNotFound):
 		writeError(w, http.StatusNotFound, "not_found")
+	case errors.Is(err, store.ErrUserNotDisabled):
+		writeError(w, http.StatusConflict, "user_not_disabled")
 	default:
 		internal(w, "user admin", err)
 	}

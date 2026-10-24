@@ -5,8 +5,11 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/catlinux/Talaia/core/internal/auth"
 	"github.com/catlinux/Talaia/core/internal/rbac"
@@ -176,5 +179,124 @@ func TestUserAdministrationAPI(t *testing.T) {
 	})
 	if response := panel.do(t, viewerClient, http.MethodGet, "/api/v1/users", nil); response.StatusCode != http.StatusForbidden {
 		t.Fatalf("viewer users status = %d, want 403", response.StatusCode)
+	}
+	for _, id := range []string{bob.ID, "00000000-0000-0000-0000-000000000099"} {
+		if response := panel.do(t, viewerClient, http.MethodDelete, "/api/v1/users/"+id, map[string]string{"confirm_username": "bob"}); response.StatusCode != http.StatusForbidden {
+			t.Errorf("viewer delete %s status = %d, want 403", id, response.StatusCode)
+		}
+	}
+}
+
+func TestDeleteUserAPI(t *testing.T) {
+	panel := newTestPanel(t)
+	admin := panel.createUser(t, "delete-admin", testPassword)
+	panel.enableTOTP(t, "delete-admin", testPassword)
+	target := createAdminExtraUser(t, panel, "delete-target")
+	path := "/api/v1/users/" + target.ID
+	delete := func(client *http.Client, body any) *http.Response {
+		return panel.do(t, client, http.MethodDelete, path, body)
+	}
+	deleteID := func(id string, body any) *http.Response {
+		return panel.do(t, panel.client, http.MethodDelete, "/api/v1/users/"+id, body)
+	}
+	if response := delete(panel.client, map[string]string{"confirm_username": target.Username}); response.StatusCode != http.StatusConflict || errorCode(t, response) != "user_not_disabled" {
+		t.Fatalf("active delete = %d %q, want 409 user_not_disabled", response.StatusCode, errorCode(t, response))
+	}
+	for _, test := range []struct {
+		body          map[string]string
+		field, reason string
+	}{
+		{map[string]string{}, "confirm_username", "required"},
+		{map[string]string{"confirm_username": "Delete-target"}, "confirm_username", "invalid_value"},
+	} {
+		response := delete(panel.client, test.body)
+		if response.StatusCode != http.StatusBadRequest {
+			t.Fatalf("confirmation status = %d, want 400", response.StatusCode)
+		}
+		raw, err := io.ReadAll(response.Body)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var body struct {
+			Error struct {
+				Field  string `json:"field"`
+				Reason string `json:"reason"`
+			} `json:"error"`
+		}
+		if err := json.Unmarshal(raw, &body); err != nil {
+			t.Fatal(err)
+		}
+		if body.Error.Field != test.field || body.Error.Reason != test.reason || strings.Contains(string(raw), "Delete-target") {
+			t.Fatalf("confirmation error body = %+v", body)
+		}
+	}
+	if response := deleteID(admin.ID, map[string]string{"confirm_username": admin.Username}); response.StatusCode != http.StatusConflict || errorCode(t, response) != "cannot_delete_self" {
+		t.Fatalf("self delete = %d, want 409 cannot_delete_self", response.StatusCode)
+	}
+	if response := deleteID("00000000-0000-0000-0000-000000000099", map[string]string{"confirm_username": "missing"}); response.StatusCode != http.StatusNotFound || errorCode(t, response) != "not_found" {
+		t.Fatalf("unknown delete = %d, want 404 not_found", response.StatusCode)
+	}
+	target2 := createAdminExtraUser(t, panel, "delete-target-two")
+	_, token := directAPIKey(t, panel, admin.ID, nil, time.Now().Add(time.Hour))
+	if response := apiKeyRequest(t, panel, http.MethodDelete, "/api/v1/users/"+target2.ID, token, map[string]string{"confirm_username": target2.Username}, false); response.StatusCode != http.StatusForbidden {
+		t.Fatalf("API key delete = %d, want 403", response.StatusCode)
+	}
+	oldToken := auth.NewSessionToken()
+	if _, err := panel.store.CreateSession(context.Background(), target2.ID, auth.HashToken(oldToken), store.StageFull,
+		panel.clock.Now().Add(fullSessionTTL), "192.0.2.10", "test"); err != nil {
+		t.Fatal(err)
+	}
+	if response := panel.post(t, "/api/v1/users/"+target2.ID+"/disable", nil); response.StatusCode != http.StatusNoContent {
+		t.Fatalf("disable target = %d", response.StatusCode)
+	}
+	if response := deleteID(target2.ID, map[string]string{"confirm_username": target2.Username}); response.StatusCode != http.StatusNoContent {
+		t.Fatalf("delete user = %d, want 204", response.StatusCode)
+	}
+	entries, err := panel.store.ListAudit(context.Background(), 200)
+	if err != nil {
+		t.Fatal(err)
+	}
+	foundAudit := false
+	for _, entry := range entries {
+		if entry.Action == "user_delete" && entry.ActorID == admin.ID && entry.Details["user_id"] == target2.ID && entry.Details["username"] == target2.Username {
+			foundAudit = true
+		}
+	}
+	if !foundAudit {
+		t.Fatal("missing user_delete audit event")
+	}
+	parsed, err := url.Parse(panel.server.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	oldClient := panel.newClient(t)
+	oldClient.Jar.SetCookies(parsed, []*http.Cookie{sessionCookie(oldToken, store.StageFull)})
+	if response := panel.do(t, oldClient, http.MethodGet, "/api/v1/me", nil); response.StatusCode != http.StatusUnauthorized || errorCode(t, response) != "session_required" {
+		t.Fatalf("deleted user's cookie = %d %q, want 401 session_required", response.StatusCode, errorCode(t, response))
+	}
+}
+
+func TestDeleteUserStoreErrorCodes(t *testing.T) {
+	for _, test := range []struct {
+		err  error
+		code string
+	}{
+		{store.ErrLastAdmin, "last_admin"},
+		{store.ErrUserNotDisabled, "user_not_disabled"},
+		{store.ErrNotFound, "not_found"},
+	} {
+		t.Run(test.code, func(t *testing.T) {
+			recorder := httptest.NewRecorder()
+			newUserAdminHandler(UserAdminDeps{}).writeStoreError(recorder, test.err)
+			if recorder.Code != http.StatusConflict && test.code != "not_found" {
+				t.Fatalf("status = %d, want 409", recorder.Code)
+			}
+			if test.code == "not_found" && recorder.Code != http.StatusNotFound {
+				t.Fatalf("status = %d, want 404", recorder.Code)
+			}
+			if code := errorCodeOf(t, recorder); code != test.code {
+				t.Fatalf("code = %q, want %q", code, test.code)
+			}
+		})
 	}
 }

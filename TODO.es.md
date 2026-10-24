@@ -104,8 +104,6 @@ tareas concretas de la fase actual y de la siguiente.
 - [x] Panel: pantalla Usuarios y permisos (maqueta 5), claves de API, ajustes OIDC, lista y descarga de grabaciones de terminal
 - [x] Grabación de sesiones de terminal (hecha en las fases 2 y 3)
 - [ ] Tras una actualización, el panel sigue mostrando la versión anterior: que se recargue solo (o avise de que hay que recargar) cuando el core se reinicie con una versión nueva
-- [ ] Eliminar usuarios: solo los desactivados, confirmando con el nombre, borra asignaciones, claves y pertenencias a equipos, nunca al último administrador, el historial de auditoría conserva el nombre (pedido por el mantenedor en la prueba real de la fase 4)
-- [ ] `GET /api/v1/servers` sigue devolviendo `agent_latest_version` y `agent_upgrade_command` a usuarios con acceso limitado: omitirlos salvo que el usuario pueda ver o actualizar un servidor (encontrado en la prueba real de la fase 4)
 - [ ] Diálogo de claves de API: el comando de ejemplo debe llevar la clave real recién creada (está en pantalla una vez de todos modos) y ofrecer una variante de PowerShell (`curl.exe` / `Invoke-RestMethod`) junto a la de Linux (encontrado en la prueba real de la fase 4)
 - [ ] Formulario de acceso: limpiar el aviso de error antiguo (por ejemplo «esta asignación ya existe») al reabrir el formulario o cambiar los campos
 - [ ] Docs EN/ES, revisión de seguridad (Opus), prueba real con un segundo usuario, cierre en 0.5.0

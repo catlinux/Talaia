@@ -114,6 +114,7 @@ var routePerms = map[routeKey]routePermission{
 	{http.MethodGet, "/users/{userID}/bindings"}:                             {mode: permExact, permission: rbac.PermUsersManage, target: targetOrganization, noAPIKey: true},
 	{http.MethodPost, "/users/{userID}/bindings"}:                            {mode: permExact, permission: rbac.PermUsersManage, target: targetOrganization, noAPIKey: true},
 	{http.MethodPatch, "/users/{userID}"}:                                    {mode: permExact, permission: rbac.PermUsersManage, target: targetOrganization, noAPIKey: true},
+	{http.MethodDelete, "/users/{userID}"}:                                   {mode: permExact, permission: rbac.PermUsersManage, target: targetOrganization, noAPIKey: true},
 	{http.MethodPost, "/users/{userID}/disable"}:                             {mode: permExact, permission: rbac.PermUsersManage, target: targetOrganization, noAPIKey: true},
 	{http.MethodPost, "/users/{userID}/enable"}:                              {mode: permExact, permission: rbac.PermUsersManage, target: targetOrganization, noAPIKey: true},
 	{http.MethodPatch, "/bindings/{bindingID}"}:                              {mode: permExact, permission: rbac.PermUsersManage, target: targetOrganization, noAPIKey: true},

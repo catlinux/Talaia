@@ -13,6 +13,16 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+## [0.4.24] - 2026-10-24
+
+### Añadido
+
+- Eliminar usuarios: `DELETE /api/v1/users/{id}` con el nombre de usuario como confirmación, solo para cuentas desactivadas, nunca a uno mismo ni al último administrador. Borra la cuenta, su acceso, sus claves de API y sus pertenencias a equipos; el historial de auditoría conserva el nombre.
+
+### Seguridad
+
+- `GET /api/v1/servers` ya no da `agent_latest_version` ni `agent_upgrade_command` a quien no puede ver ningún servidor.
+
 ## [0.4.23] - 2026-10-24
 
 ### Corregido
@@ -523,7 +533,8 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
   `.gitattributes` y `.gitignore`.
 - Licencia WNCL-1.0 aplicada: archivo `LICENSE` y sección de créditos en los README.
 
-[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.4.23...HEAD
+[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.4.24...HEAD
+[0.4.24]: https://github.com/catlinux/Talaia/releases/tag/v0.4.24
 [0.4.23]: https://github.com/catlinux/Talaia/releases/tag/v0.4.23
 [0.4.22]: https://github.com/catlinux/Talaia/releases/tag/v0.4.22
 [0.4.21]: https://github.com/catlinux/Talaia/releases/tag/v0.4.21

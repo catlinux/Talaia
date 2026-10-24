@@ -98,13 +98,18 @@ func TestSingleStackCriterion(t *testing.T) {
 
 	rawServers := panel.do(t, stackClient, http.MethodGet, "/api/v1/servers", nil)
 	var stackServers struct {
-		Servers []map[string]any `json:"servers"`
+		Servers             []map[string]any `json:"servers"`
+		AgentLatestVersion  string           `json:"agent_latest_version"`
+		AgentUpgradeCommand string           `json:"agent_upgrade_command"`
 	}
 	if err := json.NewDecoder(rawServers.Body).Decode(&stackServers); err != nil {
 		t.Fatalf("decode stack servers: %v", err)
 	}
 	if len(stackServers.Servers) != 1 {
 		t.Fatalf("stack servers = %v, want only %s", stackServers.Servers, serverA)
+	}
+	if stackServers.AgentLatestVersion != "" || stackServers.AgentUpgradeCommand != "" {
+		t.Fatalf("stack-only response exposes agent update info: version=%q command=%q", stackServers.AgentLatestVersion, stackServers.AgentUpgradeCommand)
 	}
 	redacted := stackServers.Servers[0]
 	wantKeys := map[string]bool{"id": true, "name": true, "status": true, "limited": true}

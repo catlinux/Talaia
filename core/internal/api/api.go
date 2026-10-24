@@ -119,6 +119,7 @@ func NewRouter(deps RouterDeps) http.Handler {
 			registerRoute(r, deps.Authz, http.MethodGet, "/users/{userID}/bindings", http.HandlerFunc(userAdmin.listUserBindings))
 			registerRoute(r, deps.Authz, http.MethodPost, "/users/{userID}/bindings", http.HandlerFunc(userAdmin.createBinding))
 			registerRoute(r, deps.Authz, http.MethodPatch, "/users/{userID}", http.HandlerFunc(userAdmin.updateUser))
+			registerRoute(r, deps.Authz, http.MethodDelete, "/users/{userID}", http.HandlerFunc(userAdmin.deleteUser))
 			registerRoute(r, deps.Authz, http.MethodPost, "/users/{userID}/disable", http.HandlerFunc(userAdmin.disableUser))
 			registerRoute(r, deps.Authz, http.MethodPost, "/users/{userID}/enable", http.HandlerFunc(userAdmin.enableUser))
 			registerRoute(r, deps.Authz, http.MethodPatch, "/bindings/{bindingID}", http.HandlerFunc(userAdmin.updateBinding))
