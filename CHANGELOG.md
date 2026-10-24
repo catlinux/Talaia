@@ -18,6 +18,12 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.5.12] - 2026-10-24
+
+### Added
+
+- **Alerts screen in the panel**: a new *Alerts* entry in the navigation with a counter that turns red when something is critical, and a screen with *Active*, *History* and *Silences* tabs. Each alert is explained in your language (for example "Container shop-web-1 is stopped on vps-web-01") with how long ago it started, and, according to your permissions, you can acknowledge it, silence it (30 minutes up to 30 days, with a reason) or stop watching a container. On the fleet, the server cards of servers with active alerts get a red or amber edge and there is a new *Active alerts* indicator.
+
 ## [0.5.11] - 2026-10-24
 
 ### Added
@@ -616,7 +622,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.5.11...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.5.12...HEAD
+[0.5.12]: https://github.com/catlinux/Talaia/releases/tag/v0.5.12
 [0.5.11]: https://github.com/catlinux/Talaia/releases/tag/v0.5.11
 [0.5.10]: https://github.com/catlinux/Talaia/releases/tag/v0.5.10
 [0.5.9]: https://github.com/catlinux/Talaia/releases/tag/v0.5.9

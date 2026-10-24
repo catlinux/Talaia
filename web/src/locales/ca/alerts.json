@@ -1,0 +1,94 @@
+{
+  "eyebrow": "Operacions",
+  "title": "Alertes",
+  "intro": "El que necessita atenció ara, el que ha passat i els silencis actius.",
+  "loading": "Carregant alertes…",
+  "error": "No s'han pogut carregar les alertes.",
+  "tabs": {
+    "label": "Seccions d'alertes",
+    "active": "Actives",
+    "history": "Historial",
+    "silences": "Silencis"
+  },
+  "empty": {
+    "title": "No hi ha alertes actives",
+    "body": "Ara mateix no hi ha res que necessiti la teva atenció.",
+    "history": "No hi ha alertes anteriors.",
+    "silences": "No hi ha silencis actius."
+  },
+  "severity": {
+    "critical": "Crítica",
+    "warning": "Avís",
+    "info": "Informació"
+  },
+  "acknowledgedBy": "Confirmada per {{user}}",
+  "silenced": "Silenciada",
+  "actions": {
+    "acknowledge": "Confirma",
+    "silence": "Silencia",
+    "unwatch": "Deixa de vigilar",
+    "unwatchConfirm": "Vols deixar de vigilar {{subject}}?",
+    "cancel": "Cancel·la",
+    "removeSilence": "Elimina el silenci"
+  },
+  "unwatch": {
+    "title": "Vols deixar de vigilar {{subject}}?",
+    "body": "Aquest contenidor no es tornarà a vigilar fins que es torni a executar. L'alerta es resol ara.",
+    "confirm": "Deixa de vigilar"
+  },
+  "cpu_high": "CPU al {{value}}% a {{server}}",
+  "mem_high": "Memòria al {{value}}% a {{server}}",
+  "disk_high": "Disc al {{value}}% a {{server}}",
+  "server_offline": "{{server}} està sense connexió",
+  "container_down": "El contenidor {{subject}} està aturat a {{server}}",
+  "container_unhealthy": "El contenidor {{subject}} no és saludable a {{server}}",
+  "check_failed": "La comprovació {{subject}} ha fallat",
+  "cert_expiry": "El certificat de {{subject}} és a punt de caducar",
+  "unknownRule": "Regla d'alerta {{rule}}",
+  "ruleLabels": {
+    "cpu_high": "CPU alta",
+    "mem_high": "Memòria alta",
+    "disk_high": "Disc ple",
+    "server_offline": "Servidor sense connexió",
+    "container_down": "Contenidor aturat",
+    "container_unhealthy": "Contenidor no saludable",
+    "check_failed": "Comprovació fallida",
+    "cert_expiry": "Certificat a punt de caducar"
+  },
+  "history": {
+    "server": "Servidor",
+    "serverPlaceholder": "ID del servidor",
+    "started": "Inici {{time}}",
+    "resolved": "Resolta {{time}}",
+    "duration": "Durada {{duration}}",
+    "stillFiring": "Encara activa",
+    "more": "Carrega'n més",
+    "loading": "Carregant historial…",
+    "error": "No s'ha pogut carregar l'historial d'alertes."
+  },
+  "silence": {
+    "title": "Silencia aquesta alerta",
+    "duration": "Durada",
+    "minutes30": "30 minuts",
+    "hour1": "1 hora",
+    "hours4": "4 hores",
+    "hours24": "24 hores",
+    "days7": "7 dies",
+    "custom": "Personalitzada",
+    "customMinutes": "Minuts personalitzats (1–43200)",
+    "reason": "Motiu",
+    "reasonPlaceholder": "Per què se silencia? Màxim 200 caràcters.",
+    "invalid": "Tria una durada entre 1 i 43200 minuts i escriu un motiu.",
+    "scope": "Àmbit",
+    "allRules": "Totes les regles",
+    "createdBy": "Creat per {{user}}",
+    "until": "Fins a {{time}}"
+  },
+  "scope": {
+    "server": "Servidor",
+    "stack": "Stack",
+    "container": "Contenidor",
+    "organization": "Organització",
+    "group": "Grup"
+  }
+}

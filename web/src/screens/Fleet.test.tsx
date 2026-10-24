@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { createMockFleetClient, type FleetClient } from '../api/client'
 import { ApiError } from '../api/http'
+import type { Alert, AlertsApi } from '../api/alerts'
 import type { ActivityEvent, EnrollmentToken, Server } from '../api/types'
 import i18n from '../i18n'
 import { Fleet, refreshInterval } from './Fleet'
@@ -80,6 +81,70 @@ describe('Fleet', () => {
 
     // Three meters (CPU, RAM, disk) per server.
     expect(screen.getAllByRole('meter')).toHaveLength(serverNames.length * 3)
+  })
+
+  it('shows the alert border, chip and KPI from the alert summary', async () => {
+    const activeAlert: Alert = {
+      id: 'a1',
+      ruleId: 'r1',
+      ruleType: 'cpu_high',
+      severity: 'critical',
+      state: 'firing',
+      serverId: 'server-1',
+      serverName: 'vps-web-01',
+      subjectKind: 'server',
+      subjectName: 'server-1',
+      stack: '',
+      startedAt: '2026-10-24T10:00:00Z',
+      resolvedAt: '',
+      ackedAt: '',
+      ackedBy: '',
+      silenced: false,
+      summary: { key: 'alerts.cpu_high', params: { value: 91 } },
+    }
+    const alertsApi: AlertsApi = {
+      list: () => Promise.resolve([activeAlert]),
+      summary: () =>
+        Promise.resolve({
+          counts: { warning: 0, critical: 1, info: 0 },
+          servers: { 'server-1': 'critical' },
+        }),
+      silences: () => Promise.resolve([]),
+      acknowledge: () => Promise.resolve(),
+      unwatch: () => Promise.resolve(),
+      createSilence: () => Promise.reject(new Error('unexpected')),
+      deleteSilence: () => Promise.resolve(),
+    }
+    render(
+      <Fleet client={clientReturning(() => Promise.resolve([server()]))} alertsApi={alertsApi} />,
+    )
+
+    expect(await screen.findByText('vps-web-01')).toBeTruthy()
+    await waitFor(() => expect(document.querySelector('.server--alerts-critical')).toBeTruthy())
+    expect(screen.getByText('1 alert')).toBeTruthy()
+    expect(document.querySelector('[data-kpi="alerts"] .kpi__value')?.textContent).toBe('1')
+  })
+
+  it('hides alert indicators when the summary is unavailable', async () => {
+    const alertsApi: AlertsApi = {
+      list: () => Promise.reject(new Error('forbidden')),
+      summary: () => Promise.reject(new Error('forbidden')),
+      silences: () => Promise.resolve([]),
+      acknowledge: () => Promise.resolve(),
+      unwatch: () => Promise.resolve(),
+      createSilence: () => Promise.reject(new Error('unexpected')),
+      deleteSilence: () => Promise.resolve(),
+    }
+    render(
+      <Fleet client={clientReturning(() => Promise.resolve([server()]))} alertsApi={alertsApi} />,
+    )
+
+    expect(await screen.findByText('vps-web-01')).toBeTruthy()
+    await waitFor(() => expect(document.querySelector('.server--alerts-critical')).toBeNull())
+    expect(screen.queryByText('1 alert')).toBeNull()
+    expect(document.querySelector('[data-kpi="alerts"] .kpi__value')?.textContent).toBe(
+      'Not available yet',
+    )
   })
 
   it('shows the text status of a critical server', async () => {

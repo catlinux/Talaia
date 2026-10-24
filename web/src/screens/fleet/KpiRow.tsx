@@ -5,9 +5,10 @@ import { formatNumber, formatTime } from './format'
 
 interface KpiRowProps {
   summary: FleetSummary
+  alertSeverity?: string
 }
 
-export function KpiRow({ summary }: KpiRowProps) {
+export function KpiRow({ summary, alertSeverity }: KpiRowProps) {
   const { t, i18n } = useTranslation('fleet')
   const language = i18n.resolvedLanguage ?? i18n.language
 
@@ -45,7 +46,14 @@ export function KpiRow({ summary }: KpiRowProps) {
       label: t('kpi.alerts'),
       value:
         summary.activeAlerts === null ? unavailable : formatNumber(summary.activeAlerts, language),
-      tone: summary.activeAlerts === null ? '' : 'crit',
+      tone:
+        summary.activeAlerts === null
+          ? ''
+          : alertSeverity === 'critical'
+            ? 'crit'
+            : alertSeverity === 'warning'
+              ? 'warn'
+              : '',
     },
     {
       id: 'last-backup',

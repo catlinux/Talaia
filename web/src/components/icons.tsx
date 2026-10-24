@@ -44,6 +44,15 @@ export function UsersIcon({ className }: IconProps) {
   )
 }
 
+export function AlertIcon({ className }: IconProps) {
+  return (
+    <Icon className={className}>
+      <path d="M12 3 2.8 20h18.4L12 3Z" />
+      <path d="M12 9v5M12 17.5h.01" />
+    </Icon>
+  )
+}
+
 export function InfoIcon({ className }: IconProps) {
   return (
     <Icon className={className}>

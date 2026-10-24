@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import type { AptApi } from './api/apt'
 import type { AuditApi } from './api/audit'
+import { createAlertsApi, type AlertsApi, type AlertSummary } from './api/alerts'
 import type { FleetClient } from './api/client'
 import type { ContainersApi } from './api/containers'
 import type { JournalApi } from './api/journal'
@@ -16,6 +17,7 @@ import type { SystemApi } from './api/system'
 import type { Server } from './api/types'
 import { About } from './screens/About'
 import { Audit } from './screens/Audit'
+import { Alerts, AlertsBadge } from './screens/Alerts'
 import { Fleet } from './screens/Fleet'
 import { ServerScreen } from './screens/ServerScreen'
 import { Settings } from './screens/Settings'
@@ -24,6 +26,7 @@ import { useAuth } from './auth/AuthGate'
 import { usePermissions } from './auth/permissions'
 import {
   AuditIcon,
+  AlertIcon,
   FleetIcon,
   GearIcon,
   InfoIcon,
@@ -34,7 +37,8 @@ import { LanguageSelector } from './components/LanguageSelector'
 import { Logo } from './components/Logo'
 import { ThemeToggle } from './theme/ThemeToggle'
 
-type Screen = 'fleet' | 'users' | 'settings' | 'audit' | 'about'
+type Screen = 'fleet' | 'users' | 'settings' | 'audit' | 'alerts' | 'about'
+type OpenServer = Pick<Server, 'id' | 'name'>
 
 interface AppProps {
   /** Data source of the fleet screen. Tests inject their own client. */
@@ -51,6 +55,7 @@ interface AppProps {
   systemApi?: SystemApi
   /** Audit API of the audit screen. Tests inject their own. */
   auditApi?: AuditApi
+  alertsApi?: AlertsApi
   usersApi?: UsersApi
   teamsApi?: TeamsApi
   groupsApi?: GroupsApi
@@ -71,6 +76,7 @@ export function App({
   journalApi,
   systemApi,
   auditApi,
+  alertsApi,
   usersApi,
   teamsApi,
   groupsApi,
@@ -79,12 +85,39 @@ export function App({
 }: AppProps) {
   const { t } = useTranslation(['common', 'auth'])
   const auth = useAuth()
-  const { can } = usePermissions()
+  const { can, canAnywhere } = usePermissions()
   const canAudit = can('audit.view') || can('recordings.view')
   const canUsers = can('users.manage')
+  const canAlerts = canAnywhere('alerts.view' as never)
+  const alerts = alertsApi ?? defaultAlertsApi
+  const [alertSummary, setAlertSummary] = useState<AlertSummary | null>(null)
+  const refreshAlertSummary = useCallback(() => {
+    if (!canAlerts) return
+    void alerts.summary().then(setAlertSummary, () => setAlertSummary(null))
+  }, [alerts, canAlerts])
+  useEffect(() => {
+    if (!canAlerts) return
+    let active = true
+    const load = () => {
+      alerts.summary().then(
+        (summary) => {
+          if (active) setAlertSummary(summary)
+        },
+        () => {
+          if (active) setAlertSummary(null)
+        },
+      )
+    }
+    load()
+    const timer = window.setInterval(load, 30_000)
+    return () => {
+      active = false
+      window.clearInterval(timer)
+    }
+  }, [alerts, canAlerts])
   const [screen, setScreen] = useState<Screen>('fleet')
   // The server whose containers are open, if any; it replaces the fleet screen.
-  const [openServer, setOpenServer] = useState<Server | null>(null)
+  const [openServer, setOpenServer] = useState<OpenServer | null>(null)
 
   return (
     <div className="shell">
@@ -119,6 +152,21 @@ export function App({
             >
               <UsersIcon />
               {t('nav.users')}
+            </button>
+          ) : null}
+          {canAlerts ? (
+            <button
+              type="button"
+              className={screen === 'alerts' ? 'side__link side__link--active' : 'side__link'}
+              aria-current={screen === 'alerts' ? 'page' : undefined}
+              onClick={() => {
+                setScreen('alerts')
+                setOpenServer(null)
+              }}
+            >
+              <AlertIcon />
+              {t('nav.alerts')}
+              <AlertsBadge summary={alertSummary} />
             </button>
           ) : null}
           <button
@@ -200,6 +248,15 @@ export function App({
             <Settings api={systemApi} />
           ) : screen === 'audit' ? (
             <Audit api={auditApi} />
+          ) : screen === 'alerts' ? (
+            <Alerts
+              api={alerts}
+              onRefresh={refreshAlertSummary}
+              onOpenServer={(id, name) => {
+                setScreen('fleet')
+                setOpenServer({ id, name })
+              }}
+            />
           ) : openServer !== null ? (
             <ServerScreen
               server={openServer}
@@ -210,10 +267,16 @@ export function App({
               onBack={() => setOpenServer(null)}
             />
           ) : (
-            <Fleet client={client} onOpenServer={setOpenServer} />
+            <Fleet
+              client={client}
+              onOpenServer={setOpenServer}
+              alertsApi={canAlerts ? alerts : undefined}
+            />
           )}
         </div>
       </main>
     </div>
   )
 }
+
+const defaultAlertsApi = createAlertsApi()

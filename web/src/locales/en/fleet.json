@@ -64,7 +64,9 @@
     "securityBadge_one": "{{count}} security update",
     "securityBadge_other": "{{count}} security updates",
     "rebootBadge": "Reboot required",
-    "limitedAccess": "Limited access"
+    "limitedAccess": "Limited access",
+    "alertsBadge_one": "{{count}} alert",
+    "alertsBadge_other": "{{count}} alerts"
   },
   "activity": {
     "title": "Activity",

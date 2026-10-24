@@ -64,7 +64,9 @@
     "securityBadge_one": "{{count}} actualización de seguridad",
     "securityBadge_other": "{{count}} actualizaciones de seguridad",
     "rebootBadge": "Es necesario reiniciar",
-    "limitedAccess": "Acceso limitado"
+    "limitedAccess": "Acceso limitado",
+    "alertsBadge_one": "{{count}} alerta",
+    "alertsBadge_other": "{{count}} alertas"
   },
   "activity": {
     "title": "Actividad",

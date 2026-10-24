@@ -8,19 +8,33 @@ interface ServerCardProps {
   server: Server
   /** onOpen opens the screen of the server; without it the name is plain text. */
   onOpen?: (server: Server) => void
+  /** alertSeverity is the highest active alert severity for this server. */
+  alertSeverity?: string
+  /** alertCount is how many active alerts this server has. */
+  alertCount?: number
 }
 
-export function ServerCard({ server, onOpen }: ServerCardProps) {
+export function ServerCard({ server, onOpen, alertSeverity, alertCount = 0 }: ServerCardProps) {
   const { t, i18n } = useTranslation('fleet')
   const language = i18n.resolvedLanguage ?? i18n.language
 
   const status = server.statusDetailKey
     ? t(server.statusDetailKey, { percent: formatPercent(server.diskPercent ?? 0, language) })
     : t(`status.${server.status}`)
+  const alertClass =
+    alertSeverity === 'critical' || alertSeverity === 'warning'
+      ? ` server--alerts-${alertSeverity}`
+      : ''
+  const alertBadge =
+    alertCount > 0 ? (
+      <span className="server__alerts" title={t('server.alertsBadge', { count: alertCount })}>
+        {t('server.alertsBadge', { count: alertCount })}
+      </span>
+    ) : null
 
   if (server.limited) {
     return (
-      <li className="server server--limited">
+      <li className={`server server--limited${alertClass}`}>
         <div className="server__head">
           <h3 className="server__name">
             {onOpen ? (
@@ -33,13 +47,14 @@ export function ServerCard({ server, onOpen }: ServerCardProps) {
           </h3>
           <span className={`status status--${server.status}`}>{status}</span>
         </div>
+        {alertBadge}
         <p className="server__limited">{t('server.limitedAccess')}</p>
       </li>
     )
   }
 
   return (
-    <li className={`server server--${server.status}`}>
+    <li className={`server server--${server.status}${alertClass}`}>
       <div className="server__head">
         <h3 className="server__name">
           {onOpen ? (
@@ -50,7 +65,10 @@ export function ServerCard({ server, onOpen }: ServerCardProps) {
             server.name
           )}
         </h3>
-        <span className={`status status--${server.status}`}>{status}</span>
+        <div className="server__badges-inline">
+          {alertBadge}
+          <span className={`status status--${server.status}`}>{status}</span>
+        </div>
       </div>
       {server.os !== '' ? (
         <p className="server__spec">

@@ -1,0 +1,94 @@
+{
+  "eyebrow": "Operations",
+  "title": "Alerts",
+  "intro": "What needs attention now, what happened and the silences in force.",
+  "loading": "Loading alerts…",
+  "error": "The alerts could not be loaded.",
+  "tabs": {
+    "label": "Alert sections",
+    "active": "Active",
+    "history": "History",
+    "silences": "Silences"
+  },
+  "empty": {
+    "title": "No active alerts",
+    "body": "Nothing needs your attention right now.",
+    "history": "There are no past alerts.",
+    "silences": "There are no active silences."
+  },
+  "severity": {
+    "critical": "Critical",
+    "warning": "Warning",
+    "info": "Info"
+  },
+  "acknowledgedBy": "Acknowledged by {{user}}",
+  "silenced": "Silenced",
+  "actions": {
+    "acknowledge": "Acknowledge",
+    "silence": "Silence",
+    "unwatch": "Stop watching",
+    "unwatchConfirm": "Stop watching {{subject}}?",
+    "cancel": "Cancel",
+    "removeSilence": "Delete silence"
+  },
+  "unwatch": {
+    "title": "Stop watching {{subject}}?",
+    "body": "This container will not be monitored again until it runs again. The alert is resolved now.",
+    "confirm": "Stop watching"
+  },
+  "cpu_high": "CPU at {{value}}% on {{server}}",
+  "mem_high": "Memory at {{value}}% on {{server}}",
+  "disk_high": "Disk at {{value}}% on {{server}}",
+  "server_offline": "{{server}} is offline",
+  "container_down": "Container {{subject}} is down on {{server}}",
+  "container_unhealthy": "Container {{subject}} is unhealthy on {{server}}",
+  "check_failed": "Check {{subject}} failed",
+  "cert_expiry": "The certificate for {{subject}} is about to expire",
+  "unknownRule": "Alert rule {{rule}}",
+  "ruleLabels": {
+    "cpu_high": "CPU high",
+    "mem_high": "Memory high",
+    "disk_high": "Disk high",
+    "server_offline": "Server offline",
+    "container_down": "Container down",
+    "container_unhealthy": "Container unhealthy",
+    "check_failed": "Check failed",
+    "cert_expiry": "Certificate expiring"
+  },
+  "history": {
+    "server": "Server",
+    "serverPlaceholder": "Server id",
+    "started": "Started {{time}}",
+    "resolved": "Resolved {{time}}",
+    "duration": "Duration {{duration}}",
+    "stillFiring": "Still firing",
+    "more": "Load more",
+    "loading": "Loading history…",
+    "error": "The alert history could not be loaded."
+  },
+  "silence": {
+    "title": "Silence this alert",
+    "duration": "Duration",
+    "minutes30": "30 minutes",
+    "hour1": "1 hour",
+    "hours4": "4 hours",
+    "hours24": "24 hours",
+    "days7": "7 days",
+    "custom": "Custom",
+    "customMinutes": "Custom minutes (1–43200)",
+    "reason": "Reason",
+    "reasonPlaceholder": "Why is this silenced? Maximum 200 characters.",
+    "invalid": "Choose a duration between 1 and 43200 minutes and write a reason.",
+    "scope": "Scope",
+    "allRules": "All rules",
+    "createdBy": "Created by {{user}}",
+    "until": "Until {{time}}"
+  },
+  "scope": {
+    "server": "Server",
+    "stack": "Stack",
+    "container": "Container",
+    "organization": "Organization",
+    "group": "Group"
+  }
+}

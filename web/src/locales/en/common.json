@@ -18,6 +18,7 @@
     "settings": "Settings",
     "audit": "Audit",
     "about": "About",
-    "users": "Users"
+    "users": "Users",
+    "alerts": "Alerts"
   }
 }

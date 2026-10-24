@@ -1,0 +1,94 @@
+{
+  "eyebrow": "Operaciones",
+  "title": "Alertas",
+  "intro": "Lo que requiere atención ahora, lo que ha pasado y los silencios activos.",
+  "loading": "Cargando alertas…",
+  "error": "No se han podido cargar las alertas.",
+  "tabs": {
+    "label": "Secciones de alertas",
+    "active": "Activas",
+    "history": "Historial",
+    "silences": "Silencios"
+  },
+  "empty": {
+    "title": "No hay alertas activas",
+    "body": "Ahora mismo no hay nada que requiera tu atención.",
+    "history": "No hay alertas anteriores.",
+    "silences": "No hay silencios activos."
+  },
+  "severity": {
+    "critical": "Crítica",
+    "warning": "Aviso",
+    "info": "Información"
+  },
+  "acknowledgedBy": "Confirmada por {{user}}",
+  "silenced": "Silenciada",
+  "actions": {
+    "acknowledge": "Confirmar",
+    "silence": "Silenciar",
+    "unwatch": "Dejar de vigilar",
+    "unwatchConfirm": "¿Dejar de vigilar {{subject}}?",
+    "cancel": "Cancelar",
+    "removeSilence": "Eliminar silencio"
+  },
+  "unwatch": {
+    "title": "¿Dejar de vigilar {{subject}}?",
+    "body": "Este contenedor no se volverá a vigilar hasta que vuelva a ejecutarse. La alerta se resuelve ahora.",
+    "confirm": "Dejar de vigilar"
+  },
+  "cpu_high": "CPU al {{value}}% en {{server}}",
+  "mem_high": "Memoria al {{value}}% en {{server}}",
+  "disk_high": "Disco al {{value}}% en {{server}}",
+  "server_offline": "{{server}} está sin conexión",
+  "container_down": "El contenedor {{subject}} está parado en {{server}}",
+  "container_unhealthy": "El contenedor {{subject}} no está saludable en {{server}}",
+  "check_failed": "La comprobación {{subject}} ha fallado",
+  "cert_expiry": "El certificado de {{subject}} está a punto de caducar",
+  "unknownRule": "Regla de alerta {{rule}}",
+  "ruleLabels": {
+    "cpu_high": "CPU alta",
+    "mem_high": "Memoria alta",
+    "disk_high": "Disco lleno",
+    "server_offline": "Servidor sin conexión",
+    "container_down": "Contenedor parado",
+    "container_unhealthy": "Contenedor no sano",
+    "check_failed": "Comprobación fallida",
+    "cert_expiry": "Certificado a punto de caducar"
+  },
+  "history": {
+    "server": "Servidor",
+    "serverPlaceholder": "ID del servidor",
+    "started": "Inicio {{time}}",
+    "resolved": "Resuelta {{time}}",
+    "duration": "Duración {{duration}}",
+    "stillFiring": "Sigue activa",
+    "more": "Cargar más",
+    "loading": "Cargando historial…",
+    "error": "No se ha podido cargar el historial de alertas."
+  },
+  "silence": {
+    "title": "Silenciar esta alerta",
+    "duration": "Duración",
+    "minutes30": "30 minutos",
+    "hour1": "1 hora",
+    "hours4": "4 horas",
+    "hours24": "24 horas",
+    "days7": "7 días",
+    "custom": "Personalizada",
+    "customMinutes": "Minutos personalizados (1–43200)",
+    "reason": "Motivo",
+    "reasonPlaceholder": "¿Por qué se silencia? Máximo 200 caracteres.",
+    "invalid": "Elige una duración entre 1 y 43200 minutos y escribe un motivo.",
+    "scope": "Ámbito",
+    "allRules": "Todas las reglas",
+    "createdBy": "Creado por {{user}}",
+    "until": "Hasta {{time}}"
+  },
+  "scope": {
+    "server": "Servidor",
+    "stack": "Stack",
+    "container": "Contenedor",
+    "organization": "Organización",
+    "group": "Grupo"
+  }
+}

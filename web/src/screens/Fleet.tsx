@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
+import type { AlertsApi, AlertSummary } from '../api/alerts'
 import { createApiFleetClient } from '../api/client'
 import type { FleetClient } from '../api/client'
 import { isSignedOut } from '../api/http'
@@ -21,6 +22,8 @@ interface FleetProps {
   client?: FleetClient
   /** onOpenServer opens the screen of a server; the cards are not links without it. */
   onOpenServer?: (server: Server) => void
+  /** alertsApi supplies the alert summary and per-server counts when available. */
+  alertsApi?: AlertsApi
 }
 
 type FleetState =
@@ -31,9 +34,9 @@ type FleetState =
 const defaultClient = createApiFleetClient()
 
 /**
- * Derives the KPI row from the two lists the client returns. Security updates,
- * active alerts and the last backup come from the activity feed, which the API
- * does not provide yet: without events they stay null and the row says so.
+ * Derives the KPI row from the two lists the client returns. Security updates
+ * and the last backup still come from the activity feed; active alerts come
+ * from the alert summary and stay null when it is unavailable.
  */
 function summarizeFleet(servers: Server[], activity: ActivityEvent[]): FleetSummary {
   let serversOnline = 0
@@ -58,13 +61,9 @@ function summarizeFleet(servers: Server[], activity: ActivityEvent[]): FleetSumm
   }
 
   summary.securityUpdates = 0
-  summary.activeAlerts = 0
   for (const event of activity) {
     if (event.messageKey === 'event.securityUpdates') {
       summary.securityUpdates += Number(event.params.count ?? 0)
-    }
-    if (event.severity === 'warning' || event.severity === 'critical') {
-      summary.activeAlerts += 1
     }
     if (
       event.messageKey === 'event.backupDone' &&
@@ -76,13 +75,49 @@ function summarizeFleet(servers: Server[], activity: ActivityEvent[]): FleetSumm
   return summary
 }
 
-export function Fleet({ client = defaultClient, onOpenServer }: FleetProps) {
+export function Fleet({ client = defaultClient, onOpenServer, alertsApi }: FleetProps) {
   const { t, i18n } = useTranslation('fleet')
   const language = i18n.resolvedLanguage ?? i18n.language
   const { can } = usePermissions()
   const canEnroll = can('server.enroll')
   const [state, setState] = useState<FleetState>({ status: 'loading' })
   const [refreshFailed, setRefreshFailed] = useState(false)
+  const [alertSummary, setAlertSummary] = useState<AlertSummary | null>(null)
+  const [alertCounts, setAlertCounts] = useState<Record<string, number>>({})
+
+  useEffect(() => {
+    if (!alertsApi) return
+    let active = true
+    const loadAlerts = () => {
+      alertsApi.summary().then(
+        (summary) => {
+          if (active) setAlertSummary(summary)
+        },
+        () => {
+          if (active) setAlertSummary(null)
+        },
+      )
+      alertsApi.list('active').then(
+        (alerts) => {
+          if (!active) return
+          const counts: Record<string, number> = {}
+          for (const alert of alerts) {
+            if (alert.serverId) counts[alert.serverId] = (counts[alert.serverId] ?? 0) + 1
+          }
+          setAlertCounts(counts)
+        },
+        () => {
+          if (active) setAlertCounts({})
+        },
+      )
+    }
+    loadAlerts()
+    const timer = window.setInterval(loadAlerts, 30_000)
+    return () => {
+      active = false
+      window.clearInterval(timer)
+    }
+  }, [alertsApi])
 
   useEffect(() => {
     let cancelled = false
@@ -174,7 +209,24 @@ export function Fleet({ client = defaultClient, onOpenServer }: FleetProps) {
 
       {state.status === 'ready' && state.servers.length > 0 ? (
         <>
-          <KpiRow summary={summarizeFleet(state.servers, state.activity)} />
+          <KpiRow
+            summary={{
+              ...summarizeFleet(state.servers, state.activity),
+              activeAlerts:
+                alertSummary === null
+                  ? null
+                  : (alertSummary.counts.warning ?? 0) + (alertSummary.counts.critical ?? 0),
+            }}
+            alertSeverity={
+              alertSummary === null
+                ? undefined
+                : (alertSummary.counts.critical ?? 0) > 0
+                  ? 'critical'
+                  : (alertSummary.counts.warning ?? 0) > 0
+                    ? 'warning'
+                    : ''
+            }
+          />
           <div
             className={
               state.activity.length > 0 ? 'fleet__cols' : 'fleet__cols fleet__cols--single'
@@ -182,7 +234,13 @@ export function Fleet({ client = defaultClient, onOpenServer }: FleetProps) {
           >
             <ul className="servers">
               {state.servers.map((server) => (
-                <ServerCard key={server.id} server={server} onOpen={onOpenServer} />
+                <ServerCard
+                  key={server.id}
+                  server={server}
+                  onOpen={onOpenServer}
+                  alertSeverity={alertSummary?.servers[server.id]}
+                  alertCount={alertSummary ? (alertCounts[server.id] ?? 0) : 0}
+                />
               ))}
             </ul>
             {state.activity.length > 0 ? <ActivityFeed events={state.activity} /> : null}

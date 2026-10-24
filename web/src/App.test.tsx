@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { App } from './App'
 import { AuthGate } from './auth/AuthGate'
 import type { AptApi } from './api/apt'
+import type { AlertsApi } from './api/alerts'
 import type { AuditApi } from './api/audit'
 import type { AuthApi } from './api/auth'
 import { createMockFleetClient } from './api/client'
@@ -23,8 +24,9 @@ const navSettings = { ca: 'Configuració', es: 'Ajustes', en: 'Settings' } as co
 const navAudit = { ca: 'Auditoria', es: 'Auditoría', en: 'Audit' } as const
 const navAbout = { ca: 'Sobre', es: 'Acerca de', en: 'About' } as const
 const navUsers = { ca: 'Usuaris', es: 'Usuarios', en: 'Users' } as const
+const navAlerts = { ca: 'Alertes', es: 'Alertas', en: 'Alerts' } as const
 
-const adminPermissions: Permission[] = [
+const adminPermissions: string[] = [
   'container.view',
   'container.logs',
   'container.control',
@@ -50,7 +52,20 @@ const adminPermissions: Permission[] = [
   'audit.view',
   'recordings.view',
   'apikeys.manage',
+  'alerts.view',
+  'alerts.silence',
+  'alerts.manage',
 ]
+
+const adminAlertsApi: AlertsApi = {
+  list: () => Promise.resolve([]),
+  summary: () => Promise.resolve({ counts: { warning: 0, critical: 0, info: 0 }, servers: {} }),
+  silences: () => Promise.resolve([]),
+  acknowledge: () => Promise.resolve(),
+  unwatch: () => Promise.resolve(),
+  createSilence: () => Promise.reject(new Error('unexpected silence')),
+  deleteSilence: () => Promise.resolve(),
+}
 
 const adminMe: MeApi = {
   get: () =>
@@ -58,7 +73,7 @@ const adminMe: MeApi = {
       user: { id: 'admin', username: 'admin', display_name: 'Admin', email: '' },
       bindings: { bindings: [] },
       permissions: {
-        organization: adminPermissions,
+        organization: adminPermissions as Permission[],
         servers: {},
         stacks: {},
         containers: {},
@@ -98,7 +113,12 @@ const pendingJournalApi: JournalApi = {
 function renderApp(systemApi?: SystemApi, auditApi?: AuditApi) {
   render(
     <AuthGate api={signedInApi} meApi={adminMe}>
-      <App client={createMockFleetClient()} systemApi={systemApi} auditApi={auditApi} />
+      <App
+        client={createMockFleetClient()}
+        systemApi={systemApi}
+        auditApi={auditApi}
+        alertsApi={adminAlertsApi}
+      />
     </AuthGate>,
   )
 }
@@ -200,7 +220,7 @@ describe('App', () => {
       within(nav)
         .getAllByRole('button')
         .map((button) => button.textContent),
-    ).toEqual([navFleet.en, navUsers.en, navSettings.en, navAudit.en, navAbout.en])
+    ).toEqual([navFleet.en, navUsers.en, navAlerts.en, navSettings.en, navAudit.en, navAbout.en])
 
     fireEvent.click(screen.getByRole('button', { name: navSettings.en }))
 
