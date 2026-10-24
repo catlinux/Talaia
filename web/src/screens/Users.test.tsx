@@ -10,6 +10,12 @@ import type { AdminUser, Binding, UsersApi } from '../api/users'
 import i18n from '../i18n'
 import { Users } from './Users'
 
+const authUser = vi.hoisted(() => ({ username: null as string | null }))
+vi.mock('../auth/AuthGate', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../auth/AuthGate')>()
+  return { ...actual, useAuth: () => (authUser.username ? { username: authUser.username } : null) }
+})
+
 const binding: Binding = {
   id: 'b1',
   role: 'viewer',
@@ -35,6 +41,7 @@ function fakeUsers(users: AdminUser[], disable = vi.fn(() => Promise.resolve()))
     update: vi.fn(() => Promise.resolve()),
     disable,
     enable: vi.fn(() => Promise.resolve()),
+    delete: vi.fn(() => Promise.resolve()),
     listBindings: vi.fn(() => Promise.resolve(binding ? [binding] : [])),
     addBinding: vi.fn((_userId, role, scope) => Promise.resolve({ id: 'b2', role, scope })),
     updateBinding: vi.fn(() => Promise.resolve()),
@@ -124,6 +131,7 @@ function renderUsers(usersApi: UsersApi, invitesApi = fakeInvites()) {
 describe('Users screen', () => {
   beforeEach(async () => {
     await i18n.changeLanguage('en')
+    authUser.username = null
   })
 
   afterEach(() => {
@@ -294,6 +302,77 @@ describe('Users screen', () => {
     expect(await screen.findByText('You cannot disable your own account.')).toBeTruthy()
   })
 
+  it('hides delete for active users and the signed-in user', async () => {
+    authUser.username = 'admin'
+    renderUsers(
+      fakeUsers([
+        account({ disabled: true }),
+        account({ id: 'u2', username: 'active-user' }),
+        account({ id: 'u3', username: 'disabled', disabled: true }),
+      ]),
+    )
+    await screen.findAllByText('Ada')
+    const rows = screen.getAllByRole('row')
+    expect(within(rows[1]!).queryByRole('button', { name: 'Delete' })).toBeNull()
+    expect(within(rows[2]!).queryByRole('button', { name: 'Delete' })).toBeNull()
+    expect(screen.getAllByRole('button', { name: 'Delete' })).toHaveLength(1)
+    expect(within(rows[2]!).getByRole('button', { name: 'Disable' })).toBeTruthy()
+    authUser.username = null
+  })
+
+  it('requires the exact username and removes a deleted user', async () => {
+    const user = account({ id: 'u2', username: 'old-user', disabled: true })
+    const state = [user]
+    const usersApi = fakeUsers(state)
+    usersApi.list = vi.fn(() => Promise.resolve(state))
+    usersApi.delete = vi.fn(async (id) => {
+      state.splice(
+        state.findIndex((candidate) => candidate.id === id),
+        1,
+      )
+    })
+    renderUsers(usersApi)
+    fireEvent.click(await screen.findByRole('button', { name: 'Delete' }))
+    const dialog = screen.getByRole('dialog')
+    const confirm = within(dialog).getByRole('button', { name: 'Delete' })
+    expect(confirm).toHaveProperty('disabled', true)
+    fireEvent.change(within(dialog).getByLabelText('Type old-user to confirm'), {
+      target: { value: 'old' },
+    })
+    expect(confirm).toHaveProperty('disabled', true)
+    fireEvent.change(within(dialog).getByLabelText('Type old-user to confirm'), {
+      target: { value: 'old-user' },
+    })
+    expect(confirm).toHaveProperty('disabled', false)
+    fireEvent.click(confirm)
+    await waitFor(() => expect(usersApi.delete).toHaveBeenCalledWith('u2', 'old-user'))
+    await waitFor(() => expect(screen.queryByText('old-user')).toBeNull())
+  })
+
+  it.each(['cannot_delete_self', 'user_not_disabled', 'last_admin'] as const)(
+    'shows delete error %s',
+    async (code) => {
+      const usersApi = fakeUsers([account({ id: 'u2', username: 'old-user', disabled: true })])
+      usersApi.delete = vi.fn(() => Promise.reject(new ApiError(code, 409)))
+      renderUsers(usersApi)
+      fireEvent.click(await screen.findByRole('button', { name: 'Delete' }))
+      const dialog = screen.getByRole('dialog')
+      fireEvent.change(within(dialog).getByLabelText('Type old-user to confirm'), {
+        target: { value: 'old-user' },
+      })
+      fireEvent.click(within(dialog).getByRole('button', { name: 'Delete' }))
+      expect((await within(dialog).findByRole('alert')).textContent).toBe(
+        (
+          {
+            cannot_delete_self: 'You cannot delete your own account.',
+            user_not_disabled: 'Disable this account before deleting it.',
+            last_admin: 'You cannot disable the last active administrator.',
+          } as const
+        )[code],
+      )
+    },
+  )
+
   it('adds and removes access', async () => {
     const usersApi = fakeUsers([account()])
     renderUsers(usersApi)
@@ -312,5 +391,28 @@ describe('Users screen', () => {
         expect.objectContaining({ type: 'organization' }),
       ),
     )
+  })
+
+  it('clears the access error when the add form is opened again and after a success', async () => {
+    const usersApi = fakeUsers([account()])
+    usersApi.addBinding = vi.fn(() => Promise.reject(new Error('This assignment already exists')))
+    renderUsers(usersApi)
+    fireEvent.click((await screen.findAllByRole('button', { name: 'Access' }))[0]!)
+    const dialog = screen.getByRole('dialog')
+    const addAccess = () => within(dialog).getByRole('button', { name: 'Add access' })
+
+    fireEvent.click(addAccess()) // opens the form
+    fireEvent.click(addAccess()) // submits it and fails
+    expect(await within(dialog).findByRole('alert')).toBeTruthy()
+
+    fireEvent.click(addAccess()) // opens the form again
+    expect(within(dialog).queryByRole('alert')).toBeNull()
+
+    usersApi.addBinding = vi.fn((_userId, role, scope) =>
+      Promise.resolve({ id: 'b3', role, scope }),
+    )
+    fireEvent.click(addAccess()) // submits it and succeeds
+    await waitFor(() => expect(usersApi.addBinding).toHaveBeenCalled())
+    expect(within(dialog).queryByRole('alert')).toBeNull()
   })
 })

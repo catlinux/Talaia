@@ -34,6 +34,8 @@ export function Assignments({
   const [role, setRole] = useState<Role>('viewer')
   const [scope, setScope] = useState<Scope>({ type: 'organization' })
   const [showErrors, setShowErrors] = useState(false)
+  const [dismissedError, setDismissedError] = useState<string | null>(null)
+  const clearError = () => setDismissedError(error)
 
   const submit = () => {
     setShowErrors(true)
@@ -51,7 +53,7 @@ export function Assignments({
 
   return (
     <div className="assignments">
-      {error !== null ? (
+      {error !== null && error !== dismissedError ? (
         <p className="users__error" role="alert">
           {error}
         </p>
@@ -94,12 +96,21 @@ export function Assignments({
         <div className="assignments__add">
           <label className="field">
             <span className="field__label">{t('access.role')}</span>
-            <RoleSelect value={role} onChange={setRole} />
+            <RoleSelect
+              value={role}
+              onChange={(value) => {
+                clearError()
+                setRole(value)
+              }}
+            />
           </label>
           <RoleDescription role={role} />
           <ScopeFields
             scope={scope}
-            onChange={setScope}
+            onChange={(value) => {
+              clearError()
+              setScope(value)
+            }}
             groups={groups}
             servers={servers}
             showErrors={showErrors}
@@ -108,17 +119,35 @@ export function Assignments({
             <button
               type="button"
               className="settings__button settings__button--primary"
-              onClick={submit}
+              onClick={() => {
+                clearError()
+                submit()
+              }}
             >
               {t('access.add')}
             </button>
-            <button type="button" className="settings__button" onClick={() => setAdding(false)}>
+            <button
+              type="button"
+              className="settings__button"
+              onClick={() => {
+                clearError()
+                setAdding(false)
+              }}
+            >
               {t('actions.cancel')}
             </button>
           </div>
         </div>
       ) : (
-        <button type="button" className="cbtn" disabled={busy} onClick={() => setAdding(true)}>
+        <button
+          type="button"
+          className="cbtn"
+          disabled={busy}
+          onClick={() => {
+            clearError()
+            setAdding(true)
+          }}
+        >
           {t('access.addButton')}
         </button>
       )}

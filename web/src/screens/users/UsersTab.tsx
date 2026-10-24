@@ -6,6 +6,7 @@ import type { CreatedInvite, Invite, InvitesApi } from '../../api/invites'
 import type { ServerSummary } from '../../api/servers'
 import type { AdminUser, Binding, Role, Scope, UsersApi } from '../../api/users'
 import { errorMessage } from '../../auth/AuthGate'
+import { useAuth } from '../../auth/AuthGate'
 import { CheckIcon, CopyIcon } from '../../components/icons'
 import { Dialog } from './Dialog'
 import { Assignments } from './Assignments'
@@ -38,10 +39,13 @@ export function UsersTab({
   onRefresh,
 }: UsersTabProps) {
   const { t, i18n } = useTranslation(['users', 'errors'])
+  const auth = useAuth()
   const language = i18n.resolvedLanguage ?? i18n.language
   const [accessFor, setAccessFor] = useState<string | null>(null)
   const [editing, setEditing] = useState<EditState | null>(null)
   const [toggling, setToggling] = useState<AdminUser | null>(null)
+  const [deleting, setDeleting] = useState<AdminUser | null>(null)
+  const [deleteConfirmation, setDeleteConfirmation] = useState('')
   const [inviting, setInviting] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -49,14 +53,16 @@ export function UsersTab({
 
   const selected = accessFor === null ? null : (users.find((user) => user.id === accessFor) ?? null)
 
-  const run = async (action: () => Promise<void>) => {
+  const run = async (action: () => Promise<void>): Promise<boolean> => {
     setBusy(true)
     setError(null)
     try {
       await action()
       await onRefresh()
+      return true
     } catch (cause) {
       setError(errorMessage(t, cause))
+      return false
     } finally {
       setBusy(false)
     }
@@ -81,6 +87,15 @@ export function UsersTab({
       toggling.disabled ? usersApi.enable(toggling.id) : usersApi.disable(toggling.id),
     )
     setToggling(null)
+  }
+
+  const deleteUser = async () => {
+    if (deleting === null || deleteConfirmation !== deleting.username) return
+    // A failed deletion keeps the dialog open so its error is read in place.
+    if (await run(() => usersApi.delete(deleting.id, deleteConfirmation))) {
+      setDeleting(null)
+      setDeleteConfirmation('')
+    }
   }
 
   const addAccess = (role: Role, scope: Scope) => {
@@ -193,6 +208,19 @@ export function UsersTab({
                       >
                         {t('users:edit')}
                       </button>
+                      {user.disabled && user.username !== auth?.username ? (
+                        <button
+                          type="button"
+                          className="cbtn cbtn--danger"
+                          onClick={() => {
+                            setError(null)
+                            setDeleteConfirmation('')
+                            setDeleting(user)
+                          }}
+                        >
+                          {t('users:delete')}
+                        </button>
+                      ) : null}
                       <button
                         type="button"
                         className={user.disabled ? 'cbtn' : 'cbtn cbtn--danger'}
@@ -355,6 +383,55 @@ export function UsersTab({
           }
         >
           <p>{t(toggling.disabled ? 'users:toggle.enableBody' : 'users:toggle.disableBody')}</p>
+        </Dialog>
+      ) : null}
+
+      {deleting !== null ? (
+        <Dialog
+          title={t('users:deleteDialog.title', { name: deleting.username })}
+          onClose={() => {
+            setDeleting(null)
+            setDeleteConfirmation('')
+          }}
+          footer={
+            <div className="users__actions">
+              <button
+                type="button"
+                className="settings__button"
+                onClick={() => {
+                  setDeleting(null)
+                  setDeleteConfirmation('')
+                }}
+              >
+                {t('actions.cancel')}
+              </button>
+              <button
+                type="button"
+                className="settings__button settings__button--danger"
+                disabled={busy || deleteConfirmation !== deleting.username}
+                onClick={() => void deleteUser()}
+              >
+                {t('users:delete')}
+              </button>
+            </div>
+          }
+        >
+          <p>{t('users:deleteDialog.body')}</p>
+          <label className="field">
+            <span className="field__label">
+              {t('users:deleteDialog.confirm', { name: deleting.username })}
+            </span>
+            <input
+              className="field__input"
+              value={deleteConfirmation}
+              onChange={(event) => setDeleteConfirmation(event.target.value)}
+            />
+          </label>
+          {error !== null ? (
+            <p className="users__error" role="alert">
+              {error}
+            </p>
+          ) : null}
         </Dialog>
       ) : null}
 

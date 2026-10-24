@@ -13,6 +13,12 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+## [0.4.25] - 2026-10-24
+
+### Añadido
+
+- Panel: eliminar un usuario desactivado (escribiendo su nombre para confirmar) y, en el diálogo de la clave de API nueva, un ejemplo con la clave real en dos variantes, Linux/macOS y PowerShell. El error del formulario de acceso ya no se queda en pantalla al cambiar el formulario.
+
 ## [0.4.24] - 2026-10-24
 
 ### Añadido
@@ -533,7 +539,8 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
   `.gitattributes` y `.gitignore`.
 - Licencia WNCL-1.0 aplicada: archivo `LICENSE` y sección de créditos en los README.
 
-[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.4.24...HEAD
+[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.4.25...HEAD
+[0.4.25]: https://github.com/catlinux/Talaia/releases/tag/v0.4.25
 [0.4.24]: https://github.com/catlinux/Talaia/releases/tag/v0.4.24
 [0.4.23]: https://github.com/catlinux/Talaia/releases/tag/v0.4.23
 [0.4.22]: https://github.com/catlinux/Talaia/releases/tag/v0.4.22

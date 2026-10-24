@@ -104,8 +104,6 @@ tareas concretas de la fase actual y de la siguiente.
 - [x] Panel: pantalla Usuarios y permisos (maqueta 5), claves de API, ajustes OIDC, lista y descarga de grabaciones de terminal
 - [x] Grabación de sesiones de terminal (hecha en las fases 2 y 3)
 - [ ] Tras una actualización, el panel sigue mostrando la versión anterior: que se recargue solo (o avise de que hay que recargar) cuando el core se reinicie con una versión nueva
-- [ ] Diálogo de claves de API: el comando de ejemplo debe llevar la clave real recién creada (está en pantalla una vez de todos modos) y ofrecer una variante de PowerShell (`curl.exe` / `Invoke-RestMethod`) junto a la de Linux (encontrado en la prueba real de la fase 4)
-- [ ] Formulario de acceso: limpiar el aviso de error antiguo (por ejemplo «esta asignación ya existe») al reabrir el formulario o cambiar los campos
 - [ ] Docs EN/ES, revisión de seguridad (Opus), prueba real con un segundo usuario, cierre en 0.5.0
 
 ## Bloque de operación (decidido el 2026-10-20, antes de cerrar la fase 2)

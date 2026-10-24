@@ -209,6 +209,9 @@
     "copied": "Copied",
     "copyCurl": "Copy command",
     "example": "Try it",
+    "commandVariants": "Command variants",
+    "unix": "Linux / macOS",
+    "powershell": "PowerShell",
     "expires": "The key expires {{date}}."
   },
   "oidc": {

@@ -38,6 +38,7 @@ export interface UsersApi {
   update(userId: string, displayName: string, email: string): Promise<void>
   disable(userId: string): Promise<void>
   enable(userId: string): Promise<void>
+  delete(userId: string, username: string): Promise<void>
   listBindings(userId: string): Promise<Binding[]>
   addBinding(userId: string, role: Role, scope: Scope): Promise<Binding>
   updateBinding(bindingId: string, role: Role): Promise<void>
@@ -118,6 +119,10 @@ export function createUsersApi(fetchImpl?: typeof fetch): UsersApi {
       }),
     disable: (userId) => http.post<void>(`/api/v1/users/${encodeURIComponent(userId)}/disable`),
     enable: (userId) => http.post<void>(`/api/v1/users/${encodeURIComponent(userId)}/enable`),
+    delete: (userId, username) =>
+      http.delete<void>(`/api/v1/users/${encodeURIComponent(userId)}`, {
+        confirm_username: username,
+      }),
     listBindings: async (userId) => {
       const body = await http.get<bindingsResponse>(
         `/api/v1/users/${encodeURIComponent(userId)}/bindings`,

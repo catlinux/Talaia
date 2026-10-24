@@ -38,5 +38,7 @@
   "oidcDiscoveryFailed": "No s'ha pogut contactar amb el proveïdor d'OpenID Connect.",
   "accountDisabled": "El teu compte s’ha desactivat. Contacta amb un administrador.",
   "sessionRevoked": "S’ha revocat la teva sessió. Torna a iniciar sessió.",
-  "cannotDisableSelf": "No pots desactivar el teu propi compte."
+  "cannotDisableSelf": "No pots desactivar el teu propi compte.",
+  "cannotDeleteSelf": "No pots eliminar el teu propi compte.",
+  "userNotDisabled": "Desactiva aquest compte abans d'eliminar-lo."
 }

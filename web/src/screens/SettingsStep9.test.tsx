@@ -107,7 +107,20 @@ describe('Settings API keys and single sign-on', () => {
 
     expect(await screen.findByText('tlk_abcdefghijkl_secret')).toBeTruthy()
     expect(screen.getByText(/Copy this key now/)).toBeTruthy()
-    expect(screen.getByText(/curl -H "Authorization: Bearer <key>"/)).toBeTruthy()
+    const origin = window.location.origin
+    const unixCommand = `curl -H "Authorization: Bearer tlk_abcdefghijkl_secret" ${origin}/api/v1/servers`
+    const powershellCommand = `Invoke-RestMethod -Uri "${origin}/api/v1/servers" -Headers @{ Authorization = "Bearer tlk_abcdefghijkl_secret" }`
+    expect(screen.getByText(unixCommand)).toBeTruthy()
+    const tabs = screen.getAllByRole('tab')
+    const unixTab = tabs.find((tab) => tab.textContent === 'Linux / macOS')!
+    const powershellTab = tabs.find((tab) => tab.textContent === 'PowerShell')!
+    expect(unixTab.getAttribute('aria-selected')).toBe('true')
+    fireEvent.click(powershellTab)
+    expect(screen.getByText(powershellCommand)).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Copy command' })).toBeTruthy()
+    fireEvent.click(unixTab)
+    expect(screen.getByText(unixCommand)).toBeTruthy()
+    expect(screen.queryByText(/<key>/)).toBeNull()
     expect(create).toHaveBeenCalledWith({
       name: 'deploy',
       expiresInDays: 90,

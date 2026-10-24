@@ -18,6 +18,12 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.4.25] - 2026-10-24
+
+### Added
+
+- Panel: delete a disabled user (typing their name to confirm) and, in the new API key dialog, an example with the real key in two variants, Linux/macOS and PowerShell. The error of the access form no longer stays on screen after you change the form.
+
 ## [0.4.24] - 2026-10-24
 
 ### Added
@@ -533,7 +539,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.4.24...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.4.25...HEAD
+[0.4.25]: https://github.com/catlinux/Talaia/releases/tag/v0.4.25
 [0.4.24]: https://github.com/catlinux/Talaia/releases/tag/v0.4.24
 [0.4.23]: https://github.com/catlinux/Talaia/releases/tag/v0.4.23
 [0.4.22]: https://github.com/catlinux/Talaia/releases/tag/v0.4.22

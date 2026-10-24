@@ -14,6 +14,12 @@
   "edit": "Edita",
   "enable": "Activa",
   "disable": "Desactiva",
+  "delete": "Elimina",
+  "deleteDialog": {
+    "title": "Vols eliminar {{name}}?",
+    "body": "S'eliminaran el compte, els accessos, les claus d'API i les pertinences als equips. L'historial d'auditoria es conservarà.",
+    "confirm": "Escriu {{name}} per confirmar"
+  },
   "table": {
     "name": "Nom",
     "username": "Usuari",

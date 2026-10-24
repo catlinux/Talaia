@@ -31,6 +31,8 @@ const errorKeys: Record<ApiErrorCode, string> = {
   account_disabled: 'accountDisabled',
   session_revoked: 'sessionRevoked',
   cannot_disable_self: 'cannotDisableSelf',
+  cannot_delete_self: 'cannotDeleteSelf',
+  user_not_disabled: 'userNotDisabled',
   forbidden_origin: 'forbiddenOrigin',
   invalid_request: 'invalidRequest',
   weak_password: 'weakPassword',

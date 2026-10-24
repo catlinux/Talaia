@@ -72,6 +72,7 @@ describe('api users client', () => {
     await api.update('u1', 'Alice', 'alice@example.com')
     await api.addBinding('u1', 'viewer', { type: 'organization' })
     await api.removeBinding('b1')
+    await api.delete('u/1', 'alice')
 
     const patchCall = fetchImpl.mock.calls.find(([, init]) => init?.method === 'PATCH')
     expect(JSON.parse(String(patchCall?.[1]?.body))).toEqual({
@@ -84,6 +85,13 @@ describe('api users client', () => {
       scope: { type: 'organization', server_id: '', group_id: '', name: '' },
     })
     expect(fetchImpl.mock.calls.some(([, init]) => init?.method === 'DELETE')).toBe(true)
+    const deleteCall = fetchImpl.mock.calls.find(([path]) => String(path) === '/api/v1/users/u%2F1')
+    expect(deleteCall?.[1]).toEqual(
+      expect.objectContaining({
+        method: 'DELETE',
+        body: JSON.stringify({ confirm_username: 'alice' }),
+      }),
+    )
   })
 
   it('maps last_admin to the shared error code', async () => {

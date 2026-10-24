@@ -292,14 +292,18 @@ function CreateKeyDialog({
   const [created, setCreated] = useState<CreatedAPIKey | null>(null)
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [copied, setCopied] = useState<'key' | 'curl' | null>(null)
+  const [copied, setCopied] = useState<'key' | 'unix' | 'powershell' | null>(null)
+  const [commandTab, setCommandTab] = useState<'unix' | 'powershell'>('unix')
   const [showErrors, setShowErrors] = useState(false)
 
   const key = created?.key ?? ''
+  const origin = window.location.origin
   const curl =
+    created === null ? '' : `curl -H "Authorization: Bearer ${key}" ${origin}/api/v1/servers`
+  const powershell =
     created === null
       ? ''
-      : `curl -H "Authorization: Bearer <key>" ${window.location.origin}/api/v1/servers`
+      : `Invoke-RestMethod -Uri "${origin}/api/v1/servers" -Headers @{ Authorization = "Bearer ${key}" }`
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -330,7 +334,7 @@ function CreateKeyDialog({
     }
   }
 
-  const copy = async (value: string, kind: 'key' | 'curl') => {
+  const copy = async (value: string, kind: 'key' | 'unix' | 'powershell') => {
     try {
       await navigator.clipboard.writeText(value)
       setCopied(kind)
@@ -459,15 +463,35 @@ function CreateKeyDialog({
             </button>
           </div>
           <h3 className="settings__section-title">{t('settings:apiKeys.example')}</h3>
-          <code className="apikeys__curl">{curl}</code>
+          <div role="tablist" aria-label={t('settings:apiKeys.commandVariants')}>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={commandTab === 'unix'}
+              onClick={() => setCommandTab('unix')}
+            >
+              {t('settings:apiKeys.unix')}
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={commandTab === 'powershell'}
+              onClick={() => setCommandTab('powershell')}
+            >
+              {t('settings:apiKeys.powershell')}
+            </button>
+          </div>
+          <code className="apikeys__curl">{commandTab === 'unix' ? curl : powershell}</code>
           <div className="users__actions">
             <button
               type="button"
               className="settings__button"
-              onClick={() => void copy(curl, 'curl')}
+              onClick={() => void copy(commandTab === 'unix' ? curl : powershell, commandTab)}
             >
-              {copied === 'curl' ? <CheckIcon /> : <CopyIcon />}
-              {copied === 'curl' ? t('settings:apiKeys.copied') : t('settings:apiKeys.copyCurl')}
+              {copied === commandTab ? <CheckIcon /> : <CopyIcon />}
+              {copied === commandTab
+                ? t('settings:apiKeys.copied')
+                : t('settings:apiKeys.copyCurl')}
             </button>
           </div>
           <p className="settings__hint">

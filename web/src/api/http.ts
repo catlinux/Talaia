@@ -12,6 +12,8 @@ export type ApiErrorCode =
   | 'account_disabled'
   | 'session_revoked'
   | 'cannot_disable_self'
+  | 'cannot_delete_self'
+  | 'user_not_disabled'
   | 'forbidden_origin'
   | 'invalid_request'
   | 'weak_password'
@@ -52,6 +54,8 @@ const knownCodes: readonly ApiErrorCode[] = [
   'account_disabled',
   'session_revoked',
   'cannot_disable_self',
+  'cannot_delete_self',
+  'user_not_disabled',
   'forbidden_origin',
   'invalid_request',
   'weak_password',

@@ -14,6 +14,12 @@
   "edit": "Edit",
   "enable": "Enable",
   "disable": "Disable",
+  "delete": "Delete",
+  "deleteDialog": {
+    "title": "Delete {{name}}?",
+    "body": "This removes the account, its access, API keys and team memberships. Audit history stays.",
+    "confirm": "Type {{name}} to confirm"
+  },
   "table": {
     "name": "Name",
     "username": "Username",

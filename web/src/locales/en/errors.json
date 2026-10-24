@@ -38,5 +38,7 @@
   "oidcDiscoveryFailed": "The OpenID Connect provider could not be reached.",
   "accountDisabled": "Your account has been disabled. Contact an administrator.",
   "sessionRevoked": "Your session has been revoked. Sign in again.",
-  "cannotDisableSelf": "You cannot disable your own account."
+  "cannotDisableSelf": "You cannot disable your own account.",
+  "cannotDeleteSelf": "You cannot delete your own account.",
+  "userNotDisabled": "Disable this account before deleting it."
 }

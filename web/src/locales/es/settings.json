@@ -209,6 +209,9 @@
     "copied": "Copiado",
     "copyCurl": "Copiar comando",
     "example": "Pruébala",
+    "commandVariants": "Variantes de comandos",
+    "unix": "Linux / macOS",
+    "powershell": "PowerShell",
     "expires": "La clave caduca el {{date}}."
   },
   "oidc": {

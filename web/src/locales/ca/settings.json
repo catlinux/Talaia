@@ -209,6 +209,9 @@
     "copied": "Copiat",
     "copyCurl": "Copia l'ordre",
     "example": "Prova-la",
+    "commandVariants": "Variants d'ordres",
+    "unix": "Linux / macOS",
+    "powershell": "PowerShell",
     "expires": "La clau caduca el {{date}}."
   },
   "oidc": {
