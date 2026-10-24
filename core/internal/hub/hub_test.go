@@ -21,6 +21,29 @@ type fakeStream struct {
 	closeOnce sync.Once
 }
 
+type fakeMetricsSink struct {
+	server chan metricServerCall
+	stats  chan metricStatsCall
+}
+
+type metricServerCall struct {
+	id       string
+	metrics  *agentv1.Metrics
+	memTotal uint64
+}
+type metricStatsCall struct {
+	id         string
+	stats      *agentv1.ContainerStats
+	containers []*agentv1.Container
+}
+
+func (f fakeMetricsSink) RecordServerMetrics(id string, metrics *agentv1.Metrics, memTotal uint64) {
+	f.server <- metricServerCall{id, metrics, memTotal}
+}
+func (f fakeMetricsSink) RecordContainerStats(id string, stats *agentv1.ContainerStats, containers []*agentv1.Container) {
+	f.stats <- metricStatsCall{id, stats, containers}
+}
+
 func newFakeStream() *fakeStream {
 	return &fakeStream{
 		in:  make(chan *agentv1.AgentMsg, 8),
@@ -49,6 +72,42 @@ func (f *fakeStream) close() {
 func (f *fakeStream) Close() error {
 	f.close()
 	return nil
+}
+
+func TestHubForwardsMetricMessages(t *testing.T) {
+	h := New(&fakeServerStore{})
+	sink := fakeMetricsSink{server: make(chan metricServerCall, 1), stats: make(chan metricStatsCall, 1)}
+	h.SetMetricsSink(sink)
+	stream := newFakeStream()
+	stream.in <- &agentv1.AgentMsg{Msg: &agentv1.AgentMsg_Inventory{Inventory: &agentv1.Inventory{Hostname: "metrics-host", MemTotalBytes: 99, Containers: []*agentv1.Container{{Id: "abc", Name: "api"}}}}}
+	done := make(chan error, 1)
+	go func() { done <- h.serve(withConnection(context.Background(), "server-1", "aa"), stream) }()
+	metric := &agentv1.Metrics{CpuPercent: 5}
+	stream.in <- &agentv1.AgentMsg{Msg: &agentv1.AgentMsg_Metrics{Metrics: metric}}
+	stats := &agentv1.ContainerStats{Items: []*agentv1.ContainerStat{{Id: "abc"}}}
+	stream.in <- &agentv1.AgentMsg{Msg: &agentv1.AgentMsg_ContainerStats{ContainerStats: stats}}
+	select {
+	case got := <-sink.server:
+		if got.id != "server-1" || got.metrics != metric || got.memTotal != 99 {
+			t.Fatalf("server call = %+v", got)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("server metrics were not forwarded")
+	}
+	select {
+	case got := <-sink.stats:
+		if got.id != "server-1" || got.stats != stats || len(got.containers) != 1 || got.containers[0].GetName() != "api" {
+			t.Fatalf("container stats call = %+v", got)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("container stats were not forwarded")
+	}
+	stream.close()
+	select {
+	case <-done:
+	case <-time.After(time.Second):
+		t.Fatal("serve did not return")
+	}
 }
 
 func inventoryMsg(hostname string) *agentv1.AgentMsg {

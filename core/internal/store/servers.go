@@ -320,6 +320,9 @@ func (s *Store) RemoveServer(ctx context.Context, id string) error {
 	if tag.RowsAffected() == 0 {
 		return ErrNotFound
 	}
+	if err := s.DeleteServerMetrics(ctx, id); err != nil {
+		return fmt.Errorf("remove server %q metrics: %w", id, err)
+	}
 	return nil
 }
 

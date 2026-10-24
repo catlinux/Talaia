@@ -47,6 +47,8 @@ type RouterDeps struct {
 	Enrollment *EnrollmentTokenDeps
 	// Containers enables the container and job endpoints; nil leaves them out.
 	Containers *ContainerDeps
+	// Metrics enables the historical metrics endpoints; nil leaves them out.
+	Metrics *MetricsDeps
 	// Terminal enables the terminal endpoints; nil leaves them out. Build it with
 	// NewTerminalDeps.
 	Terminal *TerminalDeps
@@ -199,6 +201,10 @@ func NewRouter(deps RouterDeps) http.Handler {
 					NewStackAdoptHandler(*deps.Containers))
 				registerRoute(r, deps.Authz, http.MethodPost, "/servers/{serverID}/stacks/{name}/actions",
 					NewStackActionHandler(*deps.Containers))
+			}
+			if deps.Metrics != nil {
+				registerRoute(r, deps.Authz, http.MethodGet, "/servers/{serverID}/metrics", NewServerMetricsHandler(*deps.Metrics))
+				registerRoute(r, deps.Authz, http.MethodGet, "/servers/{serverID}/containers/{container}/metrics", NewContainerMetricsHandler(*deps.Metrics))
 			}
 			if deps.Enrollment != nil {
 				registerRoute(r, deps.Authz, http.MethodPost, "/servers/enrollment-tokens",

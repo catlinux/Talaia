@@ -28,6 +28,7 @@ import (
 	"github.com/catlinux/Talaia/core/internal/hub"
 	"github.com/catlinux/Talaia/core/internal/install"
 	"github.com/catlinux/Talaia/core/internal/jobs"
+	"github.com/catlinux/Talaia/core/internal/metrics"
 	"github.com/catlinux/Talaia/core/internal/store"
 	"github.com/catlinux/Talaia/core/internal/terminal"
 	"github.com/catlinux/Talaia/core/internal/updates"
@@ -105,6 +106,7 @@ type panelOptions struct {
 	Containers     *api.ContainerDeps
 	Terminal       *api.TerminalDeps
 	Recordings     *api.RecordingDeps
+	Metrics        *api.MetricsDeps
 	System         *api.SystemDeps
 	Origins        []string
 	TLS            bool
@@ -153,6 +155,7 @@ func newCoreRouter(st *store.Store, agents api.LiveAgents, options panelOptions)
 		Containers:         options.Containers,
 		Terminal:           options.Terminal,
 		Recordings:         options.Recordings,
+		Metrics:            options.Metrics,
 		System:             options.System,
 		Authz: api.NewAuthorizer(api.AuthorizerDeps{
 			Bindings: st,
@@ -282,6 +285,13 @@ func serve() error {
 	if err := st.Migrate(ctx); err != nil {
 		return err
 	}
+	recorder := metrics.NewRecorder(st, logger)
+	retention := metrics.Retention{
+		ServerRaw: cfg.Metrics.ServerRaw, Server5m: cfg.Metrics.Server5m, Server1h: cfg.Metrics.Server1h,
+		ContainerRaw: cfg.Metrics.ContainerRaw, Container5m: cfg.Metrics.Container5m, Container1h: cfg.Metrics.Container1h,
+	}
+	go recorder.Run(ctx)
+	go recorder.Maintenance(ctx, retention)
 
 	newServer := func(addr string) *http.Server {
 		return &http.Server{
@@ -343,6 +353,8 @@ func serve() error {
 		}
 		agentHub := hub.New(st)
 		agentHub.SetJobEvents(api.JobRecorder{Jobs: st})
+		agentHub.SetMetricsSink(metrics.NewFeed(recorder))
+		panel.Metrics = &api.MetricsDeps{Reader: st, Servers: st, Agents: agentHub, Now: time.Now}
 		panel.Containers = &api.ContainerDeps{Agents: agentHub, Dispatcher: agentHub, Jobs: st, Audit: st, Servers: st}
 
 		// Terminal sessions: the ones an earlier run left open are closed first.
@@ -424,7 +436,10 @@ func serve() error {
 		}
 	} else {
 		logger.Warn("insecure development mode: no TLS and no agent authentication")
-		srv.Handler = newPlainRouter(st, hub.NewInsecure(), panel)
+		agentHub := hub.NewInsecure()
+		agentHub.SetMetricsSink(metrics.NewFeed(recorder))
+		panel.Metrics = &api.MetricsDeps{Reader: st, Agents: agentHub, Now: time.Now}
+		srv.Handler = newPlainRouter(st, agentHub, panel)
 		srv.Protocols = newProtocols()
 	}
 

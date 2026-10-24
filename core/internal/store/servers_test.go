@@ -282,8 +282,15 @@ func TestRemoveServerFreesTheNameAndKeepsTheRow(t *testing.T) {
 	if err := s.SetServerCertificate(ctx, oldID, "abcdef0123", time.Now().Add(time.Hour)); err != nil {
 		t.Fatalf("set certificate: %v", err)
 	}
+	if err := s.InsertServerSamples(ctx, []MetricServerSample{{Time: time.Now().UTC(), ServerID: oldID}}); err != nil {
+		t.Fatalf("insert server metrics: %v", err)
+	}
 	if err := s.RemoveServer(ctx, oldID); err != nil {
 		t.Fatalf("remove server: %v", err)
+	}
+	points, err := s.QueryServerSeries(ctx, oldID, time.Now().Add(-time.Hour), time.Now().Add(time.Hour), ResolutionRaw)
+	if err != nil || len(points) != 0 {
+		t.Fatalf("server metrics after removal = %d points, error %v", len(points), err)
 	}
 
 	// The row stays for the terminal recordings, but it is revoked and hidden.

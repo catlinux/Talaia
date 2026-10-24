@@ -13,6 +13,12 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+## [0.5.5] - 2026-10-24
+
+### Añadido
+
+- El core registra ahora las métricas de cada servidor y contenedor (CPU, memoria, disco y tasa de red calculada a partir de los contadores) y las sirve en `GET /api/v1/servers/{id}/metrics` y `GET /api/v1/servers/{id}/containers/{nombre}/metrics` (`range=1h|6h|24h|7d|30d` o `from`/`to`; resolución según el rango, 500 puntos como máximo). Exigen `server.view` y `container.view`, de modo que un usuario limitado a un stack solo ve los contenedores que le corresponden. Borrar un servidor borra sus métricas.
+
 ## [0.5.4] - 2026-10-24
 
 ### Añadido
@@ -574,7 +580,8 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
   `.gitattributes` y `.gitignore`.
 - Licencia WNCL-1.0 aplicada: archivo `LICENSE` y sección de créditos en los README.
 
-[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.5.4...HEAD
+[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.5.5...HEAD
+[0.5.5]: https://github.com/catlinux/Talaia/releases/tag/v0.5.5
 [0.5.4]: https://github.com/catlinux/Talaia/releases/tag/v0.5.4
 [0.5.3]: https://github.com/catlinux/Talaia/releases/tag/v0.5.3
 [0.5.2]: https://github.com/catlinux/Talaia/releases/tag/v0.5.2

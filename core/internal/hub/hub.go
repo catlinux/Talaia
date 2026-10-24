@@ -48,6 +48,12 @@ type TerminalEvents interface {
 	AgentGone(serverID string)
 }
 
+// MetricsSink receives telemetry without blocking the agent stream.
+type MetricsSink interface {
+	RecordServerMetrics(serverID string, m *agentv1.Metrics, memTotal uint64)
+	RecordContainerStats(serverID string, stats *agentv1.ContainerStats, containers []*agentv1.Container)
+}
+
 // agentConn is the live stream of one agent. Every message to the agent goes
 // through outbox, so a single goroutine writes to the stream.
 type agentConn struct {
@@ -221,6 +227,7 @@ type Hub struct {
 	jobEvents JobEvents
 	// terminals is told about the terminal sessions; nil ignores them.
 	terminals TerminalEvents
+	metrics   MetricsSink
 
 	now func() time.Time
 }
@@ -275,6 +282,13 @@ func (h *Hub) SetTerminals(events TerminalEvents) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	h.terminals = events
+}
+
+// SetMetricsSink sets the optional telemetry recorder.
+func (h *Hub) SetMetricsSink(sink MetricsSink) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	h.metrics = sink
 }
 
 // DispatchWait queues a message for the agent of a server and, when the queue
@@ -474,6 +488,12 @@ func (h *Hub) serve(ctx context.Context, stream agentStream) error {
 
 		case msg.GetMetrics() != nil:
 			metrics := msg.GetMetrics()
+			h.mu.RLock()
+			metricsSink := h.metrics
+			h.mu.RUnlock()
+			if metricsSink != nil {
+				metricsSink.RecordServerMetrics(serverID, metrics, info.MemTotalBytes)
+			}
 			info.LastSeen = h.now()
 			info.LastCPUPercent = metrics.GetCpuPercent()
 			info.MemUsedBytes = metrics.GetMemUsedBytes()
@@ -485,9 +505,16 @@ func (h *Hub) serve(ctx context.Context, stream agentStream) error {
 			slog.Debug("metrics received", "hostname", hostname, "cpu_percent", metrics.GetCpuPercent())
 
 		case msg.GetContainerStats() != nil:
-			stats := make(map[string]*agentv1.ContainerStat, len(msg.GetContainerStats().GetItems()))
-			for _, item := range msg.GetContainerStats().GetItems() {
+			containerStats := msg.GetContainerStats()
+			stats := make(map[string]*agentv1.ContainerStat, len(containerStats.GetItems()))
+			for _, item := range containerStats.GetItems() {
 				stats[item.GetId()] = item
+			}
+			h.mu.RLock()
+			metricsSink := h.metrics
+			h.mu.RUnlock()
+			if metricsSink != nil {
+				metricsSink.RecordContainerStats(serverID, containerStats, info.ContainerList)
 			}
 			info.ContainerStats = stats
 			info.StatsAt = h.now()

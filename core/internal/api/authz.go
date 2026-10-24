@@ -145,6 +145,8 @@ var routePerms = map[routeKey]routePermission{
 	{http.MethodPost, "/agents/update-all"}:                                  {mode: permExact, permission: rbac.PermServerAgentUpdate, target: targetOrganization},
 	{http.MethodDelete, "/servers/{serverID}"}:                               {mode: permExact, permission: rbac.PermServerRemove, target: targetServer},
 	{http.MethodGet, "/servers/{serverID}/containers"}:                       {mode: permSeeServer, permission: rbac.PermServerView, target: targetServer},
+	{http.MethodGet, "/servers/{serverID}/metrics"}:                          {mode: permSeeServer, permission: rbac.PermServerView, target: targetServer},
+	{http.MethodGet, "/servers/{serverID}/containers/{container}/metrics"}:   {mode: permExact, permission: rbac.PermContainerView, target: targetContainer},
 	{http.MethodPost, "/servers/{serverID}/containers/{container}/actions"}:  {mode: permExact, permission: rbac.PermContainerControl, target: targetContainer},
 	{http.MethodPost, "/servers/{serverID}/containers/{container}/logs"}:     {mode: permExact, permission: rbac.PermContainerLogs, target: targetContainer},
 	{http.MethodPost, "/servers/{serverID}/journal"}:                         {mode: permExact, permission: rbac.PermHostJournal, target: targetServer},

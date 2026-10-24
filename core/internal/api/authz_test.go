@@ -94,6 +94,7 @@ func fullRouter(t *testing.T) http.Handler {
 		AgentUpdates:       &AgentUpdateDeps{Agents: agents, Servers: servers},
 		Enrollment:         &EnrollmentTokenDeps{},
 		Containers:         &ContainerDeps{Agents: agents, Servers: servers},
+		Metrics:            &MetricsDeps{Reader: fakeMetricsReader{}, Servers: servers, Agents: agents},
 		Terminal:           NewTerminalDeps(TerminalDeps{}),
 		Recordings:         &RecordingDeps{},
 		System:             &SystemDeps{},
@@ -229,6 +230,38 @@ func TestPermissionMappingByRole(t *testing.T) {
 				t.Fatalf("status = %d, want %d", got, test.wantStatus)
 			}
 		})
+	}
+}
+
+func TestContainerMetricsPermissionsRespectContainerScopes(t *testing.T) {
+	makeHandler := func(scope store.RoleBinding) http.Handler {
+		authorizer := NewAuthorizer(AuthorizerDeps{
+			Bindings: stubBindings{byUser: map[string][]store.RoleBinding{"u1": {scope}}},
+			Servers:  authzServers(),
+			Agents:   fakeAgents{agents: []hub.AgentInfo{agentWithContainers("s1")}},
+		})
+		return routeTestRouter(t, authorizer)
+	}
+	session := Session{User: store.User{ID: "u1", Username: "alice"}, Stage: store.StageFull}
+	stackHandler := makeHandler(store.RoleBinding{SubjectType: store.SubjectUser, SubjectID: "u1", ScopeType: store.ScopeStack, ScopeServerID: "s1", ScopeName: "shop", Role: string(rbac.RoleViewer)})
+	for _, test := range []struct {
+		container string
+		want      int
+	}{{"web", http.StatusNoContent}, {"db", http.StatusNotFound}} {
+		path := "/api/v1/servers/s1/containers/" + test.container + "/metrics"
+		if got := doAuthorized(t, stackHandler, authzRequest(http.MethodGet, path, session)); got != test.want {
+			t.Errorf("stack-bound metrics for %s: status %d, want %d", test.container, got, test.want)
+		}
+	}
+	viewerHandler := makeHandler(store.RoleBinding{SubjectType: store.SubjectUser, SubjectID: "u1", ScopeType: store.ScopeOrganization, Role: string(rbac.RoleViewer)})
+	for _, container := range []string{"web", "db"} {
+		path := "/api/v1/servers/s1/containers/" + container + "/metrics"
+		if got := doAuthorized(t, viewerHandler, authzRequest(http.MethodGet, path, session)); got != http.StatusNoContent {
+			t.Errorf("organization viewer metrics for %s: status %d, want 204", container, got)
+		}
+	}
+	if got := doAuthorized(t, viewerHandler, httptest.NewRequest(http.MethodGet, "/api/v1/servers/s1/containers/web/metrics", nil)); got != http.StatusUnauthorized {
+		t.Errorf("metrics without a session: status %d, want 401", got)
 	}
 }
 

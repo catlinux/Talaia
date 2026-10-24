@@ -18,6 +18,12 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.5.5] - 2026-10-24
+
+### Added
+
+- The core now records the metrics of every server and container (CPU, memory, disk, network rate computed from the counters) and serves them at `GET /api/v1/servers/{id}/metrics` and `GET /api/v1/servers/{id}/containers/{name}/metrics` (`range=1h|6h|24h|7d|30d` or `from`/`to`; resolution chosen by range, at most 500 points). They need `server.view` and `container.view`, so a user limited to a stack only sees the containers they may see. Removing a server deletes its metrics.
+
 ## [0.5.4] - 2026-10-24
 
 ### Added
@@ -574,7 +580,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.5.4...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.5.5...HEAD
+[0.5.5]: https://github.com/catlinux/Talaia/releases/tag/v0.5.5
 [0.5.4]: https://github.com/catlinux/Talaia/releases/tag/v0.5.4
 [0.5.3]: https://github.com/catlinux/Talaia/releases/tag/v0.5.3
 [0.5.2]: https://github.com/catlinux/Talaia/releases/tag/v0.5.2
