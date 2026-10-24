@@ -347,7 +347,7 @@ func NewStackActionHandler(deps ContainerDeps) http.Handler {
 			}
 		}
 
-		submitJob(w, r, deps, serverID, stackActionKind, "stack_"+request.Action,
+		submitJobWithSuccess(w, r, deps, serverID, stackActionKind, "stack_"+request.Action,
 			map[string]any{"name": name, "action": request.Action},
 			map[string]any{"stack": name},
 			func(jobID string) *agentv1.CoreMsg {
@@ -356,6 +356,10 @@ func NewStackActionHandler(deps ContainerDeps) http.Handler {
 					Cmd: &agentv1.CoreMsg_StackAction{
 						StackAction: &agentv1.StackAction{Name: name, Action: action},
 					},
+				}
+			}, func() {
+				if deps.Alerts != nil && (request.Action == "down" || request.Action == "remove" || request.Action == "forget") {
+					deps.Alerts.UnwatchStack(r.Context(), serverID, name)
 				}
 			})
 	})

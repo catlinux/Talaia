@@ -13,6 +13,12 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+## [0.5.8] - 2026-10-24
+
+### Añadido
+
+- Motor de alertas (aún sin arrancar): evalúa las reglas cada 5 segundos y cuando llega un inventario, una desconexión o el resultado de una comprobación, y mantiene incidentes con periodo de espera, histéresis (una alerta de umbral se resuelve 2 puntos por debajo), enfriamiento de 10 minutos contra el parpadeo, repetición opcional hasta que se acusa recibo, 90 segundos de gracia tras arrancar el core y silencios (que igualmente registran el incidente). Un contenedor que el core vio en marcha y que desaparece o se para genera una alerta, salvo que se parase, bajase o borrase desde Talaia, y reiniciar un servidor desde Talaia lo silencia 10 minutos. Encola un envío por canal de destino; el envío en sí llega en un paso posterior.
+
 ## [0.5.7] - 2026-10-24
 
 ### Seguridad
@@ -592,7 +598,8 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
   `.gitattributes` y `.gitignore`.
 - Licencia WNCL-1.0 aplicada: archivo `LICENSE` y sección de créditos en los README.
 
-[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.5.7...HEAD
+[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.5.8...HEAD
+[0.5.8]: https://github.com/catlinux/Talaia/releases/tag/v0.5.8
 [0.5.7]: https://github.com/catlinux/Talaia/releases/tag/v0.5.7
 [0.5.6]: https://github.com/catlinux/Talaia/releases/tag/v0.5.6
 [0.5.5]: https://github.com/catlinux/Talaia/releases/tag/v0.5.5

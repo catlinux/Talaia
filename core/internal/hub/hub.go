@@ -54,6 +54,12 @@ type MetricsSink interface {
 	RecordContainerStats(serverID string, stats *agentv1.ContainerStats, containers []*agentv1.Container)
 }
 
+// AgentEvents receives inventory changes and stream endings without blocking the hub.
+type AgentEvents interface {
+	InventoryChanged(serverID string)
+	AgentDisconnected(serverID string)
+}
+
 // agentConn is the live stream of one agent. Every message to the agent goes
 // through outbox, so a single goroutine writes to the stream.
 type agentConn struct {
@@ -101,6 +107,7 @@ type AgentInfo struct {
 	CPUCount          uint32
 	MemTotalBytes     uint64
 	LastSeen          time.Time
+	MetricsAt         time.Time
 	LastCPUPercent    float64
 	MemUsedBytes      uint64
 	DiskUsedBytes     uint64
@@ -226,8 +233,9 @@ type Hub struct {
 	// jobEvents is told about the events of the commands; nil ignores them.
 	jobEvents JobEvents
 	// terminals is told about the terminal sessions; nil ignores them.
-	terminals TerminalEvents
-	metrics   MetricsSink
+	terminals   TerminalEvents
+	metrics     MetricsSink
+	agentEvents AgentEvents
 
 	now func() time.Time
 }
@@ -289,6 +297,13 @@ func (h *Hub) SetMetricsSink(sink MetricsSink) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	h.metrics = sink
+}
+
+// SetAgentEvents sets the optional alert evaluation trigger.
+func (h *Hub) SetAgentEvents(events AgentEvents) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	h.agentEvents = events
 }
 
 // DispatchWait queues a message for the agent of a server and, when the queue
@@ -362,6 +377,7 @@ func (h *Hub) Disconnect(serverID string) {
 
 	link.stop()
 	h.terminalsGone(serverID)
+	h.notifyAgentDisconnected(serverID)
 }
 
 // Connect implements agentv1connect.AgentHubHandler.
@@ -429,6 +445,7 @@ func (h *Hub) serve(ctx context.Context, stream agentStream) error {
 		link.stop()
 		if h.unregister(key, link) {
 			h.terminalsGone(serverID)
+			h.notifyAgentDisconnected(serverID)
 		}
 		h.remove(info)
 		slog.Info("agent disconnected", "server_id", serverID, "hostname", hostname)
@@ -495,6 +512,7 @@ func (h *Hub) serve(ctx context.Context, stream agentStream) error {
 				metricsSink.RecordServerMetrics(serverID, metrics, info.MemTotalBytes)
 			}
 			info.LastSeen = h.now()
+			info.MetricsAt = info.LastSeen
 			info.LastCPUPercent = metrics.GetCpuPercent()
 			info.MemUsedBytes = metrics.GetMemUsedBytes()
 			info.DiskUsedBytes = metrics.GetDiskUsedBytes()
@@ -526,11 +544,30 @@ func (h *Hub) serve(ctx context.Context, stream agentStream) error {
 			info.applyInventory(msg.GetInventory())
 			info.LastSeen = h.now()
 			h.store(info)
+			h.notifyInventoryChanged(serverID)
 			slog.Debug("inventory updated", "hostname", hostname)
 
 		default:
 			slog.Debug("unhandled message", "hostname", hostname)
 		}
+	}
+}
+
+func (h *Hub) notifyInventoryChanged(serverID string) {
+	h.mu.RLock()
+	events := h.agentEvents
+	h.mu.RUnlock()
+	if events != nil && serverID != "" {
+		events.InventoryChanged(serverID)
+	}
+}
+
+func (h *Hub) notifyAgentDisconnected(serverID string) {
+	h.mu.RLock()
+	events := h.agentEvents
+	h.mu.RUnlock()
+	if events != nil && serverID != "" {
+		events.AgentDisconnected(serverID)
 	}
 }
 

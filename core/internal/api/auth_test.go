@@ -116,6 +116,8 @@ type testPanel struct {
 	terminalAgent *fakeTerminalAgent
 	// box lets tests create recording fixtures.
 	box *auth.SecretBox
+	// alerts records what the API tells the alert engine.
+	alerts *recordingAlertHooks
 }
 
 // testPanelOptions tweak the test panel.
@@ -171,6 +173,7 @@ func newTestPanel(t *testing.T, options ...panelOption) *testPanel {
 
 	agents := &controlledAgents{}
 	dispatcher := &fakeDispatcher{}
+	alerts := &recordingAlertHooks{}
 	terminalAgent := &fakeTerminalAgent{}
 	terminalConfig := terminal.DefaultConfig()
 	terminalConfig.OpenTimeout = 2 * time.Second
@@ -213,6 +216,7 @@ func newTestPanel(t *testing.T, options ...panelOption) *testPanel {
 			Jobs:       st,
 			Audit:      st,
 			Servers:    st,
+			Alerts:     alerts,
 		},
 		Enrollment: &EnrollmentTokenDeps{
 			Tokens:        st,
@@ -247,6 +251,7 @@ func newTestPanel(t *testing.T, options ...panelOption) *testPanel {
 		terminals:     terminals,
 		terminalAgent: terminalAgent,
 		box:           box,
+		alerts:        alerts,
 	}
 }
 

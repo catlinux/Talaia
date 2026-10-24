@@ -88,6 +88,13 @@ type ContainerDeps struct {
 	Audit      Auditor
 	// Servers supplies names and group ids for the cross-server stack list.
 	Servers ServerLister
+	Alerts  AlertHooks
+}
+
+type AlertHooks interface {
+	Unwatch(ctx context.Context, serverID, container string)
+	UnwatchStack(ctx context.Context, serverID, stack string)
+	SilenceServer(ctx context.Context, serverID string, d time.Duration, reason string)
 }
 
 type containerEntry struct {
@@ -242,12 +249,13 @@ func NewContainerActionHandler(deps ContainerDeps) http.Handler {
 			return
 		}
 		// Only containers the agent reported can be acted on.
-		if !hasContainer(agent, reference) {
+		container := findContainer(agent, reference)
+		if container == nil {
 			writeError(w, http.StatusNotFound, "not_found")
 			return
 		}
 
-		submitJob(w, r, deps, serverID, containerActionKind, "container_"+request.Action,
+		submitJobWithSuccess(w, r, deps, serverID, containerActionKind, "container_"+request.Action,
 			map[string]any{"container": reference, "action": request.Action},
 			map[string]any{"container": reference},
 			func(jobID string) *agentv1.CoreMsg {
@@ -256,6 +264,10 @@ func NewContainerActionHandler(deps ContainerDeps) http.Handler {
 					Cmd: &agentv1.CoreMsg_ContainerAction{
 						ContainerAction: &agentv1.ContainerAction{Container: reference, Action: action},
 					},
+				}
+			}, func() {
+				if deps.Alerts != nil && (request.Action == "stop" || request.Action == "remove") {
+					deps.Alerts.Unwatch(r.Context(), serverID, container.GetName())
 				}
 			})
 	})
@@ -381,15 +393,19 @@ func connectedAgent(agents LiveAgents, serverID string) (hub.AgentInfo, bool) {
 // hasContainer reports whether the agent listed a container with this id (full
 // or short) or name.
 func hasContainer(agent hub.AgentInfo, reference string) bool {
+	return findContainer(agent, reference) != nil
+}
+
+func findContainer(agent hub.AgentInfo, reference string) *agentv1.Container {
 	for _, container := range agent.ContainerList {
 		id := container.GetId()
 		// The agent reports the short id; the full one starts with it.
 		if container.GetName() == reference || id == reference ||
 			(id != "" && len(reference) > len(id) && strings.HasPrefix(reference, id)) {
-			return true
+			return container
 		}
 	}
-	return false
+	return nil
 }
 
 // submitJob creates a job of the given kind, sends its command to the agent and
@@ -398,6 +414,10 @@ func hasContainer(agent hub.AgentInfo, reference string) bool {
 // details go to the audit log next to the server and job ids, so they must never
 // hold secrets or file contents.
 func submitJob(w http.ResponseWriter, r *http.Request, deps ContainerDeps, serverID, kind, auditAction string, params, details map[string]any, command func(jobID string) *agentv1.CoreMsg) {
+	submitJobWithSuccess(w, r, deps, serverID, kind, auditAction, params, details, command, nil)
+}
+
+func submitJobWithSuccess(w http.ResponseWriter, r *http.Request, deps ContainerDeps, serverID, kind, auditAction string, params, details map[string]any, command func(jobID string) *agentv1.CoreMsg, onSuccess func()) {
 	actor := ""
 	if session, ok := sessionFromContext(r.Context()); ok {
 		actor = session.User.Username
@@ -423,6 +443,9 @@ func submitJob(w http.ResponseWriter, r *http.Request, deps ContainerDeps, serve
 		}
 		writeError(w, status, code)
 		return
+	}
+	if onSuccess != nil {
+		onSuccess()
 	}
 
 	if err := deps.Audit.AppendAudit(r.Context(), store.AuditEvent{

@@ -253,6 +253,20 @@ func (s *Store) AckAlert(ctx context.Context, id, by string, at time.Time) error
 	}
 	return nil
 }
+
+// SetAlertSilenced records whether an open incident is currently covered by a
+// silence, so the panel shows it even when the silence began after it fired.
+func (s *Store) SetAlertSilenced(ctx context.Context, id string, silenced bool) error {
+	tag, e := s.pool.Exec(ctx, `UPDATE alert SET silenced=$2 WHERE id=$1`, id, silenced)
+	if e != nil {
+		return fmt.Errorf("set alert silenced: %w", e)
+	}
+	if tag.RowsAffected() == 0 {
+		return ErrNotFound
+	}
+	return nil
+}
+
 func (s *Store) ListActiveAlerts(ctx context.Context) ([]Alert, error) {
 	return s.listAlerts(ctx, `SELECT `+alertColumns+` FROM alert WHERE state='firing' ORDER BY started_at DESC`, nil)
 }

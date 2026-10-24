@@ -18,6 +18,12 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.5.8] - 2026-10-24
+
+### Added
+
+- Alert engine (not running yet): evaluates the alert rules every 5 seconds and when an inventory, a disconnection or a check result arrives, and keeps incidents with a pending period, hysteresis (a threshold alert resolves 2 points below), a 10-minute cooldown against flapping, optional repetition until acknowledged, a 90-second grace period after the core starts and silences (which still record the incident). A container the core saw running and that disappears or stops raises an alert, except when it was stopped, brought down or removed from Talaia, and rebooting a server from Talaia silences it for 10 minutes. It queues one delivery per target channel; sending them comes in a later step.
+
 ## [0.5.7] - 2026-10-24
 
 ### Security
@@ -592,7 +598,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.5.7...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.5.8...HEAD
+[0.5.8]: https://github.com/catlinux/Talaia/releases/tag/v0.5.8
 [0.5.7]: https://github.com/catlinux/Talaia/releases/tag/v0.5.7
 [0.5.6]: https://github.com/catlinux/Talaia/releases/tag/v0.5.6
 [0.5.5]: https://github.com/catlinux/Talaia/releases/tag/v0.5.5

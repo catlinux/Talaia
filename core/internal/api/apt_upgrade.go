@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 
@@ -121,7 +122,7 @@ func NewHostRebootHandler(deps ContainerDeps) http.Handler {
 			return
 		}
 
-		submitJob(w, r, deps, serverID, hostRebootKind, "host_reboot",
+		submitJobWithSuccess(w, r, deps, serverID, hostRebootKind, "host_reboot",
 			map[string]any{"hostname": hostname},
 			map[string]any{"hostname": hostname},
 			func(jobID string) *agentv1.CoreMsg {
@@ -130,6 +131,10 @@ func NewHostRebootHandler(deps ContainerDeps) http.Handler {
 					Cmd: &agentv1.CoreMsg_HostReboot{
 						HostReboot: &agentv1.HostReboot{Hostname: hostname},
 					},
+				}
+			}, func() {
+				if deps.Alerts != nil {
+					deps.Alerts.SilenceServer(r.Context(), serverID, 10*time.Minute, "reboot")
 				}
 			})
 	})
