@@ -18,6 +18,12 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.4.23] - 2026-10-24
+
+### Fixed
+
+- The Cancel button of the add-access form showed `common.cancel` instead of its text.
+
 ## [0.4.22] - 2026-10-24
 
 ### Added
@@ -517,7 +523,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.4.22...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.4.23...HEAD
+[0.4.23]: https://github.com/catlinux/Talaia/releases/tag/v0.4.23
 [0.4.22]: https://github.com/catlinux/Talaia/releases/tag/v0.4.22
 [0.4.21]: https://github.com/catlinux/Talaia/releases/tag/v0.4.21
 [0.4.20]: https://github.com/catlinux/Talaia/releases/tag/v0.4.20

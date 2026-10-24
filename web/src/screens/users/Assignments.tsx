@@ -113,7 +113,7 @@ export function Assignments({
               {t('access.add')}
             </button>
             <button type="button" className="settings__button" onClick={() => setAdding(false)}>
-              {t('common.cancel')}
+              {t('actions.cancel')}
             </button>
           </div>
         </div>
