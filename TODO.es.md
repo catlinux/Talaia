@@ -111,6 +111,19 @@ tareas concretas de la fase actual y de la siguiente.
   - [ ] Cada petición denegada escribe un `authz_denied` en la auditoría: limitarlos o agruparlos por usuario para que un usuario con sesión no pueda hacer crecer la tabla a voluntad
   - [ ] Los trabajos guardan su creador por nombre de usuario; guardar también el id para que el nombre de un usuario borrado, reutilizado después, nunca llegue a la salida de trabajos antiguos
 
+## Fase 5 · Monitorización y alertas (0.6.0, ver `.agents/plans/fase5/fase5.PLAN.md`)
+
+- [ ] Agente: salud de los contenedores y eventos de Docker para mandar el inventario en segundos, no en 60 s
+- [ ] Histórico de métricas en TimescaleDB (solo funciones Apache-2), downsampling y retención hechos por el core, y su API
+- [ ] Gráficos de CPU, RAM, disco y red en el servidor y por contenedor
+- [ ] Permisos de alertas y tablas de reglas, incidentes, silencios, comprobaciones y canales (con reglas por defecto: servidor caído, disco > 90 %, contenedor parado)
+- [ ] Guardián de salida contra SSRF para comprobaciones y notificaciones
+- [ ] Motor de alertas: estados, histéresis, sin avisos repetidos, silencios y paradas esperadas desde Talaia
+- [ ] Comprobaciones HTTP/TCP/TLS desde el core y caducidad de certificados
+- [ ] Notificaciones por Telegram, ntfy, correo, Discord y webhook firmado, con secretos cifrados y reintentos
+- [ ] API y panel: pantalla Alertas, contador en Flota y Ajustes de reglas, comprobaciones y canales
+- [ ] Docs EN/ES, revisión de seguridad (Opus), prueba real del criterio y cierre en 0.6.0
+
 ## Bloque de operación (decidido el 2026-10-20, antes de cerrar la fase 2)
 
 **Prioridad ahora (mantenedor, 2026-10-20):** las actualizaciones desde el panel y el acceso externo, para seguir actualizando y gestionando desde fuera de casa. Diseño y pasos: [`.agents/plans/operacion/operacion.PLAN.md`](.agents/plans/operacion/operacion.PLAN.md).

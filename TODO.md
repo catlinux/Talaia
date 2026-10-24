@@ -111,6 +111,19 @@ of the current phase and the next one.
   - [ ] Every denied request writes an `authz_denied` audit row: rate-limit or aggregate them per user so a signed-in user cannot grow the audit table at will
   - [ ] Jobs remember their creator by username; store the user id too so a deleted user's name, reused later, never reaches old job output
 
+## Phase 5 · Monitoring and alerts (0.6.0, see `.agents/plans/fase5/fase5.PLAN.md`)
+
+- [ ] Agent: container health and Docker events so the inventory is sent within seconds, not 60 s
+- [ ] Metrics history in TimescaleDB (Apache-2 features only), downsampling and retention done by the core, and its API
+- [ ] CPU, RAM, disk and network charts for the server and per container
+- [ ] Alert permissions and tables for rules, incidents, silences, checks and channels (with default rules: server offline, disk > 90%, container stopped)
+- [ ] Outbound guard against SSRF for checks and notifications
+- [ ] Alert engine: states, hysteresis, no repeated notifications, silences and expected stops from Talaia
+- [ ] HTTP/TCP/TLS checks from the core and certificate expiry
+- [ ] Notifications through Telegram, ntfy, email, Discord and signed webhook, with encrypted secrets and retries
+- [ ] API and panel: Alerts screen, count in the fleet view and Settings for rules, checks and channels
+- [ ] Docs EN/ES, security review (Opus), real test of the criterion and close at 0.6.0
+
 ## Operations block (decided 2026-10-20, before closing phase 2)
 
 **Priority now (maintainer, 2026-10-20):** the updates from the panel and the external access, to keep updating and managing from outside the home. Design and steps: [`.agents/plans/operacion/operacion.PLAN.md`](.agents/plans/operacion/operacion.PLAN.md).
