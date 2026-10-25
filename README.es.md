@@ -15,15 +15,15 @@
 
 <p align="center">
   <img alt="Versión" src="https://img.shields.io/badge/versi%C3%B3n-0.4.14-0B7285">
-  <img alt="Estado" src="https://img.shields.io/badge/estado-fase%204%20en%20curso-B86E00">
+  <img alt="Estado" src="https://img.shields.io/badge/estado-fase%205%20en%20curso-B86E00">
   <img alt="Licencia" src="https://img.shields.io/badge/licencia-WNCL--TP--1.0-56666F">
   <img alt="Idiomas" src="https://img.shields.io/badge/i18n-ca%20%C2%B7%20es%20%C2%B7%20en-0B7285">
 </p>
 
 > [!WARNING]
 > Talaia está en desarrollo activo. La fase 4 (usuarios, permisos, claves de API, OIDC, grabaciones y
-> `talaiactl`) se cerró en 0.5.0. Sigue la
-> [hoja de ruta](ROADMAP.es.md) para ver qué viene.
+> `talaiactl`) se cerró en 0.5.0. La fase 5 (monitorización, alertas, comprobaciones y canales) está en
+> curso. Sigue la [hoja de ruta](ROADMAP.es.md) para ver qué viene.
 
 ---
 
@@ -135,7 +135,7 @@ Cada funcionalidad indica la versión donde está prevista. Detalle en [ROADMAP.
 | Contenedores y stacks | Acciones, logs en directo, editor Compose, terminal del contenedor, imágenes/volúmenes/redes, adoptar existentes | Historial de revisiones y reversión, avisos de imágenes nuevas | Podman |
 | Servidor entero | Métricas, systemd, journald, actualizaciones apt y reinicio, terminal del anfitrión (fase 3 cerrada en 0.4.0) | Cortafuegos, fail2ban, usuarios y claves SSH, cron, explorador de archivos, auditoría de bastionado | — |
 | Despliegues y apps | — | Stacks desde Git, builds con Dockerfile/Nixpacks, despliegue sin cortes, dominios + SSL (Caddy), catálogo de plantillas | Entornos de prueba por pull request |
-| Monitorización y alertas | — | Historial de métricas, reglas de alerta, comprobaciones HTTP/TCP, caducidad de certificados, Telegram/ntfy/correo/Discord/webhook | Página de estado pública |
+| Monitorización y alertas | — | Historial de métricas, reglas de alerta, comprobaciones HTTP/TCP, caducidad de certificados, Telegram/ntfy/correo/Discord/webhook (fase 5 en curso) | Página de estado pública |
 | Copias de seguridad | — | Planes con restic, volcados coherentes de bases de datos, S3/B2/SFTP, restaurar desde el panel | Prueba de restauración mensual automática |
 | Automatización de flota | — | Acciones en bloque, procedimientos programados, sincronización GitOps | Playbooks de Ansible, creación de VPS vía API del proveedor |
 | Usuarios y seguridad | Usuario único con 2FA, PIN en dispositivos de confianza, claves de acceso, registro de auditoría y terminales grabadas (0.4.0) | Usuarios, equipos, grupos de servidores, roles por ámbito, invitaciones, claves de API, SSO OIDC y talaiactl (0.5.0) | — |
@@ -145,6 +145,10 @@ Cada funcionalidad indica la versión donde está prevista. Detalle en [ROADMAP.
 >
 > **Estado de la fase 4.** Cerrada en 0.5.0 tras una prueba real con un segundo usuario. La guía es
 > [docs/es/permisos.md](docs/es/permisos.md).
+>
+> **Estado de la fase 5.** En curso. Las métricas, alertas, comprobaciones, canales de notificación y la
+> protección de salida están implementados; la guía es
+> [docs/es/monitorizacion.md](docs/es/monitorizacion.md).
 
 ## Arquitectura
 
@@ -174,12 +178,14 @@ Decisiones clave:
   terminales interactivas explícitas que quedan registradas en la auditoría.
 - **TLS mutuo.** Cada agente recibe su propio certificado de una CA interna al darse de alta (validez de
   90 días, renovación automática).
-- **Degradación controlada.** Si cae el núcleo, contenedores y servicios siguen funcionando. El agente
-  guarda 24 h de métricas y eventos y los envía al reconectar.
+- **Degradación controlada.** Si cae el núcleo, contenedores y servicios siguen funcionando. El agente se
+  reconecta y reanuda las muestras en directo; el historial de métricas vive en el núcleo, que lo guarda en
+  TimescaleDB.
 
 Detalle completo: [docs/es/arquitectura.md](docs/es/arquitectura.md). Usuarios, roles y claves de API:
-[docs/es/permisos.md](docs/es/permisos.md). Qué puede hacer el panel con tus servidores y qué se graba:
-[docs/es/seguridad.md](docs/es/seguridad.md).
+[docs/es/permisos.md](docs/es/permisos.md). Métricas, alertas, comprobaciones, canales y la protección de
+salida: [docs/es/monitorizacion.md](docs/es/monitorizacion.md). Qué puede hacer el panel con tus servidores
+y qué se graba: [docs/es/seguridad.md](docs/es/seguridad.md).
 
 ## Sistemas soportados
 
@@ -196,9 +202,12 @@ Detalle completo: [docs/es/arquitectura.md](docs/es/arquitectura.md). Usuarios, 
 
 ## Instalación
 
-El núcleo corre en Docker en una máquina; cada servidor recibe un agente con una sola orden pegada.
-Paso a paso y con solución de problemas: [docs/es/instalacion.md](docs/es/instalacion.md). La pantalla
-del servidor entero está documentada en [docs/es/servidor.md](docs/es/servidor.md).
+El núcleo corre en Docker en una máquina; cada servidor recibe un agente con una sola orden pegada. La base
+de datos debe ser **PostgreSQL con la extensión TimescaleDB**: la pila Compose empaquetada ya usa la imagen
+`timescale/timescaledb:latest-pg16`. Paso a paso y con solución de problemas:
+[docs/es/instalacion.md](docs/es/instalacion.md). La pantalla del servidor entero está documentada en
+[docs/es/servidor.md](docs/es/servidor.md). Monitorización y alertas:
+[docs/es/monitorizacion.md](docs/es/monitorizacion.md).
 
 En un Debian o Ubuntu recién instalado, el arranque de una línea clona el `main` actual en `/opt/talaia` y
 ejecuta el instalador (antes de la 1.0 instala `main`, no una versión etiquetada):
@@ -249,7 +258,7 @@ modelo de seguridad y qué se graba están en [docs/es/seguridad.md](docs/es/seg
 |---|---|
 | Agente | Go 1.26 · Docker SDK · go-systemd (D-Bus) · sdjournal · gopsutil · creack/pty |
 | Núcleo | Go · chi · connect-go (gRPC) · sqlc · River (cola de tareas) |
-| Base de datos | PostgreSQL 16 + TimescaleDB |
+| Base de datos | PostgreSQL 16 con la extensión TimescaleDB (obligatoria) |
 | Panel web | React · TypeScript · Vite · TanStack Query/Router · Tailwind · xterm.js · Monaco · uPlot |
 | i18n | i18next (web) · go-i18n (núcleo, agente, CLI) |
 | Proxy inverso | Caddy (gestionado mediante su API de administración) |
@@ -274,6 +283,8 @@ se usa el inglés. Detalle: [docs/es/i18n.md](docs/es/i18n.md).
 
 La **documentación** del proyecto se escribe en **inglés y castellano**. Algunas guías, como la de acceso,
 también están en **catalán**.
+
+- Monitorización, alertas y comprobaciones: [docs/es/monitorizacion.md](docs/es/monitorizacion.md)
 
 ## Estructura del repositorio
 

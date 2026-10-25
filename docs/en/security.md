@@ -233,6 +233,48 @@ The environment variable `TALAIA_AGENT_TERMINAL_HOST=false` has the same effect 
 the file. The agent reports the capability as false, so the panel disables the button. Old agents also
 report false and need an update.
 
+## Outbound traffic: checks, notifications and the SSRF guard
+
+Checks and notification channels make the core open outbound connections. The destination is untrusted
+input, so Talaia applies an outbound guard at connection time:
+
+- HTTP targets must use `http` or `https`, must have a host and cannot contain credentials in the URL.
+  Non-canonical numeric IPv4 spellings are rejected. Every redirect is checked again, and a chain is
+  limited to three redirects.
+- DNS is resolved before connecting and every actual socket address is checked. This prevents a
+  DNS-rebinding answer from turning a public name into an internal address after validation.
+- By default the guard blocks loopback, RFC 1918 private addresses, carrier-grade NAT, link-local,
+  IPv6 unique-local, benchmark, documentation and reserved ranges, multicast, unspecified and broadcast
+  addresses.
+- The **Allow checks and notifications to reach private networks** switch in **Settings > Alerts** relaxes
+  private, loopback and CGNAT destinations. Link-local addresses, the reserved documentation ranges,
+  multicast/broadcast and metadata remain blocked.
+- Cloud metadata endpoints `169.254.169.254` and `fd00:ec2::254` are **always** blocked because they can
+  expose instance credentials; the switch never overrides them.
+- The guard also applies to SMTP connections. HTTP clients do not use environment proxies, so a proxy
+  cannot bypass the check.
+
+The full destination rules and how to test a blocked target are in
+[monitoring.md](monitoring.md#outbound-guard).
+
+## Notification channel secrets
+
+Channel secrets are write-only and sealed with AES-256-GCM using the same `data_dir/secrets.key` that
+protects TOTP secrets and the OIDC client secret. The API returns only `has_secret`; the panel never
+receives, displays or logs the stored value. Editing a channel without touching the secret sends no
+secret field and keeps the existing one, while **Replace** sends only the new value. Secret inputs use
+`type="password"` and `autocomplete="new-password"`.
+
+Delivery errors and the result of **Send test** are redacted against every secret value before they are
+stored in the channel status or returned to the panel. SMTP is never sent in
+clear text: only STARTTLS and implicit TLS are accepted. Discord accepts only an official webhook URL.
+The optional webhook HMAC signs the timestamp and exact body with HMAC-SHA256 in
+`X-Talaia-Signature`; the verification scheme is in
+[monitoring.md](monitoring.md#webhook-signature).
+
+Losing `data_dir/secrets.key` makes sealed channel secrets unreadable. Back up the `core-data` volume and
+do not print a secret while diagnosing a channel.
+
 ## Reporting a vulnerability
 
 Do not open a public issue: follow [SECURITY.md](../../SECURITY.md).

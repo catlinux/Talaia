@@ -36,7 +36,11 @@ servidor doméstico.
 | `rbac` | Roles y ámbitos (organización → grupo → servidor → stack → contenedor) |
 | `hub` | Servidor gRPC; mantiene un stream por agente conectado; enruta tareas y eventos |
 | `jobs` | Cola de tareas persistente (River sobre PostgreSQL), reintentos, programación |
-| `alerts` | Evalúa reglas sobre métricas y eventos, envía notificaciones |
+| `alerts` | Evalúa reglas sobre el estado de los servidores, las métricas y las comprobaciones; abre y resuelve incidentes y encola notificaciones (ver [monitorizacion.md](monitorizacion.md)) |
+| `metrics` | Acumula las muestras de los agentes, las escribe en TimescaleDB, las reduce a 5 minutos y 1 hora y aplica la retención |
+| `checks` | Ejecuta las comprobaciones HTTP, TCP y TLS desde el core y guarda sus resultados |
+| `notify` | Envía las notificaciones en cola (Telegram, ntfy, correo, Discord, webhook) con reintentos |
+| `netguard` | Política de destinos de salida (guardián SSRF) que usan las comprobaciones y las notificaciones |
 | `deploy` | Orígenes Git, builds, pipeline de despliegue, reversiones |
 | `secrets` | Cifra las variables secretas con `age`; solo las descifra el agente destino |
 | `ca` | Autoridad de certificación interna para los certificados de los agentes |
@@ -64,8 +68,11 @@ Objetivos: < 30 MB de RAM y < 1 % de CPU en reposo.
 | `backup` | restic | Ejecutar planes de copia y restauraciones |
 | `proxy` | API de administración de Caddy | Dominios, TLS, rutas |
 
-Cada módulo se puede desactivar en `/etc/talaia/agent.toml`. El agente guarda 24 h de métricas y eventos
-en un búfer local y los envía al reconectar.
+Cada módulo se puede desactivar en `/etc/talaia/agent.toml`. La intención es que el agente guarde 24 h de
+métricas y eventos en un búfer local y los envíe al reconectar; hoy informa en directo: envía las métricas
+del anfitrión y las estadísticas de contenedores cada 15 segundos, el inventario cada 60 segundos (y en
+unos 2 segundos tras un evento de Docker, con la salud de cada contenedor) y no guarda histórico, que
+vive en el core.
 
 ### 2.3 talaia-web
 
@@ -180,7 +187,7 @@ agente y una por usuario y servidor, comparte el límite de 4 sesiones por servi
 
 ## 4. Modelo de datos (implementado)
 
-Este es el esquema creado por las migraciones hasta `0013_oidc.sql`. Los stacks y contenedores aún no
+Este es el esquema creado por las migraciones hasta `0015_alerts.sql`. Los stacks y contenedores aún no
 son tablas: los stacks viven en disco y los contenedores proceden del inventario del agente. Las tablas
 de dominios, alertas, copias de seguridad y métricas pertenecen a fases posteriores de la hoja de ruta.
 
@@ -206,11 +213,24 @@ de dominios, alertas, copias de seguridad y métricas pertenecen a fases posteri
 | `job` | id, server_id, kind, params, state, message, output, created_by, fechas |
 | `terminal_session` | id, server_id, contenedor o `@host`, shell, created_by, privileged, fechas, close_reason, recorded_bytes |
 | `terminal_chunk` | session_id, seq, datos cifrados |
+| `metric_server`, `metric_server_5m`, `metric_server_1h` | Hypertables de TimescaleDB: time, server_id, CPU, memoria, disco y tasas de red (crudo, y medias y máximos de 5 minutos y 1 hora) |
+| `metric_container`, `metric_container_5m`, `metric_container_1h` | Lo mismo por nombre de contenedor y stack |
+| `alert_rule` | id, name, type, severity, params, ámbito, channel_ids, intervalo de repetición, builtin |
+| `alert` | id, regla, huella (única mientras está activa), servidor, sujeto, estado, resumen, inicio/resolución/confirmación, silenced |
+| `alert_watch` | server_id, nombre del contenedor, last_running_at: los contenedores que se espera que estén en marcha |
+| `silence` | ámbito, tipo de regla opcional, motivo, created_by, ends_at (30 días como máximo) |
+| `alert_check`, `alert_check_result` | Las comprobaciones HTTP/TCP/TLS y sus resultados (30 días) |
+| `notification_channel` | name, type, idioma, configuración pública, secreto cifrado, último error y último éxito |
+| `notification_delivery` | La cola de envíos: alerta, canal, evento, intentos, siguiente intento, estado |
 
 La migración `0012_rbac.sql` da además a cada usuario de una instalación existente la asignación de
 administrador de la organización, añade `group_id` a `server`, `display_name`/`email`/`disabled_at`/
 `oidc_subject` a `app_user`, y `actor_id`/`scope` a `audit_event`. La migración `0013_oidc.sql` añade
-`oidc_config` con una sola fila (`id boolean PRIMARY KEY DEFAULT true CHECK (id)`).
+`oidc_config` con una sola fila (`id boolean PRIMARY KEY DEFAULT true CHECK (id)`). La migración `0014_metrics.sql` activa la
+extensión TimescaleDB y crea las tablas de métricas (solo se usan las funciones de licencia Apache:
+hypertables, `time_bucket` y `drop_chunks`; el downsampling y la retención los hace el core). La migración
+`0015_alerts.sql` crea las tablas de alertas, las seis reglas integradas y la columna `allow_private_targets`
+de `organization`.
 
 ## 5. Permisos
 

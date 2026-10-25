@@ -32,13 +32,13 @@ servidor y de los niveles superiores.
 
 Estos son los únicos roles. Los roles personalizados no forman parte de esta versión.
 
-| Rol                                          | Qué puede hacer                                                                                                                                                                                                                                             | Qué no puede hacer                                                                                                                                                                                                                         |
-| -------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Administrador** (`admin`)                  | Todo lo que permita el ámbito: usuarios, ajustes, servidores, stacks, contenedores, operaciones del host, auditoría y grabaciones                                                                                                                           | Nada dentro de Talaia, pero equivale a root en los servidores gestionados (ver abajo)                                                                                                                                                      |
-| **Operador de servidor** (`server_operator`) | Contenedores (ver, registros, iniciar/parar/reiniciar, terminal), recursos de Docker, stacks (ver, desplegar, editar, borrar contenedores) y el servidor entero: servicios, journal, apt, reinicio, terminal del anfitrión, actualizaciones del agente      | Gestionar usuarios, equipos, grupos, invitaciones o claves de API; cambiar ajustes u OIDC; quitar o dar de alta servidores; leer la auditoría o las grabaciones                                                                            |
-| **Operador de app** (`app_operator`)         | Ver contenedores, stacks y servidores; con ámbito de servidor, leer servicios y estado de apt; con ámbito de organización, leer la auditoría; leer registros de contenedores; iniciar/parar/reiniciar contenedores; desplegar stacks (up/down/restart/pull) | Editar, adoptar, borrar u olvidar un stack; leer el journal; abrir una terminal de contenedor o del anfitrión; cambiar servicios del host, apt o reinicio; leer grabaciones; quitar o dar de alta servidores; gestionar usuarios o ajustes |
-| **Lector** (`viewer`)                        | Leer servidores, stacks, contenedores y registros; cuando el ámbito llega al servidor, leer servicios, estado de apt y journal; con ámbito de organización, leer la auditoría                                                                               | Cambiar contenedores o stacks, abrir terminales, editar compose, ejecutar acciones del host, leer grabaciones, quitar o dar de alta servidores, gestionar usuarios o ajustes                                                               |
-| **Solo métricas** (`metrics_only`)           | Estado y métricas de servidores, stacks y contenedores                                                                                                                                                                                                      | Registros, servicios, journal, apt, terminales, auditoría, grabaciones, cualquier cambio y cualquier administración                                                                                                                        |
+| Rol                                          | Qué puede hacer                                                                                                                                                                                                                                                       | Qué no puede hacer                                                                                                                                                                                                                                                    |
+| -------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Administrador** (`admin`)                  | Todo lo que permita el ámbito: usuarios, ajustes, servidores, stacks, contenedores, operaciones del host, auditoría, grabaciones y alertas (reglas, comprobaciones, canales, silencios)                                                                               | Nada dentro de Talaia, pero equivale a root en los servidores gestionados (ver abajo)                                                                                                                                                                                  |
+| **Operador de servidor** (`server_operator`) | Contenedores (ver, registros, iniciar/parar/reiniciar, terminal), recursos de Docker, stacks (ver, desplegar, editar, borrar contenedores), el servidor entero (servicios, journal, apt, reinicio, terminal del anfitrión, actualizaciones del agente) y ver/silenciar alertas en su ámbito | Gestionar usuarios, equipos, grupos, invitaciones o claves de API; cambiar ajustes u OIDC; gestionar reglas, comprobaciones o canales; quitar o dar de alta servidores; leer la auditoría o las grabaciones                                                          |
+| **Operador de app** (`app_operator`)         | Ver contenedores, stacks, servidores y alertas; con ámbito de servidor, leer servicios y estado de apt; con ámbito de organización, leer la auditoría; leer registros de contenedores; iniciar/parar/reiniciar contenedores; desplegar stacks (up/down/restart/pull); silenciar alertas | Editar, adoptar, borrar u olvidar un stack; leer el journal; abrir una terminal de contenedor o del anfitrión; cambiar servicios del host, apt o reinicio; leer grabaciones; gestionar reglas, comprobaciones o canales; quitar o dar de alta servidores; gestionar usuarios o ajustes |
+| **Lector** (`viewer`)                        | Leer servidores, stacks, contenedores, registros y alertas; cuando el ámbito llega al servidor, leer servicios, estado de apt y journal; con ámbito de organización, leer la auditoría                                                                                 | Cambiar contenedores o stacks, abrir terminales, editar compose, ejecutar acciones del host, leer grabaciones, silenciar o gestionar alertas, quitar o dar de alta servidores, gestionar usuarios o ajustes                                                          |
+| **Solo métricas** (`metrics_only`)           | Estado y métricas de servidores, stacks y contenedores, y leer alertas en su ámbito                                                                                                                                                                                   | Registros, servicios, journal, apt, terminales, auditoría, grabaciones, silenciar o gestionar alertas, cualquier cambio y cualquier administración                                                                                                                    |
 
 Los permisos del rol se filtran por el ámbito de la asignación. Por ejemplo, un administrador asignado
 solo a un stack recibe la parte del rol de administrador que corresponde al stack, no usuarios ni
@@ -51,10 +51,10 @@ mínimo del permiso**:
 
 | Ámbito mínimo | Permisos                                                                                                                                                                                     |
 | ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Contenedor    | `container.view`, `container.logs`, `container.control`, `container.terminal`                                                                                                                |
-| Stack         | `stack.view`, `stack.deploy`, `stack.edit`, `container.remove`                                                                                                                               |
+| Contenedor    | `container.view`, `container.logs`, `container.control`, `container.terminal`, `alerts.view`                                                                                                |
+| Stack         | `stack.view`, `stack.deploy`, `stack.edit`, `container.remove`, `alerts.silence`                                                                                                             |
 | Servidor      | `server.view`, `resources.manage`, `host.services.view`, `host.services.control`, `host.journal`, `host.apt.view`, `host.apt.upgrade`, `host.reboot`, `host.terminal`, `server.agent_update` |
-| Organización  | `server.remove`, `server.enroll`, `users.manage`, `settings.manage`, `audit.view`, `recordings.view`, `apikeys.manage`                                                                       |
+| Organización  | `server.remove`, `server.enroll`, `users.manage`, `settings.manage`, `audit.view`, `recordings.view`, `apikeys.manage`, `alerts.manage`                                                       |
 
 Un grupo no tiene permisos propios; transmite las asignaciones a sus servidores. Una asignación de
 organización llega a todo.
@@ -67,6 +67,20 @@ organización necesitan una asignación de organización.
 Esto no hace inofensiva una asignación de stack: `stack.edit` puede ejecutar código arbitrario como root
 a través del archivo Compose. Da el rol de operador de servidor, o un permiso `stack.edit`, solo a quien
 confiarías root en ese servidor. El rol de operador de app carece de él a propósito.
+
+## Permisos de alertas
+
+- `alerts.view` se puede conceder desde un contenedor hacia arriba. Permite ver las alertas, el historial,
+  el resumen y los silencios que afectan a ese destino.
+- `alerts.silence` necesita al menos un stack. Permite confirmar una alerta, crear y borrar silencios y
+  dejar de vigilar una alerta de contenedor.
+- `alerts.manage` necesita la organización. Cubre reglas, comprobaciones, canales, envíos de prueba y el
+  ajuste de redes privadas. Solo lo tiene `admin`. La sección **Ajustes > Alertas** se oculta a todos los
+  demás.
+
+Quien tiene `alerts.view` pero no `alerts.silence` ve la lista de alertas en solo lectura: el panel no
+muestra los botones de confirmar, silenciar ni dejar de vigilar. El núcleo comprueba igualmente cada
+llamada. Las claves de API pueden usar `alerts.view` y `alerts.silence`, pero nunca `alerts.manage`.
 
 ## Por qué un operador de app no puede editar el Compose ni abrir una terminal
 
@@ -138,7 +152,9 @@ limitadas por los permisos actuales de su dueño.
   asignaciones actuales de su dueño. Si el dueño pierde acceso, la clave también. Desactivar al dueño
   revoca sus claves.
 - **No puede:** abrir terminales de contenedor o del anfitrión, gestionar usuarios, equipos, grupos,
-  claves ni ajustes, reiniciar un servidor ni autenticarse en los endpoints de inicio de sesión.
+  claves ni ajustes, gestionar reglas, comprobaciones, canales o ajustes de alertas, reiniciar un servidor
+  ni autenticarse en los endpoints de inicio de sesión. Una clave puede leer alertas y confirmarlas o
+  silenciarlas cuando su rol lo permite.
 - **Límite:** 600 peticiones por minuto por clave, con un límite adicional por IP.
 - **Revocar:** desde la misma sección, con confirmación. La revocación es inmediata.
 - **Último uso:** la lista muestra cuándo se usó la clave por última vez.

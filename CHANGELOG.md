@@ -18,6 +18,12 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.5.15] - 2026-10-25
+
+### Added
+
+- Documentation of phase 5: the new guide [docs/en/monitoring.md](docs/en/monitoring.md) (metrics and retention, alerts, silences, checks, notification channels, the outbound guard, permissions, API and a step-by-step test), and updates to the permissions, installation, security and architecture guides and the README, including the new requirement of PostgreSQL with TimescaleDB.
+
 ## [0.5.14] - 2026-10-25
 
 ### Security
@@ -647,7 +653,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.5.14...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.5.15...HEAD
+[0.5.15]: https://github.com/catlinux/Talaia/releases/tag/v0.5.15
 [0.5.14]: https://github.com/catlinux/Talaia/releases/tag/v0.5.14
 [0.5.13]: https://github.com/catlinux/Talaia/releases/tag/v0.5.13
 [0.5.12]: https://github.com/catlinux/Talaia/releases/tag/v0.5.12

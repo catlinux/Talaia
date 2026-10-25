@@ -35,7 +35,11 @@ Single Go binary. Deployed with a `compose.yaml` (core + PostgreSQL) on a small 
 | `rbac` | Roles and scopes (organization → group → server → stack → container) |
 | `hub` | gRPC server; keeps one stream per connected agent; routes jobs and events |
 | `jobs` | Persistent job queue (River on PostgreSQL), retries, scheduling |
-| `alerts` | Evaluates rules on metrics and events, sends notifications |
+| `alerts` | Evaluates rules on server state, metrics and checks; opens and resolves incidents and queues notifications (see [monitoring.md](monitoring.md)) |
+| `metrics` | Buffers the agent samples, writes them to TimescaleDB, downsamples to 5 minutes and 1 hour and applies retention |
+| `checks` | Runs the HTTP, TCP and TLS checks from the core and stores their results |
+| `notify` | Sends the queued notifications (Telegram, ntfy, email, Discord, webhook) with retries |
+| `netguard` | Outbound destination policy (SSRF guard) used by checks and notifications |
 | `deploy` | Git sources, builds, deploy pipeline, rollbacks |
 | `secrets` | Encrypts secret variables with `age`; decrypted only by the target agent |
 | `ca` | Internal certificate authority for agent certificates |
@@ -63,8 +67,10 @@ Targets: < 30 MB RAM and < 1 % CPU when idle.
 | `backup` | restic | Run backup plans and restores |
 | `proxy` | Caddy admin API | Domains, TLS, routes |
 
-Every module can be disabled in `/etc/talaia/agent.toml`. The agent keeps 24 h of metrics and events in
-a local buffer and sends them when it reconnects.
+Every module can be disabled in `/etc/talaia/agent.toml`. The agent is meant to keep 24 h of metrics and
+events in a local buffer and send them when it reconnects; today it reports live: it sends host metrics and
+container stats every 15 seconds, the inventory every 60 seconds (and within about 2 seconds of a Docker
+container event, with each container's health) and keeps no history, which lives in the core.
 
 ### 2.3 talaia-web
 
@@ -174,9 +180,9 @@ server, shares the 4-session per-server limit, and is audited as `host_terminal_
 
 ## 4. Data model (implemented)
 
-This is the schema created by migrations up to `0013_oidc.sql`. Stacks and containers are not
-tables yet: stacks live on disk and containers come from the agent inventory. Tables for domains,
-alerts, backups and metrics belong to later roadmap phases.
+This is the schema created by migrations up to `0015_alerts.sql`. Stacks and containers are not
+tables yet: stacks live on disk and containers come from the agent inventory. Tables for domains
+and backups belong to later roadmap phases.
 
 | Entity | Main fields |
 |---|---|
@@ -200,11 +206,23 @@ alerts, backups and metrics belong to later roadmap phases.
 | `job` | id, server_id, kind, params, state, message, output, created_by, timestamps |
 | `terminal_session` | id, server_id, container or `@host`, shell, created_by, privileged, times, close_reason, recorded_bytes |
 | `terminal_chunk` | session_id, seq, encrypted data |
+| `metric_server`, `metric_server_5m`, `metric_server_1h` | TimescaleDB hypertables: time, server_id, CPU, memory, disk and network rates (raw, and 5-minute and 1-hour averages and maxima) |
+| `metric_container`, `metric_container_5m`, `metric_container_1h` | The same per container name and stack |
+| `alert_rule` | id, name, type, severity, params, scope, channel_ids, repeat interval, builtin |
+| `alert` | id, rule, fingerprint (unique while firing), server, subject, state, summary, started/resolved/acked, silenced |
+| `alert_watch` | server_id, container name, last_running_at: the containers that are expected to run |
+| `silence` | scope, optional rule type, reason, created_by, ends_at (30 days at most) |
+| `alert_check`, `alert_check_result` | The HTTP/TCP/TLS checks and their results (30 days) |
+| `notification_channel` | name, type, language, public config, sealed secret, last error and last success |
+| `notification_delivery` | The delivery queue: alert, channel, event, attempts, next attempt, state |
 
 Migration `0012_rbac.sql` also gives every existing installation user the organization administrator
 binding, adds `group_id` to `server`, `display_name`/`email`/`disabled_at`/`oidc_subject` to
 `app_user`, and `actor_id`/`scope` to `audit_event`. Migration `0013_oidc.sql` adds `oidc_config`
-with a single row (`id boolean PRIMARY KEY DEFAULT true CHECK (id)`).
+with a single row (`id boolean PRIMARY KEY DEFAULT true CHECK (id)`). Migration `0014_metrics.sql` enables the
+TimescaleDB extension and creates the metric tables (only the Apache-licensed features are used: hypertables,
+`time_bucket` and `drop_chunks`; downsampling and retention are done by the core). Migration `0015_alerts.sql`
+creates the alert tables, the six built-in rules and the `allow_private_targets` column of `organization`.
 
 ## 5. Permissions
 

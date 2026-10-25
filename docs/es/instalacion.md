@@ -16,6 +16,10 @@ Talaia tiene dos partes: el **núcleo** (panel, API y base de datos), que corre 
 - **Máquina del núcleo:** Debian 13 (o Ubuntu), `git`, `curl` y Docker Engine con el plugin Docker Compose. Si
   falta Docker, el instalador explica cómo añadirlo y puede ejecutar el script oficial con `--install-docker` (o
   contestando que sí).
+- **Base de datos:** PostgreSQL con la extensión **TimescaleDB**. El servicio `db` de
+  `packaging/core/compose.yaml` usa `timescale/timescaledb:latest-pg16`, así que el despliegue empaquetado ya la
+  incluye. Un PostgreSQL normal no puede ejecutar la migración de métricas; véase
+  [monitorizacion.md](monitorizacion.md#solución-de-problemas).
 - **Servidores a gestionar:** Debian o Ubuntu con systemd, `curl` y acceso root (`sudo`). El agente
   también necesita `apt-get` y `apt-mark`, `systemctl` y `systemd-run`, `journalctl`, y `bash` o
   `sh` para la terminal del anfitrión. Asegúrate de que esas herramientas están instaladas; una imagen
@@ -122,6 +126,11 @@ sudo docker compose run --rm core user create --username admin
 ```
 
 `ps` debe mostrar `db` como `healthy`, `volume-init` como `Exited (0)` y `core` como `Up`.
+
+Si usas tu propia base de datos en vez del servicio `db` empaquetado, debe ser PostgreSQL con la extensión
+TimescaleDB disponible. Sin ella, el arranque falla en la migración `0014_metrics.sql` con
+`extension "timescaledb" is not available`. La guía de monitorización explica el error y la configuración de
+las métricas: [monitorizacion.md](monitorizacion.md).
 
 ## 3. Primer acceso
 

@@ -32,13 +32,13 @@ server and above.
 
 These are the only roles. Custom roles are not part of this version.
 
-| Role                                    | What it can do                                                                                                                                                                                                        | What it cannot do                                                                                                                                                                                    |
-| --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Administrator** (`admin`)             | Everything allowed by the scope: users, settings, servers, stacks, containers, host operations, audit and recordings                                                                                                  | Nothing inside Talaia, but it is equivalent to root on managed servers (see below)                                                                                                                   |
-| **Server operator** (`server_operator`) | Containers (view, logs, start/stop/restart, terminal), Docker resources, stacks (view, deploy, edit, remove containers), and the whole server: services, journal, apt, reboot, host terminal, agent updates           | Manage users, teams, groups, invitations or API keys; change settings or OIDC; remove or enroll servers; read the audit log or recordings                                                            |
-| **App operator** (`app_operator`)       | View containers, stacks and servers; at server scope read services and apt status; at organization scope read the audit log; read container logs; start/stop/restart containers; deploy stacks (up/down/restart/pull) | Edit, adopt, remove or forget a stack; read the journal; open a container or host terminal; change host services, apt or reboot; read recordings; remove or enroll servers; manage users or settings |
-| **Viewer** (`viewer`)                   | Read servers, stacks, containers and logs; when the scope reaches the server, read services, apt status and the journal; at organization scope, read the audit log                                                    | Change containers or stacks, open terminals, edit compose files, run host actions, read recordings, remove or enroll servers, manage users or settings                                               |
-| **Metrics only** (`metrics_only`)       | Server, stack and container status and metrics                                                                                                                                                                        | Logs, services, journal, apt, terminals, audit, recordings, any change and any administration                                                                                                        |
+| Role                                    | What it can do                                                                                                                                                                                                                              | What it cannot do                                                                                                                                                                                    |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Administrator** (`admin`)             | Everything allowed by the scope: users, settings, servers, stacks, containers, host operations, audit, recordings and alerting (rules, checks, channels, silences)                                                                          | Nothing inside Talaia, but it is equivalent to root on managed servers (see below)                                                                                                                   |
+| **Server operator** (`server_operator`) | Containers (view, logs, start/stop/restart, terminal), Docker resources, stacks (view, deploy, edit, remove containers), the whole server (services, journal, apt, reboot, host terminal, agent updates) and view/silence alerts in scope | Manage users, teams, groups, invitations or API keys; change settings or OIDC; manage alert rules, checks or channels; remove or enroll servers; read the audit log or recordings                       |
+| **App operator** (`app_operator`)       | View containers, stacks, servers and alerts; at server scope read services and apt status; at organization scope read the audit log; read container logs; start/stop/restart containers; deploy stacks (up/down/restart/pull); silence alerts | Edit, adopt, remove or forget a stack; read the journal; open a container or host terminal; change host services, apt or reboot; read recordings; manage alert rules, checks or channels; remove or enroll servers; manage users or settings |
+| **Viewer** (`viewer`)                   | Read servers, stacks, containers, logs and alerts; when the scope reaches the server, read services, apt status and the journal; at organization scope, read the audit log                                                                    | Change containers or stacks, open terminals, edit compose files, run host actions, read recordings, silence or manage alerts, remove or enroll servers, manage users or settings                       |
+| **Metrics only** (`metrics_only`)       | Server, stack and container status and metrics, and read alerts in scope                                                                                                                                                                   | Logs, services, journal, apt, terminals, audit, recordings, silencing or managing alerts, any change and any administration                                                                           |
 
 The role's permissions are filtered by the assignment scope. For example, an administrator assigned
 only to a stack gets the stack-level part of the administrator role, not users or host access.
@@ -50,10 +50,10 @@ minimum scope**:
 
 | Minimum scope | Permissions                                                                                                                                                                                  |
 | ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Container     | `container.view`, `container.logs`, `container.control`, `container.terminal`                                                                                                                |
-| Stack         | `stack.view`, `stack.deploy`, `stack.edit`, `container.remove`                                                                                                                               |
+| Container     | `container.view`, `container.logs`, `container.control`, `container.terminal`, `alerts.view`                                                                                                |
+| Stack         | `stack.view`, `stack.deploy`, `stack.edit`, `container.remove`, `alerts.silence`                                                                                                             |
 | Server        | `server.view`, `resources.manage`, `host.services.view`, `host.services.control`, `host.journal`, `host.apt.view`, `host.apt.upgrade`, `host.reboot`, `host.terminal`, `server.agent_update` |
-| Organization  | `server.remove`, `server.enroll`, `users.manage`, `settings.manage`, `audit.view`, `recordings.view`, `apikeys.manage`                                                                       |
+| Organization  | `server.remove`, `server.enroll`, `users.manage`, `settings.manage`, `audit.view`, `recordings.view`, `apikeys.manage`, `alerts.manage`                                                       |
 
 A group has no permissions of its own; it passes assignments down to its servers. An organization
 assignment reaches everything.
@@ -66,6 +66,20 @@ binding.
 This does not make a stack binding harmless: `stack.edit` can run arbitrary code as root through the
 Compose file. Give the server operator role, or a `stack.edit` permission, only to people you would trust
 with root on that server. The app operator role deliberately does not have it.
+
+## Alert permissions
+
+- `alerts.view` can be granted from a container upwards. It lets the user see the alerts, history,
+  summary and silences that concern that target.
+- `alerts.silence` needs at least a stack. It allows acknowledging an alert, creating and deleting
+  silences, and stopping the watch of a container alert.
+- `alerts.manage` needs the organization. It covers rules, checks, channels, test sends and the
+  private-target setting. Only `admin` has it. The **Settings > Alerts** section is hidden from everyone
+  else.
+
+A user with `alerts.view` but without `alerts.silence` sees the alert list read-only: the panel does not
+render the acknowledge, silence or stop-watching buttons. The core still checks every call. API keys can
+use `alerts.view` and `alerts.silence`, but never `alerts.manage`.
 
 ## Why an app operator cannot edit Compose or open a terminal
 
@@ -134,8 +148,9 @@ owner's current permissions.
 - **Intersection:** a key can do only what both its own assignments and its owner's current
   assignments allow. If the owner loses access, the key loses it too. Disabling the owner revokes
   their keys.
-- **Cannot:** open container or host terminals, manage users, teams, groups, keys or settings,
-  reboot a server, or authenticate against sign-in endpoints.
+- **Cannot:** open container or host terminals, manage users, teams, groups, keys or settings, manage
+  alert rules, checks, channels or alert settings, reboot a server, or authenticate against sign-in
+  endpoints. A key can read alerts and acknowledge or silence them when its role allows it.
 - **Rate:** 600 requests per minute per key, with an additional per-IP bound.
 - **Revoke:** from the same section, with a confirmation. Revocation is immediate.
 - **Last used:** the list shows when the key was last used.

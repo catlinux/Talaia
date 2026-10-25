@@ -15,14 +15,15 @@
 
 <p align="center">
   <img alt="Version" src="https://img.shields.io/badge/version-0.4.14-0B7285">
-  <img alt="Status" src="https://img.shields.io/badge/status-phase%204%20in%20progress-B86E00">
+  <img alt="Status" src="https://img.shields.io/badge/status-phase%205%20in%20progress-B86E00">
   <img alt="License" src="https://img.shields.io/badge/license-WNCL--TP--1.0-56666F">
   <img alt="Languages" src="https://img.shields.io/badge/i18n-ca%20%C2%B7%20es%20%C2%B7%20en-0B7285">
 </p>
 
 > [!WARNING]
 > Talaia is in active development. Phase 4 (users, permissions, API keys, OIDC, recordings and
-> `talaiactl`) closed in 0.5.0. Follow the [roadmap](ROADMAP.md) for what comes next.
+> `talaiactl`) closed in 0.5.0. Phase 5 (monitoring, alerts, checks and channels) is in progress. Follow
+> the [roadmap](ROADMAP.md) for what comes next.
 
 ---
 
@@ -135,7 +136,7 @@ Each feature is tagged with the release where it is planned. See [ROADMAP.md](RO
 | Containers and stacks | Actions, live logs, Compose editor, container terminal, images/volumes/networks, adopt existing | Revision history and rollback, image update notices | Podman |
 | Whole server | Metrics, systemd, journald, apt updates and reboot, host terminal (phase 3 closed in 0.4.0) | Firewall, fail2ban, users and SSH keys, cron, file browser, hardening audit | — |
 | Deploys and apps | — | Stacks from Git, Dockerfile/Nixpacks builds, zero-downtime deploys, domains + SSL (Caddy), template catalog | Preview environments per pull request |
-| Monitoring and alerts | — | Metrics history, alert rules, HTTP/TCP checks, certificate expiry, Telegram/ntfy/email/Discord/webhook | Public status page |
+| Monitoring and alerts | — | Metrics history, alert rules, HTTP/TCP checks, certificate expiry, Telegram/ntfy/email/Discord/webhook (phase 5 in progress) | Public status page |
 | Backups | — | restic plans, consistent database dumps, S3/B2/SFTP, restore from the panel | Automatic monthly restore test |
 | Fleet automation | — | Bulk actions, scheduled procedures, GitOps sync | Ansible playbooks, VPS provisioning via provider APIs |
 | Users and security | Single user with 2FA, trusted-device PIN, passkeys, audit log and recorded terminals (0.4.0) | Users, teams, server groups, scoped roles, invitations, API keys, OIDC SSO and talaiactl (0.5.0) | — |
@@ -145,6 +146,9 @@ Each feature is tagged with the release where it is planned. See [ROADMAP.md](RO
 >
 > **Phase 4 status.** Closed in 0.5.0 after a real test with a second user. The guide is
 > [docs/en/permissions.md](docs/en/permissions.md).
+>
+> **Phase 5 status.** In progress. Metrics, alerts, checks, notification channels and the outbound guard are
+> implemented; the guide is [docs/en/monitoring.md](docs/en/monitoring.md).
 
 ## Architecture
 
@@ -173,11 +177,12 @@ Key decisions:
   interactive terminals that are recorded in the audit log.
 - **Mutual TLS.** Each agent gets its own certificate from an internal CA during enrollment (90-day
   validity, automatic renewal).
-- **Graceful degradation.** If the core goes down, containers and services keep running. The agent keeps
-  24 h of metrics and events locally and sends them when it reconnects.
+- **Graceful degradation.** If the core goes down, containers and services keep running. The agent
+  reconnects and resumes live samples; metrics history lives in the core, which stores it in TimescaleDB.
 
 Full detail: [docs/en/architecture.md](docs/en/architecture.md). Users, roles and API keys:
-[docs/en/permissions.md](docs/en/permissions.md). What the panel can do to your servers, and what is
+[docs/en/permissions.md](docs/en/permissions.md). Metrics, alerts, checks, channels and the outbound
+guard: [docs/en/monitoring.md](docs/en/monitoring.md). What the panel can do to your servers, and what is
 recorded: [docs/en/security.md](docs/en/security.md).
 
 ## Supported systems
@@ -195,9 +200,11 @@ recorded: [docs/en/security.md](docs/en/security.md).
 
 ## Installation
 
-The core runs in Docker on one machine; each server gets an agent installed with one pasted command.
-Step by step, with troubleshooting: [docs/en/installation.md](docs/en/installation.md). The whole-server
-screen is documented in [docs/en/server.md](docs/en/server.md).
+The core runs in Docker on one machine; each server gets an agent installed with one pasted command. The
+database must be **PostgreSQL with the TimescaleDB extension**: the packaged Compose stack already uses the
+`timescale/timescaledb:latest-pg16` image. Step by step, with troubleshooting:
+[docs/en/installation.md](docs/en/installation.md). The whole-server screen is documented in
+[docs/en/server.md](docs/en/server.md). Monitoring and alerts: [docs/en/monitoring.md](docs/en/monitoring.md).
 
 On a fresh Debian or Ubuntu, the one-line bootstrap clones the current `main` into `/opt/talaia` and runs the
 installer (before 1.0 this installs `main`, not a tagged release):
@@ -247,7 +254,7 @@ and what is recorded are in [docs/en/security.md](docs/en/security.md).
 |---|---|
 | Agent | Go 1.26 · Docker SDK · go-systemd (D-Bus) · sdjournal · gopsutil · creack/pty |
 | Core | Go · chi · connect-go (gRPC) · sqlc · River (job queue) |
-| Database | PostgreSQL 16 + TimescaleDB |
+| Database | PostgreSQL 16 with the TimescaleDB extension (required) |
 | Web panel | React · TypeScript · Vite · TanStack Query/Router · Tailwind · xterm.js · Monaco · uPlot |
 | i18n | i18next (web) · go-i18n (core, agent, CLI) |
 | Reverse proxy | Caddy (managed through its admin API) |
@@ -272,6 +279,8 @@ falls back to English. Detail: [docs/en/i18n.md](docs/en/i18n.md).
 
 Project **documentation** is written in **English and Spanish**. Some guides, such as the sign-in guide, are
 also available in **Catalan**.
+
+- Monitoring, alerts and checks: [docs/en/monitoring.md](docs/en/monitoring.md)
 
 ## Repository layout
 

@@ -250,6 +250,47 @@ La variable de entorno `TALAIA_AGENT_TERMINAL_HOST=false` tiene el mismo efecto 
 fichero. El agente informa de la capacidad como falsa, así que el panel desactiva el botón. Los agentes
 antiguos también informan falso y necesitan actualizarse.
 
+## Tráfico saliente: comprobaciones, notificaciones y protección SSRF
+
+Las comprobaciones y los canales de notificación hacen que el núcleo abra conexiones salientes. El destino es
+entrada no confiable, así que Talaia aplica una protección en el momento de conectar:
+
+- Los destinos HTTP deben usar `http` o `https`, tener un host y no contener credenciales en la URL. Las
+  variantes numéricas no canónicas de IPv4 se rechazan. Cada redirección se comprueba de nuevo y la cadena
+  se limita a tres redirecciones.
+- El DNS se resuelve antes de conectar y se comprueba cada dirección real del socket. Así, una respuesta de
+  DNS rebinding no puede convertir un nombre público en una dirección interna después de la validación.
+- Por defecto se bloquean las direcciones de bucle local, privadas RFC 1918, NAT de operador, link-local,
+  únicas locales de IPv6, rangos de pruebas, documentación y reservados, multicast, no especificadas y de
+  difusión.
+- El interruptor **Permitir que las comprobaciones y las notificaciones lleguen a redes privadas** de
+  **Ajustes > Alertas** relaja los destinos privados, de bucle local y NAT de operador. Las direcciones
+  link-local, los rangos reservados de documentación, multicast/difusión y los metadatos siguen bloqueados.
+- Los endpoints de metadatos de nube `169.254.169.254` y `fd00:ec2::254` están **siempre** bloqueados porque
+  pueden exponer credenciales de instancia; el interruptor nunca los permite.
+- La protección también se aplica a las conexiones SMTP. Los clientes HTTP no usan los proxies del entorno,
+  así que un proxy no puede saltarse la comprobación.
+
+Las reglas completas y cómo probar un destino bloqueado están en
+[monitorizacion.md](monitorizacion.md#protección-del-tráfico-saliente).
+
+## Secretos de los canales de notificación
+
+Los secretos de los canales son de solo escritura y se sellan con AES-256-GCM usando la misma
+`data_dir/secrets.key` que protege los secretos TOTP y el secreto de cliente de OIDC. La API devuelve solo
+`has_secret`; el panel nunca recibe, muestra ni registra el valor guardado. Editar un canal sin tocar el
+secreto no envía ningún campo de secreto y conserva el existente; **Sustituir** envía solo el valor nuevo. Los
+campos secretos usan `type="password"` y `autocomplete="new-password"`.
+
+Los errores de envío y el resultado de **Enviar prueba** se censuran contra cada valor secreto antes de
+guardarlos en el estado del canal o devolverlos al panel. El SMTP nunca se envía en
+texto plano: solo se aceptan STARTTLS y TLS implícito. Discord solo acepta una URL oficial de webhook. El HMAC
+opcional del webhook firma la marca de tiempo y el cuerpo exacto con HMAC-SHA256 en `X-Talaia-Signature`; el
+esquema de verificación está en [monitorizacion.md](monitorizacion.md#firma-del-webhook).
+
+Perder `data_dir/secrets.key` hace ilegibles los secretos sellados de los canales. Haz copia del volumen
+`core-data` y no imprimas un secreto para diagnosticar un canal.
+
 ## Informar de una vulnerabilidad
 
 No abras un issue público: sigue [SECURITY.es.md](../../SECURITY.es.md).
