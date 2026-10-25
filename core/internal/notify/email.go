@@ -1,7 +1,6 @@
 package notify
 
 import (
-	"bufio"
 	"context"
 	"crypto/tls"
 	"encoding/base64"
@@ -10,6 +9,7 @@ import (
 	"github.com/catlinux/Talaia/core/internal/netguard"
 	"mime"
 	"net"
+	"net/mail"
 	"net/textproto"
 	"strings"
 	"time"
@@ -44,9 +44,9 @@ func (s Email) Send(ctx context.Context, m Message) error {
 	if e != nil {
 		return errorsClass(e)
 	}
-	defer raw.Close()
+	defer func() { _ = raw.Close() }()
 	_ = raw.SetDeadline(time.Now().Add(20 * time.Second))
-	conn := net.Conn(raw)
+	conn := raw
 	if s.TLSMode == "tls" {
 		// Implicit TLS: the handshake comes before any SMTP byte.
 		tc := tls.Client(raw, tlsConfig(s))
@@ -95,19 +95,24 @@ func (s Email) Send(ctx context.Context, m Message) error {
 			return errors.New("authentication failed")
 		}
 	}
-	for _, cmd := range []struct {
-		format string
-		arg    string
-	}{{"MAIL FROM:<%s>", s.From}} {
-		if _, e = tp.Cmd(cmd.format, cmd.arg); e != nil {
-			return errorsClass(e)
-		}
-		if _, _, e = tp.ReadResponse(250); e != nil {
-			return errors.New("mail rejected")
-		}
+	from, e := mail.ParseAddress(s.From)
+	if e != nil {
+		return errors.New("invalid sender")
 	}
-	for _, to := range s.To {
-		if _, e = tp.Cmd("RCPT TO:<%s>", to); e != nil {
+	if _, e = tp.Cmd("MAIL FROM:<%s>", from.Address); e != nil {
+		return errorsClass(e)
+	}
+	if _, _, e = tp.ReadResponse(250); e != nil {
+		return errors.New("mail rejected")
+	}
+	for _, raw := range s.To {
+		// The envelope takes the bare address: "Ops <ops@example.com>" is a
+		// header form that SMTP servers reject in RCPT TO.
+		to, err := mail.ParseAddress(raw)
+		if err != nil {
+			return errors.New("invalid recipient")
+		}
+		if _, e = tp.Cmd("RCPT TO:<%s>", to.Address); e != nil {
 			return errors.New("recipient rejected")
 		}
 		if _, _, e = tp.ReadResponse(250); e != nil {
@@ -120,13 +125,16 @@ func (s Email) Send(ctx context.Context, m Message) error {
 	if _, _, e = tp.ReadResponse(354); e != nil {
 		return errors.New("message rejected")
 	}
-	w := bufio.NewWriter(conn)
+	// DotWriter turns "\n" into CRLF, escapes lines that start with a dot and
+	// writes the terminator, so the body can never end DATA early and smuggle
+	// SMTP commands.
+	w := tp.DotWriter()
 	subject := mime.QEncoding.Encode("utf-8", m.Title)
-	body := strings.ReplaceAll(m.Body, "\n", "\r\n")
-	if _, e = fmt.Fprintf(w, "From: %s\r\nTo: %s\r\nSubject: %s\r\nMIME-Version: 1.0\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n%s\r\n.\r\n", s.From, strings.Join(s.To, ", "), subject, body); e != nil {
+	body := strings.ReplaceAll(strings.ReplaceAll(m.Body, "\r\n", "\n"), "\r", "\n")
+	if _, e = fmt.Fprintf(w, "From: %s\nTo: %s\nSubject: %s\nMIME-Version: 1.0\nContent-Type: text/plain; charset=utf-8\n\n%s\n", s.From, strings.Join(s.To, ", "), subject, body); e != nil {
 		return errors.New("message failed")
 	}
-	if e = w.Flush(); e != nil {
+	if e = w.Close(); e != nil {
 		return errors.New("message failed")
 	}
 	if _, _, e = tp.ReadResponse(250); e != nil {

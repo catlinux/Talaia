@@ -13,6 +13,25 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+## [0.5.14] - 2026-10-25
+
+### Seguridad
+
+- Las notificaciones por correo escapan las líneas que empiezan por un punto, para que el texto de una alerta nunca pueda terminar el mensaje antes de tiempo e inyectar órdenes SMTP.
+- El token del bot de Telegram debe tener la forma de un token real, para que no pueda alterar la ruta de la petición a `api.telegram.org`.
+- Los cuerpos de las peticiones de reglas, comprobaciones y silencios tienen límite de tamaño, como el resto de la API.
+
+### Corregido
+
+- No se podían crear canales Discord ni webhook: su URL, que es secreta, se validaba desde la configuración pública.
+- Los canales de correo nunca enviaban nada: el puerto SMTP no llegaba al remitente. Ahora se aceptan direcciones con nombre (`Ops <ops@example.com>`).
+- Dos servidores con un contenedor del mismo nombre compartían incidente: al recuperarse uno se resolvía la alerta del otro.
+- Tras «dejar de vigilar», un incidente abierto obsoleto podía ocultar el siguiente fallo del mismo contenedor; un contenedor cuya parada desde Talaia fallaba se quedaba sin vigilar para siempre (ahora se vuelve a vigilar a los 2 minutos).
+- Las alertas de CPU, memoria y disco ya no se resuelven y se vuelven a disparar solo porque un agente se desconecte.
+- Un error breve de la base de datos ya no detiene el ejecutor de comprobaciones hasta reiniciar el core.
+- Los ids mal formados en la API de alertas responden 404 en vez de un error del servidor.
+- Errores de lint del core que hacían fallar el CI desde la 0.5.5.
+
 ## [0.5.13] - 2026-10-24
 
 ### Añadido
@@ -628,7 +647,8 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
   `.gitattributes` y `.gitignore`.
 - Licencia WNCL-1.0 aplicada: archivo `LICENSE` y sección de créditos en los README.
 
-[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.5.13...HEAD
+[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.5.14...HEAD
+[0.5.14]: https://github.com/catlinux/Talaia/releases/tag/v0.5.14
 [0.5.13]: https://github.com/catlinux/Talaia/releases/tag/v0.5.13
 [0.5.12]: https://github.com/catlinux/Talaia/releases/tag/v0.5.12
 [0.5.11]: https://github.com/catlinux/Talaia/releases/tag/v0.5.11

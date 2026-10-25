@@ -79,7 +79,7 @@ type alertCheckRequest struct {
 func NewAlertCheckCreateHandler(d AlertsDeps) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var in alertCheckRequest
-		if json.NewDecoder(r.Body).Decode(&in) != nil {
+		if decodeJSON(w, r, &in) != nil {
 			writeError(w, 400, "invalid_request")
 			return
 		}
@@ -116,7 +116,7 @@ func NewAlertCheckUpdateHandler(d AlertsDeps) http.Handler {
 			return
 		}
 		var in alertCheckRequest
-		if json.NewDecoder(r.Body).Decode(&in) != nil {
+		if decodeJSON(w, r, &in) != nil {
 			writeError(w, 400, "invalid_request")
 			return
 		}

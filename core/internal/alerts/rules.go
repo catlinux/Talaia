@@ -25,7 +25,7 @@ func condition(r store.AlertRule, s ServerState, check *store.AlertCheckResult, 
 	p := paramsFor(r)
 	switch r.Type {
 	case "server_offline":
-		return s.Connected == false && !s.LastSeen.IsZero() && now.Sub(s.LastSeen) >= time.Duration(p.Seconds)*time.Second, 0, 0
+		return !s.Connected && !s.LastSeen.IsZero() && now.Sub(s.LastSeen) >= time.Duration(p.Seconds)*time.Second, 0, 0
 	case "cpu_high":
 		return s.HasMetrics && s.CPUPercent >= p.Threshold, s.CPUPercent, time.Duration(p.ForSeconds) * time.Second
 	case "mem_high":

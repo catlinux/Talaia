@@ -59,7 +59,7 @@ func newFakeSMTP(t *testing.T, startTLS, implicit bool) (*fakeSMTP, *x509.CertPo
 	}
 	f := &fakeSMTP{listener: ln, cert: cert, startTLS: startTLS, implicit: implicit, closed: make(chan struct{})}
 	go f.serve()
-	t.Cleanup(func() { ln.Close(); <-f.closed })
+	t.Cleanup(func() { _ = ln.Close(); <-f.closed })
 	return f, pool
 }
 
@@ -76,8 +76,8 @@ func (f *fakeSMTP) serve() {
 	if err != nil {
 		return
 	}
-	defer raw.Close()
-	conn := net.Conn(raw)
+	defer func() { _ = raw.Close() }()
+	conn := raw
 	secure := false
 	if f.implicit {
 		tc := tls.Server(conn, &tls.Config{Certificates: []tls.Certificate{f.cert}})
@@ -261,7 +261,7 @@ func TestEmailPrivateAddressBlockedBeforeConnect(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer ln.Close()
+	defer func() { _ = ln.Close() }()
 	addr := ln.Addr().(*net.TCPAddr)
 	e := Email{Host: "127.0.0.1", Port: addr.Port, From: "sender@example.com", To: []string{"to@example.com"}, TLSMode: "tls", AllowPrivate: func() bool { return false }}
 	if err := e.Send(context.Background(), Message{}); err == nil || err.Error() != "blocked address" {
@@ -287,5 +287,28 @@ func TestEmailRejectsHeaderInjectionBeforeConnecting(t *testing.T) {
 				t.Fatalf("Send error=%v", err)
 			}
 		})
+	}
+}
+
+func TestEmailBodyCannotEndDataEarly(t *testing.T) {
+	f, roots := newFakeSMTP(t, true, false)
+	e := Email{Host: "127.0.0.1", Port: f.listener.Addr().(*net.TCPAddr).Port, From: "Talaia <sender@example.com>", To: []string{"Ops <ops@example.com>"}, Username: "u", Password: "p", TLSMode: "starttls", AllowPrivate: func() bool { return true }, RootCAs: &tls.Config{RootCAs: roots}}
+	if err := e.Send(context.Background(), Message{Title: "t", Body: "first\n.\nRCPT TO:<evil@example.com>\nlast"}); err != nil {
+		t.Fatal(err)
+	}
+	records, body := f.snapshot()
+	for _, rec := range records {
+		if strings.Contains(rec.command, "evil@example.com") {
+			t.Fatalf("the body was read as an SMTP command: %+v", rec)
+		}
+		if strings.HasPrefix(rec.command, "MAIL FROM:") && rec.command != "MAIL FROM:<sender@example.com>" {
+			t.Errorf("envelope sender = %q", rec.command)
+		}
+		if strings.HasPrefix(rec.command, "RCPT TO:") && rec.command != "RCPT TO:<ops@example.com>" {
+			t.Errorf("envelope recipient = %q", rec.command)
+		}
+	}
+	if !strings.Contains(body, "\r\n..\r\n") || !strings.Contains(body, "last") {
+		t.Errorf("the dot line was not escaped: %q", body)
 	}
 }

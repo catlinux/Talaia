@@ -1,6 +1,6 @@
 # Fase 5 · Monitorización y alertas (0.6.0)
 
-Estado: **pasos 1 a 7 hechos (0.5.8); 6 y 7 pendientes de la auditoría Opus; el resto, pendiente.** Las versiones se asignan en orden (el paso 8 será 0.5.9…). Pruebas con BD: el Postgres portable local lleva TimescaleDB 2.23.1 (la 2.31 no carga en PG 16.11); los ayudantes de prueba usan `search_path=<esquema>,public`. Criterio del ROADMAP: *«si un contenedor se para o un disco pasa
+Estado: **pasos 1 a 12 hechos; auditoría Opus hecha (0.5.14). Queda el paso 13: docs EN+ES, prueba real con el mantenedor y cierre 0.6.0.** Pruebas con BD: el Postgres portable local lleva TimescaleDB 2.23.1 (la 2.31 no carga en PG 16.11); los ayudantes de prueba usan `search_path=<esquema>,public`. Criterio del ROADMAP: *«si un contenedor se para o un disco pasa
 del 90 %, te enteras en menos de un minuto»*.
 
 Punto de partida (0.5.1): las métricas viven **solo en memoria** en el hub (`core/internal/hub/hub.go`, último valor

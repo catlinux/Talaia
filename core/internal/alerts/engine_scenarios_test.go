@@ -44,7 +44,7 @@ func TestContainerDownFiresWithinThirtySecondsAndNotifiesEnabledChannels(t *test
 	for elapsed := 0; elapsed < 30 && len(st.alerts) == 0; elapsed += 5 {
 		evaluateAt(t, e, c, 5*time.Second)
 	}
-	if len(st.alerts) != 1 || st.alerts["down:web"].State != "firing" {
+	if len(st.alerts) != 1 || st.alerts["down:srv/web"].State != "firing" {
 		t.Fatalf("alerts=%+v, want one firing alert within 30 seconds", st.alerts)
 	}
 	if len(st.deliveries) != 2 {
@@ -93,7 +93,7 @@ func TestUnwatchBeforeContainerDisappearsAllowsLaterRewatch(t *testing.T) {
 	evaluateAt(t, e, c, time.Second)
 	source.states[0].Containers[0].State = "exited"
 	evaluateAt(t, e, c, time.Second)
-	if got := st.alerts["down:web"].State; got != "firing" {
+	if got := st.alerts["down:srv/web"].State; got != "firing" {
 		t.Fatalf("later stop state=%q, want firing", got)
 	}
 }
@@ -308,13 +308,13 @@ func TestContainerUnhealthyFiresAfterDurationAndResolvesWhenHealthy(t *testing.T
 		t.Fatal("unhealthy alert fired before 60 seconds")
 	}
 	evaluateAt(t, e, c, 60*time.Second)
-	if st.alerts["health:web"].State != "firing" {
+	if st.alerts["health:srv/web"].State != "firing" {
 		t.Fatal("unhealthy alert did not fire after 60 seconds")
 	}
 	source.states[0].Containers[0].Health = "healthy"
 	evaluateAt(t, e, c, time.Second)
-	if st.alerts["health:web"].State != "resolved" {
-		t.Fatalf("healthy state did not resolve alert: %+v", st.alerts["health:web"])
+	if st.alerts["health:srv/web"].State != "resolved" {
+		t.Fatalf("healthy state did not resolve alert: %+v", st.alerts["health:srv/web"])
 	}
 }
 

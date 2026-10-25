@@ -49,7 +49,7 @@ func (s Ntfy) Send(ctx context.Context, m Message) error {
 	if e != nil {
 		return safeHTTPError(e, 0)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return safeHTTPError(nil, resp.StatusCode)
 	}

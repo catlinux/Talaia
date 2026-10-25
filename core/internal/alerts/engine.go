@@ -83,7 +83,7 @@ type Engine struct {
 	cooldown    map[string]time.Time
 	watches     map[string]time.Time
 	watchWrites map[string]time.Time
-	unwatched   map[string]bool
+	unwatched   map[string]time.Time
 	started     time.Time
 	checks      map[string]store.AlertCheckResult
 	failures    map[string]int
@@ -95,7 +95,7 @@ func New(s Store, source Source, c Clock) *Engine {
 		c = realClock{}
 	}
 	now := c.Now()
-	return &Engine{store: s, source: source, clock: c, pending: map[string]pending{}, active: map[string]store.Alert{}, cooldown: map[string]time.Time{}, watches: map[string]time.Time{}, watchWrites: map[string]time.Time{}, unwatched: map[string]bool{}, checks: map[string]store.AlertCheckResult{}, failures: map[string]int{}, poke: make(chan string, 64), started: now}
+	return &Engine{store: s, source: source, clock: c, pending: map[string]pending{}, active: map[string]store.Alert{}, cooldown: map[string]time.Time{}, watches: map[string]time.Time{}, watchWrites: map[string]time.Time{}, unwatched: map[string]time.Time{}, checks: map[string]store.AlertCheckResult{}, failures: map[string]int{}, poke: make(chan string, 64), started: now}
 }
 
 func (e *Engine) Run(ctx context.Context) error {
@@ -173,10 +173,15 @@ func (e *Engine) evaluate(ctx context.Context, only string) error {
 	if err != nil {
 		return fmt.Errorf("refresh active alerts: %w", err)
 	}
-	e.mu.Lock()
+	// The store is the source of truth for open incidents: an incident resolved
+	// outside the engine (stop watching from the API) must not stay open here,
+	// or it would hide the next incident of the same subject.
+	fresh := make(map[string]store.Alert, len(storedActive))
 	for _, a := range storedActive {
-		e.active[a.Fingerprint] = a
+		fresh[a.Fingerprint] = a
 	}
+	e.mu.Lock()
+	e.active = fresh
 	e.mu.Unlock()
 	rules, err := e.store.ListAlertRules(ctx)
 	if err != nil {
@@ -227,6 +232,12 @@ func (e *Engine) evaluate(ctx context.Context, only string) error {
 					return err
 				}
 			case "cpu_high", "mem_high", "disk_high":
+				// Without a sample (agent offline) the value is unknown: keep the
+				// current state instead of resolving and firing again on
+				// reconnect; server_offline already reports the outage.
+				if !s.HasMetrics {
+					continue
+				}
 				ok, val, dur := condition(r, s, nil, 0, now)
 				e.mu.Lock()
 				_, active := e.active[r.ID+":"+s.ID]
@@ -253,9 +264,12 @@ func (e *Engine) updateWatches(ctx context.Context, s ServerState, now time.Time
 		present[c.Name] = c.State
 	}
 	e.mu.Lock()
-	for key := range e.unwatched {
+	for key, since := range e.unwatched {
 		if len(key) > len(s.ID) && key[:len(s.ID)+1] == s.ID+"\x00" {
-			if state, ok := present[key[len(s.ID)+1:]]; !ok || state != "running" {
+			// The flag only covers the stop that Talaia asked for: once the
+			// container is seen stopped, or if it still runs after the grace
+			// period (the stop failed), it is watched again.
+			if state, ok := present[key[len(s.ID)+1:]]; !ok || state != "running" || now.Sub(since) > unwatchGrace {
 				delete(e.unwatched, key)
 			}
 		}
@@ -267,7 +281,7 @@ func (e *Engine) updateWatches(ctx context.Context, s ServerState, now time.Time
 		}
 		key := s.ID + "\x00" + c.Name
 		e.mu.Lock()
-		if e.unwatched[key] {
+		if _, skip := e.unwatched[key]; skip {
 			e.mu.Unlock()
 			continue
 		}
@@ -355,7 +369,6 @@ func (e *Engine) evaluateChecks(ctx context.Context, r store.AlertRule, states [
 			cr = &got
 		} else if got, er := e.store.LatestAlertCheckResult(ctx, ch.ID); er == nil {
 			cr = &got
-		} else {
 		}
 		state := ServerState{}
 		if ch.ServerID != nil {
@@ -397,7 +410,7 @@ func (e *Engine) evaluateChecks(ctx context.Context, r store.AlertRule, states [
 }
 
 func (e *Engine) advance(ctx context.Context, r store.AlertRule, sub Subject, s ServerState, check *store.AlertCheckResult, condition bool, value float64, dur time.Duration, now time.Time, silences []store.Silence) error {
-	fp := r.ID + ":" + sub.Name
+	fp := fingerprint(r.ID, sub)
 	e.mu.Lock()
 	a, active := e.active[fp]
 	p, waiting := e.pending[fp]
@@ -477,6 +490,19 @@ func (e *Engine) advance(ctx context.Context, r store.AlertRule, sub Subject, s 
 		}
 	}
 	return nil
+}
+
+// unwatchGrace is how long a container stopped from Talaia may keep running
+// before it is watched again.
+const unwatchGrace = 2 * time.Minute
+
+// fingerprint identifies one incident: the rule plus its subject. Container
+// names repeat across servers, so a container is keyed by server and name.
+func fingerprint(ruleID string, sub Subject) string {
+	if sub.Kind == "container" {
+		return ruleID + ":" + sub.ServerID + "/" + sub.Name
+	}
+	return ruleID + ":" + sub.Name
 }
 
 func deleteSafe(e *Engine, fp string) { e.mu.Lock(); delete(e.pending, fp); e.mu.Unlock() }

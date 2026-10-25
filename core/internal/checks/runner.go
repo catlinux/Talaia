@@ -6,6 +6,7 @@ import (
 	"crypto/x509"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net"
 	"net/http"
 	"strconv"
@@ -135,13 +136,9 @@ func (r *Runner) Run(ctx context.Context) error {
 		case <-ctx.Done():
 			return nil
 		case <-r.reload:
-			if checks, err = r.reloadChecks(ctx, next); err != nil {
-				return fmt.Errorf("reload checks: %w", err)
-			}
+			checks = r.reloadOrKeep(ctx, next, checks)
 		case <-refresh.C():
-			if checks, err = r.reloadChecks(ctx, next); err != nil {
-				return fmt.Errorf("reload checks: %w", err)
-			}
+			checks = r.reloadOrKeep(ctx, next, checks)
 		case <-tick.C():
 			now = r.clock.Now()
 			if !now.Before(purgeAt) {
@@ -172,6 +169,21 @@ func (r *Runner) Run(ctx context.Context) error {
 		}
 	}
 }
+
+// reloadOrKeep refreshes the list of checks and keeps running the current one
+// when the database is briefly unavailable: a failed reload must not stop the
+// monitoring for good.
+func (r *Runner) reloadOrKeep(ctx context.Context, next map[string]time.Time, current []store.AlertCheck) []store.AlertCheck {
+	checks, err := r.reloadChecks(ctx, next)
+	if err != nil {
+		if ctx.Err() == nil {
+			slog.Warn("reload checks", "error", err)
+		}
+		return current
+	}
+	return checks
+}
+
 func (r *Runner) reloadChecks(ctx context.Context, next map[string]time.Time) ([]store.AlertCheck, error) {
 	cs, e := r.store.ListEnabledAlertChecks(ctx)
 	if e != nil {
@@ -310,7 +322,7 @@ func (r *Runner) httpCheck(ctx context.Context, c store.AlertCheck, cfg config, 
 		}
 		return result
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	_, _ = netguard.ReadLimited(resp.Body, 64<<10)
 	result.StatusCode = &resp.StatusCode
 	if cert != nil {
@@ -347,7 +359,7 @@ func (r *Runner) tlsCheck(ctx context.Context, c store.AlertCheck, allow func() 
 		result.Error = classify(e)
 		return result
 	}
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 	var cert *time.Time
 	tc := tls.Client(conn, &tls.Config{MinVersion: tls.VersionTLS12, RootCAs: r.roots, ServerName: host, InsecureSkipVerify: true, VerifyConnection: func(cs tls.ConnectionState) error {
 		if len(cs.PeerCertificates) == 0 {
@@ -391,7 +403,8 @@ func classify(err error) string {
 		if strings.Contains(strings.ToLower(op.Err.Error()), "refused") {
 			return "connection refused"
 		}
-		if dns, ok := op.Err.(*net.DNSError); ok && dns != nil {
+		var dns *net.DNSError
+		if errors.As(op.Err, &dns) {
 			return "dns: lookup failed"
 		}
 	}

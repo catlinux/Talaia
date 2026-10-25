@@ -40,7 +40,7 @@ func TestHTTPClientGuardsResolvedAddress(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	resp.Body.Close()
+	_ = resp.Body.Close()
 	allowed = false
 	if _, err := client.Get(server.URL); !errors.Is(err, ErrBlockedAddress) {
 		t.Fatalf("toggled request error=%v", err)
@@ -95,7 +95,7 @@ func TestProxyEnvironmentIgnored(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != http.StatusNoContent {
 		t.Fatalf("status %d", resp.StatusCode)
 	}

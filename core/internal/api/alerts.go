@@ -69,9 +69,10 @@ func NewAlertsHandler(d AlertsDeps) http.Handler {
 		}
 		var rows []store.Alert
 		var err error
-		if state == "active" {
+		switch state {
+		case "active":
 			rows, err = d.Store.ListActiveAlerts(r.Context())
-		} else if state == "history" {
+		case "history":
 			limit := 50
 			if r.URL.Query().Has("limit") {
 				limit, err = queryInt(r, "limit")
@@ -94,7 +95,7 @@ func NewAlertsHandler(d AlertsDeps) http.Handler {
 				sid = &v
 			}
 			rows, err = d.Store.ListHistory(r.Context(), limit, offset, sid)
-		} else {
+		default:
 			writeError(w, 400, "invalid_state")
 			return
 		}

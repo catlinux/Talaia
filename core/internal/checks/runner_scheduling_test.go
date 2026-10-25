@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/x509"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"strconv"
@@ -75,12 +76,13 @@ func waitClockTickers(t *testing.T, clock *fakeClock, count int) {
 }
 
 type schedulingStore struct {
-	mu      sync.Mutex
-	checks  []store.AlertCheck
-	results []store.AlertCheckResult
-	cutoffs []time.Time
-	private bool
-	changed chan struct{}
+	mu       sync.Mutex
+	checks   []store.AlertCheck
+	results  []store.AlertCheckResult
+	cutoffs  []time.Time
+	private  bool
+	changed  chan struct{}
+	failList bool
 }
 
 func newSchedulingStore(checks ...store.AlertCheck) *schedulingStore {
@@ -89,6 +91,9 @@ func newSchedulingStore(checks ...store.AlertCheck) *schedulingStore {
 func (s *schedulingStore) ListEnabledAlertChecks(context.Context) ([]store.AlertCheck, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	if s.failList {
+		return nil, errors.New("database unavailable")
+	}
 	return append([]store.AlertCheck(nil), s.checks...), nil
 }
 func (s *schedulingStore) InsertAlertCheckResult(_ context.Context, result store.AlertCheckResult) error {
@@ -394,5 +399,28 @@ reloaded:
 	}
 	if oldResults != 1 {
 		t.Fatalf("disabled check result count=%d, want initial run only", oldResults)
+	}
+}
+
+func TestRunnerKeepsRunningWhenAReloadFails(t *testing.T) {
+	clock := newFakeClock()
+	storeFake := newSchedulingStore(schedulingCheck("kept", 30))
+	rt := &fakeRoundTripper{started: make(chan string, 10)}
+	runner := New(Options{Store: storeFake, Clock: clock, ClientFactory: fakeClientFactory(rt)})
+	cancel, done := startRunner(t, runner)
+	defer stopRunner(t, cancel, done)
+	waitClockTickers(t, clock, 2)
+	clock.advance(time.Second)
+	waitResults(t, storeFake, 1)
+	storeFake.mu.Lock()
+	storeFake.failList = true
+	storeFake.mu.Unlock()
+	runner.Reload()
+	clock.advance(30 * time.Second)
+	waitResults(t, storeFake, 2)
+	select {
+	case err := <-done:
+		t.Fatalf("runner stopped after a failed reload: %v", err)
+	default:
 	}
 }

@@ -13,7 +13,7 @@ func (e *Engine) Unwatch(ctx context.Context, serverID, container string) {
 	key := serverID + "\x00" + container
 	delete(e.watches, key)
 	delete(e.watchWrites, key)
-	e.unwatched[key] = true
+	e.unwatched[key] = e.clock.Now()
 	e.mu.Unlock()
 	_ = e.store.DeleteWatch(ctx, serverID, container)
 }

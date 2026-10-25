@@ -107,7 +107,8 @@ func TestAlertRuleHandlersUseStoreAndAuditChanges(t *testing.T) {
 		t.Fatalf("updated rule=%+v err=%v", stored, err)
 	}
 
-	for _, builtin := range builtins {
+	if len(builtins) > 0 {
+		builtin := builtins[0]
 		deleted := authorizedRequest(p, user, effective, http.MethodDelete, "/alert-rules/"+builtin.ID, "", "ruleID", builtin.ID, NewAlertRuleDeleteHandler(deps))
 		if deleted.Code != http.StatusBadRequest && deleted.Code != http.StatusConflict {
 			t.Fatalf("delete built-in status=%d body=%s", deleted.Code, deleted.Body)
@@ -115,7 +116,6 @@ func TestAlertRuleHandlersUseStoreAndAuditChanges(t *testing.T) {
 		if _, err := p.store.GetAlertRule(context.Background(), builtin.ID); err != nil {
 			t.Fatalf("built-in rule %s disappeared: %v", builtin.ID, err)
 		}
-		break
 	}
 	deleted := authorizedRequest(p, user, effective, http.MethodDelete, "/alert-rules/"+rule.ID, "", "ruleID", rule.ID, NewAlertRuleDeleteHandler(deps))
 	if deleted.Code != http.StatusOK {

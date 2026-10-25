@@ -18,6 +18,25 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.5.14] - 2026-10-25
+
+### Security
+
+- Email notifications escape lines that start with a dot, so the text of an alert can never end the message early and inject SMTP commands.
+- The Telegram bot token must have the shape of a real token, so it cannot alter the request path to `api.telegram.org`.
+- Request bodies of the rules, checks and silences endpoints are size-limited like the rest of the API.
+
+### Fixed
+
+- Discord and webhook channels could not be created: their URL, which is a secret, was validated from the public configuration.
+- Email channels never sent anything: the SMTP port did not reach the sender. Named addresses (`Ops <ops@example.com>`) are now accepted.
+- Two servers with a container of the same name shared one incident: recovering on one resolved the alert of the other.
+- After "stop watching", a stale open incident could hide the next failure of the same container; a container whose stop from Talaia failed stayed unwatched for good (now it is watched again after 2 minutes).
+- CPU, memory and disk alerts no longer resolve and fire again just because an agent disconnected.
+- A brief database error no longer stops the checks runner until the core is restarted.
+- Malformed ids in the alerts API answer 404 instead of a server error.
+- Lint errors of the core that made CI fail since 0.5.5.
+
 ## [0.5.13] - 2026-10-24
 
 ### Added
@@ -628,7 +647,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.5.13...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.5.14...HEAD
+[0.5.14]: https://github.com/catlinux/Talaia/releases/tag/v0.5.14
 [0.5.13]: https://github.com/catlinux/Talaia/releases/tag/v0.5.13
 [0.5.12]: https://github.com/catlinux/Talaia/releases/tag/v0.5.12
 [0.5.11]: https://github.com/catlinux/Talaia/releases/tag/v0.5.11

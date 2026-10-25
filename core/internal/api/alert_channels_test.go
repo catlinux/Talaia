@@ -51,8 +51,12 @@ func TestAlertChannelValidationUsesNotifierRules(t *testing.T) {
 		secret string
 		valid  bool
 	}{
-		{"discord rejects another host", "discord", `{"url":"https://example.com/api/webhooks/1/token"}`, `{"url":"https://discord.com/api/webhooks/1/token"}`, false},
-		{"public http webhook is accepted", "webhook", `{"url":"http://example.com/hook"}`, `{"url":"http://example.com/hook"}`, true},
+		{"discord rejects another host", "discord", `{}`, `{"url":"https://example.com/api/webhooks/1/token"}`, false},
+		{"discord accepts its webhook URL in the secret", "discord", `{}`, `{"url":"https://discord.com/api/webhooks/1/token"}`, true},
+		{"discord URL in the public config is not enough", "discord", `{"url":"https://discord.com/api/webhooks/1/token"}`, `{"url":"https://evil.example.com/x"}`, false},
+		{"public http webhook is accepted", "webhook", `{}`, `{"url":"http://example.com/hook"}`, true},
+		{"webhook with a file URL is rejected", "webhook", `{}`, `{"url":"file:///etc/passwd"}`, false},
+		{"telegram rejects a token that is not a bot token", "telegram", `{"chat_id":"1"}`, `{"token":"../../x"}`, false},
 		{"email requires tls mode", "email", `{"host":"mail.example.com","port":587,"from":"a@example.com","to":["b@example.com"]}`, `{"username":"user","password":"pass"}`, false},
 		{"telegram requires chat id", "telegram", `{}`, `{"token":"token"}`, false},
 		{"unknown type is rejected", "sms", `{}`, `{}`, false},
@@ -111,8 +115,8 @@ func TestAlertChannelSecretsStaySealedAndOutOfResponsesAndAudit(t *testing.T) {
 	p := newTestPanel(t)
 	user, effective := alertBinding(t, p, "channel-secrets-admin", string(rbac.RoleAdmin), store.ScopeOrganization, "", "", "")
 	deps := AlertsDeps{Store: p.store, Box: p.box, Audit: p.store}
-	create := authorizedRequest(p, user, effective, http.MethodPost, "/channels", `{"name":"ops","type":"telegram","enabled":true,"language":"en","config":{"chat_id":"123"},"secret":{"token":"first-token"}}`, "", "", NewAlertChannelCreateHandler(deps))
-	if create.Code != http.StatusCreated || strings.Contains(create.Body.String(), "first-token") {
+	create := authorizedRequest(p, user, effective, http.MethodPost, "/channels", `{"name":"ops","type":"telegram","enabled":true,"language":"en","config":{"chat_id":"123"},"secret":{"token":"123456789:AAFirstTokenFirstTokenFirstToken12"}}`, "", "", NewAlertChannelCreateHandler(deps))
+	if create.Code != http.StatusCreated || strings.Contains(create.Body.String(), "123456789:AAFirstTokenFirstTokenFirstToken12") {
 		t.Fatalf("create status=%d body=%s", create.Code, create.Body)
 	}
 	var created alertChannelJSON
@@ -124,13 +128,13 @@ func TestAlertChannelSecretsStaySealedAndOutOfResponsesAndAudit(t *testing.T) {
 		t.Fatal(err)
 	}
 	plain, err := p.box.Open(sealed)
-	if err != nil || !bytes.Contains(plain, []byte("first-token")) {
+	if err != nil || !bytes.Contains(plain, []byte("123456789:AAFirstTokenFirstTokenFirstToken12")) {
 		t.Fatalf("stored secret was not sealed JSON: plain=%s err=%v", plain, err)
 	}
 
 	before := append([]byte(nil), sealed...)
 	patch := authorizedRequest(p, user, effective, http.MethodPatch, "/channels/"+created.ID, `{"name":"ops-updated"}`, "channelID", created.ID, NewAlertChannelUpdateHandler(deps))
-	if patch.Code != http.StatusOK || strings.Contains(patch.Body.String(), "first-token") {
+	if patch.Code != http.StatusOK || strings.Contains(patch.Body.String(), "123456789:AAFirstTokenFirstTokenFirstToken12") {
 		t.Fatalf("patch without secret status=%d body=%s", patch.Code, patch.Body)
 	}
 	sealed, err = p.store.GetChannelSecret(context.Background(), created.ID)
@@ -138,12 +142,12 @@ func TestAlertChannelSecretsStaySealedAndOutOfResponsesAndAudit(t *testing.T) {
 		t.Fatalf("patch without secret changed sealed secret: err=%v", err)
 	}
 	plain, err = p.box.Open(sealed)
-	if err != nil || !bytes.Contains(plain, []byte("first-token")) {
+	if err != nil || !bytes.Contains(plain, []byte("123456789:AAFirstTokenFirstTokenFirstToken12")) {
 		t.Fatalf("kept secret did not open: err=%v", err)
 	}
 
-	replace := authorizedRequest(p, user, effective, http.MethodPatch, "/channels/"+created.ID, `{"secret":{"token":"replacement-token"}}`, "channelID", created.ID, NewAlertChannelUpdateHandler(deps))
-	if replace.Code != http.StatusOK || strings.Contains(replace.Body.String(), "replacement-token") {
+	replace := authorizedRequest(p, user, effective, http.MethodPatch, "/channels/"+created.ID, `{"secret":{"token":"123456789:AAReplacementTokenReplacement12"}}`, "channelID", created.ID, NewAlertChannelUpdateHandler(deps))
+	if replace.Code != http.StatusOK || strings.Contains(replace.Body.String(), "123456789:AAReplacementTokenReplacement12") {
 		t.Fatalf("patch with secret status=%d body=%s", replace.Code, replace.Body)
 	}
 	sealed, err = p.store.GetChannelSecret(context.Background(), created.ID)
@@ -151,13 +155,13 @@ func TestAlertChannelSecretsStaySealedAndOutOfResponsesAndAudit(t *testing.T) {
 		t.Fatal(err)
 	}
 	plain, err = p.box.Open(sealed)
-	if err != nil || !bytes.Contains(plain, []byte("replacement-token")) {
+	if err != nil || !bytes.Contains(plain, []byte("123456789:AAReplacementTokenReplacement12")) {
 		t.Fatalf("replacement secret was not stored: err=%v", err)
 	}
 
-	deps.Notifier = failingChannelTester{err: errors.New("send failed with replacement-token")}
+	deps.Notifier = failingChannelTester{err: errors.New("send failed with 123456789:AAReplacementTokenReplacement12")}
 	test := authorizedRequest(p, user, effective, http.MethodPost, "/channels/"+created.ID+"/test", `{}`, "channelID", created.ID, NewAlertChannelTestHandler(deps))
-	if test.Code != http.StatusOK || strings.Contains(test.Body.String(), "replacement-token") || !strings.Contains(test.Body.String(), "[redacted]") {
+	if test.Code != http.StatusOK || strings.Contains(test.Body.String(), "123456789:AAReplacementTokenReplacement12") || !strings.Contains(test.Body.String(), "[redacted]") {
 		t.Fatalf("test response status=%d body=%s", test.Code, test.Body)
 	}
 	audit, err := p.store.ListAudit(context.Background(), 100)
@@ -166,12 +170,12 @@ func TestAlertChannelSecretsStaySealedAndOutOfResponsesAndAudit(t *testing.T) {
 	}
 	for _, event := range audit {
 		encoded, _ := json.Marshal(event.Details)
-		if bytes.Contains(encoded, []byte("first-token")) || bytes.Contains(encoded, []byte("replacement-token")) {
+		if bytes.Contains(encoded, []byte("123456789:AAFirstTokenFirstTokenFirstToken12")) || bytes.Contains(encoded, []byte("123456789:AAReplacementTokenReplacement12")) {
 			t.Fatalf("audit event %q contains a channel secret: %s", event.Action, encoded)
 		}
 	}
 	list := authorizedRequest(p, user, effective, http.MethodGet, "/channels", `{}`, "", "", NewAlertChannelsHandler(deps))
-	if list.Code != http.StatusOK || strings.Contains(list.Body.String(), "replacement-token") {
+	if list.Code != http.StatusOK || strings.Contains(list.Body.String(), "123456789:AAReplacementTokenReplacement12") {
 		t.Fatalf("list status=%d body=%s", list.Code, list.Body)
 	}
 }

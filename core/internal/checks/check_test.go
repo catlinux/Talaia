@@ -37,7 +37,7 @@ func TestHTTPChecks(t *testing.T) {
 		if strings.HasPrefix(r.URL.Path, "/r") {
 			n := len(strings.TrimPrefix(r.URL.Path, "/r"))
 			if n > 0 {
-				http.Redirect(w, r, "/r"+strings.Repeat("x", n-1), 302)
+				http.Redirect(w, r, "/r"+strings.Repeat("x", n-1), http.StatusFound)
 				return
 			}
 		}

@@ -264,3 +264,11 @@ func TestWorkerRunPollsAndStopsOnCancel(t *testing.T) {
 		t.Fatal("Run did not poll ClaimDue")
 	}
 }
+
+func TestSenderForEmailCarriesThePort(t *testing.T) {
+	ch := store.NotificationChannel{Type: "email", Config: []byte(`{"host":"smtp.example.com","port":587,"from":"a@example.com","to":["b@example.com"],"tls_mode":"starttls"}`)}
+	sender, ok := senderFor(ch, map[string]string{"username": "u", "password": "p"}, nil, nil).(Email)
+	if !ok || sender.Port != 587 || sender.Host != "smtp.example.com" || sender.TLSMode != "starttls" {
+		t.Fatalf("email sender = %+v", sender)
+	}
+}

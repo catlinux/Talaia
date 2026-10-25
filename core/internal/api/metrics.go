@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"strings"
 	"time"
@@ -56,7 +57,7 @@ func NewServerMetricsHandler(deps MetricsDeps) http.Handler {
 		serverID := chi.URLParam(r, "serverID")
 		if deps.Servers != nil {
 			if _, err := deps.Servers.GetServer(r.Context(), serverID); err != nil {
-				if err == store.ErrNotFound {
+				if errors.Is(err, store.ErrNotFound) {
 					writeError(w, http.StatusNotFound, "not_found")
 				} else {
 					internal(w, "get metrics server", err)
@@ -91,7 +92,7 @@ func NewContainerMetricsHandler(deps MetricsDeps) http.Handler {
 		serverID, reference := chi.URLParam(r, "serverID"), chi.URLParam(r, "container")
 		if deps.Servers != nil {
 			if _, err := deps.Servers.GetServer(r.Context(), serverID); err != nil {
-				if err == store.ErrNotFound {
+				if errors.Is(err, store.ErrNotFound) {
 					writeError(w, http.StatusNotFound, "not_found")
 				} else {
 					internal(w, "get metrics server", err)

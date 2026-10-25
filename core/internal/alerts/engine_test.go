@@ -182,7 +182,7 @@ func TestContainerDownEvaluatesWatchedContainer(t *testing.T) {
 	if err := e.evaluate(ctx, "srv"); err != nil {
 		t.Fatal(err)
 	}
-	if len(st.alerts) != 1 || st.alerts["down:web"].State != "firing" {
+	if len(st.alerts) != 1 || st.alerts["down:srv/web"].State != "firing" {
 		t.Fatalf("alerts=%+v", st.alerts)
 	}
 }

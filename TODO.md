@@ -113,16 +113,22 @@ of the current phase and the next one.
 
 ## Phase 5 · Monitoring and alerts (0.6.0, see `.agents/plans/fase5/fase5.PLAN.md`)
 
-- [ ] Agent: container health and Docker events so the inventory is sent within seconds, not 60 s
-- [ ] Metrics history in TimescaleDB (Apache-2 features only), downsampling and retention done by the core, and its API
-- [ ] CPU, RAM, disk and network charts for the server and per container
-- [ ] Alert permissions and tables for rules, incidents, silences, checks and channels (with default rules: server offline, disk > 90%, container stopped)
-- [ ] Outbound guard against SSRF for checks and notifications
-- [ ] Alert engine: states, hysteresis, no repeated notifications, silences and expected stops from Talaia
-- [ ] HTTP/TCP/TLS checks from the core and certificate expiry
-- [ ] Notifications through Telegram, ntfy, email, Discord and signed webhook, with encrypted secrets and retries
-- [ ] API and panel: Alerts screen, count in the fleet view and Settings for rules, checks and channels
-- [ ] Docs EN/ES, security review (Opus), real test of the criterion and close at 0.6.0
+- [x] Agent: container health and Docker events so the inventory is sent within seconds, not 60 s
+- [x] Metrics history in TimescaleDB (Apache-2 features only), downsampling and retention done by the core, and its API
+- [x] CPU, RAM, disk and network charts for the server and per container
+- [x] Alert permissions and tables for rules, incidents, silences, checks and channels (with default rules: server offline, disk > 90%, container stopped)
+- [x] Outbound guard against SSRF for checks and notifications
+- [x] Alert engine: states, hysteresis, no repeated notifications, silences and expected stops from Talaia
+- [x] HTTP/TCP/TLS checks from the core and certificate expiry
+- [x] Notifications through Telegram, ntfy, email, Discord and signed webhook, with encrypted secrets and retries
+- [x] API and panel: Alerts screen, count in the fleet view and Settings for rules, checks and channels
+- [ ] Docs EN/ES, real test of the criterion and close at 0.6.0 (the Opus security review is done: 0.5.14)
+- [ ] Follow-ups of the phase 5 review (Opus, 2026-10-25), all low:
+  - [ ] Alert history and finished notification deliveries are never purged: add a retention (for example 180 days) like the check results have
+  - [ ] The engine reads rules, silences, open incidents and checks from the database on every evaluation (every 5 s and on each inventory): cache them and invalidate on change if fleets grow
+  - [ ] Email channels require a username and password: allow SMTP relays without authentication (still with TLS)
+  - [ ] Rare IPv6 special ranges (`::/96`, `100::/64`, `2001::/23` beyond Teredo) are not in the outbound guard
+  - [ ] Container stop/remove from the API tells the engine when the job is accepted, not when it succeeds; a failed stop is watched again after 2 minutes
 
 ## Operations block (decided 2026-10-20, before closing phase 2)
 

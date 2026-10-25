@@ -18,13 +18,13 @@ func TestTimeoutRedirectAndTLS(t *testing.T) {
 		case "/slow":
 			time.Sleep(1500 * time.Millisecond)
 		case "/3":
-			http.Redirect(w, r, "/2", 302)
+			http.Redirect(w, r, "/2", http.StatusFound)
 		case "/2":
-			http.Redirect(w, r, "/1", 302)
+			http.Redirect(w, r, "/1", http.StatusFound)
 		case "/1":
-			http.Redirect(w, r, "/done", 302)
+			http.Redirect(w, r, "/done", http.StatusFound)
 		case "/4":
-			http.Redirect(w, r, "/3", 302)
+			http.Redirect(w, r, "/3", http.StatusFound)
 		case "/done":
 			w.WriteHeader(200)
 		}

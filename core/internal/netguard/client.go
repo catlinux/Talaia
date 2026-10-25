@@ -102,7 +102,7 @@ func looksNumericIP(host string) bool {
 	if len(last) > 2 && (last[:2] == "0x" || last[:2] == "0X") {
 		last = last[2:]
 		for _, r := range last {
-			if !(r >= '0' && r <= '9' || r >= 'a' && r <= 'f' || r >= 'A' && r <= 'F') {
+			if (r < '0' || r > '9') && (r < 'a' || r > 'f') && (r < 'A' || r > 'F') {
 				return false
 			}
 		}

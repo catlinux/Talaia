@@ -13,11 +13,9 @@ import (
 
 type fakeMetricsReader struct {
 	serverPoints []store.ServerMetricPoint
-	resolution   store.Resolution
 }
 
-func (f fakeMetricsReader) QueryServerSeries(_ context.Context, _ string, _, _ time.Time, resolution store.Resolution) ([]store.ServerMetricPoint, error) {
-	f.resolution = resolution
+func (f fakeMetricsReader) QueryServerSeries(_ context.Context, _ string, _, _ time.Time, _ store.Resolution) ([]store.ServerMetricPoint, error) {
 	return f.serverPoints, nil
 }
 

@@ -5,8 +5,11 @@ import (
 	"fmt"
 	"github.com/catlinux/Talaia/core/internal/netguard"
 	"net/mail"
+	"regexp"
 	"strings"
 )
+
+var telegramToken = regexp.MustCompile(`^[0-9]{1,20}:[A-Za-z0-9_-]{20,64}$`)
 
 func ParseSecret(typ string, b []byte) (any, error) {
 	var v map[string]string
@@ -22,6 +25,11 @@ func ParseSecret(typ string, b []byte) (any, error) {
 		if strings.TrimSpace(v[f]) == "" {
 			return nil, fmt.Errorf("secret field required")
 		}
+	}
+	// The bot token goes into the request path of api.telegram.org: only the
+	// documented token shape is accepted so it cannot alter that path.
+	if typ == "telegram" && !telegramToken.MatchString(v["token"]) {
+		return nil, fmt.Errorf("invalid telegram token")
 	}
 	return v, nil
 }
@@ -72,7 +80,11 @@ func ValidateChannel(typ string, config, secret json.RawMessage) error {
 			}
 		}
 	case "discord", "webhook":
-		raw := str("url")
+		// The URL of these channels is a secret (it authorises posting), so it
+		// lives in the sealed secret, never in the public config.
+		var sec map[string]string
+		_ = json.Unmarshal(secret, &sec)
+		raw := sec["url"]
 		if typ == "discord" && !validDiscordURL(raw) {
 			return fmt.Errorf("invalid discord URL")
 		}

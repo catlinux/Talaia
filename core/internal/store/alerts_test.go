@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"errors"
 	"os"
 	"sync"
 	"testing"
@@ -137,10 +138,10 @@ func TestChannelStatusAndGetAlert(t *testing.T) {
 	if got.LastError != "" || got.LastOKAt == nil {
 		t.Fatalf("after success: %+v", got)
 	}
-	if err := s.SetChannelStatus(ctx, "00000000-0000-0000-0000-000000000000", true, "", now); err != ErrNotFound {
+	if err := s.SetChannelStatus(ctx, "00000000-0000-0000-0000-000000000000", true, "", now); !errors.Is(err, ErrNotFound) {
 		t.Fatalf("unknown channel error = %v", err)
 	}
-	if _, err := s.GetAlert(ctx, "00000000-0000-0000-0000-000000000000"); err != ErrNotFound {
+	if _, err := s.GetAlert(ctx, "00000000-0000-0000-0000-000000000000"); !errors.Is(err, ErrNotFound) {
 		t.Fatalf("unknown alert error = %v", err)
 	}
 }

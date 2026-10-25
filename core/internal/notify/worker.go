@@ -249,7 +249,11 @@ func senderFor(ch store.NotificationChannel, s map[string]string, allow func() b
 				tos = append(tos, fmt.Sprint(x))
 			}
 		}
-		return Email{Host: str("host"), From: str("from"), To: tos, Username: s["username"], Password: s["password"], TLSMode: str("tls_mode"), AllowPrivate: allow}
+		port := 0
+		if v, ok := conf["port"].(float64); ok {
+			port = int(v)
+		}
+		return Email{Host: str("host"), Port: port, From: str("from"), To: tos, Username: s["username"], Password: s["password"], TLSMode: str("tls_mode"), AllowPrivate: allow}
 	default:
 		return invalidSender{}
 	}

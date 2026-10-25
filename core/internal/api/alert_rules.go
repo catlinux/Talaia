@@ -64,7 +64,7 @@ func NewAlertRulesHandler(d AlertsDeps) http.Handler {
 func NewAlertRuleCreateHandler(d AlertsDeps) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var in alertRuleRequest
-		if json.NewDecoder(r.Body).Decode(&in) != nil {
+		if decodeJSON(w, r, &in) != nil {
 			writeError(w, 400, "invalid_request")
 			return
 		}
@@ -98,7 +98,7 @@ func NewAlertRuleUpdateHandler(d AlertsDeps) http.Handler {
 			return
 		}
 		var in alertRuleRequest
-		if json.NewDecoder(r.Body).Decode(&in) != nil {
+		if decodeJSON(w, r, &in) != nil {
 			writeError(w, 400, "invalid_request")
 			return
 		}

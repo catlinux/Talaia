@@ -113,16 +113,22 @@ tareas concretas de la fase actual y de la siguiente.
 
 ## Fase 5 · Monitorización y alertas (0.6.0, ver `.agents/plans/fase5/fase5.PLAN.md`)
 
-- [ ] Agente: salud de los contenedores y eventos de Docker para mandar el inventario en segundos, no en 60 s
-- [ ] Histórico de métricas en TimescaleDB (solo funciones Apache-2), downsampling y retención hechos por el core, y su API
-- [ ] Gráficos de CPU, RAM, disco y red en el servidor y por contenedor
-- [ ] Permisos de alertas y tablas de reglas, incidentes, silencios, comprobaciones y canales (con reglas por defecto: servidor caído, disco > 90 %, contenedor parado)
-- [ ] Guardián de salida contra SSRF para comprobaciones y notificaciones
-- [ ] Motor de alertas: estados, histéresis, sin avisos repetidos, silencios y paradas esperadas desde Talaia
-- [ ] Comprobaciones HTTP/TCP/TLS desde el core y caducidad de certificados
-- [ ] Notificaciones por Telegram, ntfy, correo, Discord y webhook firmado, con secretos cifrados y reintentos
-- [ ] API y panel: pantalla Alertas, contador en Flota y Ajustes de reglas, comprobaciones y canales
-- [ ] Docs EN/ES, revisión de seguridad (Opus), prueba real del criterio y cierre en 0.6.0
+- [x] Agente: salud de los contenedores y eventos de Docker para mandar el inventario en segundos, no en 60 s
+- [x] Histórico de métricas en TimescaleDB (solo funciones Apache-2), downsampling y retención hechos por el core, y su API
+- [x] Gráficos de CPU, RAM, disco y red en el servidor y por contenedor
+- [x] Permisos de alertas y tablas de reglas, incidentes, silencios, comprobaciones y canales (con reglas por defecto: servidor caído, disco > 90 %, contenedor parado)
+- [x] Guardián de salida contra SSRF para comprobaciones y notificaciones
+- [x] Motor de alertas: estados, histéresis, sin avisos repetidos, silencios y paradas esperadas desde Talaia
+- [x] Comprobaciones HTTP/TCP/TLS desde el core y caducidad de certificados
+- [x] Notificaciones por Telegram, ntfy, correo, Discord y webhook firmado, con secretos cifrados y reintentos
+- [x] API y panel: pantalla Alertas, contador en Flota y Ajustes de reglas, comprobaciones y canales
+- [ ] Docs EN/ES, prueba real del criterio y cierre en 0.6.0 (la revisión de seguridad con Opus está hecha: 0.5.14)
+- [ ] Seguimiento de la revisión de la fase 5 (Opus, 2026-10-25), todo de gravedad baja:
+  - [ ] El historial de alertas y los envíos ya terminados no se purgan nunca: añadir una retención (por ejemplo 180 días) como la de los resultados de comprobaciones
+  - [ ] El motor lee de la base de datos reglas, silencios, incidentes abiertos y comprobaciones en cada evaluación (cada 5 s y en cada inventario): cachearlos e invalidarlos al cambiar si las flotas crecen
+  - [ ] Los canales de correo exigen usuario y contraseña: permitir relays SMTP sin autenticación (siempre con TLS)
+  - [ ] Los rangos especiales IPv6 poco usados (`::/96`, `100::/64`, `2001::/23` más allá de Teredo) no están en el guardián de salida
+  - [ ] Parar o borrar un contenedor desde la API avisa al motor cuando se acepta el trabajo, no cuando termina bien; una parada fallida se vuelve a vigilar a los 2 minutos
 
 ## Bloque de operación (decidido el 2026-10-20, antes de cerrar la fase 2)
 
