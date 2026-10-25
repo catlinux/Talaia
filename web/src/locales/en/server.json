@@ -427,7 +427,8 @@
     "services": "Services",
     "logs": "Logs",
     "updates": "Updates",
-    "failedBadge": "{{count}} failed"
+    "failedBadge": "{{count}} failed",
+    "alerts": "Alerts"
   },
   "overview": {
     "unknown": "unknown",
@@ -464,5 +465,30 @@
     "uptimeDays": "{{days}} d {{hours}} h",
     "uptimeHours": "{{hours}} h {{minutes}} min",
     "uptimeMinutes": "{{minutes}} min"
+  },
+  "alerts": {
+    "title": "Alerts",
+    "intro": "The alert rules that apply to this server. An override replaces the inherited rule here only.",
+    "loading": "Loading alert rules?",
+    "empty": "No alert rules apply to this server.",
+    "params": "Parameters",
+    "inherited": "Inherited",
+    "customised": "Customised for this server",
+    "off": "Off for this server",
+    "offNote": "No alert will be sent for this rule on this server.",
+    "readOnly": "Read-only",
+    "customiseTitle": "Customise {{type}}",
+    "editTitle": "Edit {{type}} for this server",
+    "dialogIntro": "These values apply only to this server; the inherited rule and the rest of the servers keep their settings.",
+    "otherTitle": "Other rules for this server",
+    "otherHint": "Container- and stack-scoped rules and server-only rules are managed in {{settings}} > {{alerts}}.",
+    "actions": {
+      "customise": "Customise",
+      "turnOff": "Turn off for this server",
+      "edit": "Edit",
+      "restore": "Restore default",
+      "save": "Save",
+      "cancel": "Cancel"
+    }
   }
 }

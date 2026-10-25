@@ -9,7 +9,7 @@ import type { MetricsApi } from '../../api/metrics'
 import { HistorySection } from './HistorySection'
 
 /** ServerTab is one tab of the server screen. */
-export type ServerTab = 'overview' | 'containers' | 'services' | 'logs' | 'updates'
+export type ServerTab = 'overview' | 'containers' | 'services' | 'logs' | 'updates' | 'alerts'
 
 /** OverviewServer is the live data the overview can show. */
 export interface OverviewServer {
@@ -92,7 +92,7 @@ export function OverviewTab({
   agentUpdateAvailable,
   agentUpdateManual,
   failedServices = null,
-  tabs = ['overview', 'containers', 'services', 'logs', 'updates'],
+  tabs = ['overview', 'containers', 'services', 'logs', 'updates', 'alerts'],
   onGoToTab,
 }: OverviewTabProps) {
   const { t, i18n } = useTranslation(['server', 'fleet'])

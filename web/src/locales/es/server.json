@@ -427,7 +427,8 @@
     "services": "Servicios",
     "logs": "Registros",
     "updates": "Actualizaciones",
-    "failedBadge": "{{count}} fallidos"
+    "failedBadge": "{{count}} fallidos",
+    "alerts": "Alertas"
   },
   "overview": {
     "unknown": "desconocido",
@@ -464,5 +465,30 @@
     "uptimeDays": "{{days}} d {{hours}} h",
     "uptimeHours": "{{hours}} h {{minutes}} min",
     "uptimeMinutes": "{{minutes}} min"
+  },
+  "alerts": {
+    "title": "Alertas",
+    "intro": "Las reglas de alerta que se aplican a este servidor. Una personalizaci?n sustituye la regla heredada solo aqu?.",
+    "loading": "Cargando las reglas de alerta?",
+    "empty": "No hay ninguna regla de alerta que se aplique a este servidor.",
+    "params": "Par?metros",
+    "inherited": "Heredada",
+    "customised": "Personalizada para este servidor",
+    "off": "Desactivada para este servidor",
+    "offNote": "No se enviar? ninguna alerta de esta regla en este servidor.",
+    "readOnly": "Solo lectura",
+    "customiseTitle": "Personalizar {{type}}",
+    "editTitle": "Editar {{type}} para este servidor",
+    "dialogIntro": "Estos valores solo se aplican a este servidor; la regla heredada y el resto de servidores conservan su configuraci?n.",
+    "otherTitle": "Otras reglas de este servidor",
+    "otherHint": "Las reglas de ?mbito de stack o contenedor y las reglas exclusivas del servidor se gestionan en {{settings}} > {{alerts}}.",
+    "actions": {
+      "customise": "Personalizar",
+      "turnOff": "Desactivar para este servidor",
+      "edit": "Editar",
+      "restore": "Restaurar la predeterminada",
+      "save": "Guardar",
+      "cancel": "Cancelar"
+    }
   }
 }

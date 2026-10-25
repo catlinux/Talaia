@@ -11,6 +11,7 @@ import {
 } from 'react'
 import { useTranslation } from 'react-i18next'
 
+import { createAlertsAdminApi, type AlertsAdminApi } from '../api/alertsAdmin'
 import { createAptApi, type AptApi } from '../api/apt'
 import {
   createContainersApi,
@@ -43,6 +44,7 @@ import {
   TrashIcon,
 } from '../components/icons'
 import { formatBytes, formatPercent } from './fleet/format'
+import { AlertsSection } from './server/AlertsSection'
 import { LogsPanel } from './server/LogsPanel'
 import { JournalSection } from './server/JournalSection'
 import { ManualUpgrade } from './server/ManualUpgrade'
@@ -64,7 +66,7 @@ const pollEvery = 800
 /** updateWindowMs is how long the "updating" line stays if no refresh confirms it. */
 const updateWindowMs = 3 * 60_000
 
-const serverTabs: ServerTab[] = ['overview', 'containers', 'services', 'logs', 'updates']
+const serverTabs: ServerTab[] = ['overview', 'containers', 'services', 'logs', 'updates', 'alerts']
 
 /** tabStorageKey remembers the last tab of each server in this session. */
 function tabStorageKey(serverId: string): string {
@@ -101,6 +103,7 @@ const defaultApi = createContainersApi()
 const defaultTerminalApi = createTerminalApi()
 const defaultServersApi = createServersApi()
 const defaultAptApi = createAptApi()
+const defaultAlertsApi = createAlertsAdminApi()
 const defaultServicesApi = createServicesApi()
 const defaultMetricsApi = createMetricsApi()
 const defaultJournalApi = createJournalApi()
@@ -109,6 +112,8 @@ interface ServerScreenProps {
   server: {
     id: string
     name: string
+    /** groupId is the server group when the caller knows it. */
+    groupId?: string
     limited?: boolean
     hostname?: string
     hostTerminal?: boolean
@@ -150,6 +155,8 @@ interface ServerScreenProps {
   metricsApi?: MetricsApi
   /** journalApi reads the systemd journal; the panel uses the real one. */
   journalApi?: JournalApi
+  /** alertsApi reads and changes the alert rules of this server. */
+  alertsApi?: AlertsAdminApi
   /** pollMs overrides the job polling interval, for the tests. */
   pollMs?: number
 }
@@ -223,6 +230,7 @@ export function ServerScreen({
   servicesApi = defaultServicesApi,
   metricsApi = defaultMetricsApi,
   journalApi = defaultJournalApi,
+  alertsApi = defaultAlertsApi,
   pollMs = pollEvery,
 }: ServerScreenProps) {
   const { t } = useTranslation(['server', 'errors'])
@@ -236,6 +244,7 @@ export function ServerScreen({
   const canServices = !permissionsLoading && permissions.can('host.services.view', serverScope)
   const canLogs = !permissionsLoading && permissions.can('host.journal', serverScope)
   const canUpdates = !permissionsLoading && permissions.can('host.apt.view', serverScope)
+  const canAlerts = !permissionsLoading && permissions.can('alerts.view' as never)
   const canHostTerminal = !permissionsLoading && permissions.can('host.terminal', serverScope)
   const canAgentUpdate = !permissionsLoading && permissions.can('server.agent_update', serverScope)
   const canResources = !permissionsLoading && permissions.can('resources.manage', serverScope)
@@ -330,8 +339,9 @@ export function ServerScreen({
     if (canServices) tabs.push('services')
     if (canLogs) tabs.push('logs')
     if (canUpdates) tabs.push('updates')
+    if (canAlerts) tabs.push('alerts')
     return tabs
-  }, [canContainers, canLogs, canOverview, canServices, canUpdates])
+  }, [canAlerts, canContainers, canLogs, canOverview, canServices, canUpdates])
   const availableTabKey = availableTabs.join(',')
 
   const handleServicesLoaded = useCallback((services: ServiceUnit[]) => {
@@ -846,6 +856,23 @@ export function ServerScreen({
               onSummary={setLiveApt}
             />
           ) : null}
+        </div>
+      ) : null}
+
+      {canAlerts && activeTab === 'alerts' ? (
+        <div
+          className="server-tabpanel"
+          role="tabpanel"
+          id="server-panel-alerts"
+          aria-labelledby="server-tab-alerts"
+          tabIndex={0}
+        >
+          <AlertsSection
+            api={alertsApi}
+            serverId={server.id}
+            serverName={server.name}
+            groupId={server.groupId}
+          />
         </div>
       ) : null}
 

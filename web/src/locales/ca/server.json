@@ -427,7 +427,8 @@
     "services": "Serveis",
     "logs": "Registres",
     "updates": "Actualitzacions",
-    "failedBadge": "{{count}} fallits"
+    "failedBadge": "{{count}} fallits",
+    "alerts": "Alertes"
   },
   "overview": {
     "unknown": "desconegut",
@@ -464,5 +465,30 @@
     "uptimeDays": "{{days}} d {{hours}} h",
     "uptimeHours": "{{hours}} h {{minutes}} min",
     "uptimeMinutes": "{{minutes}} min"
+  },
+  "alerts": {
+    "title": "Alertes",
+    "intro": "Les regles d'alerta que s'apliquen a aquest servidor. Una personalitzaci? substitueix la regla heretada nom?s aqu?.",
+    "loading": "Carregant les regles d'alerta?",
+    "empty": "No hi ha cap regla d'alerta que s'apliqui a aquest servidor.",
+    "params": "Par?metres",
+    "inherited": "Heretada",
+    "customised": "Personalitzada per a aquest servidor",
+    "off": "Desactivada per a aquest servidor",
+    "offNote": "No s'enviar? cap alerta d'aquesta regla en aquest servidor.",
+    "readOnly": "Nom?s lectura",
+    "customiseTitle": "Personalitza {{type}}",
+    "editTitle": "Edita {{type}} per a aquest servidor",
+    "dialogIntro": "Aquests valors nom?s s'apliquen a aquest servidor; la regla heretada i la resta de servidors conserven la seva configuraci?.",
+    "otherTitle": "Altres regles d'aquest servidor",
+    "otherHint": "Les regles d'?mbit de stack o contenidor i les regles exclusives del servidor es gestionen a {{settings}} > {{alerts}}.",
+    "actions": {
+      "customise": "Personalitza",
+      "turnOff": "Desactiva per a aquest servidor",
+      "edit": "Edita",
+      "restore": "Restaura la predeterminada",
+      "save": "Desa",
+      "cancel": "Cancel?la"
+    }
   }
 }
