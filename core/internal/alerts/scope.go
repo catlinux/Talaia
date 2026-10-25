@@ -6,6 +6,8 @@ import "github.com/catlinux/Talaia/core/internal/store"
 type Subject struct {
 	ServerID, GroupID, Stack, Container, CheckID string
 	Kind, Name                                   string
+	// Label is the name people know the subject by when Name is an id (a check).
+	Label string
 }
 
 func matchesScope(scopeType string, serverID, groupID, name *string, s Subject) bool {

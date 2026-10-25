@@ -18,6 +18,13 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.5.16] - 2026-10-25
+
+### Fixed
+
+- The text of the alert notifications read like a template ("Container down on X. name <no value> stack"): all of them are rewritten in Catalan, Spanish and English as clear sentences ("Container shop-web-1 is down on vps-web-01", "The root disk of vps-web-01 is 93 % full"), and an alert of a check shows the name of the check instead of its internal id.
+- CI: the core lint job failed on the version of the linter that GitHub uses.
+
 ## [0.5.15] - 2026-10-25
 
 ### Added
@@ -653,7 +660,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.5.15...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.5.16...HEAD
+[0.5.16]: https://github.com/catlinux/Talaia/releases/tag/v0.5.16
 [0.5.15]: https://github.com/catlinux/Talaia/releases/tag/v0.5.15
 [0.5.14]: https://github.com/catlinux/Talaia/releases/tag/v0.5.14
 [0.5.13]: https://github.com/catlinux/Talaia/releases/tag/v0.5.13

@@ -14,81 +14,81 @@ other = "Crítico"
 other = "Notificación enviada por Talaia"
 
 [notify.server_offline.firing_title]
-other = "[{{.Severity}}] Servidor sin conexión en {{.Server}}"
+other = "[{{.Severity}}] {{.Server}} está sin conexión"
 [notify.server_offline.firing_body]
-other = "Servidor sin conexión en {{.Server}}. {{.Subject}} {{.value}} {{.Stack}}"
+other = "{{.Server}} ha dejado de informar a Talaia y se considera sin conexión."
 
 [notify.server_offline.resolved_title]
-other = "Servidor sin conexión resuelto en {{.Server}}"
+other = "{{.Server}} vuelve a estar en línea"
 [notify.server_offline.resolved_body]
-other = "Servidor sin conexión resuelto en {{.Server}}. {{.Subject}} {{.Stack}}"
+other = "{{.Server}} vuelve a informar a Talaia."
 
 [notify.cpu_high.firing_title]
-other = "[{{.Severity}}] Uso elevado de CPU en {{.Server}}"
+other = "[{{.Severity}}] CPU alta en {{.Server}}"
 [notify.cpu_high.firing_body]
-other = "Uso elevado de CPU en {{.Server}}. {{.Subject}} {{.value}} {{.Stack}}"
+other = "El uso de CPU de {{.Server}} está al {{.value}} %."
 
 [notify.cpu_high.resolved_title]
-other = "Uso elevado de CPU resuelto en {{.Server}}"
+other = "El uso de CPU de {{.Server}} vuelve a la normalidad"
 [notify.cpu_high.resolved_body]
-other = "Uso elevado de CPU resuelto en {{.Server}}. {{.Subject}} {{.Stack}}"
+other = "El uso de CPU de {{.Server}} ha bajado del umbral."
 
 [notify.mem_high.firing_title]
-other = "[{{.Severity}}] Uso elevado de memoria en {{.Server}}"
+other = "[{{.Severity}}] Memoria alta en {{.Server}}"
 [notify.mem_high.firing_body]
-other = "Uso elevado de memoria en {{.Server}}. {{.Subject}} {{.value}} {{.Stack}}"
+other = "El uso de memoria de {{.Server}} está al {{.value}} %."
 
 [notify.mem_high.resolved_title]
-other = "Uso elevado de memoria resuelto en {{.Server}}"
+other = "El uso de memoria de {{.Server}} vuelve a la normalidad"
 [notify.mem_high.resolved_body]
-other = "Uso elevado de memoria resuelto en {{.Server}}. {{.Subject}} {{.Stack}}"
+other = "El uso de memoria de {{.Server}} ha bajado del umbral."
 
 [notify.disk_high.firing_title]
-other = "[{{.Severity}}] Uso elevado de disco en {{.Server}}"
+other = "[{{.Severity}}] Disco casi lleno en {{.Server}}"
 [notify.disk_high.firing_body]
-other = "Uso elevado de disco en {{.Server}}. {{.Subject}} {{.value}} {{.Stack}}"
+other = "El disco raíz de {{.Server}} está al {{.value}} %."
 
 [notify.disk_high.resolved_title]
-other = "Uso elevado de disco resuelto en {{.Server}}"
+other = "El uso de disco de {{.Server}} vuelve a la normalidad"
 [notify.disk_high.resolved_body]
-other = "Uso elevado de disco resuelto en {{.Server}}. {{.Subject}} {{.Stack}}"
+other = "El disco raíz de {{.Server}} ha bajado del umbral."
 
 [notify.container_down.firing_title]
-other = "[{{.Severity}}] Contenedor detenido en {{.Server}}"
+other = "[{{.Severity}}] El contenedor {{.Subject}} está parado en {{.Server}}"
 [notify.container_down.firing_body]
-other = "Contenedor detenido en {{.Server}}. {{.Subject}} {{.value}} {{.Stack}}"
+other = "El contenedor {{.Subject}}{{if .Stack}} (stack {{.Stack}}){{end}} de {{.Server}} no está en marcha."
 
 [notify.container_down.resolved_title]
-other = "Contenedor detenido resuelto en {{.Server}}"
+other = "El contenedor {{.Subject}} vuelve a funcionar en {{.Server}}"
 [notify.container_down.resolved_body]
-other = "Contenedor detenido resuelto en {{.Server}}. {{.Subject}} {{.Stack}}"
+other = "El contenedor {{.Subject}} de {{.Server}} vuelve a estar en marcha."
 
 [notify.container_unhealthy.firing_title]
-other = "[{{.Severity}}] Contenedor no saludable en {{.Server}}"
+other = "[{{.Severity}}] El contenedor {{.Subject}} no está saludable en {{.Server}}"
 [notify.container_unhealthy.firing_body]
-other = "Contenedor no saludable en {{.Server}}. {{.Subject}} {{.value}} {{.Stack}}"
+other = "La comprobación de salud de {{.Subject}}{{if .Stack}} (stack {{.Stack}}){{end}} en {{.Server}} está fallando."
 
 [notify.container_unhealthy.resolved_title]
-other = "Contenedor no saludable resuelto en {{.Server}}"
+other = "El contenedor {{.Subject}} vuelve a estar saludable en {{.Server}}"
 [notify.container_unhealthy.resolved_body]
-other = "Contenedor no saludable resuelto en {{.Server}}. {{.Subject}} {{.Stack}}"
+other = "La comprobación de salud de {{.Subject}} en {{.Server}} vuelve a pasar."
 
 [notify.check_failed.firing_title]
-other = "[{{.Severity}}] Comprobación fallida en {{.Server}}"
+other = "[{{.Severity}}] Comprobación fallida: {{.Subject}}"
 [notify.check_failed.firing_body]
-other = "Comprobación fallida en {{.Server}}. {{.Subject}} {{.value}} {{.Stack}}"
+other = "La comprobación {{.Subject}} está fallando."
 
 [notify.check_failed.resolved_title]
-other = "Comprobación fallida resuelto en {{.Server}}"
+other = "La comprobación {{.Subject}} vuelve a funcionar"
 [notify.check_failed.resolved_body]
-other = "Comprobación fallida resuelto en {{.Server}}. {{.Subject}} {{.Stack}}"
+other = "La comprobación {{.Subject}} vuelve a pasar."
 
 [notify.cert_expiry.firing_title]
-other = "[{{.Severity}}] Certificado a punto de caducar en {{.Server}}"
+other = "[{{.Severity}}] Certificado a punto de caducar: {{.Subject}}"
 [notify.cert_expiry.firing_body]
-other = "Certificado a punto de caducar en {{.Server}}. {{.Subject}} {{.value}} {{.Stack}}"
+other = "El certificado de {{.Subject}} {{if le .days 0}}ha caducado{{else}}caduca en {{.days}} días{{end}}."
 
 [notify.cert_expiry.resolved_title]
-other = "Certificado a punto de caducar resuelto en {{.Server}}"
+other = "Certificado de {{.Subject}} renovado"
 [notify.cert_expiry.resolved_body]
-other = "Certificado a punto de caducar resuelto en {{.Server}}. {{.Subject}} {{.Stack}}"
+other = "El certificado de {{.Subject}} ya no está a punto de caducar."

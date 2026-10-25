@@ -13,6 +13,13 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+## [0.5.16] - 2026-10-25
+
+### Corregido
+
+- El texto de las notificaciones de alerta parecía una plantilla («Container down on X. nombre <no value> stack»): todas están reescritas en catalán, castellano e inglés como frases claras («El contenedor shop-web-1 está parado en vps-web-01», «El disco raíz de vps-web-01 está al 93 %»), y la alerta de una comprobación muestra el nombre de la comprobación en vez de su id interno.
+- CI: el trabajo de lint del core fallaba con la versión del linter que usa GitHub.
+
 ## [0.5.15] - 2026-10-25
 
 ### Añadido
@@ -653,7 +660,8 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
   `.gitattributes` y `.gitignore`.
 - Licencia WNCL-1.0 aplicada: archivo `LICENSE` y sección de créditos en los README.
 
-[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.5.15...HEAD
+[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.5.16...HEAD
+[0.5.16]: https://github.com/catlinux/Talaia/releases/tag/v0.5.16
 [0.5.15]: https://github.com/catlinux/Talaia/releases/tag/v0.5.15
 [0.5.14]: https://github.com/catlinux/Talaia/releases/tag/v0.5.14
 [0.5.13]: https://github.com/catlinux/Talaia/releases/tag/v0.5.13

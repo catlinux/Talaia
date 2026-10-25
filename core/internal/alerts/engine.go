@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"math"
 	"sync"
 	"time"
 
@@ -385,7 +386,7 @@ func (e *Engine) evaluateChecks(ctx context.Context, r store.AlertRule, states [
 				}
 			}
 		}
-		sub := Subject{ServerID: state.ID, GroupID: state.GroupID, CheckID: ch.ID, Kind: "check", Name: ch.ID}
+		sub := Subject{ServerID: state.ID, GroupID: state.GroupID, CheckID: ch.ID, Kind: "check", Name: ch.ID, Label: ch.Name}
 		if !ruleMatches(r, sub) {
 			continue
 		}
@@ -459,9 +460,16 @@ func (e *Engine) advance(ctx context.Context, r store.AlertRule, sub Subject, s 
 		}
 		params := map[string]any{}
 		if value != 0 {
-			params["value"] = value
+			params["value"] = math.Round(value)
 		}
-		alert := store.Alert{RuleID: &r.ID, RuleType: r.Type, Severity: r.Severity, Fingerprint: fp, ServerID: stringPtr(sub.ServerID), SubjectKind: sub.Kind, SubjectName: sub.Name, Stack: sub.Stack, State: "firing", Summary: makeSummary("alerts."+r.Type, params), StartedAt: now, Silenced: isSilenced}
+		if r.Type == "cert_expiry" && check != nil && check.CertNotAfter != nil {
+			params["days"] = int(check.CertNotAfter.Sub(now).Hours() / 24)
+		}
+		subjectName := sub.Name
+		if sub.Label != "" {
+			subjectName = sub.Label
+		}
+		alert := store.Alert{RuleID: &r.ID, RuleType: r.Type, Severity: r.Severity, Fingerprint: fp, ServerID: stringPtr(sub.ServerID), SubjectKind: sub.Kind, SubjectName: subjectName, Stack: sub.Stack, State: "firing", Summary: makeSummary("alerts."+r.Type, params), StartedAt: now, Silenced: isSilenced}
 		opened, created, err := e.store.OpenAlert(ctx, alert)
 		if err != nil {
 			return fmt.Errorf("open alert: %w", err)

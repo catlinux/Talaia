@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/catlinux/Talaia/core/i18n"
 	"github.com/catlinux/Talaia/core/internal/store"
+	"math"
 	"strings"
 	"time"
 )
@@ -17,12 +18,13 @@ func BuildMessage(lang, event string, a store.Alert, server string) Message {
 	var summary map[string]any
 	_ = json.Unmarshal(a.Summary, &summary)
 	params, _ := summary["params"].(map[string]any)
-	data := map[string]any{"Server": server, "Subject": a.SubjectName, "Severity": strings.ToUpper(a.Severity), "Stack": a.Stack}
+	data := map[string]any{"Server": server, "Subject": a.SubjectName, "Severity": strings.ToUpper(a.Severity), "Stack": a.Stack, "value": 0, "days": 0}
 	for k, v := range params {
+		// JSON numbers arrive as float64: whole ones print without a decimal point.
+		if f, ok := v.(float64); ok && f == math.Trunc(f) {
+			v = int64(f)
+		}
 		data[k] = v
-	}
-	if data["Server"] == "" {
-		data["Server"] = a.SubjectName
 	}
 	key := "notify." + a.RuleType + "." + event
 	title := l.T(key+"_title", data)

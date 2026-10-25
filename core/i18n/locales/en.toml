@@ -14,81 +14,81 @@ other = "Critical"
 other = "Notification sent by Talaia"
 
 [notify.server_offline.firing_title]
-other = "[{{.Severity}}] Server offline on {{.Server}}"
+other = "[{{.Severity}}] {{.Server}} is offline"
 [notify.server_offline.firing_body]
-other = "Server offline on {{.Server}}. {{.Subject}} {{.value}} {{.Stack}}"
+other = "{{.Server}} has stopped reporting to Talaia and is considered offline."
 
 [notify.server_offline.resolved_title]
-other = "Server offline resolved on {{.Server}}"
+other = "{{.Server}} is back online"
 [notify.server_offline.resolved_body]
-other = "Server offline resolved on {{.Server}}. {{.Subject}} {{.Stack}}"
+other = "{{.Server}} is reporting to Talaia again."
 
 [notify.cpu_high.firing_title]
 other = "[{{.Severity}}] High CPU usage on {{.Server}}"
 [notify.cpu_high.firing_body]
-other = "High CPU usage on {{.Server}}. {{.Subject}} {{.value}} {{.Stack}}"
+other = "CPU usage on {{.Server}} is at {{.value}}%."
 
 [notify.cpu_high.resolved_title]
-other = "High CPU usage resolved on {{.Server}}"
+other = "CPU usage on {{.Server}} is back to normal"
 [notify.cpu_high.resolved_body]
-other = "High CPU usage resolved on {{.Server}}. {{.Subject}} {{.Stack}}"
+other = "CPU usage on {{.Server}} has dropped below the threshold."
 
 [notify.mem_high.firing_title]
 other = "[{{.Severity}}] High memory usage on {{.Server}}"
 [notify.mem_high.firing_body]
-other = "High memory usage on {{.Server}}. {{.Subject}} {{.value}} {{.Stack}}"
+other = "Memory usage on {{.Server}} is at {{.value}}%."
 
 [notify.mem_high.resolved_title]
-other = "High memory usage resolved on {{.Server}}"
+other = "Memory usage on {{.Server}} is back to normal"
 [notify.mem_high.resolved_body]
-other = "High memory usage resolved on {{.Server}}. {{.Subject}} {{.Stack}}"
+other = "Memory usage on {{.Server}} has dropped below the threshold."
 
 [notify.disk_high.firing_title]
-other = "[{{.Severity}}] High disk usage on {{.Server}}"
+other = "[{{.Severity}}] Disk almost full on {{.Server}}"
 [notify.disk_high.firing_body]
-other = "High disk usage on {{.Server}}. {{.Subject}} {{.value}} {{.Stack}}"
+other = "The root disk of {{.Server}} is {{.value}}% full."
 
 [notify.disk_high.resolved_title]
-other = "High disk usage resolved on {{.Server}}"
+other = "Disk usage on {{.Server}} is back to normal"
 [notify.disk_high.resolved_body]
-other = "High disk usage resolved on {{.Server}}. {{.Subject}} {{.Stack}}"
+other = "The root disk of {{.Server}} has dropped below the threshold."
 
 [notify.container_down.firing_title]
-other = "[{{.Severity}}] Container down on {{.Server}}"
+other = "[{{.Severity}}] Container {{.Subject}} is down on {{.Server}}"
 [notify.container_down.firing_body]
-other = "Container down on {{.Server}}. {{.Subject}} {{.value}} {{.Stack}}"
+other = "The container {{.Subject}}{{if .Stack}} (stack {{.Stack}}){{end}} on {{.Server}} is not running."
 
 [notify.container_down.resolved_title]
-other = "Container down resolved on {{.Server}}"
+other = "Container {{.Subject}} is running again on {{.Server}}"
 [notify.container_down.resolved_body]
-other = "Container down resolved on {{.Server}}. {{.Subject}} {{.Stack}}"
+other = "The container {{.Subject}} on {{.Server}} is running again."
 
 [notify.container_unhealthy.firing_title]
-other = "[{{.Severity}}] Container unhealthy on {{.Server}}"
+other = "[{{.Severity}}] Container {{.Subject}} is unhealthy on {{.Server}}"
 [notify.container_unhealthy.firing_body]
-other = "Container unhealthy on {{.Server}}. {{.Subject}} {{.value}} {{.Stack}}"
+other = "The health check of {{.Subject}}{{if .Stack}} (stack {{.Stack}}){{end}} on {{.Server}} is failing."
 
 [notify.container_unhealthy.resolved_title]
-other = "Container unhealthy resolved on {{.Server}}"
+other = "Container {{.Subject}} is healthy again on {{.Server}}"
 [notify.container_unhealthy.resolved_body]
-other = "Container unhealthy resolved on {{.Server}}. {{.Subject}} {{.Stack}}"
+other = "The health check of {{.Subject}} on {{.Server}} passes again."
 
 [notify.check_failed.firing_title]
-other = "[{{.Severity}}] Check failed on {{.Server}}"
+other = "[{{.Severity}}] Check failed: {{.Subject}}"
 [notify.check_failed.firing_body]
-other = "Check failed on {{.Server}}. {{.Subject}} {{.value}} {{.Stack}}"
+other = "The check {{.Subject}} is failing."
 
 [notify.check_failed.resolved_title]
-other = "Check failed resolved on {{.Server}}"
+other = "Check {{.Subject}} works again"
 [notify.check_failed.resolved_body]
-other = "Check failed resolved on {{.Server}}. {{.Subject}} {{.Stack}}"
+other = "The check {{.Subject}} is passing again."
 
 [notify.cert_expiry.firing_title]
-other = "[{{.Severity}}] Certificate expiring on {{.Server}}"
+other = "[{{.Severity}}] Certificate expiring: {{.Subject}}"
 [notify.cert_expiry.firing_body]
-other = "Certificate expiring on {{.Server}}. {{.Subject}} {{.value}} {{.Stack}}"
+other = "The certificate of {{.Subject}} {{if le .days 0}}has expired{{else}}expires in {{.days}} days{{end}}."
 
 [notify.cert_expiry.resolved_title]
-other = "Certificate expiring resolved on {{.Server}}"
+other = "Certificate of {{.Subject}} renewed"
 [notify.cert_expiry.resolved_body]
-other = "Certificate expiring resolved on {{.Server}}. {{.Subject}} {{.Stack}}"
+other = "The certificate of {{.Subject}} is no longer about to expire."

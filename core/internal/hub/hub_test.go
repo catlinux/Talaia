@@ -104,7 +104,8 @@ func TestHubForwardsMetricMessages(t *testing.T) {
 	}
 	stream.close()
 	select {
-	case <-done:
+	case err := <-done:
+		_ = err // the stream ended on purpose; only its end matters here
 	case <-time.After(time.Second):
 		t.Fatal("serve did not return")
 	}

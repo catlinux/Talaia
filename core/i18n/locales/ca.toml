@@ -14,81 +14,81 @@ other = "Crític"
 other = "Notificació enviada per Talaia"
 
 [notify.server_offline.firing_title]
-other = "[{{.Severity}}] Servidor fora de línia a {{.Server}}"
+other = "[{{.Severity}}] {{.Server}} està fora de línia"
 [notify.server_offline.firing_body]
-other = "Servidor fora de línia a {{.Server}}. {{.Subject}} {{.value}} {{.Stack}}"
+other = "{{.Server}} ha deixat d'informar Talaia i es considera fora de línia."
 
 [notify.server_offline.resolved_title]
-other = "Servidor fora de línia resolt a {{.Server}}"
+other = "{{.Server}} torna a estar en línia"
 [notify.server_offline.resolved_body]
-other = "Servidor fora de línia resolt a {{.Server}}. {{.Subject}} {{.Stack}}"
+other = "{{.Server}} torna a informar Talaia."
 
 [notify.cpu_high.firing_title]
-other = "[{{.Severity}}] Ús elevat de CPU a {{.Server}}"
+other = "[{{.Severity}}] CPU alta a {{.Server}}"
 [notify.cpu_high.firing_body]
-other = "Ús elevat de CPU a {{.Server}}. {{.Subject}} {{.value}} {{.Stack}}"
+other = "L'ús de CPU de {{.Server}} és del {{.value}} %."
 
 [notify.cpu_high.resolved_title]
-other = "Ús elevat de CPU resolt a {{.Server}}"
+other = "L'ús de CPU de {{.Server}} torna a la normalitat"
 [notify.cpu_high.resolved_body]
-other = "Ús elevat de CPU resolt a {{.Server}}. {{.Subject}} {{.Stack}}"
+other = "L'ús de CPU de {{.Server}} ha baixat del llindar."
 
 [notify.mem_high.firing_title]
-other = "[{{.Severity}}] Ús elevat de memòria a {{.Server}}"
+other = "[{{.Severity}}] Memòria alta a {{.Server}}"
 [notify.mem_high.firing_body]
-other = "Ús elevat de memòria a {{.Server}}. {{.Subject}} {{.value}} {{.Stack}}"
+other = "L'ús de memòria de {{.Server}} és del {{.value}} %."
 
 [notify.mem_high.resolved_title]
-other = "Ús elevat de memòria resolt a {{.Server}}"
+other = "L'ús de memòria de {{.Server}} torna a la normalitat"
 [notify.mem_high.resolved_body]
-other = "Ús elevat de memòria resolt a {{.Server}}. {{.Subject}} {{.Stack}}"
+other = "L'ús de memòria de {{.Server}} ha baixat del llindar."
 
 [notify.disk_high.firing_title]
-other = "[{{.Severity}}] Ús elevat de disc a {{.Server}}"
+other = "[{{.Severity}}] Disc gairebé ple a {{.Server}}"
 [notify.disk_high.firing_body]
-other = "Ús elevat de disc a {{.Server}}. {{.Subject}} {{.value}} {{.Stack}}"
+other = "El disc arrel de {{.Server}} és al {{.value}} %."
 
 [notify.disk_high.resolved_title]
-other = "Ús elevat de disc resolt a {{.Server}}"
+other = "L'ús de disc de {{.Server}} torna a la normalitat"
 [notify.disk_high.resolved_body]
-other = "Ús elevat de disc resolt a {{.Server}}. {{.Subject}} {{.Stack}}"
+other = "El disc arrel de {{.Server}} ha baixat del llindar."
 
 [notify.container_down.firing_title]
-other = "[{{.Severity}}] Contenidor aturat a {{.Server}}"
+other = "[{{.Severity}}] El contenidor {{.Subject}} està aturat a {{.Server}}"
 [notify.container_down.firing_body]
-other = "Contenidor aturat a {{.Server}}. {{.Subject}} {{.value}} {{.Stack}}"
+other = "El contenidor {{.Subject}}{{if .Stack}} (stack {{.Stack}}){{end}} de {{.Server}} no està en marxa."
 
 [notify.container_down.resolved_title]
-other = "Contenidor aturat resolt a {{.Server}}"
+other = "El contenidor {{.Subject}} torna a funcionar a {{.Server}}"
 [notify.container_down.resolved_body]
-other = "Contenidor aturat resolt a {{.Server}}. {{.Subject}} {{.Stack}}"
+other = "El contenidor {{.Subject}} de {{.Server}} torna a estar en marxa."
 
 [notify.container_unhealthy.firing_title]
-other = "[{{.Severity}}] Contenidor no saludable a {{.Server}}"
+other = "[{{.Severity}}] El contenidor {{.Subject}} no està saludable a {{.Server}}"
 [notify.container_unhealthy.firing_body]
-other = "Contenidor no saludable a {{.Server}}. {{.Subject}} {{.value}} {{.Stack}}"
+other = "La comprovació de salut de {{.Subject}}{{if .Stack}} (stack {{.Stack}}){{end}} a {{.Server}} està fallant."
 
 [notify.container_unhealthy.resolved_title]
-other = "Contenidor no saludable resolt a {{.Server}}"
+other = "El contenidor {{.Subject}} torna a estar saludable a {{.Server}}"
 [notify.container_unhealthy.resolved_body]
-other = "Contenidor no saludable resolt a {{.Server}}. {{.Subject}} {{.Stack}}"
+other = "La comprovació de salut de {{.Subject}} a {{.Server}} torna a passar."
 
 [notify.check_failed.firing_title]
-other = "[{{.Severity}}] Comprovació fallida a {{.Server}}"
+other = "[{{.Severity}}] Comprovació fallida: {{.Subject}}"
 [notify.check_failed.firing_body]
-other = "Comprovació fallida a {{.Server}}. {{.Subject}} {{.value}} {{.Stack}}"
+other = "La comprovació {{.Subject}} està fallant."
 
 [notify.check_failed.resolved_title]
-other = "Comprovació fallida resolt a {{.Server}}"
+other = "La comprovació {{.Subject}} torna a funcionar"
 [notify.check_failed.resolved_body]
-other = "Comprovació fallida resolt a {{.Server}}. {{.Subject}} {{.Stack}}"
+other = "La comprovació {{.Subject}} torna a passar."
 
 [notify.cert_expiry.firing_title]
-other = "[{{.Severity}}] Certificat a punt de caducar a {{.Server}}"
+other = "[{{.Severity}}] Certificat a punt de caducar: {{.Subject}}"
 [notify.cert_expiry.firing_body]
-other = "Certificat a punt de caducar a {{.Server}}. {{.Subject}} {{.value}} {{.Stack}}"
+other = "El certificat de {{.Subject}} {{if le .days 0}}ha caducat{{else}}caduca d'aquí a {{.days}} dies{{end}}."
 
 [notify.cert_expiry.resolved_title]
-other = "Certificat a punt de caducar resolt a {{.Server}}"
+other = "Certificat de {{.Subject}} renovat"
 [notify.cert_expiry.resolved_body]
-other = "Certificat a punt de caducar resolt a {{.Server}}. {{.Subject}} {{.Stack}}"
+other = "El certificat de {{.Subject}} ja no està a punt de caducar."
