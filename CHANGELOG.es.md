@@ -13,6 +13,17 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+## [0.5.17] - 2026-10-25
+
+### Añadido
+
+- El historial de alertas ya tiene límite: los incidentes resueltos se borran a los 180 días y los registros de envío terminados a los 30 (los incidentes abiertos y los reintentos pendientes no se tocan).
+- Los canales de correo pueden usar un relay SMTP sin login (usuario y contraseña son opcionales, pero los dos o ninguno); sigue sin usarse nunca texto plano.
+
+### Seguridad
+
+- El guardián de salida bloquea también los rangos especiales IPv6 poco usados (`::/96` compatible con IPv4, `100::/64`, `2001::/23`, NAT64 de uso local, site-local y el nuevo bloque de documentación).
+
 ## [0.5.16] - 2026-10-25
 
 ### Corregido
@@ -660,7 +671,8 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
   `.gitattributes` y `.gitignore`.
 - Licencia WNCL-1.0 aplicada: archivo `LICENSE` y sección de créditos en los README.
 
-[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.5.16...HEAD
+[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.5.17...HEAD
+[0.5.17]: https://github.com/catlinux/Talaia/releases/tag/v0.5.17
 [0.5.16]: https://github.com/catlinux/Talaia/releases/tag/v0.5.16
 [0.5.15]: https://github.com/catlinux/Talaia/releases/tag/v0.5.15
 [0.5.14]: https://github.com/catlinux/Talaia/releases/tag/v0.5.14

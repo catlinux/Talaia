@@ -18,6 +18,17 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.5.17] - 2026-10-25
+
+### Added
+
+- Alert history is now bounded: resolved incidents are deleted after 180 days and finished delivery records after 30 (open incidents and pending retries are never touched).
+- Email channels can use an SMTP relay without login (username and password are optional, but both or none); plain text is still never used.
+
+### Security
+
+- The outbound guard also blocks the rarely used IPv6 special ranges (IPv4-compatible `::/96`, `100::/64`, `2001::/23`, local-use NAT64, site-local and the new documentation block).
+
 ## [0.5.16] - 2026-10-25
 
 ### Fixed
@@ -660,7 +671,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.5.16...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.5.17...HEAD
+[0.5.17]: https://github.com/catlinux/Talaia/releases/tag/v0.5.17
 [0.5.16]: https://github.com/catlinux/Talaia/releases/tag/v0.5.16
 [0.5.15]: https://github.com/catlinux/Talaia/releases/tag/v0.5.15
 [0.5.14]: https://github.com/catlinux/Talaia/releases/tag/v0.5.14

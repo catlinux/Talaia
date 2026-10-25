@@ -130,6 +130,9 @@ finishes. Its state comes from the latest agent snapshot and the latest check re
   It does not resolve the incident; Talaia resolves it when the condition clears.
 - **Startup grace.** `server_offline` rules are not evaluated during the first **90 seconds** after the core
   starts. Other rule types can fire immediately.
+- **History retention.** Resolved incidents are kept for **180 days** and finished delivery records (sent or
+  given up) for **30 days**; a cleanup runs a minute after the core starts and then once a day. Open
+  incidents and deliveries waiting for a retry are never deleted.
 - **Silenced incidents.** A silence suppresses delivery, not detection: the alert is still opened and
   stored, and the panel marks it as silenced.
 
@@ -207,7 +210,7 @@ test is sent immediately and its success or redacted error is shown.
 |---|---|---|
 | Telegram | Chat ID | Bot token |
 | ntfy | Server URL (default `https://ntfy.sh`), priority 1–5 | Topic; optional access token |
-| Email | SMTP host, port, from address, recipient list, STARTTLS or implicit TLS | Username and password |
+| Email | SMTP host, port, from address, recipient list, STARTTLS or implicit TLS | Username and password, both optional (a relay without login is allowed, never without TLS) |
 | Discord | Nothing else | Discord webhook URL |
 | Webhook | Nothing else | Endpoint URL; optional HMAC secret |
 

@@ -141,7 +141,8 @@ export function ChannelForm({ channel, onClose, onSave }: ChannelFormProps) {
     secretVisible &&
     ((form.type === 'telegram' && secret.token.trim() === '') ||
       (form.type === 'ntfy' && secret.topic.trim() === '') ||
-      (form.type === 'email' && (secret.username.trim() === '' || secret.password === '')) ||
+      // An SMTP relay without authentication is allowed: both or none.
+      (form.type === 'email' && (secret.username.trim() === '') !== (secret.password === '')) ||
       ((form.type === 'discord' || form.type === 'webhook') && secret.url.trim() === ''))
   const valid = !nameInvalid && !configInvalid && !secretInvalid
 

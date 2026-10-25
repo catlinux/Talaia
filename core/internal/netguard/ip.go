@@ -24,6 +24,17 @@ var (
 	}
 	private6    = []netip.Prefix{netip.MustParsePrefix("::1/128"), netip.MustParsePrefix("fc00::/7"), netip.MustParsePrefix("2001:db8::/32")}
 	nat64Prefix = netip.MustParsePrefix("64:ff9b::/96")
+
+	// Special-purpose IPv6 ranges that are never a public service, whatever the
+	// private-network setting says: IPv4-compatible addresses, the discard
+	// prefix, IETF protocol assignments (Teredo is judged by its embedded
+	// address first), local-use NAT64, site-local and the documentation block.
+	ipv4Compatible = netip.MustParsePrefix("::/96")
+	reserved6      = []netip.Prefix{
+		netip.MustParsePrefix("100::/64"), netip.MustParsePrefix("2001::/23"),
+		netip.MustParsePrefix("64:ff9b:1::/48"), netip.MustParsePrefix("fec0::/10"),
+		netip.MustParsePrefix("3fff::/20"),
+	}
 )
 
 // Check rejects special-purpose destinations before an outbound connection is made.
@@ -72,6 +83,16 @@ func Check(ip netip.Addr, allowPrivate bool) error {
 	if ip.Is4() && ip.IsPrivate() || ip.Is6() && ip.IsPrivate() {
 		if !allowPrivate {
 			return blocked("private address")
+		}
+	}
+	if ip.Is6() {
+		if ipv4Compatible.Contains(ip) && ip != netip.IPv6Loopback() {
+			return blocked("IPv4-compatible IPv6")
+		}
+		for _, prefix := range reserved6 {
+			if prefix.Contains(ip) {
+				return blocked("reserved IPv6")
+			}
 		}
 	}
 	for _, prefix := range private4 {

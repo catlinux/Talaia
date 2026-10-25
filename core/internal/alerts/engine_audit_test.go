@@ -97,3 +97,30 @@ func TestThresholdAlertStaysOpenWhileTheAgentSendsNoMetrics(t *testing.T) {
 		t.Fatalf("an offline agent resolved the disk alert: %+v deliveries=%d", st.alerts, len(st.deliveries))
 	}
 }
+
+func TestHistoryRetentionRunsOnceADayAfterStart(t *testing.T) {
+	st := newTestStore()
+	e, c := scenarioEngine(st, &testSource{})
+	ctx := context.Background()
+	e.purgeHistory(ctx)
+	if len(st.purges) != 0 {
+		t.Fatal("the history was purged before the first minute")
+	}
+	c.now = c.now.Add(time.Minute)
+	e.purgeHistory(ctx)
+	e.purgeHistory(ctx)
+	if len(st.purges) != 1 {
+		t.Fatalf("purges after a minute = %d, want 1", len(st.purges))
+	}
+	if want := c.now.Add(-180 * 24 * time.Hour); !st.purges[0][0].Equal(want) {
+		t.Errorf("alert cutoff = %s, want %s", st.purges[0][0], want)
+	}
+	if want := c.now.Add(-30 * 24 * time.Hour); !st.purges[0][1].Equal(want) {
+		t.Errorf("delivery cutoff = %s, want %s", st.purges[0][1], want)
+	}
+	c.now = c.now.Add(24 * time.Hour)
+	e.purgeHistory(ctx)
+	if len(st.purges) != 2 {
+		t.Fatalf("purges after a day = %d, want 2", len(st.purges))
+	}
+}

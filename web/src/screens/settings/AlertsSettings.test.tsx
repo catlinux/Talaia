@@ -295,6 +295,27 @@ describe('alert settings', () => {
     expect(screen.queryByLabelText('Bot token')).toBeNull()
   })
 
+  it('lets an email channel use an SMTP relay without login but not half a login', async () => {
+    const onSave = vi.fn<(input: AlertChannelInput) => Promise<void>>(() => Promise.resolve())
+    render(<ChannelForm channel={null} onClose={() => undefined} onSave={onSave} />)
+    fireEvent.change(screen.getByLabelText('Type'), { target: { value: 'email' } })
+    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Relay' } })
+    fireEvent.change(screen.getByLabelText('SMTP host'), { target: { value: 'smtp.example.com' } })
+    fireEvent.change(screen.getByLabelText('SMTP port'), { target: { value: '25' } })
+    fireEvent.change(screen.getByLabelText('From address'), { target: { value: 'talaia@example.com' } })
+    fireEvent.change(screen.getByLabelText(/Recipients/), { target: { value: 'ops@example.com' } })
+
+    fireEvent.change(screen.getByLabelText('Username (optional)'), { target: { value: 'user' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+    await new Promise((resolve) => setTimeout(resolve, 20))
+    expect(onSave).not.toHaveBeenCalled()
+
+    fireEvent.change(screen.getByLabelText('Username (optional)'), { target: { value: '' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+    await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1))
+    expect(onSave.mock.calls[0]?.[0].secret).toBeDefined()
+  })
+
   it('shows a successful and a failed send test', async () => {
     const testChannel = vi
       .fn()

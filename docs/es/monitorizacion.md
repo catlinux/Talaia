@@ -134,6 +134,9 @@ las comprobaciones.
   resuelve el incidente; Talaia lo resuelve cuando la condición desaparece.
 - **Margen de arranque.** Las reglas `server_offline` no se evalúan durante los primeros **90 segundos**
   después de arrancar el núcleo. Los demás tipos pueden activarse de inmediato.
+- **Retención del historial.** Los incidentes resueltos se conservan **180 días** y los registros de envío
+  terminados (enviados o abandonados) **30 días**; la limpieza se ejecuta un minuto después de arrancar el core
+  y luego una vez al día. Los incidentes abiertos y los envíos que esperan un reintento no se borran nunca.
 - **Incidentes silenciados.** Un silencio suprime el envío, no la detección: la alerta se abre y se guarda
   igualmente, y el panel la marca como silenciada.
 
@@ -211,7 +214,7 @@ la prueba se envía de inmediato y se muestra el éxito o el error censurado.
 |---|---|---|
 | Telegram | ID del chat | Token del bot |
 | ntfy | URL del servidor (por defecto `https://ntfy.sh`), prioridad 1–5 | Tema; token de acceso opcional |
-| Correo | Host SMTP, puerto, dirección remitente, lista de destinatarios, STARTTLS o TLS implícito | Usuario y contraseña |
+| Correo | Host SMTP, puerto, dirección remitente, lista de destinatarios, STARTTLS o TLS implícito | Usuario y contraseña, ambos opcionales (se permite un relay sin login, nunca sin TLS) |
 | Discord | Nada más | URL del webhook de Discord |
 | Webhook | Nada más | URL del destino; secreto HMAC opcional |
 

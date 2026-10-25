@@ -27,6 +27,7 @@ type Store interface {
 	EnqueueDelivery(context.Context, store.NotificationDelivery) (store.NotificationDelivery, error)
 	ListAlertChecks(context.Context) ([]store.AlertCheck, error)
 	LatestAlertCheckResult(context.Context, string) (store.AlertCheckResult, error)
+	PurgeAlertHistory(ctx context.Context, alertsBefore, deliveriesBefore time.Time) (int64, int64, error)
 	SetAlertSilenced(context.Context, string, bool) error
 }
 
@@ -86,6 +87,7 @@ type Engine struct {
 	watchWrites map[string]time.Time
 	unwatched   map[string]time.Time
 	started     time.Time
+	purgeAt     time.Time
 	checks      map[string]store.AlertCheckResult
 	failures    map[string]int
 	poke        chan string
@@ -140,11 +142,47 @@ func (e *Engine) Run(ctx context.Context) error {
 			if err := e.evaluate(ctx, ""); err != nil {
 				slog.Error("evaluate alerts", "error", err)
 			}
+			e.purgeHistory(ctx)
 		case id := <-e.poke:
 			if err := e.evaluate(ctx, id); err != nil {
 				slog.Error("evaluate alerts", "server_id", id, "error", err)
 			}
 		}
+	}
+}
+
+// Retention of the history: resolved incidents are kept for 180 days and the
+// delivery rows already sent or given up for 30; open incidents and deliveries
+// waiting for a retry are never purged.
+const (
+	alertHistoryRetention = 180 * 24 * time.Hour
+	deliveryRetention     = 30 * 24 * time.Hour
+	purgeEvery            = 24 * time.Hour
+)
+
+// purgeHistory runs the retention about a minute after the engine starts and
+// then once a day.
+func (e *Engine) purgeHistory(ctx context.Context) {
+	now := e.clock.Now()
+	e.mu.Lock()
+	if e.purgeAt.IsZero() {
+		e.purgeAt = e.started.Add(time.Minute)
+	}
+	due := !now.Before(e.purgeAt)
+	if due {
+		e.purgeAt = now.Add(purgeEvery)
+	}
+	e.mu.Unlock()
+	if !due {
+		return
+	}
+	alerts, deliveries, err := e.store.PurgeAlertHistory(ctx, now.Add(-alertHistoryRetention), now.Add(-deliveryRetention))
+	if err != nil {
+		slog.Warn("purge alert history", "error", err)
+		return
+	}
+	if alerts > 0 || deliveries > 0 {
+		slog.Info("alert history purged", "alerts", alerts, "deliveries", deliveries)
 	}
 }
 

@@ -303,6 +303,22 @@ func (s *Store) listAlerts(ctx context.Context, q string, args []any) ([]Alert, 
 	return out, rows.Err()
 }
 
+// PurgeAlertHistory deletes the resolved incidents resolved before alertsBefore
+// and the delivery rows already sent or given up before deliveriesBefore. Open
+// incidents and deliveries still waiting for a retry are never touched.
+func (s *Store) PurgeAlertHistory(ctx context.Context, alertsBefore, deliveriesBefore time.Time) (alerts, deliveries int64, err error) {
+	tag, e := s.pool.Exec(ctx, `DELETE FROM notification_delivery WHERE status IN ('sent','failed') AND created_at < $1`, deliveriesBefore)
+	if e != nil {
+		return 0, 0, fmt.Errorf("purge notification deliveries: %w", e)
+	}
+	deliveries = tag.RowsAffected()
+	tag, e = s.pool.Exec(ctx, `DELETE FROM alert WHERE state='resolved' AND resolved_at < $1`, alertsBefore)
+	if e != nil {
+		return 0, deliveries, fmt.Errorf("purge resolved alerts: %w", e)
+	}
+	return tag.RowsAffected(), deliveries, nil
+}
+
 // GetAlert returns one incident by id.
 func (s *Store) GetAlert(ctx context.Context, id string) (Alert, error) {
 	v, e := scanAlert(s.pool.QueryRow(ctx, `SELECT `+alertColumns+` FROM alert WHERE id=$1`, id))

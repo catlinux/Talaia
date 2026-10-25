@@ -65,6 +65,8 @@ func TestAlertChannelValidationUsesNotifierRules(t *testing.T) {
 		{"webhook with a file URL is rejected", "webhook", `{}`, `{"url":"file:///etc/passwd"}`, false},
 		{"telegram rejects a token that is not a bot token", "telegram", `{"chat_id":"1"}`, `{"token":"../../x"}`, false},
 		{"email requires tls mode", "email", `{"host":"mail.example.com","port":587,"from":"a@example.com","to":["b@example.com"]}`, `{"username":"user","password":"pass"}`, false},
+		{"email relay without login is accepted", "email", `{"host":"mail.example.com","port":587,"from":"a@example.com","to":["b@example.com"],"tls_mode":"starttls"}`, `{"username":"","password":""}`, true},
+		{"email with a half-filled login is rejected", "email", `{"host":"mail.example.com","port":587,"from":"a@example.com","to":["b@example.com"],"tls_mode":"starttls"}`, `{"username":"user","password":""}`, false},
 		{"telegram requires chat id", "telegram", `{}`, `{"token":"token"}`, false},
 		{"unknown type is rejected", "sms", `{}`, `{}`, false},
 	}

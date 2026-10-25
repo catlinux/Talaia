@@ -145,3 +145,42 @@ func TestChannelStatusAndGetAlert(t *testing.T) {
 		t.Fatalf("unknown alert error = %v", err)
 	}
 }
+
+func TestPurgeAlertHistoryKeepsOpenAlertsAndPendingDeliveries(t *testing.T) {
+	s, ctx := alertTestStore(t)
+	old := time.Now().Add(-400 * 24 * time.Hour)
+	if _, err := s.pool.Exec(ctx, `INSERT INTO alert(rule_type,severity,fingerprint,subject_kind,state,started_at,resolved_at) VALUES('disk_high','warning','purge-old','server','resolved',$1,$1)`, old); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.pool.Exec(ctx, `INSERT INTO alert(rule_type,severity,fingerprint,subject_kind,state,started_at) VALUES('disk_high','warning','purge-open','server','firing',$1)`, old); err != nil {
+		t.Fatal(err)
+	}
+	channel, err := s.CreateNotificationChannel(ctx, NotificationChannel{Name: "purge-" + time.Now().Format("150405.000000000"), Type: "webhook", Enabled: true, Language: "en"}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = s.DeleteNotificationChannel(context.Background(), channel.ID) })
+	for _, status := range []string{"sent", "failed", "pending"} {
+		if _, err := s.pool.Exec(ctx, `INSERT INTO notification_delivery(channel_id,event,status,created_at) VALUES($1,'test',$2,$3)`, channel.ID, status, old); err != nil {
+			t.Fatal(err)
+		}
+	}
+	alerts, deliveries, err := s.PurgeAlertHistory(ctx, time.Now().Add(-180*24*time.Hour), time.Now().Add(-30*24*time.Hour))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if alerts < 1 || deliveries != 2 {
+		t.Fatalf("purged %d alerts and %d deliveries, want at least 1 and exactly 2", alerts, deliveries)
+	}
+	if _, err := s.GetAlertByFingerprint(ctx, "purge-open"); err != nil {
+		t.Fatalf("the open incident was purged: %v", err)
+	}
+	if _, err := s.GetAlertByFingerprint(ctx, "purge-old"); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("the old resolved incident was kept: %v", err)
+	}
+	var pending int
+	if err := s.pool.QueryRow(ctx, `SELECT count(*) FROM notification_delivery WHERE channel_id=$1 AND status='pending'`, channel.ID).Scan(&pending); err != nil || pending != 1 {
+		t.Fatalf("pending deliveries = %d (err %v), want 1", pending, err)
+	}
+	_, _ = s.pool.Exec(ctx, `DELETE FROM alert WHERE fingerprint='purge-open'`)
+}

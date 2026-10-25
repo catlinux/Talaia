@@ -124,10 +124,7 @@ tareas concretas de la fase actual y de la siguiente.
 - [x] API y panel: pantalla Alertas, contador en Flota y Ajustes de reglas, comprobaciones y canales
 - [ ] Docs EN/ES, prueba real del criterio y cierre en 0.6.0 (la revisión de seguridad con Opus está hecha: 0.5.14)
 - [ ] Seguimiento de la revisión de la fase 5 (Opus, 2026-10-25), todo de gravedad baja:
-  - [ ] El historial de alertas y los envíos ya terminados no se purgan nunca: añadir una retención (por ejemplo 180 días) como la de los resultados de comprobaciones
   - [ ] El motor lee de la base de datos reglas, silencios, incidentes abiertos y comprobaciones en cada evaluación (cada 5 s y en cada inventario): cachearlos e invalidarlos al cambiar si las flotas crecen
-  - [ ] Los canales de correo exigen usuario y contraseña: permitir relays SMTP sin autenticación (siempre con TLS)
-  - [ ] Los rangos especiales IPv6 poco usados (`::/96`, `100::/64`, `2001::/23` más allá de Teredo) no están en el guardián de salida
   - [ ] Parar o borrar un contenedor desde la API avisa al motor cuando se acepta el trabajo, no cuando termina bien; una parada fallida se vuelve a vigilar a los 2 minutos
 
 ## Bloque de operación (decidido el 2026-10-20, antes de cerrar la fase 2)

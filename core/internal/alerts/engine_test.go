@@ -32,6 +32,7 @@ type testStore struct {
 	silences   []store.Silence
 	checks     []store.AlertCheck
 	results    map[string]store.AlertCheckResult
+	purges     [][2]time.Time
 }
 
 func newTestStore() *testStore                                                 { return &testStore{alerts: map[string]store.Alert{}} }
@@ -106,6 +107,10 @@ func (s *testStore) LatestAlertCheckResult(_ context.Context, id string) (store.
 		return result, nil
 	}
 	return store.AlertCheckResult{}, store.ErrNotFound
+}
+func (s *testStore) PurgeAlertHistory(_ context.Context, alertsBefore, deliveriesBefore time.Time) (int64, int64, error) {
+	s.purges = append(s.purges, [2]time.Time{alertsBefore, deliveriesBefore})
+	return 0, 0, nil
 }
 func (s *testStore) SetAlertSilenced(_ context.Context, id string, silenced bool) error {
 	for fp, a := range s.alerts {

@@ -21,6 +21,9 @@ func TestCheck(t *testing.T) {
 		{"198.51.100.1", true, true}, {"203.0.113.1", true, true}, {"240.0.0.1", false, true},
 		{"fc00::1", false, true}, {"fc00::1", true, false}, {"2001:db8::1", true, true}, {"64:ff9b::7f00:1", false, true},
 		{"2002:0a00:0001::1", false, true}, {"2001:0000::f5ff:fffe", false, true},
+		{"::7f00:1", true, true}, {"::a00:1", true, true}, {"::1", true, false},
+		{"100::1", true, true}, {"2001:1::1", true, true}, {"64:ff9b:1::1", true, true}, {"fec0::1", true, true}, {"3fff::1", true, true},
+		{"2001:4860:4860::8888", false, false},
 		{"93.184.216.34", false, false}, {"2606:4700:4700::1111", false, false},
 	}
 	if err := Check(netip.MustParseAddr("fe80::1%eth0"), true); !errors.Is(err, ErrBlockedAddress) {

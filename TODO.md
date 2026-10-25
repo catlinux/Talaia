@@ -124,10 +124,7 @@ of the current phase and the next one.
 - [x] API and panel: Alerts screen, count in the fleet view and Settings for rules, checks and channels
 - [ ] Docs EN/ES, real test of the criterion and close at 0.6.0 (the Opus security review is done: 0.5.14)
 - [ ] Follow-ups of the phase 5 review (Opus, 2026-10-25), all low:
-  - [ ] Alert history and finished notification deliveries are never purged: add a retention (for example 180 days) like the check results have
   - [ ] The engine reads rules, silences, open incidents and checks from the database on every evaluation (every 5 s and on each inventory): cache them and invalidate on change if fleets grow
-  - [ ] Email channels require a username and password: allow SMTP relays without authentication (still with TLS)
-  - [ ] Rare IPv6 special ranges (`::/96`, `100::/64`, `2001::/23` beyond Teredo) are not in the outbound guard
   - [ ] Container stop/remove from the API tells the engine when the job is accepted, not when it succeeds; a failed stop is watched again after 2 minutes
 
 ## Operations block (decided 2026-10-20, before closing phase 2)

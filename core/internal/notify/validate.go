@@ -16,7 +16,7 @@ func ParseSecret(typ string, b []byte) (any, error) {
 	if e := json.Unmarshal(b, &v); e != nil {
 		return nil, fmt.Errorf("invalid secret")
 	}
-	required := map[string][]string{"telegram": {"token"}, "ntfy": {"topic"}, "email": {"username", "password"}, "discord": {"url"}, "webhook": {"url"}}
+	required := map[string][]string{"telegram": {"token"}, "ntfy": {"topic"}, "email": {}, "discord": {"url"}, "webhook": {"url"}}
 	fields, ok := required[typ]
 	if !ok {
 		return nil, fmt.Errorf("unsupported channel type")
@@ -25,6 +25,11 @@ func ParseSecret(typ string, b []byte) (any, error) {
 		if strings.TrimSpace(v[f]) == "" {
 			return nil, fmt.Errorf("secret field required")
 		}
+	}
+	// An SMTP relay may not need authentication, but a half-filled login is a
+	// mistake: both or none.
+	if typ == "email" && (strings.TrimSpace(v["username"]) == "") != (v["password"] == "") {
+		return nil, fmt.Errorf("username and password go together")
 	}
 	// The bot token goes into the request path of api.telegram.org: only the
 	// documented token shape is accepted so it cannot alter that path.
