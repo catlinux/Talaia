@@ -302,7 +302,9 @@ describe('alert settings', () => {
     fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Relay' } })
     fireEvent.change(screen.getByLabelText('SMTP host'), { target: { value: 'smtp.example.com' } })
     fireEvent.change(screen.getByLabelText('SMTP port'), { target: { value: '25' } })
-    fireEvent.change(screen.getByLabelText('From address'), { target: { value: 'talaia@example.com' } })
+    fireEvent.change(screen.getByLabelText('From address'), {
+      target: { value: 'talaia@example.com' },
+    })
     fireEvent.change(screen.getByLabelText(/Recipients/), { target: { value: 'ops@example.com' } })
 
     fireEvent.change(screen.getByLabelText('Username (optional)'), { target: { value: 'user' } })
