@@ -251,7 +251,7 @@ func (e *Engine) evaluate(ctx context.Context, only string) error {
 			continue
 		}
 		if r.Type == "check_failed" || r.Type == "cert_expiry" {
-			if err := e.evaluateChecks(ctx, r, states, stateByID, now, silences); err != nil {
+			if err := e.evaluateChecks(ctx, rules, r, states, stateByID, now, silences); err != nil {
 				return err
 			}
 			continue
@@ -261,7 +261,7 @@ func (e *Engine) evaluate(ctx context.Context, only string) error {
 				continue
 			}
 			sub := Subject{ServerID: s.ID, GroupID: s.GroupID, Kind: "server", Name: s.ID}
-			if !ruleMatches(r, sub) {
+			if !ruleApplies(rules, r, sub) {
 				continue
 			}
 			switch r.Type {
@@ -288,7 +288,7 @@ func (e *Engine) evaluate(ctx context.Context, only string) error {
 					return err
 				}
 			case "container_down", "container_unhealthy":
-				if err := e.evaluateContainers(ctx, r, s, now, silences); err != nil {
+				if err := e.evaluateContainers(ctx, rules, r, s, now, silences); err != nil {
 					return err
 				}
 			}
@@ -339,11 +339,11 @@ func (e *Engine) updateWatches(ctx context.Context, s ServerState, now time.Time
 	return nil
 }
 
-func (e *Engine) evaluateContainers(ctx context.Context, r store.AlertRule, s ServerState, now time.Time, silences []store.Silence) error {
+func (e *Engine) evaluateContainers(ctx context.Context, rules []store.AlertRule, r store.AlertRule, s ServerState, now time.Time, silences []store.Silence) error {
 	if r.Type == "container_unhealthy" {
 		for _, c := range s.Containers {
 			sub := Subject{ServerID: s.ID, GroupID: s.GroupID, Stack: c.Stack, Container: c.Name, Kind: "container", Name: c.Name}
-			if !ruleMatches(r, sub) {
+			if !ruleApplies(rules, r, sub) {
 				continue
 			}
 			state := s
@@ -375,7 +375,7 @@ func (e *Engine) evaluateContainers(ctx context.Context, r store.AlertRule, s Se
 		if found != nil {
 			sub.Stack = found.Stack
 		}
-		if !ruleMatches(r, sub) {
+		if !ruleApplies(rules, r, sub) {
 			continue
 		}
 		state := s
@@ -391,7 +391,7 @@ func (e *Engine) evaluateContainers(ctx context.Context, r store.AlertRule, s Se
 	return nil
 }
 
-func (e *Engine) evaluateChecks(ctx context.Context, r store.AlertRule, states []ServerState, byID map[string]ServerState, now time.Time, silences []store.Silence) error {
+func (e *Engine) evaluateChecks(ctx context.Context, rules []store.AlertRule, r store.AlertRule, states []ServerState, byID map[string]ServerState, now time.Time, silences []store.Silence) error {
 	checks, err := e.store.ListAlertChecks(ctx)
 	if err != nil {
 		return fmt.Errorf("list checks: %w", err)
@@ -425,7 +425,7 @@ func (e *Engine) evaluateChecks(ctx context.Context, r store.AlertRule, states [
 			}
 		}
 		sub := Subject{ServerID: state.ID, GroupID: state.GroupID, CheckID: ch.ID, Kind: "check", Name: ch.ID, Label: ch.Name}
-		if !ruleMatches(r, sub) {
+		if !ruleApplies(rules, r, sub) {
 			continue
 		}
 		e.mu.Lock()
@@ -555,30 +555,54 @@ func deleteSafe(e *Engine, fp string) { e.mu.Lock(); delete(e.pending, fp); e.mu
 func stringPtr(v string) *string      { return &v }
 
 func (e *Engine) resolveOrphans(ctx context.Context, rules []store.AlertRule, states map[string]ServerState, now time.Time) error {
-	enabled := map[string]bool{}
+	byID := make(map[string]store.AlertRule, len(rules))
 	for _, r := range rules {
-		if r.Enabled {
-			enabled[r.ID] = true
-		}
+		byID[r.ID] = r
 	}
 	e.mu.Lock()
 	defer e.mu.Unlock()
 	for fp, a := range e.active {
-		if a.RuleID == nil || !enabled[*a.RuleID] {
+		orphan := false
+		if a.RuleID == nil {
+			orphan = true
+		} else {
+			rule, ok := byID[*a.RuleID]
+			if !ok {
+				orphan = true
+			} else if a.ServerID != nil && *a.ServerID != "" {
+				if _, ok := states[*a.ServerID]; !ok {
+					orphan = true
+				}
+			}
+			if !orphan && !ruleApplies(rules, rule, alertSubject(a, states)) {
+				orphan = true
+			}
+		}
+		if orphan {
 			if err := e.store.ResolveAlert(ctx, a.ID, now); err != nil {
 				return fmt.Errorf("resolve orphan alert: %w", err)
 			}
 			delete(e.active, fp)
-			continue
-		}
-		if a.ServerID != nil && *a.ServerID != "" {
-			if _, ok := states[*a.ServerID]; !ok {
-				if err := e.store.ResolveAlert(ctx, a.ID, now); err != nil {
-					return fmt.Errorf("resolve vanished server alert: %w", err)
-				}
-				delete(e.active, fp)
-			}
 		}
 	}
 	return nil
+}
+
+// alertSubject rebuilds the subject of an open incident so the current rules
+// can be checked against it.
+func alertSubject(a store.Alert, states map[string]ServerState) Subject {
+	sub := Subject{Kind: a.SubjectKind, Name: a.SubjectName, Stack: a.Stack}
+	if a.ServerID != nil {
+		sub.ServerID = *a.ServerID
+		if state, ok := states[sub.ServerID]; ok {
+			sub.GroupID = state.GroupID
+		}
+	}
+	switch a.SubjectKind {
+	case "container":
+		sub.Container = a.SubjectName
+	case "check":
+		sub.CheckID = a.SubjectName
+	}
+	return sub
 }

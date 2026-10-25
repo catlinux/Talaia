@@ -420,4 +420,43 @@ func TestCPUAndMemoryPendingDurationAndHysteresis(t *testing.T) {
 	}
 }
 
+func TestServerOverrideResolvesShadowedOrganizationAlert(t *testing.T) {
+	st := newTestStore()
+	org := scenarioRule("org", "cpu_high", map[string]any{"threshold": 90, "for_seconds": 0})
+	org.ScopeType, org.Severity = "organization", "warning"
+	server := scenarioRule("server", "cpu_high", map[string]any{"threshold": 90, "for_seconds": 0})
+	server.ScopeType, server.ScopeServerID, server.Severity = "server", scenarioPtr("srv"), "warning"
+	st.rules = []store.AlertRule{org}
+	st.channels = []store.NotificationChannel{{ID: "one", Enabled: true}}
+	source := &testSource{states: []ServerState{{ID: "srv", HasMetrics: true, CPUPercent: 95}}}
+	e, c := scenarioEngine(st, source)
+
+	if err := e.evaluate(context.Background(), ""); err != nil {
+		t.Fatal(err)
+	}
+	if st.alerts["org:srv"].State != "firing" {
+		t.Fatalf("organization alert=%+v, want firing", st.alerts["org:srv"])
+	}
+
+	st.rules = []store.AlertRule{org, server}
+	evaluateAt(t, e, c, 5*time.Second)
+	if st.alerts["org:srv"].State != "resolved" {
+		t.Fatalf("shadowed organization alert=%+v, want resolved", st.alerts["org:srv"])
+	}
+	if st.alerts["server:srv"].State != "firing" {
+		t.Fatalf("server override alert=%+v, want firing", st.alerts["server:srv"])
+	}
+
+	evaluateAt(t, e, c, 5*time.Second)
+	firing := 0
+	for _, alert := range st.alerts {
+		if alert.State == "firing" {
+			firing++
+		}
+	}
+	if firing != 1 || len(st.alerts) != 2 {
+		t.Fatalf("alerts=%+v, want one firing override and no duplicate", st.alerts)
+	}
+}
+
 func scenarioPtr(v string) *string { return &v }

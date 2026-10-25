@@ -78,7 +78,7 @@ func TestAlertRuleHandlersUseStoreAndAuditChanges(t *testing.T) {
 	deps := AlertsDeps{Store: p.store, Audit: p.store}
 	get := alertRequest(p, user, effective, http.MethodGet, "/alert-rules", NewAlertRulesHandler(deps))
 	var builtins []alertRuleJSON
-	if get.Code != http.StatusOK || json.Unmarshal(get.Body.Bytes(), &builtins) != nil || len(builtins) != 6 {
+	if get.Code != http.StatusOK || json.Unmarshal(get.Body.Bytes(), &builtins) != nil || len(builtins) != 9 {
 		t.Fatalf("list built-in rules status=%d body=%s count=%d", get.Code, get.Body, len(builtins))
 	}
 	for _, rule := range builtins {
