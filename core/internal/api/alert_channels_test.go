@@ -17,6 +17,13 @@ import (
 
 type failingChannelTester struct{ err error }
 
+// The fake bot tokens are assembled at run time: a literal with the shape of a
+// real Telegram token in the source would be reported by secret scanners.
+var (
+	fakeFirstToken       = "123456789:" + strings.Repeat("F", 35)
+	fakeReplacementToken = "123456789:" + strings.Repeat("R", 35)
+)
+
 func (f failingChannelTester) SendTest(context.Context, string) error { return f.err }
 
 func TestAlertChannelEntryNeverSerializesSecret(t *testing.T) {
@@ -115,8 +122,8 @@ func TestAlertChannelSecretsStaySealedAndOutOfResponsesAndAudit(t *testing.T) {
 	p := newTestPanel(t)
 	user, effective := alertBinding(t, p, "channel-secrets-admin", string(rbac.RoleAdmin), store.ScopeOrganization, "", "", "")
 	deps := AlertsDeps{Store: p.store, Box: p.box, Audit: p.store}
-	create := authorizedRequest(p, user, effective, http.MethodPost, "/channels", `{"name":"ops","type":"telegram","enabled":true,"language":"en","config":{"chat_id":"123"},"secret":{"token":"123456789:AAFirstTokenFirstTokenFirstToken12"}}`, "", "", NewAlertChannelCreateHandler(deps))
-	if create.Code != http.StatusCreated || strings.Contains(create.Body.String(), "123456789:AAFirstTokenFirstTokenFirstToken12") {
+	create := authorizedRequest(p, user, effective, http.MethodPost, "/channels", `{"name":"ops","type":"telegram","enabled":true,"language":"en","config":{"chat_id":"123"},"secret":{"token":"`+fakeFirstToken+`"}}`, "", "", NewAlertChannelCreateHandler(deps))
+	if create.Code != http.StatusCreated || strings.Contains(create.Body.String(), fakeFirstToken) {
 		t.Fatalf("create status=%d body=%s", create.Code, create.Body)
 	}
 	var created alertChannelJSON
@@ -128,13 +135,13 @@ func TestAlertChannelSecretsStaySealedAndOutOfResponsesAndAudit(t *testing.T) {
 		t.Fatal(err)
 	}
 	plain, err := p.box.Open(sealed)
-	if err != nil || !bytes.Contains(plain, []byte("123456789:AAFirstTokenFirstTokenFirstToken12")) {
+	if err != nil || !bytes.Contains(plain, []byte(fakeFirstToken)) {
 		t.Fatalf("stored secret was not sealed JSON: plain=%s err=%v", plain, err)
 	}
 
 	before := append([]byte(nil), sealed...)
 	patch := authorizedRequest(p, user, effective, http.MethodPatch, "/channels/"+created.ID, `{"name":"ops-updated"}`, "channelID", created.ID, NewAlertChannelUpdateHandler(deps))
-	if patch.Code != http.StatusOK || strings.Contains(patch.Body.String(), "123456789:AAFirstTokenFirstTokenFirstToken12") {
+	if patch.Code != http.StatusOK || strings.Contains(patch.Body.String(), fakeFirstToken) {
 		t.Fatalf("patch without secret status=%d body=%s", patch.Code, patch.Body)
 	}
 	sealed, err = p.store.GetChannelSecret(context.Background(), created.ID)
@@ -142,12 +149,12 @@ func TestAlertChannelSecretsStaySealedAndOutOfResponsesAndAudit(t *testing.T) {
 		t.Fatalf("patch without secret changed sealed secret: err=%v", err)
 	}
 	plain, err = p.box.Open(sealed)
-	if err != nil || !bytes.Contains(plain, []byte("123456789:AAFirstTokenFirstTokenFirstToken12")) {
+	if err != nil || !bytes.Contains(plain, []byte(fakeFirstToken)) {
 		t.Fatalf("kept secret did not open: err=%v", err)
 	}
 
-	replace := authorizedRequest(p, user, effective, http.MethodPatch, "/channels/"+created.ID, `{"secret":{"token":"123456789:AAReplacementTokenReplacement12"}}`, "channelID", created.ID, NewAlertChannelUpdateHandler(deps))
-	if replace.Code != http.StatusOK || strings.Contains(replace.Body.String(), "123456789:AAReplacementTokenReplacement12") {
+	replace := authorizedRequest(p, user, effective, http.MethodPatch, "/channels/"+created.ID, `{"secret":{"token":"`+fakeReplacementToken+`"}}`, "channelID", created.ID, NewAlertChannelUpdateHandler(deps))
+	if replace.Code != http.StatusOK || strings.Contains(replace.Body.String(), fakeReplacementToken) {
 		t.Fatalf("patch with secret status=%d body=%s", replace.Code, replace.Body)
 	}
 	sealed, err = p.store.GetChannelSecret(context.Background(), created.ID)
@@ -155,13 +162,13 @@ func TestAlertChannelSecretsStaySealedAndOutOfResponsesAndAudit(t *testing.T) {
 		t.Fatal(err)
 	}
 	plain, err = p.box.Open(sealed)
-	if err != nil || !bytes.Contains(plain, []byte("123456789:AAReplacementTokenReplacement12")) {
+	if err != nil || !bytes.Contains(plain, []byte(fakeReplacementToken)) {
 		t.Fatalf("replacement secret was not stored: err=%v", err)
 	}
 
-	deps.Notifier = failingChannelTester{err: errors.New("send failed with 123456789:AAReplacementTokenReplacement12")}
+	deps.Notifier = failingChannelTester{err: errors.New("send failed with " + fakeReplacementToken)}
 	test := authorizedRequest(p, user, effective, http.MethodPost, "/channels/"+created.ID+"/test", `{}`, "channelID", created.ID, NewAlertChannelTestHandler(deps))
-	if test.Code != http.StatusOK || strings.Contains(test.Body.String(), "123456789:AAReplacementTokenReplacement12") || !strings.Contains(test.Body.String(), "[redacted]") {
+	if test.Code != http.StatusOK || strings.Contains(test.Body.String(), fakeReplacementToken) || !strings.Contains(test.Body.String(), "[redacted]") {
 		t.Fatalf("test response status=%d body=%s", test.Code, test.Body)
 	}
 	audit, err := p.store.ListAudit(context.Background(), 100)
@@ -170,12 +177,12 @@ func TestAlertChannelSecretsStaySealedAndOutOfResponsesAndAudit(t *testing.T) {
 	}
 	for _, event := range audit {
 		encoded, _ := json.Marshal(event.Details)
-		if bytes.Contains(encoded, []byte("123456789:AAFirstTokenFirstTokenFirstToken12")) || bytes.Contains(encoded, []byte("123456789:AAReplacementTokenReplacement12")) {
+		if bytes.Contains(encoded, []byte(fakeFirstToken)) || bytes.Contains(encoded, []byte(fakeReplacementToken)) {
 			t.Fatalf("audit event %q contains a channel secret: %s", event.Action, encoded)
 		}
 	}
 	list := authorizedRequest(p, user, effective, http.MethodGet, "/channels", `{}`, "", "", NewAlertChannelsHandler(deps))
-	if list.Code != http.StatusOK || strings.Contains(list.Body.String(), "123456789:AAReplacementTokenReplacement12") {
+	if list.Code != http.StatusOK || strings.Contains(list.Body.String(), fakeReplacementToken) {
 		t.Fatalf("list status=%d body=%s", list.Code, list.Body)
 	}
 }
