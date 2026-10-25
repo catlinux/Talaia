@@ -99,19 +99,41 @@ selector de rango ofrece **1 hora, 6 horas, 24 horas, 7 días y 30 días**; el p
 
 ## Reglas de alerta
 
-Talaia incluye seis reglas integradas:
+Talaia incluye nueve reglas integradas. Son de toda la organización, así que cubren todos los servidores,
+también los que añadas después, sin copiar nada:
 
 | Regla | Tipo | Gravedad | Comportamiento por defecto |
 |---|---|---|---|
 | Servidor sin conexión | `server_offline` | Crítica | El agente está desconectado y su último contacto fue hace al menos 45 segundos |
+| Uso de CPU alto | `cpu_high` | Aviso | CPU al 90 % o más durante 10 minutos |
+| Uso de memoria alto | `mem_high` | Aviso | Memoria al 90 % o más durante 10 minutos |
+| Aviso de uso de disco | `disk_high` | Aviso | El sistema de archivos raíz está al 80 % o más |
 | Uso de disco alto | `disk_high` | Crítica | El sistema de archivos raíz está al 90 % o más |
 | Contenedor parado | `container_down` | Crítica | Un contenedor vigilado lleva 20 segundos sin ejecutarse |
 | Contenedor no saludable | `container_unhealthy` | Aviso | La comprobación de salud de un contenedor lleva 60 segundos sin estar sana |
 | Comprobación fallida | `check_failed` | Crítica | Una comprobación falla dos veces seguidas |
 | Certificado a punto de caducar | `cert_expiry` | Aviso | El certificado de una comprobación caduca en 14 días o menos |
 
-Las reglas integradas se pueden editar y desactivar, pero no eliminar. Talaia no crea reglas de CPU ni de
-memoria por defecto; añádelas en **Ajustes > Alertas > Reglas** si las necesitas.
+Las reglas integradas se pueden editar y desactivar, pero no eliminar. Al actualizar Talaia solo añade las
+reglas integradas que falten (una regla del mismo tipo y gravedad que ya exista nunca se sustituye), así que tus
+cambios se conservan.
+
+### Ajustar las reglas de un servidor
+
+Abre un servidor y elige la pestaña **Alertas**. Lista las reglas que le afectan con sus valores efectivos y
+una etiqueta: **Heredada**, **Personalizada para este servidor** o **Desactivada en este servidor**.
+
+- **Personalizar** cambia los umbrales solo para este servidor.
+- **Desactivar en este servidor** hace que esa regla no avise en él (no se envía ninguna alerta de esa regla).
+- **Restaurar** elimina el ajuste y el servidor vuelve a heredar la regla de la organización.
+
+Por dentro, un ajuste es una regla de ámbito servidor. Una regla de ámbito más estrecho **sustituye** a una más
+amplia del mismo tipo **y la misma gravedad** para los sujetos a los que afecta (organización, luego grupo,
+servidor, stack, contenedor), aunque la estrecha esté desactivada. Las reglas del mismo tipo con distinta
+gravedad no se sustituyen: las de disco al 80 % (aviso) y al 90 % (crítica) conviven. Una alerta que estaba
+abierta cuando un ajuste pasó a sustituir su regla se resuelve. Las reglas de stack o contenedor, y las que solo
+existen para el servidor, aparecen en solo lectura; se gestionan en **Ajustes > Alertas > Reglas**. Las reglas
+de ámbito grupo todavía no se muestran en la pestaña.
 
 Una regla tiene un tipo, una gravedad (`warning` o `critical`), un ámbito, parámetros, un intervalo de
 repetición opcional y una lista de canales. El ámbito puede ser **organización**, **grupo**, **servidor**,

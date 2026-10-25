@@ -13,6 +13,13 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+## [0.5.18] - 2026-10-25
+
+### Añadido
+
+- Reglas de alerta estándar: el uso de CPU (90 % durante 10 minutos), el de memoria (90 % durante 10 minutos) y un aviso de disco (80 %) se suman a las reglas integradas, así que todos los servidores, también los que se añadan después, quedan cubiertos por defecto. Una actualización solo añade las que falten y nunca toca las reglas que hayas editado.
+- Ajustes de alertas por servidor: una regla más estrecha sustituye ahora a una más amplia del mismo tipo y gravedad para lo que abarca, aunque esté desactivada, y se resuelve la alerta abierta de la regla sustituida. La pantalla del servidor tiene una pestaña **Alertas** para personalizar una regla en ese servidor, desactivarla allí o restaurar el valor por defecto.
+
 ### Cambiado
 
 - La guía de monitorización tiene una puesta en marcha rápida que explica cómo crear un bot de Telegram, un canal y revisar las reglas.
@@ -675,7 +682,8 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
   `.gitattributes` y `.gitignore`.
 - Licencia WNCL-1.0 aplicada: archivo `LICENSE` y sección de créditos en los README.
 
-[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.5.17...HEAD
+[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.5.18...HEAD
+[0.5.18]: https://github.com/catlinux/Talaia/releases/tag/v0.5.18
 [0.5.17]: https://github.com/catlinux/Talaia/releases/tag/v0.5.17
 [0.5.16]: https://github.com/catlinux/Talaia/releases/tag/v0.5.16
 [0.5.15]: https://github.com/catlinux/Talaia/releases/tag/v0.5.15

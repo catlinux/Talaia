@@ -18,6 +18,13 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.5.18] - 2026-10-25
+
+### Added
+
+- Standard alert rules: CPU usage (90 % for 10 minutes), memory usage (90 % for 10 minutes) and a disk warning (80 %) join the built-in rules, so every server, also the ones added later, is covered by default. An update only adds the ones that are missing and never touches rules you edited.
+- Per-server alert settings: a narrower rule now replaces a broader rule of the same type and severity for what it matches, even when it is disabled, and an alert open from the replaced rule is resolved. The server screen has an **Alerts** tab to customise a rule for that server, turn it off there or restore the default.
+
 ### Changed
 
 - The monitoring guide has a quick start that walks through creating a Telegram bot, a channel and checking the rules.
@@ -675,7 +682,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.5.17...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.5.18...HEAD
+[0.5.18]: https://github.com/catlinux/Talaia/releases/tag/v0.5.18
 [0.5.17]: https://github.com/catlinux/Talaia/releases/tag/v0.5.17
 [0.5.16]: https://github.com/catlinux/Talaia/releases/tag/v0.5.16
 [0.5.15]: https://github.com/catlinux/Talaia/releases/tag/v0.5.15

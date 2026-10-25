@@ -99,19 +99,41 @@ selector offers **1 hour, 6 hours, 24 hours, 7 days and 30 days**; the panel ref
 
 ## Alert rules
 
-Talaia ships six built-in rules:
+Talaia ships nine built-in rules. They are organization-wide, so every server, including the ones you add
+later, is covered without copying anything:
 
 | Rule | Type | Severity | Default behaviour |
 |---|---|---|---|
 | Server offline | `server_offline` | Critical | The agent is disconnected and its last contact was at least 45 seconds ago |
+| CPU usage high | `cpu_high` | Warning | CPU at or above 90 % for 10 minutes |
+| Memory usage high | `mem_high` | Warning | Memory at or above 90 % for 10 minutes |
+| Disk usage warning | `disk_high` | Warning | The root filesystem is at or above 80 % |
 | Disk usage high | `disk_high` | Critical | The root filesystem is at or above 90 % |
 | Container down | `container_down` | Critical | A watched container has not been running for 20 seconds |
 | Container unhealthy | `container_unhealthy` | Warning | A container health check has been unhealthy for 60 seconds |
 | Health check failed | `check_failed` | Critical | A check fails twice in a row |
 | Certificate expiring | `cert_expiry` | Warning | A check certificate expires in 14 days or less |
 
-Built-in rules can be edited and disabled, but not deleted. Talaia does not create CPU or memory rules by
-default; add them from **Settings > Alerts > Rules** if you need them.
+Built-in rules can be edited and disabled, but not deleted. When Talaia is updated it only adds the built-in
+rules that are missing (a rule of the same type and severity already present is never replaced), so your edits
+are kept.
+
+### Adjusting the rules for one server
+
+Open a server and choose the **Alerts** tab. It lists the rules that apply to that server with their
+effective values and a badge: **Inherited**, **Customised for this server** or **Off for this server**.
+
+- **Customise** changes the thresholds for this server only.
+- **Turn off for this server** stops that rule from alerting on it (no alert is sent for it there).
+- **Restore default** removes the override and the server inherits the organization rule again.
+
+Under the hood an override is a server-scoped rule. A rule with a narrower scope **replaces** a broader rule
+of the same type **and the same severity** for the subjects it matches (organization, then group, server,
+stack, container), even when the narrow rule is disabled. Rules of the same type with a different severity do
+not replace each other: the 80 % warning and the 90 % critical disk rules coexist. An alert that was open
+when an override started replacing its rule is resolved. Rules scoped to a stack or a container, and rules
+that only exist for the server, are listed read-only; manage them in **Settings > Alerts > Rules**. Rules
+scoped to a group are not shown in the tab yet.
 
 A rule has a type, a severity (`warning` or `critical`), a scope, parameters, an optional repeat interval
 and a channel list. The scope can be **organization**, **group**, **server**, **stack** or **container**;
