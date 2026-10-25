@@ -11,6 +11,29 @@ progress. The related source of truth is [architecture.md](architecture.md); per
 
 [Recording](#what-is-recorded) · [Resolution and retention](#resolutions-downsampling-and-retention) · [Charts](#charts-in-the-panel) · [Alerts](#alert-rules) · [Evaluation](#how-alerts-are-evaluated) · [Containers](#container-watching-and-server-reboots) · [Silences](#silences) · [Checks](#checks) · [Channels](#notification-channels) · [Outbound guard](#outbound-guard) · [Permissions](#who-can-do-what) · [API](#api-endpoints) · [Test](#test-it-step-by-step) · [Troubleshooting](#troubleshooting)
 
+## Quick start
+
+To get alerts on a new server (example with Telegram):
+
+1. **Create the bot.** In Telegram open **@BotFather**, send `/newbot`, pick a name and a username ending in
+   `bot`. It gives you the **token**. It is a secret: do not publish it.
+2. **Activate the bot.** Open your bot and press **Start** (or send anything). Without this it cannot message
+   you.
+3. **Get your chat ID.** Open **@userinfobot**, press **Start** and copy the `Id` number. For a group, add the
+   bot to the group; the group ID is negative.
+4. **Create the channel.** In **Settings > Alerts > Channels** press add, choose **Telegram**, fill in the chat
+   ID and the bot token, and save.
+5. **Test it.** Press **Send test**: a message must reach the bot. If it fails, the (redacted) error shows on
+   the channel.
+6. **Review the rules.** **Settings > Alerts > Rules** holds the six built-in rules, already enabled. A rule
+   with no channels assigned uses **all enabled channels**, so they already notify through your channel. Add
+   the CPU or memory rules here if you want them (they are not created by default) and choose the repeat
+   interval (**never** = one notice when it opens and one when it resolves).
+7. **Check the criterion.** Follow [Test it step by step](#test-it-step-by-step) on a test server.
+
+The other channel types (ntfy, email, Discord, webhook) are set up the same way; their fields are in
+[Notification channels](#notification-channels).
+
 ## What is recorded
 
 The agent sends a host sample every **15 seconds**:

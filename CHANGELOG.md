@@ -18,6 +18,10 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+### Changed
+
+- The monitoring guide has a quick start that walks through creating a Telegram bot, a channel and checking the rules.
+
 ## [0.5.17] - 2026-10-25
 
 ### Added

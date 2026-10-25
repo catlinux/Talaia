@@ -11,6 +11,28 @@ todavía en curso. La referencia técnica es [arquitectura.md](arquitectura.md);
 
 [Registro](#qué-se-registra) · [Resolución y retención](#resoluciones-reducción-y-retención) · [Gráficos](#gráficos-del-panel) · [Alertas](#reglas-de-alerta) · [Evaluación](#cómo-se-evalúan-las-alertas) · [Contenedores](#vigilancia-de-contenedores-y-reinicios) · [Silencios](#silencios) · [Comprobaciones](#comprobaciones) · [Canales](#canales-de-notificación) · [Salida](#protección-del-tráfico-saliente) · [Permisos](#quién-puede-hacer-qué) · [API](#endpoints-de-la-api) · [Prueba](#probarlo-paso-a-paso) · [Problemas](#solución-de-problemas)
 
+## Puesta en marcha rápida
+
+Para recibir avisos en un servidor nuevo (ejemplo con Telegram):
+
+1. **Crea el bot.** En Telegram abre **@BotFather**, escribe `/newbot`, elige un nombre y un usuario que
+   acabe en `bot`. Te da el **token**. Es un secreto: no lo publiques.
+2. **Activa el bot.** Abre tu bot y pulsa **Iniciar** (o escribe algo). Sin esto no puede escribirte.
+3. **Obtén tu ID de chat.** Abre **@userinfobot**, pulsa **Iniciar** y copia el número `Id`. Para un grupo,
+   añade el bot al grupo; el ID del grupo es negativo.
+4. **Crea el canal.** En **Ajustes > Alertas > Canales** pulsa añadir, elige **Telegram**, rellena el ID del
+   chat y el token del bot, y guarda.
+5. **Pruébalo.** Pulsa **Enviar prueba**: debe llegar un mensaje al bot. Si falla, el error (censurado)
+   aparece en el canal.
+6. **Revisa las reglas.** En **Ajustes > Alertas > Reglas** están las seis reglas integradas, ya activas. Una
+   regla sin canales asignados usa **todos los canales activos**, así que ya avisan por tu canal. Añade aquí
+   las de CPU o memoria si las quieres (no vienen por defecto) y elige el intervalo de repetición
+   (**nunca** = un aviso al activarse y otro al resolverse).
+7. **Comprueba el criterio.** Sigue [Probarlo paso a paso](#probarlo-paso-a-paso) en un servidor de pruebas.
+
+Los demás tipos de canal (ntfy, correo, Discord, webhook) se configuran igual; sus campos están en
+[Canales de notificación](#canales-de-notificación).
+
 ## Qué se registra
 
 El agente envía una muestra del anfitrión cada **15 segundos**:

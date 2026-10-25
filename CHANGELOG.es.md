@@ -13,6 +13,10 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+### Cambiado
+
+- La guía de monitorización tiene una puesta en marcha rápida que explica cómo crear un bot de Telegram, un canal y revisar las reglas.
+
 ## [0.5.17] - 2026-10-25
 
 ### Añadido
