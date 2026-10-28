@@ -22,7 +22,7 @@
 
 > [!WARNING]
 > Talaia is in active development. Phase 4 (users, permissions, API keys, OIDC, recordings and
-> `talaiactl`) closed in 0.5.0. Phase 5 (monitoring, alerts, checks and channels) is in progress. Follow
+> `talaiactl`) closed in 0.5.0 and phase 5 (monitoring, alerts, checks and channels) in 0.6.0. Follow
 > the [roadmap](ROADMAP.md) for what comes next.
 
 ---
@@ -136,7 +136,7 @@ Each feature is tagged with the release where it is planned. See [ROADMAP.md](RO
 | Containers and stacks | Actions, live logs, Compose editor, container terminal, images/volumes/networks, adopt existing | Revision history and rollback, image update notices | Podman |
 | Whole server | Metrics, systemd, journald, apt updates and reboot, host terminal (phase 3 closed in 0.4.0) | Firewall, fail2ban, users and SSH keys, cron, file browser, hardening audit | — |
 | Deploys and apps | — | Stacks from Git, Dockerfile/Nixpacks builds, zero-downtime deploys, domains + SSL (Caddy), template catalog | Preview environments per pull request |
-| Monitoring and alerts | — | Metrics history, alert rules, HTTP/TCP checks, certificate expiry, Telegram/ntfy/email/Discord/webhook (phase 5 in progress) | Public status page |
+| Monitoring and alerts | — | Metrics history, alert rules, HTTP/TCP checks, certificate expiry, Telegram/ntfy/email/Discord/webhook (0.6.0) | Public status page |
 | Backups | — | restic plans, consistent database dumps, S3/B2/SFTP, restore from the panel | Automatic monthly restore test |
 | Fleet automation | — | Bulk actions, scheduled procedures, GitOps sync | Ansible playbooks, VPS provisioning via provider APIs |
 | Users and security | Single user with 2FA, trusted-device PIN, passkeys, audit log and recorded terminals (0.4.0) | Users, teams, server groups, scoped roles, invitations, API keys, OIDC SSO and talaiactl (0.5.0) | — |
@@ -147,8 +147,8 @@ Each feature is tagged with the release where it is planned. See [ROADMAP.md](RO
 > **Phase 4 status.** Closed in 0.5.0 after a real test with a second user. The guide is
 > [docs/en/permissions.md](docs/en/permissions.md).
 >
-> **Phase 5 status.** In progress. Metrics, alerts, checks, notification channels and the outbound guard are
-> implemented; the guide is [docs/en/monitoring.md](docs/en/monitoring.md).
+> **Phase 5 status.** Closed in 0.6.0 after a real test of a stopped container with Telegram. The guide is
+> [docs/en/monitoring.md](docs/en/monitoring.md).
 
 ## Architecture
 
@@ -324,7 +324,8 @@ While in development (`0.y.z`), each completed roadmap phase raises the minor ve
 | 0.3.0 | Phase 2: containers and stacks |
 | **0.4.0** | **Phase 3: whole server — MVP** |
 | **0.5.0** | **Phase 4: users, permissions and audit** |
-| 0.6.0 – 0.9.0 | Phases 5 to 8 |
+| **0.6.0** | **Phase 5: monitoring and alerts** |
+| 0.7.0 – 0.9.0 | Phases 6 to 8 |
 | **1.0.0** | **Phase 9: first stable release** |
 
 Patch versions (`z`) are used for fixes and small changes inside a phase.

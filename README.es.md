@@ -22,8 +22,8 @@
 
 > [!WARNING]
 > Talaia está en desarrollo activo. La fase 4 (usuarios, permisos, claves de API, OIDC, grabaciones y
-> `talaiactl`) se cerró en 0.5.0. La fase 5 (monitorización, alertas, comprobaciones y canales) está en
-> curso. Sigue la [hoja de ruta](ROADMAP.es.md) para ver qué viene.
+> `talaiactl`) se cerró en 0.5.0. La fase 5 (monitorización, alertas, comprobaciones y canales) se cerró
+> en 0.6.0. Sigue la [hoja de ruta](ROADMAP.es.md) para ver qué viene.
 
 ---
 
@@ -135,7 +135,7 @@ Cada funcionalidad indica la versión donde está prevista. Detalle en [ROADMAP.
 | Contenedores y stacks | Acciones, logs en directo, editor Compose, terminal del contenedor, imágenes/volúmenes/redes, adoptar existentes | Historial de revisiones y reversión, avisos de imágenes nuevas | Podman |
 | Servidor entero | Métricas, systemd, journald, actualizaciones apt y reinicio, terminal del anfitrión (fase 3 cerrada en 0.4.0) | Cortafuegos, fail2ban, usuarios y claves SSH, cron, explorador de archivos, auditoría de bastionado | — |
 | Despliegues y apps | — | Stacks desde Git, builds con Dockerfile/Nixpacks, despliegue sin cortes, dominios + SSL (Caddy), catálogo de plantillas | Entornos de prueba por pull request |
-| Monitorización y alertas | — | Historial de métricas, reglas de alerta, comprobaciones HTTP/TCP, caducidad de certificados, Telegram/ntfy/correo/Discord/webhook (fase 5 en curso) | Página de estado pública |
+| Monitorización y alertas | — | Historial de métricas, reglas de alerta, comprobaciones HTTP/TCP, caducidad de certificados, Telegram/ntfy/correo/Discord/webhook (0.6.0) | Página de estado pública |
 | Copias de seguridad | — | Planes con restic, volcados coherentes de bases de datos, S3/B2/SFTP, restaurar desde el panel | Prueba de restauración mensual automática |
 | Automatización de flota | — | Acciones en bloque, procedimientos programados, sincronización GitOps | Playbooks de Ansible, creación de VPS vía API del proveedor |
 | Usuarios y seguridad | Usuario único con 2FA, PIN en dispositivos de confianza, claves de acceso, registro de auditoría y terminales grabadas (0.4.0) | Usuarios, equipos, grupos de servidores, roles por ámbito, invitaciones, claves de API, SSO OIDC y talaiactl (0.5.0) | — |
@@ -146,9 +146,8 @@ Cada funcionalidad indica la versión donde está prevista. Detalle en [ROADMAP.
 > **Estado de la fase 4.** Cerrada en 0.5.0 tras una prueba real con un segundo usuario. La guía es
 > [docs/es/permisos.md](docs/es/permisos.md).
 >
-> **Estado de la fase 5.** En curso. Las métricas, alertas, comprobaciones, canales de notificación y la
-> protección de salida están implementados; la guía es
-> [docs/es/monitorizacion.md](docs/es/monitorizacion.md).
+> **Estado de la fase 5.** Cerrada en 0.6.0 tras una prueba real de un contenedor parado con Telegram. La guía
+> es [docs/es/monitorizacion.md](docs/es/monitorizacion.md).
 
 ## Arquitectura
 
@@ -328,7 +327,8 @@ Durante el desarrollo (`0.y.z`), cada fase completada de la hoja de ruta sube la
 | 0.3.0 | Fase 2: contenedores y stacks |
 | **0.4.0** | **Fase 3: servidor entero — MVP** |
 | **0.5.0** | **Fase 4: usuarios, permisos y auditoría** |
-| 0.6.0 – 0.9.0 | Fases 5 a 8 |
+| **0.6.0** | **Fase 5: monitorización y alertas** |
+| 0.7.0 – 0.9.0 | Fases 6 a 8 |
 | **1.0.0** | **Fase 9: primera versión estable** |
 
 Las versiones de parche (`z`) se usan para correcciones y cambios pequeños dentro de una fase.

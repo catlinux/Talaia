@@ -122,7 +122,7 @@ tareas concretas de la fase actual y de la siguiente.
 - [x] Comprobaciones HTTP/TCP/TLS desde el core y caducidad de certificados
 - [x] Notificaciones por Telegram, ntfy, correo, Discord y webhook firmado, con secretos cifrados y reintentos
 - [x] API y panel: pantalla Alertas, contador en Flota y Ajustes de reglas, comprobaciones y canales
-- [ ] Docs EN/ES, prueba real del criterio y cierre en 0.6.0 (la revisión de seguridad con Opus está hecha: 0.5.14)
+- [x] Docs EN/ES, prueba real del criterio y cierre en 0.6.0 (la revisión de seguridad con Opus está hecha: 0.5.14; la prueba del contenedor parado pasó con Telegram el 2026-10-28; la del disco se omitió; los tests del motor cubren la regla de disco)
 - [ ] Seguimiento de la revisión de la fase 5 (Opus, 2026-10-25), todo de gravedad baja:
   - [ ] El motor lee de la base de datos reglas, silencios, incidentes abiertos y comprobaciones en cada evaluación (cada 5 s y en cada inventario): cachearlos e invalidarlos al cambiar si las flotas crecen
   - [ ] Parar o borrar un contenedor desde la API avisa al motor cuando se acepta el trabajo, no cuando termina bien; una parada fallida se vuelve a vigilar a los 2 minutos

@@ -122,7 +122,7 @@ of the current phase and the next one.
 - [x] HTTP/TCP/TLS checks from the core and certificate expiry
 - [x] Notifications through Telegram, ntfy, email, Discord and signed webhook, with encrypted secrets and retries
 - [x] API and panel: Alerts screen, count in the fleet view and Settings for rules, checks and channels
-- [ ] Docs EN/ES, real test of the criterion and close at 0.6.0 (the Opus security review is done: 0.5.14)
+- [x] Docs EN/ES, real test of the criterion and close at 0.6.0 (the Opus security review is done: 0.5.14; the stopped-container test passed with Telegram on 2026-10-28; the disk test was skipped; the engine tests cover the disk rule)
 - [ ] Follow-ups of the phase 5 review (Opus, 2026-10-25), all low:
   - [ ] The engine reads rules, silences, open incidents and checks from the database on every evaluation (every 5 s and on each inventory): cache them and invalidate on change if fleets grow
   - [ ] Container stop/remove from the API tells the engine when the job is accepted, not when it succeeds; a failed stop is watched again after 2 minutes
