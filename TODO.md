@@ -128,6 +128,22 @@ of the current phase and the next one.
   - [ ] Container stop/remove from the API tells the engine when the job is accepted, not when it succeeds; a failed stop is watched again after 2 minutes
   - [ ] The server **Alerts** tab does not show group-scoped rules as inherited: the panel's `Server` type carries no group, so `AlertsSection` never receives `groupId`
 
+## Phase 6 · Deploys, domains and templates (0.7.0, see `.agents/plans/fase6/fase6.PLAN.md`)
+
+Blocked until the maintainer answers M1-M6 in the plan (Caddy and ports 80/443, builds without a Dockerfile, the 15 templates, Git providers, pull request environments, test environment).
+
+- [ ] Contract: typed commands for Git source, build, release and proxy
+- [ ] Apps, environment variables, deployments and domains in the database; `server.proxy` permission
+- [ ] Agent: hardened Git fetch with per-app deploy keys and pinned host keys
+- [ ] Core: signed push webhooks (GitHub, GitLab, Gitea/Forgejo) and branch polling
+- [ ] Agent: builds with a Dockerfile, and without one if a maintained builder exists
+- [ ] Agent: managed Caddy (domains and automatic HTTPS) or an external proxy when 80/443 are taken
+- [ ] Agent: zero-downtime release, rollback to one of the last three images and image cleanup
+- [ ] Core: deploy pipeline (one deploy per app, superseded pushes, logs) and its API
+- [ ] Template catalog (15 apps) shipped with the core
+- [ ] Panel: Apps, new app wizard (mockup 4), Domains and Templates
+- [ ] Docs EN/ES, Opus security review, real test of the criterion and close at 0.7.0
+
 ## Operations block (decided 2026-10-20, before closing phase 2)
 
 **Priority now (maintainer, 2026-10-20):** the updates from the panel and the external access, to keep updating and managing from outside the home. Design and steps: [`.agents/plans/operacion/operacion.PLAN.md`](.agents/plans/operacion/operacion.PLAN.md).

@@ -128,6 +128,22 @@ tareas concretas de la fase actual y de la siguiente.
   - [ ] Parar o borrar un contenedor desde la API avisa al motor cuando se acepta el trabajo, no cuando termina bien; una parada fallida se vuelve a vigilar a los 2 minutos
   - [ ] La pestaña **Alertas** del servidor no muestra como heredadas las reglas de ámbito grupo: el tipo `Server` del panel no lleva el grupo, así que `AlertsSection` nunca recibe `groupId`
 
+## Fase 6 · Despliegues, dominios y plantillas (0.7.0, ver `.agents/plans/fase6/fase6.PLAN.md`)
+
+Bloqueada hasta que el mantenedor conteste M1-M6 del plan (Caddy y los puertos 80/443, builds sin Dockerfile, las 15 plantillas, proveedores Git, entornos por pull request, entorno de prueba).
+
+- [ ] Contrato: comandos tipados de origen Git, build, release y proxy
+- [ ] Apps, variables de entorno, despliegues y dominios en la base de datos; permiso `server.proxy`
+- [ ] Agente: fetch de Git endurecido con clave de despliegue por app y claves de host fijadas
+- [ ] Core: webhooks de push firmados (GitHub, GitLab, Gitea/Forgejo) y sondeo de la rama
+- [ ] Agente: builds con Dockerfile, y sin él si existe un constructor mantenido
+- [ ] Agente: Caddy gestionado (dominios y HTTPS automático) o proxy externo cuando 80/443 están ocupados
+- [ ] Agente: release sin corte, vuelta atrás a una de las tres últimas imágenes y limpieza de imágenes
+- [ ] Core: canalización de despliegue (un despliegue por app, pushes sustituidos, logs) y su API
+- [ ] Catálogo de plantillas (15 apps) publicado con el core
+- [ ] Panel: Apps, asistente de nueva app (maqueta 4), Dominios y Plantillas
+- [ ] Docs EN/ES, revisión de seguridad Opus, prueba real del criterio y cierre en 0.7.0
+
 ## Bloque de operación (decidido el 2026-10-20, antes de cerrar la fase 2)
 
 **Prioridad ahora (mantenedor, 2026-10-20):** las actualizaciones desde el panel y el acceso externo, para seguir actualizando y gestionando desde fuera de casa. Diseño y pasos: [`.agents/plans/operacion/operacion.PLAN.md`](.agents/plans/operacion/operacion.PLAN.md).
