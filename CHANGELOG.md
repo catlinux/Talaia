@@ -18,6 +18,12 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.5.19] - 2026-10-28
+
+### Fixed
+
+- Metric consolidation from 5 minutes to 1 hour failed every few minutes with `column "cpu_pct" does not exist`, so the hourly tables (server and container) were never filled and the log filled with warnings. The step now reads the columns of the 5-minute tables; an hour is the average of its 5-minute averages (the rows carry no sample count to weight by) and the maximum of their maxima. The hourly buckets fill in from the 5-minute data that already exists.
+
 ## [0.5.18] - 2026-10-25
 
 ### Added
@@ -682,7 +688,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.5.18...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.5.19...HEAD
+[0.5.19]: https://github.com/catlinux/Talaia/releases/tag/v0.5.19
 [0.5.18]: https://github.com/catlinux/Talaia/releases/tag/v0.5.18
 [0.5.17]: https://github.com/catlinux/Talaia/releases/tag/v0.5.17
 [0.5.16]: https://github.com/catlinux/Talaia/releases/tag/v0.5.16

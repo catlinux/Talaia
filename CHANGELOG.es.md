@@ -13,6 +13,12 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+## [0.5.19] - 2026-10-28
+
+### Corregido
+
+- La consolidación de métricas de 5 minutos a 1 hora fallaba cada pocos minutos con `column "cpu_pct" does not exist`, así que las tablas horarias (de servidor y de contenedor) nunca se llenaban y el registro se llenaba de avisos. El paso ya lee las columnas de las tablas de 5 minutos; una hora es la media de sus medias de 5 minutos (las filas no llevan el número de muestras para ponderar) y el máximo de sus máximos. Los intervalos de 1 hora se rellenan con los datos de 5 minutos que ya existen.
+
 ## [0.5.18] - 2026-10-25
 
 ### Añadido
@@ -682,7 +688,8 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
   `.gitattributes` y `.gitignore`.
 - Licencia WNCL-1.0 aplicada: archivo `LICENSE` y sección de créditos en los README.
 
-[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.5.18...HEAD
+[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.5.19...HEAD
+[0.5.19]: https://github.com/catlinux/Talaia/releases/tag/v0.5.19
 [0.5.18]: https://github.com/catlinux/Talaia/releases/tag/v0.5.18
 [0.5.17]: https://github.com/catlinux/Talaia/releases/tag/v0.5.17
 [0.5.16]: https://github.com/catlinux/Talaia/releases/tag/v0.5.16

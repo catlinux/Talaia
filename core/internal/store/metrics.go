@@ -95,11 +95,18 @@ func (s *Store) DownsampleServer(ctx context.Context, from, to Resolution, until
 		return err
 	}
 	toTable := "metric_server_" + string(to)
+	// The raw table holds samples; the aggregated ones hold averages and maxima.
+	// An hour is the average of its 5-minute averages: the rows carry no sample
+	// count to weight by, and 5-minute buckets only differ in size at the edges.
+	values := `avg(cpu_pct), max(cpu_pct), avg(mem_used)::double precision, max(mem_used), max(mem_total), avg(disk_used)::double precision, max(disk_used), max(disk_total), avg(net_rx_bps), avg(net_tx_bps)`
+	if from != ResolutionRaw {
+		values = `avg(cpu_avg), max(cpu_max), avg(mem_used_avg), max(mem_used_max), max(mem_total), avg(disk_used_avg), max(disk_used_max), max(disk_total), avg(net_rx_bps_avg), avg(net_tx_bps_avg)`
+	}
 	query := fmt.Sprintf(`INSERT INTO %s (time, server_id, cpu_avg, cpu_max, mem_used_avg, mem_used_max, mem_total, disk_used_avg, disk_used_max, disk_total, net_rx_bps_avg, net_tx_bps_avg)
-SELECT bucket, server_id, avg(cpu_pct), max(cpu_pct), avg(mem_used)::double precision, max(mem_used), max(mem_total), avg(disk_used)::double precision, max(disk_used), max(disk_total), avg(net_rx_bps), avg(net_tx_bps)
+SELECT bucket, server_id, %s
 FROM (SELECT time_bucket('%s', time) bucket, * FROM %s) m
 GROUP BY bucket, server_id HAVING bucket + interval '%s' <= $1
-ON CONFLICT (server_id, time) DO NOTHING`, toTable, interval, fromTable, interval)
+ON CONFLICT (server_id, time) DO NOTHING`, toTable, values, interval, fromTable, interval)
 	if _, err := s.pool.Exec(ctx, query, until); err != nil {
 		return fmt.Errorf("downsample server metrics: %w", err)
 	}
@@ -113,11 +120,15 @@ func (s *Store) DownsampleContainer(ctx context.Context, from, to Resolution, un
 	}
 	fromTable = strings.Replace(fromTable, "metric_server", "metric_container", 1)
 	toTable := "metric_container_" + string(to)
+	values := `avg(cpu_pct), max(cpu_pct), avg(mem_used)::double precision, max(mem_used), max(mem_limit)`
+	if from != ResolutionRaw {
+		values = `avg(cpu_avg), max(cpu_max), avg(mem_used_avg), max(mem_used_max), max(mem_limit)`
+	}
 	query := fmt.Sprintf(`INSERT INTO %s (time, server_id, container_name, stack, cpu_avg, cpu_max, mem_used_avg, mem_used_max, mem_limit)
-SELECT bucket, server_id, container_name, max(stack), avg(cpu_pct), max(cpu_pct), avg(mem_used)::double precision, max(mem_used), max(mem_limit)
+SELECT bucket, server_id, container_name, max(stack), %s
 FROM (SELECT time_bucket('%s', time) bucket, * FROM %s) m
 GROUP BY bucket, server_id, container_name HAVING bucket + interval '%s' <= $1
-ON CONFLICT (server_id, container_name, time) DO NOTHING`, toTable, interval, fromTable, interval)
+ON CONFLICT (server_id, container_name, time) DO NOTHING`, toTable, values, interval, fromTable, interval)
 	if _, err := s.pool.Exec(ctx, query, until); err != nil {
 		return fmt.Errorf("downsample container metrics: %w", err)
 	}
