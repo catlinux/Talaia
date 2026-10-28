@@ -13,6 +13,12 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+## [0.5.20] - 2026-10-28
+
+### Cambiado
+
+- La pantalla de Ajustes se organiza en pestañas: **Cuenta** (dispositivos de confianza y claves de acceso), **Servidores**, **Alertas**, **Integraciones** (inicio de sesión único y claves de API) y **Sistema** (versión y actualizaciones). Cada usuario solo ve las pestañas que puede usar, se recuerda la última y el progreso de una actualización en curso sigue visible sobre las pestañas.
+
 ## [0.5.19] - 2026-10-28
 
 ### Corregido
@@ -688,7 +694,8 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
   `.gitattributes` y `.gitignore`.
 - Licencia WNCL-1.0 aplicada: archivo `LICENSE` y sección de créditos en los README.
 
-[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.5.19...HEAD
+[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.5.20...HEAD
+[0.5.20]: https://github.com/catlinux/Talaia/releases/tag/v0.5.20
 [0.5.19]: https://github.com/catlinux/Talaia/releases/tag/v0.5.19
 [0.5.18]: https://github.com/catlinux/Talaia/releases/tag/v0.5.18
 [0.5.17]: https://github.com/catlinux/Talaia/releases/tag/v0.5.17

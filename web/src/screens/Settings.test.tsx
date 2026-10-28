@@ -97,6 +97,7 @@ function fakeAccess(): AccessApi {
 describe('Settings', () => {
   beforeEach(async () => {
     localStorage.clear()
+    sessionStorage.clear()
     await i18n.changeLanguage('en')
   })
 
@@ -164,7 +165,7 @@ describe('Settings', () => {
       }),
     )
 
-    expect(await screen.findByText('Servers')).toBeTruthy()
+    expect(await screen.findByRole('heading', { name: 'Servers' })).toBeTruthy()
     expect(await screen.findByText('vps-web-01')).toBeTruthy()
     expect(screen.getByText('vps-db-01')).toBeTruthy()
     expect(screen.getByText('Connected')).toBeTruthy()

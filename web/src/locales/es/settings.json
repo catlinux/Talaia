@@ -1,6 +1,14 @@
 {
   "title": "Ajustes",
-  "subtitle": "Versión y actualizaciones",
+  "subtitle": "Cuenta, servidores, alertas y sistema",
+  "tabs": {
+    "label": "Secciones de ajustes",
+    "account": "Cuenta",
+    "servers": "Servidores",
+    "alerts": "Alertas",
+    "integrations": "Integraciones",
+    "system": "Sistema"
+  },
   "version": {
     "title": "Versión",
     "current": "Versión en marcha",

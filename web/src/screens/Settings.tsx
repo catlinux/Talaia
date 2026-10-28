@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { createAlertsAdminApi, type AlertsAdminApi } from '../api/alertsAdmin'
@@ -25,6 +25,12 @@ import { ManualUpgrade } from './server/ManualUpgrade'
 import { AccessCard } from './settings/AccessCard'
 import { AlertsSettings } from './settings/AlertsSettings'
 import { APIKeysCard } from './settings/APIKeysCard'
+import {
+  SettingsTabs,
+  readSettingsTab,
+  storeSettingsTab,
+  type SettingsTab,
+} from './settings/SettingsTabs'
 import { OIDCSettingsCard } from './settings/OIDCSettingsCard'
 
 /** pollEvery is how often the progress of a running update is asked for. */
@@ -170,6 +176,7 @@ export function Settings({
   const oidc = oidcApi ?? (api === defaultApi ? defaultOIDCApi : undefined)
   const groupsClient = groupsApi ?? (api === defaultApi ? defaultGroupsApi : undefined)
   const alertsAdmin = alertsApi ?? (api === defaultApi ? defaultAlertsApi : undefined)
+  const [selectedTab, setSelectedTab] = useState<SettingsTab | null>(() => readSettingsTab())
   const [view, setView] = useState<View>({ status: 'loading' })
   const [confirming, setConfirming] = useState(false)
   const [requesting, setRequesting] = useState(false)
@@ -578,6 +585,28 @@ export function Settings({
       : t('settings:update.to', { sha: shortSHA(update.latest) })
   }
 
+  const availableTabs = useMemo<SettingsTab[]>(() => {
+    const tabs: SettingsTab[] = []
+    if (access !== undefined) tabs.push('account')
+    if (showServers) tabs.push('servers')
+    if (canAlerts && alertsAdmin !== undefined) tabs.push('alerts')
+    if (keys !== undefined || (canSettings && oidc !== undefined)) tabs.push('integrations')
+    if (canSettings && system !== null && update !== null) tabs.push('system')
+    return tabs
+  }, [access, alertsAdmin, canAlerts, canSettings, keys, oidc, showServers, system, update])
+
+  // A stored tab may refer to a card that is not available yet (permissions or
+  // system data still loading), so fall back without overwriting the choice.
+  const activeTab =
+    selectedTab !== null && availableTabs.includes(selectedTab)
+      ? selectedTab
+      : (availableTabs[0] ?? 'account')
+
+  const selectTab = (tab: SettingsTab) => {
+    setSelectedTab(tab)
+    storeSettingsTab(tab)
+  }
+
   return (
     <section className="settings" aria-labelledby="settings-title">
       <header className="settings__head">
@@ -605,120 +634,40 @@ export function Settings({
         </p>
       ) : null}
 
-      {keys !== undefined ? (
-        <APIKeysCard api={keys} canListAll={canUsers} servers={servers ?? []} groups={groups} />
-      ) : null}
-
-      {canSettings && oidc !== undefined ? <OIDCSettingsCard api={oidc} /> : null}
-
-      {canAlerts && alertsAdmin !== undefined ? (
-        <AlertsSettings api={alertsAdmin} servers={servers ?? []} groups={groups} />
-      ) : null}
-
-      {canSettings && system !== null && update !== null ? (
-        <>
-          <section className="settings__card" aria-labelledby="settings-version-title">
-            <h2 className="settings__card-title" id="settings-version-title">
-              {t('settings:version.title')}
-            </h2>
-
-            <dl className="settings__facts">
-              <div className="settings__fact">
-                <dt>{t('settings:version.current')}</dt>
-                <dd>{system.version}</dd>
-              </div>
-              <div className="settings__fact">
-                <dt>{t('settings:version.commit')}</dt>
-                <dd>
-                  {system.commit === '' ? t('settings:version.unknown') : shortSHA(system.commit)}
-                </dd>
-              </div>
-              <div className="settings__fact">
-                <dt>{t('settings:version.checked')}</dt>
-                <dd>{formatChecked(update.checkedAt, language, t('settings:version.never'))}</dd>
-              </div>
-            </dl>
-
-            <div className="settings__meta">
-              {stateText !== null ? (
-                <span
-                  className={
-                    update.error !== ''
-                      ? 'settings__state settings__state--error'
-                      : 'settings__state'
-                  }
-                >
-                  {stateText}
-                </span>
-              ) : null}
-              {update.latest !== '' ? (
-                <>
-                  <span className={`settings__badge settings__badge--${update.ci}`}>
-                    {t('settings:ci.label')} {t(`settings:ci.${update.ci}`)}
-                  </span>
-                  <span className="settings__latest">
-                    {t('settings:version.latest', { sha: shortSHA(update.latest) })}
-                  </span>
-                </>
-              ) : null}
-            </div>
-
-            <div className="settings__actions">
-              <button
-                type="button"
-                className="settings__button"
-                disabled={checkingNow || busy}
-                onClick={checkNow}
-              >
-                {checkingNow ? t('settings:check.checking') : t('settings:check.button')}
-              </button>
-              <button
-                type="button"
-                className="settings__button settings__button--primary"
-                disabled={!canUpdate}
-                onClick={() => setConfirming(true)}
-              >
-                {buttonText}
-              </button>
-            </div>
-
-            {checkNotice !== null ? (
-              <p className="settings__notice" role="status">
-                {checkNotice}
-              </p>
-            ) : null}
-
-            {actionError !== null ? (
-              <p className="settings__message settings__message--error" role="alert">
-                {actionError}
-              </p>
-            ) : null}
-          </section>
-
-          {showProgress && status !== null ? (
-            <section
-              className={`settings__card settings__progress${progressTone}`}
-              aria-labelledby="settings-progress-title"
-            >
-              <h2 className="settings__card-title" id="settings-progress-title">
-                {t('settings:progress.title')}
-              </h2>
-              <p className="settings__progress-state" role="status">
-                {progressText}
-              </p>
-              {status.log.length > 0 ? (
-                <ul className="settings__log" aria-label={t('settings:progress.log')}>
-                  {status.log.slice(-logShown).map((line, index) => (
-                    <li key={`${index}-${line}`}>{line}</li>
-                  ))}
-                </ul>
-              ) : null}
-            </section>
+      {showProgress && status !== null ? (
+        <section
+          className={`settings__card settings__progress${progressTone}`}
+          aria-labelledby="settings-progress-title"
+        >
+          <h2 className="settings__card-title" id="settings-progress-title">
+            {t('settings:progress.title')}
+          </h2>
+          <p className="settings__progress-state" role="status">
+            {progressText}
+          </p>
+          {status.log.length > 0 ? (
+            <ul className="settings__log" aria-label={t('settings:progress.log')}>
+              {status.log.slice(-logShown).map((line, index) => (
+                <li key={`${index}-${line}`}>{line}</li>
+              ))}
+            </ul>
           ) : null}
+        </section>
+      ) : null}
 
-          {access !== undefined ? <AccessCard api={access} /> : null}
+      <SettingsTabs tabs={availableTabs} active={activeTab} onChange={selectTab} />
 
-          {showServers ? (
+      {availableTabs.length > 0 ? (
+        <div
+          className="server-tabpanel"
+          role="tabpanel"
+          id={`settings-panel-${activeTab}`}
+          aria-labelledby={`settings-tab-${activeTab}`}
+          tabIndex={0}
+        >
+          {activeTab === 'account' && access !== undefined ? <AccessCard api={access} /> : null}
+
+          {activeTab === 'servers' && showServers ? (
             <section className="settings__card" aria-labelledby="settings-servers-title">
               <div className="settings__card-head">
                 <h2 className="settings__card-title" id="settings-servers-title">
@@ -803,59 +752,161 @@ export function Settings({
             </section>
           ) : null}
 
-          {canSettings && (update.pending.length > 0 || notes.length > 0) ? (
-            <section className="settings__card" aria-labelledby="settings-pending-title">
-              <h2 className="settings__card-title" id="settings-pending-title">
-                {t('settings:pending.title')}
-              </h2>
-              {notes.length > 0 ? (
-                <>
-                  <h3 className="settings__section-title">{t('settings:pending.whatsNew')}</h3>
-                  <ul className="settings__notes">
-                    {visibleNotes.map((note, index) => (
-                      <li key={`${index}-${note}`}>
-                        <NoteText note={note} />
-                      </li>
-                    ))}
-                  </ul>
-                  {notes.length > 8 ? (
-                    <button
-                      type="button"
-                      className="settings__button settings__notes-toggle"
-                      aria-expanded={notesExpanded}
-                      onClick={() => setNotesExpanded((value) => !value)}
-                    >
-                      {notesExpanded
-                        ? t('settings:pending.showLess')
-                        : t('settings:pending.showAll')}
-                    </button>
-                  ) : null}
-                </>
-              ) : null}
-              {update.pending.length > 0 ? (
-                <>
-                  <h3 className="settings__section-title">{t('settings:pending.commits')}</h3>
-                  <ul className="settings__pending">
-                    {shown.map((commit) => (
-                      <li className="settings__commit" key={commit.sha}>
-                        <code>{shortSHA(commit.sha)}</code>
-                        <span className="settings__commit-subject">{commit.subject}</span>
-                        <span className="settings__commit-author">{commit.author}</span>
-                      </li>
-                    ))}
-                  </ul>
-                  {more > 0 ? (
-                    <p className="settings__more">{t('settings:pending.more', { count: more })}</p>
-                  ) : null}
-                </>
-              ) : null}
-            </section>
+          {activeTab === 'alerts' && canAlerts && alertsAdmin !== undefined ? (
+            <AlertsSettings api={alertsAdmin} servers={servers ?? []} groups={groups} />
           ) : null}
-        </>
-      ) : null}
 
-      {access !== undefined && !(canSettings && system !== null && update !== null) ? (
-        <AccessCard api={access} />
+          {activeTab === 'integrations' ? (
+            <>
+              {keys !== undefined ? (
+                <APIKeysCard
+                  api={keys}
+                  canListAll={canUsers}
+                  servers={servers ?? []}
+                  groups={groups}
+                />
+              ) : null}
+              {canSettings && oidc !== undefined ? <OIDCSettingsCard api={oidc} /> : null}
+            </>
+          ) : null}
+
+          {activeTab === 'system' && canSettings && system !== null && update !== null ? (
+            <>
+              <section className="settings__card" aria-labelledby="settings-version-title">
+                <h2 className="settings__card-title" id="settings-version-title">
+                  {t('settings:version.title')}
+                </h2>
+
+                <dl className="settings__facts">
+                  <div className="settings__fact">
+                    <dt>{t('settings:version.current')}</dt>
+                    <dd>{system.version}</dd>
+                  </div>
+                  <div className="settings__fact">
+                    <dt>{t('settings:version.commit')}</dt>
+                    <dd>
+                      {system.commit === ''
+                        ? t('settings:version.unknown')
+                        : shortSHA(system.commit)}
+                    </dd>
+                  </div>
+                  <div className="settings__fact">
+                    <dt>{t('settings:version.checked')}</dt>
+                    <dd>
+                      {formatChecked(update.checkedAt, language, t('settings:version.never'))}
+                    </dd>
+                  </div>
+                </dl>
+
+                <div className="settings__meta">
+                  {stateText !== null ? (
+                    <span
+                      className={
+                        update.error !== ''
+                          ? 'settings__state settings__state--error'
+                          : 'settings__state'
+                      }
+                    >
+                      {stateText}
+                    </span>
+                  ) : null}
+                  {update.latest !== '' ? (
+                    <>
+                      <span className={`settings__badge settings__badge--${update.ci}`}>
+                        {t('settings:ci.label')} {t(`settings:ci.${update.ci}`)}
+                      </span>
+                      <span className="settings__latest">
+                        {t('settings:version.latest', { sha: shortSHA(update.latest) })}
+                      </span>
+                    </>
+                  ) : null}
+                </div>
+
+                <div className="settings__actions">
+                  <button
+                    type="button"
+                    className="settings__button"
+                    disabled={checkingNow || busy}
+                    onClick={checkNow}
+                  >
+                    {checkingNow ? t('settings:check.checking') : t('settings:check.button')}
+                  </button>
+                  <button
+                    type="button"
+                    className="settings__button settings__button--primary"
+                    disabled={!canUpdate}
+                    onClick={() => setConfirming(true)}
+                  >
+                    {buttonText}
+                  </button>
+                </div>
+
+                {checkNotice !== null ? (
+                  <p className="settings__notice" role="status">
+                    {checkNotice}
+                  </p>
+                ) : null}
+
+                {actionError !== null ? (
+                  <p className="settings__message settings__message--error" role="alert">
+                    {actionError}
+                  </p>
+                ) : null}
+              </section>
+
+              {update.pending.length > 0 || notes.length > 0 ? (
+                <section className="settings__card" aria-labelledby="settings-pending-title">
+                  <h2 className="settings__card-title" id="settings-pending-title">
+                    {t('settings:pending.title')}
+                  </h2>
+                  {notes.length > 0 ? (
+                    <>
+                      <h3 className="settings__section-title">{t('settings:pending.whatsNew')}</h3>
+                      <ul className="settings__notes">
+                        {visibleNotes.map((note, index) => (
+                          <li key={`${index}-${note}`}>
+                            <NoteText note={note} />
+                          </li>
+                        ))}
+                      </ul>
+                      {notes.length > 8 ? (
+                        <button
+                          type="button"
+                          className="settings__button settings__notes-toggle"
+                          aria-expanded={notesExpanded}
+                          onClick={() => setNotesExpanded((value) => !value)}
+                        >
+                          {notesExpanded
+                            ? t('settings:pending.showLess')
+                            : t('settings:pending.showAll')}
+                        </button>
+                      ) : null}
+                    </>
+                  ) : null}
+                  {update.pending.length > 0 ? (
+                    <>
+                      <h3 className="settings__section-title">{t('settings:pending.commits')}</h3>
+                      <ul className="settings__pending">
+                        {shown.map((commit) => (
+                          <li className="settings__commit" key={commit.sha}>
+                            <code>{shortSHA(commit.sha)}</code>
+                            <span className="settings__commit-subject">{commit.subject}</span>
+                            <span className="settings__commit-author">{commit.author}</span>
+                          </li>
+                        ))}
+                      </ul>
+                      {more > 0 ? (
+                        <p className="settings__more">
+                          {t('settings:pending.more', { count: more })}
+                        </p>
+                      ) : null}
+                    </>
+                  ) : null}
+                </section>
+              ) : null}
+            </>
+          ) : null}
+        </div>
       ) : null}
 
       {canSettings && confirming && update !== null ? (

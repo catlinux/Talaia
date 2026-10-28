@@ -18,6 +18,12 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.5.20] - 2026-10-28
+
+### Changed
+
+- The Settings screen is organised in tabs: **Account** (trusted devices and passkeys), **Servers**, **Alerts**, **Integrations** (single sign-on and API keys) and **System** (version and updates). Each user only sees the tabs they may use, the last one is remembered, and the progress of a running update stays visible above the tabs.
+
 ## [0.5.19] - 2026-10-28
 
 ### Fixed
@@ -688,7 +694,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.5.19...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.5.20...HEAD
+[0.5.20]: https://github.com/catlinux/Talaia/releases/tag/v0.5.20
 [0.5.19]: https://github.com/catlinux/Talaia/releases/tag/v0.5.19
 [0.5.18]: https://github.com/catlinux/Talaia/releases/tag/v0.5.18
 [0.5.17]: https://github.com/catlinux/Talaia/releases/tag/v0.5.17

@@ -1,6 +1,14 @@
 {
   "title": "Settings",
-  "subtitle": "Version and updates",
+  "subtitle": "Account, servers, alerts and system",
+  "tabs": {
+    "label": "Settings sections",
+    "account": "Account",
+    "servers": "Servers",
+    "alerts": "Alerts",
+    "integrations": "Integrations",
+    "system": "System"
+  },
   "version": {
     "title": "Version",
     "current": "Running version",

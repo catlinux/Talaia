@@ -1,6 +1,14 @@
 {
   "title": "Configuració",
-  "subtitle": "Versió i actualitzacions",
+  "subtitle": "Compte, servidors, alertes i sistema",
+  "tabs": {
+    "label": "Seccions de configuració",
+    "account": "Compte",
+    "servers": "Servidors",
+    "alerts": "Alertes",
+    "integrations": "Integracions",
+    "system": "Sistema"
+  },
   "version": {
     "title": "Versió",
     "current": "Versió en marxa",
