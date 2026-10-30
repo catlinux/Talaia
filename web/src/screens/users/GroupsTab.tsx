@@ -4,8 +4,16 @@ import { useTranslation } from 'react-i18next'
 import type { Group, GroupsApi } from '../../api/groups'
 import type { ServerSummary } from '../../api/servers'
 import { errorMessage } from '../../auth/AuthGate'
-import { TrashIcon } from '../../components/icons'
-import { Dialog } from './Dialog'
+import {
+  ConfirmDialog,
+  DataTable,
+  Drawer,
+  Menu,
+  Select,
+  useToast,
+  type DataTableColumn,
+  type MenuEntry,
+} from '../../components/ui'
 
 interface GroupsTabProps {
   groups: Group[]
@@ -19,13 +27,13 @@ type GroupDialog = { kind: 'create' } | { kind: 'rename'; group: Group } | null
 /** GroupsTab manages server groups and which group a server belongs to. */
 export function GroupsTab({ groups, servers, groupsApi, onRefresh }: GroupsTabProps) {
   const { t } = useTranslation(['users', 'errors'])
+  const toast = useToast()
   const [dialog, setDialog] = useState<GroupDialog>(null)
   const [removing, setRemoving] = useState<Group | null>(null)
   const [server, setServer] = useState(servers[0]?.id ?? '')
   const [group, setGroup] = useState(groups[0]?.id ?? '')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [notice, setNotice] = useState<string | null>(null)
   const activeServer = servers.some((candidate) => candidate.id === server)
     ? server
     : (servers[0]?.id ?? '')
@@ -36,11 +44,10 @@ export function GroupsTab({ groups, servers, groupsApi, onRefresh }: GroupsTabPr
   const run = async (action: () => Promise<void>, success?: string) => {
     setBusy(true)
     setError(null)
-    setNotice(null)
     try {
       await action()
       await onRefresh()
-      if (success) setNotice(success)
+      if (success !== undefined) toast.success(success)
     } catch (cause) {
       setError(errorMessage(t, cause))
     } finally {
@@ -51,22 +58,82 @@ export function GroupsTab({ groups, servers, groupsApi, onRefresh }: GroupsTabPr
   const save = async (event: FormEvent<HTMLFormElement>, name: string) => {
     event.preventDefault()
     if (dialog === null) return
+    const current = dialog
     await run(async () => {
-      if (dialog.kind === 'create') await groupsApi.create(name)
-      else await groupsApi.rename(dialog.group.id, name)
+      if (current.kind === 'create') {
+        await groupsApi.create(name)
+        toast.success(t('users:toast.groupCreated', { name }))
+      } else {
+        await groupsApi.rename(current.group.id, name)
+        toast.success(t('users:toast.groupRenamed', { name }))
+      }
     })
     setDialog(null)
   }
 
-  const assign = () => {
+  const assign = async () => {
     if (activeServer === '' || activeGroup === '') return
-    void run(() => groupsApi.setServerGroup(activeServer, activeGroup), t('users:groups.assigned'))
+    await run(() => groupsApi.setServerGroup(activeServer, activeGroup), t('users:groups.assigned'))
   }
 
-  const unassign = () => {
+  const unassign = async () => {
     if (activeServer === '') return
-    void run(() => groupsApi.setServerGroup(activeServer, null), t('users:groups.unassigned'))
+    await run(() => groupsApi.setServerGroup(activeServer, null), t('users:groups.unassigned'))
   }
+
+  const remove = async () => {
+    if (removing === null) return
+    const target = removing
+    await run(async () => {
+      await groupsApi.remove(target.id)
+      toast.success(t('users:toast.groupDeleted', { name: target.name }))
+    })
+    setRemoving(null)
+  }
+
+  const columns: DataTableColumn<Group>[] = [
+    {
+      id: 'name',
+      header: t('users:groups.name'),
+      sortValue: (candidate) => candidate.name,
+      cell: (candidate) => <span className="group__name">{candidate.name}</span>,
+    },
+    {
+      id: 'actions',
+      header: t('users:table.actions'),
+      align: 'right',
+      cell: (candidate) => {
+        const entries: MenuEntry[] = [
+          {
+            id: 'rename',
+            label: t('users:groups.rename'),
+            onSelect: () => setDialog({ kind: 'rename', group: candidate }),
+          },
+          {
+            id: 'delete',
+            label: t('users:groups.delete'),
+            danger: true,
+            onSelect: () => setRemoving(candidate),
+          },
+        ]
+        return (
+          <Menu
+            align="end"
+            items={entries}
+            trigger={(props) => (
+              <button
+                {...props}
+                className="ui-btn ui-btn--ghost"
+                aria-label={t('users:rowActions', { name: candidate.name })}
+              >
+                {t('users:table.actions')}
+              </button>
+            )}
+          />
+        )
+      },
+    },
+  ]
 
   return (
     <div className="groups">
@@ -77,7 +144,7 @@ export function GroupsTab({ groups, servers, groupsApi, onRefresh }: GroupsTabPr
         </div>
         <button
           type="button"
-          className="settings__button settings__button--primary"
+          className="ui-btn ui-btn--primary"
           onClick={() => setDialog({ kind: 'create' })}
         >
           {t('users:groups.create')}
@@ -89,40 +156,13 @@ export function GroupsTab({ groups, servers, groupsApi, onRefresh }: GroupsTabPr
           {error}
         </p>
       ) : null}
-      {notice !== null ? (
-        <p className="users__notice" role="status">
-          {notice}
-        </p>
-      ) : null}
 
-      {groups.length === 0 ? (
-        <p className="users__hint">{t('users:groups.empty')}</p>
-      ) : (
-        <ul className="groups__list">
-          {groups.map((candidate) => (
-            <li className="group" key={candidate.id}>
-              <span className="group__name">{candidate.name}</span>
-              <div className="users__actions">
-                <button
-                  type="button"
-                  className="cbtn"
-                  onClick={() => setDialog({ kind: 'rename', group: candidate })}
-                >
-                  {t('users:groups.rename')}
-                </button>
-                <button
-                  type="button"
-                  className="cbtn cbtn--danger"
-                  onClick={() => setRemoving(candidate)}
-                >
-                  <TrashIcon />
-                  {t('users:groups.delete')}
-                </button>
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
+      <DataTable
+        columns={columns}
+        rows={groups}
+        rowKey={(candidate) => candidate.id}
+        empty={<p className="users__hint">{t('users:groups.empty')}</p>}
+      />
 
       <section className="users__card" aria-labelledby="group-assign-title">
         <h3 className="settings__section-title" id="group-assign-title">
@@ -130,47 +170,37 @@ export function GroupsTab({ groups, servers, groupsApi, onRefresh }: GroupsTabPr
         </h3>
         <p className="users__hint">{t('users:groups.assignIntro')}</p>
         <div className="users__assign">
-          <label className="field">
-            <span className="field__label">{t('users:groups.server')}</span>
-            <select
-              className="field__input"
-              value={activeServer}
-              onChange={(event) => setServer(event.target.value)}
-            >
-              {servers.map((candidate) => (
-                <option key={candidate.id} value={candidate.id}>
-                  {candidate.name}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="field">
-            <span className="field__label">{t('users:groups.group')}</span>
-            <select
-              className="field__input"
-              value={activeGroup}
-              onChange={(event) => setGroup(event.target.value)}
-            >
-              {groups.map((candidate) => (
-                <option key={candidate.id} value={candidate.id}>
-                  {candidate.name}
-                </option>
-              ))}
-            </select>
-          </label>
+          <Select
+            label={t('users:groups.server')}
+            value={activeServer}
+            options={servers.map((candidate) => ({
+              value: candidate.id,
+              label: candidate.name,
+            }))}
+            onChange={setServer}
+          />
+          <Select
+            label={t('users:groups.group')}
+            value={activeGroup}
+            options={groups.map((candidate) => ({
+              value: candidate.id,
+              label: candidate.name,
+            }))}
+            onChange={setGroup}
+          />
           <button
             type="button"
-            className="settings__button settings__button--primary"
+            className="ui-btn ui-btn--primary"
             disabled={busy || activeServer === '' || activeGroup === ''}
-            onClick={assign}
+            onClick={() => void assign()}
           >
             {t('users:groups.assign')}
           </button>
           <button
             type="button"
-            className="settings__button"
+            className="ui-btn"
             disabled={busy || activeServer === ''}
-            onClick={unassign}
+            onClick={() => void unassign()}
           >
             {t('users:groups.unassign')}
           </button>
@@ -178,7 +208,7 @@ export function GroupsTab({ groups, servers, groupsApi, onRefresh }: GroupsTabPr
       </section>
 
       {dialog !== null ? (
-        <GroupNameDialog
+        <NameDrawer
           title={dialog.kind === 'create' ? t('users:groups.create') : t('users:groups.rename')}
           initial={dialog.kind === 'rename' ? dialog.group.name : ''}
           onClose={() => setDialog(null)}
@@ -186,37 +216,21 @@ export function GroupsTab({ groups, servers, groupsApi, onRefresh }: GroupsTabPr
         />
       ) : null}
 
-      {removing !== null ? (
-        <Dialog
-          title={t('users:groups.deleteTitle', { name: removing.name })}
-          onClose={() => setRemoving(null)}
-          footer={
-            <div className="users__actions">
-              <button type="button" className="settings__button" onClick={() => setRemoving(null)}>
-                {t('actions.cancel')}
-              </button>
-              <button
-                type="button"
-                className="settings__button settings__button--danger"
-                disabled={busy}
-                onClick={() => {
-                  void run(() => groupsApi.remove(removing.id))
-                  setRemoving(null)
-                }}
-              >
-                {t('users:groups.delete')}
-              </button>
-            </div>
-          }
-        >
-          <p>{t('users:groups.deleteBody')}</p>
-        </Dialog>
-      ) : null}
+      <ConfirmDialog
+        open={removing !== null}
+        title={t('users:groups.deleteTitle', { name: removing?.name ?? '' })}
+        body={<p>{t('users:groups.deleteBody')}</p>}
+        confirmLabel={t('users:groups.delete')}
+        danger
+        busy={busy}
+        onConfirm={() => void remove()}
+        onCancel={() => setRemoving(null)}
+      />
     </div>
   )
 }
 
-function GroupNameDialog({
+function NameDrawer({
   title,
   initial,
   onClose,
@@ -240,19 +254,16 @@ function GroupNameDialog({
     onSave(name.trim(), event)
   }
   return (
-    <Dialog
+    <Drawer
+      open
       title={title}
       onClose={onClose}
       footer={
         <div className="users__actions">
-          <button type="button" className="settings__button" onClick={onClose}>
+          <button type="button" className="ui-btn" onClick={onClose}>
             {t('actions.cancel')}
           </button>
-          <button
-            type="submit"
-            form="group-name-form"
-            className="settings__button settings__button--primary"
-          >
+          <button type="submit" form="group-name-form" className="ui-btn ui-btn--primary">
             {t('actions.save')}
           </button>
         </div>
@@ -276,6 +287,6 @@ function GroupNameDialog({
           ) : null}
         </label>
       </form>
-    </Dialog>
+    </Drawer>
   )
 }

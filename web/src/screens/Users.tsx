@@ -8,6 +8,8 @@ import { createTeamsApi, type Team, type TeamsApi } from '../api/teams'
 import { createUsersApi, type AdminUser, type UsersApi } from '../api/users'
 import { errorMessage } from '../auth/AuthGate'
 import { usePermissions } from '../auth/permissions'
+import { PageHeader } from '../components/ui'
+import { Link, useNavigate, useRoute } from '../router'
 import { GroupsTab } from './users/GroupsTab'
 import { TeamsTab } from './users/TeamsTab'
 import { UsersTab } from './users/UsersTab'
@@ -15,6 +17,18 @@ import { UsersTab } from './users/UsersTab'
 type Tab = 'users' | 'teams' | 'groups'
 
 const tabs: Tab[] = ['users', 'teams', 'groups']
+
+/** usersTabPath returns the address of a Users section. */
+export function usersTabPath(tab: Tab): string {
+  return tab === 'users' ? '/users' : `/users/${tab}`
+}
+
+function tabFromPath(path: string): Tab | null {
+  if (path === '/users') return 'users'
+  if (path === '/users/teams') return 'teams'
+  if (path === '/users/groups') return 'groups'
+  return null
+}
 
 interface UsersProps {
   usersApi?: UsersApi
@@ -41,9 +55,11 @@ export function Users({ usersApi, teamsApi, groupsApi, invitesApi, serversApi }:
   const groupsClient = useMemo(() => groupsApi ?? createGroupsApi(), [groupsApi])
   const invitesClient = useMemo(() => invitesApi ?? createInvitesApi(), [invitesApi])
   const serversClient = useMemo(() => serversApi ?? createServersApi(), [serversApi])
-  const [tab, setTab] = useState<Tab>('users')
+  const { path } = useRoute()
+  const navigate = useNavigate()
   const [data, setData] = useState<Data | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const tab = tabFromPath(path)
 
   const refresh = useCallback(async () => {
     const [users, teams, groups, invites, servers] = await Promise.all([
@@ -75,30 +91,13 @@ export function Users({ usersApi, teamsApi, groupsApi, invitesApi, serversApi }:
   }, [can, permissionsLoading, refresh, t])
 
   const canManage = !permissionsLoading && can('users.manage')
-  if (permissionsLoading) {
-    return (
-      <p className="users__message" role="status">
-        {t('users:loading')}
-      </p>
-    )
-  }
-  if (!canManage) return null
-  if (error !== null && data === null) {
-    return (
-      <p className="users__error" role="alert">
-        {error}
-      </p>
-    )
-  }
-  if (data === null) {
-    return (
-      <p className="users__message" role="status">
-        {t('users:loading')}
-      </p>
-    )
-  }
+  const activeTab: Tab = tab ?? 'users'
 
-  const moveTab = (event: KeyboardEvent<HTMLButtonElement>, index: number) => {
+  useEffect(() => {
+    if (!permissionsLoading && tab === null) navigate('/users', { replace: true })
+  }, [navigate, permissionsLoading, tab])
+
+  const moveTab = (event: KeyboardEvent<HTMLAnchorElement>, index: number) => {
     let next: number
     switch (event.key) {
       case 'ArrowLeft':
@@ -117,18 +116,44 @@ export function Users({ usersApi, teamsApi, groupsApi, invitesApi, serversApi }:
         return
     }
     event.preventDefault()
-    setTab(tabs[next]!)
-    document.getElementById(`users-tab-${tabs[next]}`)?.focus()
+    const target = tabs[next]!
+    navigate(usersTabPath(target))
+    document.getElementById(`users-tab-${target}`)?.focus()
+  }
+
+  const header = <PageHeader title={t('users:pageTitle')} subtitle={t('users:pageSubtitle')} />
+
+  if (permissionsLoading) {
+    return (
+      <section className="users" aria-label={t('users:pageTitle')}>
+        {header}
+        <p className="users__message" role="status">
+          {t('users:loading')}
+        </p>
+      </section>
+    )
+  }
+  if (!canManage) return null
+  if (data === null) {
+    return (
+      <section className="users" aria-label={t('users:pageTitle')}>
+        {header}
+        {error !== null ? (
+          <p className="users__error" role="alert">
+            {error}
+          </p>
+        ) : (
+          <p className="users__message" role="status">
+            {t('users:loading')}
+          </p>
+        )}
+      </section>
+    )
   }
 
   return (
-    <section className="users" aria-labelledby="users-title">
-      <header className="users__head">
-        <h1 className="users__title" id="users-title">
-          {t('users:pageTitle')}
-        </h1>
-        <p className="users__subtitle">{t('users:pageSubtitle')}</p>
-      </header>
+    <section className="users" aria-label={t('users:pageTitle')}>
+      {header}
 
       {error !== null ? (
         <p className="users__error" role="alert">
@@ -138,22 +163,21 @@ export function Users({ usersApi, teamsApi, groupsApi, invitesApi, serversApi }:
 
       <div className="users__tabs" role="tablist" aria-label={t('users:tabs.label')}>
         {tabs.map((candidate, index) => {
-          const selected = candidate === tab
+          const selected = candidate === activeTab
           return (
-            <button
+            <Link
               key={candidate}
               id={`users-tab-${candidate}`}
-              type="button"
+              to={usersTabPath(candidate)}
               role="tab"
               aria-selected={selected}
               aria-controls={`users-panel-${candidate}`}
               tabIndex={selected ? 0 : -1}
               className={selected ? 'users__tab users__tab--on' : 'users__tab'}
-              onClick={() => setTab(candidate)}
               onKeyDown={(event) => moveTab(event, index)}
             >
               {t(`users:tabs.${candidate}`)}
-            </button>
+            </Link>
           )
         })}
       </div>
@@ -161,10 +185,10 @@ export function Users({ usersApi, teamsApi, groupsApi, invitesApi, serversApi }:
       <div
         className="users__panel"
         role="tabpanel"
-        id={`users-panel-${tab}`}
-        aria-labelledby={`users-tab-${tab}`}
+        id={`users-panel-${activeTab}`}
+        aria-labelledby={`users-tab-${activeTab}`}
       >
-        {tab === 'users' ? (
+        {activeTab === 'users' ? (
           <UsersTab
             users={data.users}
             groups={data.groups}
@@ -174,7 +198,7 @@ export function Users({ usersApi, teamsApi, groupsApi, invitesApi, serversApi }:
             invitesApi={invitesClient}
             onRefresh={refresh}
           />
-        ) : tab === 'teams' ? (
+        ) : activeTab === 'teams' ? (
           <TeamsTab
             teams={data.teams}
             users={data.users}

@@ -26,7 +26,8 @@
     "access": "Acceso",
     "status": "Estado",
     "actions": "Acciones",
-    "email": "Correo electrónico"
+    "email": "Correo electrónico",
+    "totp": "2FA"
   },
   "invites": {
     "title": "Invitaciones pendientes",
@@ -172,6 +173,33 @@
     "close": "Cerrar"
   },
   "tabs": {
-    "label": "Usuarios y permisos"
+    "label": "Usuarios y permisos",
+    "users": "Personas",
+    "teams": "Equipos",
+    "groups": "Grupos"
+  },
+  "noResults": "Ningún usuario coincide con estos filtros.",
+  "rowActions": "Acciones para {{name}}",
+  "filters": {
+    "search": "Busca por nombre, usuario, correo o rol",
+    "role": "Rol",
+    "allRoles": "Todos los roles"
+  },
+  "toast": {
+    "updated": "Usuario actualizado.",
+    "enabled": "{{name}} activado.",
+    "disabled": "{{name}} desactivado.",
+    "deleted": "{{name}} eliminado.",
+    "invited": "Invitación creada para {{name}}.",
+    "inviteRevoked": "Invitación revocada.",
+    "accessUpdated": "Acceso actualizado.",
+    "teamCreated": "Equipo {{name}} creado.",
+    "teamRenamed": "Equipo renombrado a {{name}}.",
+    "teamDeleted": "Equipo {{name}} eliminado.",
+    "memberAdded": "Miembro añadido.",
+    "memberRemoved": "{{name}} eliminado del equipo.",
+    "groupCreated": "Grupo {{name}} creado.",
+    "groupRenamed": "Grupo renombrado a {{name}}.",
+    "groupDeleted": "Grupo {{name}} eliminado."
   }
 }

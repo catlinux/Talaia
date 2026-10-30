@@ -7,7 +7,16 @@ import type { Team, TeamDetail, TeamsApi } from '../../api/teams'
 import type { AdminUser, Binding, Role, Scope, UsersApi } from '../../api/users'
 import { errorMessage } from '../../auth/AuthGate'
 import { TrashIcon } from '../../components/icons'
-import { Dialog } from './Dialog'
+import {
+  ConfirmDialog,
+  DataTable,
+  Drawer,
+  Menu,
+  Select,
+  useToast,
+  type DataTableColumn,
+  type MenuEntry,
+} from '../../components/ui'
 import { Assignments } from './Assignments'
 
 interface TeamsTabProps {
@@ -33,6 +42,7 @@ export function TeamsTab({
   onRefresh,
 }: TeamsTabProps) {
   const { t } = useTranslation(['users', 'errors'])
+  const toast = useToast()
   const [selected, setSelected] = useState<Team | null>(teams[0] ?? null)
   const [detail, setDetail] = useState<TeamDetail | null>(null)
   const [nameDialog, setNameDialog] = useState<NameDialog>(null)
@@ -66,11 +76,12 @@ export function TeamsTab({
     })
   }, [selected, teams])
 
-  const run = async (action: () => Promise<void>) => {
+  const run = async (action: () => Promise<void>, success?: string) => {
     setBusy(true)
     setError(null)
     try {
       await action()
+      if (success !== undefined) toast.success(success)
     } catch (cause) {
       setError(errorMessage(t, cause))
     } finally {
@@ -85,15 +96,18 @@ export function TeamsTab({
   const saveName = async (event: FormEvent<HTMLFormElement>, name: string) => {
     event.preventDefault()
     if (nameDialog === null) return
+    const dialog = nameDialog
     await run(async () => {
-      if (nameDialog.kind === 'create') {
+      if (dialog.kind === 'create') {
         const team = await teamsApi.create(name)
         await onRefresh()
         setSelected(team)
+        toast.success(t('users:toast.teamCreated', { name }))
       } else {
-        await teamsApi.rename(nameDialog.team.id, name)
+        await teamsApi.rename(dialog.team.id, name)
         await onRefresh()
-        setSelected({ id: nameDialog.team.id, name })
+        setSelected({ id: dialog.team.id, name })
+        toast.success(t('users:toast.teamRenamed', { name }))
       }
     })
     setNameDialog(null)
@@ -101,52 +115,59 @@ export function TeamsTab({
 
   const removeTeam = async () => {
     if (removing === null) return
+    const team = removing
     await run(async () => {
-      await teamsApi.remove(removing.id)
+      await teamsApi.remove(team.id)
       await onRefresh()
       setSelected(null)
+      toast.success(t('users:toast.teamDeleted', { name: team.name }))
     })
     setRemoving(null)
   }
 
-  const addMember = () => {
+  const addMember = async () => {
     if (selected === null || member === '') return
-    void run(async () => {
+    await run(async () => {
       await teamsApi.addMember(selected.id, member)
       setMember('')
       await reloadDetail()
+      toast.success(t('users:toast.memberAdded'))
     })
   }
 
-  const removeMember = (username: string) => {
+  const removeMember = async (username: string) => {
     if (selected === null) return
     const user = users.find((candidate) => candidate.username === username)
     if (!user) return
-    void run(async () => {
+    await run(async () => {
       await teamsApi.removeMember(selected.id, user.id)
       await reloadDetail()
+      toast.success(t('users:toast.memberRemoved', { name: username }))
     })
   }
 
-  const addBinding = (role: Role, scope: Scope) => {
+  const addBinding = async (role: Role, scope: Scope) => {
     if (selected === null) return
-    void run(async () => {
+    await run(async () => {
       await teamsApi.addBinding(selected.id, role, scope)
       await reloadDetail()
+      toast.success(t('users:toast.accessUpdated'))
     })
   }
 
-  const removeBinding = (binding: Binding) => {
-    void run(async () => {
+  const removeBinding = async (binding: Binding) => {
+    await run(async () => {
       await usersApi.removeBinding(binding.id)
       await reloadDetail()
+      toast.success(t('users:toast.accessUpdated'))
     })
   }
 
-  const changeBinding = (binding: Binding, role: Role) => {
-    void run(async () => {
+  const changeBinding = async (binding: Binding, role: Role) => {
+    await run(async () => {
       await usersApi.updateBinding(binding.id, role)
       await reloadDetail()
+      toast.success(t('users:toast.accessUpdated'))
     })
   }
 
@@ -154,62 +175,82 @@ export function TeamsTab({
     (user) => !detail?.members.includes(user.username) && !user.disabled,
   )
 
+  const columns: DataTableColumn<Team>[] = [
+    {
+      id: 'name',
+      header: t('users:teams.name'),
+      sortValue: (team) => team.name,
+      cell: (team) => <span className="users__name">{team.name}</span>,
+    },
+    {
+      id: 'actions',
+      header: t('users:table.actions'),
+      align: 'right',
+      cell: (team) => {
+        const entries: MenuEntry[] = [
+          {
+            id: 'rename',
+            label: t('users:teams.rename'),
+            onSelect: () => setNameDialog({ kind: 'rename', team }),
+          },
+          {
+            id: 'delete',
+            label: t('users:teams.delete'),
+            danger: true,
+            onSelect: () => setRemoving(team),
+          },
+        ]
+        return (
+          <Menu
+            align="end"
+            items={entries}
+            trigger={(props) => (
+              <button
+                {...props}
+                className="ui-btn ui-btn--ghost"
+                aria-label={t('users:rowActions', { name: team.name })}
+              >
+                {t('users:table.actions')}
+              </button>
+            )}
+          />
+        )
+      },
+    },
+  ]
+
   return (
     <div className="teams">
-      <aside className="teams__list" aria-label={t('users:teams.title')}>
-        <div className="users__toolbar">
+      <div className="users__toolbar">
+        <div>
           <h2 className="settings__card-title">{t('users:teams.title')}</h2>
-          <button
-            type="button"
-            className="settings__button settings__button--primary"
-            onClick={() => setNameDialog({ kind: 'create' })}
-          >
-            {t('users:teams.create')}
-          </button>
+          <p className="users__hint">{t('users:teams.select')}</p>
         </div>
-        {teams.length === 0 ? (
-          <p className="users__hint">{t('users:teams.empty')}</p>
-        ) : (
-          <ul className="teams__names">
-            {teams.map((team) => (
-              <li key={team.id}>
-                <button
-                  type="button"
-                  className={
-                    team.id === selected?.id ? 'teams__name teams__name--on' : 'teams__name'
-                  }
-                  onClick={() => setSelected(team)}
-                >
-                  {team.name}
-                </button>
-                <button
-                  type="button"
-                  className="cbtn"
-                  aria-label={t('users:teams.rename')}
-                  onClick={() => setNameDialog({ kind: 'rename', team })}
-                >
-                  {t('users:teams.renameShort')}
-                </button>
-                <button
-                  type="button"
-                  className="iconbtn"
-                  aria-label={t('users:teams.delete')}
-                  onClick={() => setRemoving(team)}
-                >
-                  <TrashIcon />
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </aside>
+        <button
+          type="button"
+          className="ui-btn ui-btn--primary"
+          onClick={() => setNameDialog({ kind: 'create' })}
+        >
+          {t('users:teams.create')}
+        </button>
+      </div>
+
+      {error !== null ? (
+        <p className="users__error" role="alert">
+          {error}
+        </p>
+      ) : null}
+
+      <DataTable
+        columns={columns}
+        rows={teams}
+        rowKey={(team) => team.id}
+        empty={<p className="users__hint">{t('users:teams.empty')}</p>}
+        onRowClick={(team) => setSelected(team)}
+        rowClassName={(team) => (team.id === selected?.id ? 'users__row--on' : undefined)}
+      />
 
       <section className="teams__detail">
-        {error !== null ? (
-          <p className="users__error" role="alert">
-            {error}
-          </p>
-        ) : null}
         {selected === null || detail === null ? (
           <p className="users__hint">{t('users:teams.select')}</p>
         ) : (
@@ -227,7 +268,7 @@ export function TeamsTab({
                       type="button"
                       className="iconbtn"
                       aria-label={t('users:teams.removeMember', { name: username })}
-                      onClick={() => removeMember(username)}
+                      onClick={() => void removeMember(username)}
                     >
                       <TrashIcon />
                     </button>
@@ -236,26 +277,23 @@ export function TeamsTab({
               )}
             </ul>
             <div className="users__addMember">
-              <label className="field">
-                <span className="field__label">{t('users:teams.addMember')}</span>
-                <select
-                  className="field__input"
-                  value={member}
-                  onChange={(event) => setMember(event.target.value)}
-                >
-                  <option value="">{t('users:teams.chooseUser')}</option>
-                  {availableMembers.map((user) => (
-                    <option key={user.id} value={user.id}>
-                      {user.displayName || user.username}
-                    </option>
-                  ))}
-                </select>
-              </label>
+              <Select
+                label={t('users:teams.addMember')}
+                value={member}
+                options={[
+                  { value: '', label: t('users:teams.chooseUser') },
+                  ...availableMembers.map((user) => ({
+                    value: user.id,
+                    label: user.displayName || user.username,
+                  })),
+                ]}
+                onChange={setMember}
+              />
               <button
                 type="button"
-                className="cbtn"
+                className="ui-btn"
                 disabled={member === '' || busy}
-                onClick={addMember}
+                onClick={() => void addMember()}
               >
                 {t('users:teams.add')}
               </button>
@@ -268,16 +306,16 @@ export function TeamsTab({
               servers={servers}
               busy={busy}
               error={error}
-              onAdd={addBinding}
-              onRemove={removeBinding}
-              onChangeRole={changeBinding}
+              onAdd={(role, scope) => void addBinding(role, scope)}
+              onRemove={(binding) => void removeBinding(binding)}
+              onChangeRole={(binding, role) => void changeBinding(binding, role)}
             />
           </>
         )}
       </section>
 
       {nameDialog !== null ? (
-        <NameDialog
+        <NameDrawer
           title={nameDialog.kind === 'create' ? t('users:teams.create') : t('users:teams.rename')}
           initial={nameDialog.kind === 'rename' ? nameDialog.team.name : ''}
           onClose={() => setNameDialog(null)}
@@ -285,34 +323,21 @@ export function TeamsTab({
         />
       ) : null}
 
-      {removing !== null ? (
-        <Dialog
-          title={t('users:teams.deleteTitle', { name: removing.name })}
-          onClose={() => setRemoving(null)}
-          footer={
-            <div className="users__actions">
-              <button type="button" className="settings__button" onClick={() => setRemoving(null)}>
-                {t('actions.cancel')}
-              </button>
-              <button
-                type="button"
-                className="settings__button settings__button--danger"
-                disabled={busy}
-                onClick={() => void removeTeam()}
-              >
-                {t('users:teams.delete')}
-              </button>
-            </div>
-          }
-        >
-          <p>{t('users:teams.deleteBody')}</p>
-        </Dialog>
-      ) : null}
+      <ConfirmDialog
+        open={removing !== null}
+        title={t('users:teams.deleteTitle', { name: removing?.name ?? '' })}
+        body={<p>{t('users:teams.deleteBody')}</p>}
+        confirmLabel={t('users:teams.delete')}
+        danger
+        busy={busy}
+        onConfirm={() => void removeTeam()}
+        onCancel={() => setRemoving(null)}
+      />
     </div>
   )
 }
 
-function NameDialog({
+function NameDrawer({
   title,
   initial,
   onClose,
@@ -336,19 +361,16 @@ function NameDialog({
     onSave(name.trim(), event)
   }
   return (
-    <Dialog
+    <Drawer
+      open
       title={title}
       onClose={onClose}
       footer={
         <div className="users__actions">
-          <button type="button" className="settings__button" onClick={onClose}>
+          <button type="button" className="ui-btn" onClick={onClose}>
             {t('actions.cancel')}
           </button>
-          <button
-            type="submit"
-            form="team-name-form"
-            className="settings__button settings__button--primary"
-          >
+          <button type="submit" form="team-name-form" className="ui-btn ui-btn--primary">
             {t('actions.save')}
           </button>
         </div>
@@ -372,6 +394,6 @@ function NameDialog({
           ) : null}
         </label>
       </form>
-    </Dialog>
+    </Drawer>
   )
 }

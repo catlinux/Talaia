@@ -7,7 +7,9 @@ import type { Invite, InvitesApi } from '../api/invites'
 import type { ServerSummary, ServersApi } from '../api/servers'
 import type { Team, TeamsApi } from '../api/teams'
 import type { AdminUser, Binding, UsersApi } from '../api/users'
+import { ToastProvider } from '../components/ui'
 import i18n from '../i18n'
+import { RouterProvider } from '../router'
 import { Users } from './Users'
 
 const authUser = vi.hoisted(() => ({ username: null as string | null }))
@@ -118,18 +120,28 @@ function fakeServers(): ServersApi {
 
 function renderUsers(usersApi: UsersApi, invitesApi = fakeInvites()) {
   render(
-    <Users
-      usersApi={usersApi}
-      teamsApi={fakeTeams()}
-      groupsApi={fakeGroups()}
-      invitesApi={invitesApi}
-      serversApi={fakeServers()}
-    />,
+    <ToastProvider>
+      <RouterProvider>
+        <Users
+          usersApi={usersApi}
+          teamsApi={fakeTeams()}
+          groupsApi={fakeGroups()}
+          invitesApi={invitesApi}
+          serversApi={fakeServers()}
+        />
+      </RouterProvider>
+    </ToastProvider>,
   )
+}
+
+async function openRowMenu(username: string) {
+  fireEvent.click(await screen.findByRole('button', { name: `Actions for ${username}` }))
+  return screen.getByRole('menu', { name: 'Actions' })
 }
 
 describe('Users screen', () => {
   beforeEach(async () => {
+    window.history.replaceState({}, '', '/users')
     await i18n.changeLanguage('en')
     authUser.username = null
   })
@@ -137,6 +149,54 @@ describe('Users screen', () => {
   afterEach(() => {
     cleanup()
     vi.unstubAllGlobals()
+    window.history.replaceState({}, '', '/')
+  })
+
+  it('switches the people, teams and groups tabs through their routes', async () => {
+    renderUsers(fakeUsers([account()]))
+    expect(await screen.findByRole('tab', { name: 'People' })).toBeTruthy()
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Teams' }))
+    expect(window.location.pathname).toBe('/users/teams')
+    expect(await screen.findByRole('heading', { name: 'Teams' })).toBeTruthy()
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Groups' }))
+    expect(window.location.pathname).toBe('/users/groups')
+    expect(await screen.findByRole('heading', { name: 'Server groups' })).toBeTruthy()
+
+    cleanup()
+    window.history.replaceState({}, '', '/users/teams')
+    renderUsers(fakeUsers([account()]))
+    expect((await screen.findByRole('tab', { name: 'Teams' })).getAttribute('aria-selected')).toBe(
+      'true',
+    )
+  })
+
+  it('keeps the people search and role filter in the URL', async () => {
+    renderUsers(
+      fakeUsers([
+        account(),
+        account({
+          id: 'u2',
+          username: 'ops',
+          displayName: 'Ops',
+          email: 'ops@example.com',
+          bindings: [{ id: 'b2', role: 'server_operator', scope: { type: 'organization' } }],
+        }),
+      ]),
+    )
+    await screen.findByText('Ada')
+
+    fireEvent.change(screen.getByLabelText('Search'), { target: { value: 'ops' } })
+    await waitFor(() => expect(window.location.search).toBe('?q=ops'))
+    expect(screen.queryByText('Ada')).toBeNull()
+    expect(screen.getByText('Ops')).toBeTruthy()
+
+    fireEvent.change(within(screen.getByRole('tabpanel')).getByLabelText('Role'), {
+      target: { value: 'viewer' },
+    })
+    await waitFor(() => expect(window.location.search).toBe('?q=ops&role=viewer'))
+    expect(await screen.findByText('No users match these filters.')).toBeTruthy()
   })
 
   it('lists users, roles and status', async () => {
@@ -195,7 +255,7 @@ describe('Users screen', () => {
   it('allows clearing the email when editing a user', async () => {
     const usersApi = fakeUsers([account()])
     renderUsers(usersApi)
-    fireEvent.click((await screen.findAllByRole('button', { name: 'Edit' }))[0]!)
+    fireEvent.click(within(await openRowMenu('admin')).getByRole('menuitem', { name: 'Edit' }))
     fireEvent.change(screen.getByLabelText(/^Email/), { target: { value: '' } })
     fireEvent.click(screen.getByRole('button', { name: 'Save' }))
     await waitFor(() => expect(usersApi.update).toHaveBeenCalledWith('u1', 'Ada', ''))
@@ -209,8 +269,12 @@ describe('Users screen', () => {
     fireEvent.change(screen.getByLabelText(/^Email/), {
       target: { value: 'new@example.com' },
     })
-    fireEvent.change(screen.getByLabelText('Role'), { target: { value: 'app_operator' } })
-    fireEvent.change(screen.getByLabelText('Scope'), { target: { value: 'stack' } })
+    fireEvent.change(within(screen.getByRole('dialog')).getByLabelText('Role'), {
+      target: { value: 'app_operator' },
+    })
+    fireEvent.change(within(screen.getByRole('dialog')).getByLabelText('Scope'), {
+      target: { value: 'stack' },
+    })
     fireEvent.click(screen.getByRole('button', { name: 'Create invitation' }))
 
     expect(await screen.findByText('Stack or container name is required.')).toBeTruthy()
@@ -255,8 +319,12 @@ describe('Users screen', () => {
     )
     renderUsers(fakeUsers([account()]))
     fireEvent.click(await screen.findByRole('button', { name: 'Invite user' }))
-    fireEvent.change(screen.getByLabelText('Role'), { target: { value: 'app_operator' } })
-    fireEvent.change(screen.getByLabelText('Scope'), { target: { value: 'stack' } })
+    fireEvent.change(within(screen.getByRole('dialog')).getByLabelText('Role'), {
+      target: { value: 'app_operator' },
+    })
+    fireEvent.change(within(screen.getByRole('dialog')).getByLabelText('Scope'), {
+      target: { value: 'stack' },
+    })
     expect(await screen.findByRole('option', { name: 'web' })).toBeTruthy()
     vi.unstubAllGlobals()
   })
@@ -268,8 +336,12 @@ describe('Users screen', () => {
     )
     renderUsers(fakeUsers([account()]))
     fireEvent.click(await screen.findByRole('button', { name: 'Invite user' }))
-    fireEvent.change(screen.getByLabelText('Role'), { target: { value: 'app_operator' } })
-    fireEvent.change(screen.getByLabelText('Scope'), { target: { value: 'stack' } })
+    fireEvent.change(within(screen.getByRole('dialog')).getByLabelText('Role'), {
+      target: { value: 'app_operator' },
+    })
+    fireEvent.change(within(screen.getByRole('dialog')).getByLabelText('Scope'), {
+      target: { value: 'stack' },
+    })
     expect(await screen.findByPlaceholderText('Name')).toBeTruthy()
     expect(screen.getByText('Type the exact name')).toBeTruthy()
     vi.unstubAllGlobals()
@@ -282,7 +354,7 @@ describe('Users screen', () => {
     )
     renderUsers(usersApi)
 
-    fireEvent.click((await screen.findAllByRole('button', { name: 'Disable' }))[0]!)
+    fireEvent.click(within(await openRowMenu('admin')).getByRole('menuitem', { name: 'Disable' }))
     const dialog = screen.getByRole('dialog')
     fireEvent.click(within(dialog).getByRole('button', { name: 'Disable' }))
 
@@ -297,7 +369,7 @@ describe('Users screen', () => {
       vi.fn(() => Promise.reject(new ApiError('cannot_disable_self', 409))),
     )
     renderUsers(usersApi)
-    fireEvent.click((await screen.findAllByRole('button', { name: 'Disable' }))[0]!)
+    fireEvent.click(within(await openRowMenu('admin')).getByRole('menuitem', { name: 'Disable' }))
     fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Disable' }))
     expect(await screen.findByText('You cannot disable your own account.')).toBeTruthy()
   })
@@ -312,11 +384,26 @@ describe('Users screen', () => {
       ]),
     )
     await screen.findAllByText('Ada')
-    const rows = screen.getAllByRole('row')
-    expect(within(rows[1]!).queryByRole('button', { name: 'Delete' })).toBeNull()
-    expect(within(rows[2]!).queryByRole('button', { name: 'Delete' })).toBeNull()
-    expect(screen.getAllByRole('button', { name: 'Delete' })).toHaveLength(1)
-    expect(within(rows[2]!).getByRole('button', { name: 'Disable' })).toBeTruthy()
+    const rowFor = (username: string) => screen.getByText(username).closest('tr')!
+    const menuFor = async (username: string) => {
+      fireEvent.click(
+        within(rowFor(username)).getByRole('button', { name: `Actions for ${username}` }),
+      )
+      const menu = screen.getByRole('menu', { name: 'Actions' })
+      return menu
+    }
+
+    const signedIn = await menuFor('admin')
+    expect(within(signedIn).queryByRole('menuitem', { name: 'Delete' })).toBeNull()
+    fireEvent.keyDown(signedIn, { key: 'Escape' })
+
+    const active = await menuFor('active-user')
+    expect(within(active).queryByRole('menuitem', { name: 'Delete' })).toBeNull()
+    expect(within(active).getByRole('menuitem', { name: 'Disable' })).toBeTruthy()
+    fireEvent.keyDown(active, { key: 'Escape' })
+
+    const disabled = await menuFor('disabled')
+    expect(within(disabled).getByRole('menuitem', { name: 'Delete' })).toBeTruthy()
     authUser.username = null
   })
 
@@ -332,7 +419,7 @@ describe('Users screen', () => {
       )
     })
     renderUsers(usersApi)
-    fireEvent.click(await screen.findByRole('button', { name: 'Delete' }))
+    fireEvent.click(within(await openRowMenu('old-user')).getByRole('menuitem', { name: 'Delete' }))
     const dialog = screen.getByRole('dialog')
     const confirm = within(dialog).getByRole('button', { name: 'Delete' })
     expect(confirm).toHaveProperty('disabled', true)
@@ -355,7 +442,9 @@ describe('Users screen', () => {
       const usersApi = fakeUsers([account({ id: 'u2', username: 'old-user', disabled: true })])
       usersApi.delete = vi.fn(() => Promise.reject(new ApiError(code, 409)))
       renderUsers(usersApi)
-      fireEvent.click(await screen.findByRole('button', { name: 'Delete' }))
+      fireEvent.click(
+        within(await openRowMenu('old-user')).getByRole('menuitem', { name: 'Delete' }),
+      )
       const dialog = screen.getByRole('dialog')
       fireEvent.change(within(dialog).getByLabelText('Type old-user to confirm'), {
         target: { value: 'old-user' },
@@ -377,7 +466,7 @@ describe('Users screen', () => {
     const usersApi = fakeUsers([account()])
     renderUsers(usersApi)
 
-    fireEvent.click((await screen.findAllByRole('button', { name: 'Access' }))[0]!)
+    fireEvent.click(within(await openRowMenu('admin')).getByRole('menuitem', { name: 'Access' }))
     const dialog = screen.getByRole('dialog')
     fireEvent.click(within(dialog).getByRole('button', { name: 'Remove assignment for Viewer' }))
     await waitFor(() => expect(usersApi.removeBinding).toHaveBeenCalledWith('b1'))
@@ -397,7 +486,7 @@ describe('Users screen', () => {
     const usersApi = fakeUsers([account()])
     usersApi.addBinding = vi.fn(() => Promise.reject(new Error('This assignment already exists')))
     renderUsers(usersApi)
-    fireEvent.click((await screen.findAllByRole('button', { name: 'Access' }))[0]!)
+    fireEvent.click(within(await openRowMenu('admin')).getByRole('menuitem', { name: 'Access' }))
     const dialog = screen.getByRole('dialog')
     const addAccess = () => within(dialog).getByRole('button', { name: 'Add access' })
 

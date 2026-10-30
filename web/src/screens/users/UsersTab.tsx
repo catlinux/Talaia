@@ -1,16 +1,35 @@
 import { useState, type FormEvent } from 'react'
+import type { TFunction } from 'i18next'
 import { useTranslation } from 'react-i18next'
 
 import type { Group } from '../../api/groups'
 import type { CreatedInvite, Invite, InvitesApi } from '../../api/invites'
 import type { ServerSummary } from '../../api/servers'
 import type { AdminUser, Binding, Role, Scope, UsersApi } from '../../api/users'
-import { errorMessage } from '../../auth/AuthGate'
-import { useAuth } from '../../auth/AuthGate'
-import { CheckIcon, CopyIcon } from '../../components/icons'
-import { Dialog } from './Dialog'
+import { errorMessage, useAuth } from '../../auth/AuthGate'
+import { CheckIcon, CopyIcon, PlusIcon } from '../../components/icons'
+import {
+  ConfirmDialog,
+  DataTable,
+  Drawer,
+  FilterBar,
+  Menu,
+  Select,
+  StatusBadge,
+  useToast,
+  type DataTableColumn,
+  type MenuEntry,
+} from '../../components/ui'
+import { setQuery, useRoute } from '../../router'
 import { Assignments } from './Assignments'
-import { RoleDescription, RoleSelect, ScopeFields, ScopeLabel, roleLabel } from './AccessFields'
+import {
+  RoleDescription,
+  RoleSelect,
+  ScopeFields,
+  ScopeLabel,
+  roleLabel,
+  roles,
+} from './AccessFields'
 
 interface UsersTabProps {
   users: AdminUser[]
@@ -28,6 +47,17 @@ interface EditState {
   email: string
 }
 
+function matchesQuery(user: AdminUser, query: string, t: TFunction): boolean {
+  const needle = query.trim().toLowerCase()
+  if (needle === '') return true
+  return [
+    user.displayName,
+    user.username,
+    user.email,
+    ...user.bindings.map((binding) => roleLabel(t, binding.role)),
+  ].some((value) => value.toLowerCase().includes(needle))
+}
+
 /** UsersTab lists accounts, manages access and creates invitations. */
 export function UsersTab({
   users,
@@ -40,25 +70,36 @@ export function UsersTab({
 }: UsersTabProps) {
   const { t, i18n } = useTranslation(['users', 'errors'])
   const auth = useAuth()
+  const toast = useToast()
+  const { query } = useRoute()
   const language = i18n.resolvedLanguage ?? i18n.language
   const [accessFor, setAccessFor] = useState<string | null>(null)
   const [editing, setEditing] = useState<EditState | null>(null)
   const [toggling, setToggling] = useState<AdminUser | null>(null)
   const [deleting, setDeleting] = useState<AdminUser | null>(null)
-  const [deleteConfirmation, setDeleteConfirmation] = useState('')
   const [inviting, setInviting] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [editErrors, setEditErrors] = useState(false)
 
+  const search = query.get('q') ?? ''
+  const roleFilter = roles.includes((query.get('role') ?? '') as Role)
+    ? (query.get('role') as Role)
+    : ''
   const selected = accessFor === null ? null : (users.find((user) => user.id === accessFor) ?? null)
+  const visibleUsers = users.filter(
+    (user) =>
+      matchesQuery(user, search, t) &&
+      (roleFilter === '' || user.bindings.some((binding) => binding.role === roleFilter)),
+  )
 
-  const run = async (action: () => Promise<void>): Promise<boolean> => {
+  const run = async (action: () => Promise<void>, success?: string): Promise<boolean> => {
     setBusy(true)
     setError(null)
     try {
       await action()
       await onRefresh()
+      if (success !== undefined) toast.success(success)
       return true
     } catch (cause) {
       setError(errorMessage(t, cause))
@@ -77,43 +118,169 @@ export function UsersTab({
       requestAnimationFrame(() => form.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus())
       return
     }
-    await run(() => usersApi.update(editing.user.id, editing.displayName, editing.email.trim()))
-    setEditing(null)
+    const saved = await run(
+      () => usersApi.update(editing.user.id, editing.displayName, editing.email.trim()),
+      t('users:toast.updated'),
+    )
+    if (saved) setEditing(null)
   }
 
   const toggleUser = async () => {
     if (toggling === null) return
-    await run(() =>
-      toggling.disabled ? usersApi.enable(toggling.id) : usersApi.disable(toggling.id),
+    const user = toggling
+    const saved = await run(
+      () => (user.disabled ? usersApi.enable(user.id) : usersApi.disable(user.id)),
+      t(user.disabled ? 'users:toast.enabled' : 'users:toast.disabled', { name: user.username }),
     )
-    setToggling(null)
+    if (saved) setToggling(null)
   }
 
   const deleteUser = async () => {
-    if (deleting === null || deleteConfirmation !== deleting.username) return
-    // A failed deletion keeps the dialog open so its error is read in place.
-    if (await run(() => usersApi.delete(deleting.id, deleteConfirmation))) {
-      setDeleting(null)
-      setDeleteConfirmation('')
-    }
+    if (deleting === null) return
+    const user = deleting
+    const deleted = await run(
+      () => usersApi.delete(user.id, user.username),
+      t('users:toast.deleted', { name: user.username }),
+    )
+    if (deleted) setDeleting(null)
   }
 
-  const addAccess = (role: Role, scope: Scope) => {
+  const addAccess = async (role: Role, scope: Scope) => {
     if (selected === null) return
-    void run(() => usersApi.addBinding(selected.id, role, scope).then(() => undefined))
+    await run(
+      () => usersApi.addBinding(selected.id, role, scope).then(() => undefined),
+      t('users:toast.accessUpdated'),
+    )
   }
 
-  const removeAccess = (binding: Binding) => {
-    void run(() => usersApi.removeBinding(binding.id))
+  const removeAccess = async (binding: Binding) => {
+    await run(() => usersApi.removeBinding(binding.id), t('users:toast.accessUpdated'))
   }
 
-  const changeAccess = (binding: Binding, role: Role) => {
-    void run(() => usersApi.updateBinding(binding.id, role))
+  const changeAccess = async (binding: Binding, role: Role) => {
+    await run(() => usersApi.updateBinding(binding.id, role), t('users:toast.accessUpdated'))
   }
 
-  const revoke = (invite: Invite) => {
-    void run(() => invitesApi.revoke(invite.id))
+  const revoke = async (invite: Invite) => {
+    await run(() => invitesApi.revoke(invite.id), t('users:toast.inviteRevoked'))
   }
+
+  const columns: DataTableColumn<AdminUser>[] = [
+    {
+      id: 'name',
+      header: t('users:table.name'),
+      sortValue: (user) => user.displayName || user.username,
+      cell: (user) => (
+        <button type="button" className="users__name" onClick={() => setAccessFor(user.id)}>
+          {user.displayName || user.username}
+        </button>
+      ),
+    },
+    {
+      id: 'username',
+      header: t('users:table.username'),
+      sortValue: (user) => user.username,
+      cell: (user) => <code>{user.username}</code>,
+    },
+    {
+      id: 'email',
+      header: t('users:table.email'),
+      sortValue: (user) => user.email,
+      cell: (user) => <span className="users__email">{user.email}</span>,
+    },
+    {
+      id: 'access',
+      header: t('users:table.access'),
+      cell: (user) => (
+        <div className="users__chips">
+          {user.bindings.length === 0 ? (
+            <span className="users__hint">{t('users:noAccess')}</span>
+          ) : (
+            user.bindings.map((binding) => (
+              <span className="chip" key={binding.id}>
+                {roleLabel(t, binding.role)} ·{' '}
+                <ScopeLabel scope={binding.scope} groups={groups} servers={servers} />
+              </span>
+            ))
+          )}
+        </div>
+      ),
+    },
+    {
+      id: 'totp',
+      header: t('users:table.totp'),
+      cell: (user) => (
+        <span className={user.totpEnabled ? 'chip chip--ok' : 'chip chip--warn'}>
+          {user.totpEnabled ? t('users:totpOn') : t('users:totpOff')}
+        </span>
+      ),
+    },
+    {
+      id: 'status',
+      header: t('users:table.status'),
+      sortValue: (user) => (user.disabled ? 1 : 0),
+      cell: (user) => (
+        <StatusBadge
+          status={user.disabled ? 'offline' : 'ok'}
+          label={user.disabled ? t('users:disabled') : t('users:active')}
+        />
+      ),
+    },
+    {
+      id: 'actions',
+      header: t('users:table.actions'),
+      align: 'right',
+      cell: (user) => {
+        const entries: MenuEntry[] = [
+          {
+            id: 'access',
+            label: t('users:accessButton'),
+            onSelect: () => setAccessFor(user.id),
+          },
+          {
+            id: 'edit',
+            label: t('users:edit'),
+            onSelect: () => setEditing({ user, displayName: user.displayName, email: user.email }),
+          },
+          {
+            id: 'toggle',
+            label: user.disabled ? t('users:enable') : t('users:disable'),
+            danger: !user.disabled,
+            onSelect: () => {
+              setError(null)
+              setToggling(user)
+            },
+          },
+        ]
+        if (user.disabled && user.username !== auth?.username) {
+          entries.push({
+            id: 'delete',
+            label: t('users:delete'),
+            danger: true,
+            onSelect: () => {
+              setError(null)
+              setDeleting(user)
+            },
+          })
+        }
+        return (
+          <Menu
+            align="end"
+            items={entries}
+            trigger={(props) => (
+              <button
+                {...props}
+                className="ui-btn ui-btn--ghost"
+                aria-label={t('users:rowActions', { name: user.username })}
+              >
+                {t('users:table.actions')}
+              </button>
+            )}
+          />
+        )
+      },
+    },
+  ]
 
   return (
     <div className="users-tab">
@@ -122,123 +289,46 @@ export function UsersTab({
           <h2 className="settings__card-title">{t('users:title')}</h2>
           <p className="users__hint">{t('users:intro')}</p>
         </div>
-        <button
-          type="button"
-          className="settings__button settings__button--primary"
-          onClick={() => setInviting(true)}
-        >
+        <button type="button" className="ui-btn ui-btn--primary" onClick={() => setInviting(true)}>
+          <PlusIcon />
           {t('users:invite.open')}
         </button>
       </div>
 
-      {error !== null ? (
+      {error !== null && toggling === null && deleting === null ? (
         <p className="users__error" role="alert">
           {error}
         </p>
       ) : null}
 
-      {users.length === 0 ? (
-        <p className="users__hint">{t('users:empty')}</p>
-      ) : (
-        <div className="users-table-wrap">
-          <table className="users-table">
-            <thead>
-              <tr>
-                <th scope="col">{t('users:table.name')}</th>
-                <th scope="col">{t('users:table.username')}</th>
-                <th scope="col">{t('users:table.email')}</th>
-                <th scope="col">{t('users:table.access')}</th>
-                <th scope="col">{t('users:table.status')}</th>
-                <th scope="col">{t('users:table.actions')}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {users.map((user) => (
-                <tr key={user.id}>
-                  <td data-label={t('users:table.name')}>
-                    <button
-                      type="button"
-                      className="users__name"
-                      onClick={() => setAccessFor(user.id)}
-                    >
-                      {user.displayName || user.username}
-                    </button>
-                  </td>
-                  <td data-label={t('users:table.username')}>
-                    <code>{user.username}</code>
-                  </td>
-                  <td data-label={t('users:table.email')}>
-                    <span className="users__email">{user.email}</span>
-                  </td>
-                  <td data-label={t('users:table.access')}>
-                    <div className="users__chips">
-                      {user.bindings.length === 0 ? (
-                        <span className="users__hint">{t('users:noAccess')}</span>
-                      ) : (
-                        user.bindings.map((binding) => (
-                          <span className="chip" key={binding.id}>
-                            {roleLabel(t, binding.role)} ·{' '}
-                            <ScopeLabel scope={binding.scope} groups={groups} servers={servers} />
-                          </span>
-                        ))
-                      )}
-                    </div>
-                  </td>
-                  <td data-label={t('users:table.status')}>
-                    <span
-                      className={user.disabled ? 'status status--offline' : 'status status--online'}
-                    >
-                      {user.disabled ? t('users:disabled') : t('users:active')}
-                    </span>
-                    <span className={user.totpEnabled ? 'chip chip--ok' : 'chip chip--warn'}>
-                      {user.totpEnabled ? t('users:totpOn') : t('users:totpOff')}
-                    </span>
-                  </td>
-                  <td data-label={t('users:table.actions')}>
-                    <div className="users__actions">
-                      <button type="button" className="cbtn" onClick={() => setAccessFor(user.id)}>
-                        {t('users:accessButton')}
-                      </button>
-                      <button
-                        type="button"
-                        className="cbtn"
-                        onClick={() =>
-                          setEditing({ user, displayName: user.displayName, email: user.email })
-                        }
-                      >
-                        {t('users:edit')}
-                      </button>
-                      {user.disabled && user.username !== auth?.username ? (
-                        <button
-                          type="button"
-                          className="cbtn cbtn--danger"
-                          onClick={() => {
-                            setError(null)
-                            setDeleteConfirmation('')
-                            setDeleting(user)
-                          }}
-                        >
-                          {t('users:delete')}
-                        </button>
-                      ) : null}
-                      <button
-                        type="button"
-                        className={user.disabled ? 'cbtn' : 'cbtn cbtn--danger'}
-                        onClick={() => {
-                          setError(null)
-                          setToggling(user)
-                        }}
-                      >
-                        {user.disabled ? t('users:enable') : t('users:disable')}
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+      <FilterBar
+        search={{
+          value: search,
+          onChange: (value) => setQuery({ q: value }),
+          placeholder: t('users:filters.search'),
+        }}
+      >
+        <Select
+          label={t('users:filters.role')}
+          value={roleFilter}
+          options={[
+            { value: '', label: t('users:filters.allRoles') },
+            ...roles.map((role) => ({ value: role, label: roleLabel(t, role) })),
+          ]}
+          onChange={(value) => setQuery({ role: value === '' ? null : value })}
+        />
+      </FilterBar>
+
+      <DataTable
+        columns={columns}
+        rows={visibleUsers}
+        rowKey={(user) => user.id}
+        empty={
+          <p className="users__hint">
+            {t(search === '' && roleFilter === '' ? 'users:empty' : 'users:noResults')}
+          </p>
+        }
+      />
 
       <section className="users__invites" aria-labelledby="pending-invites-title">
         <h3 className="settings__section-title" id="pending-invites-title">
@@ -265,7 +355,11 @@ export function UsersTab({
                     }).format(new Date(invite.expiresAt)),
                   })}
                 </span>
-                <button type="button" className="cbtn cbtn--danger" onClick={() => revoke(invite)}>
+                <button
+                  type="button"
+                  className="ui-btn ui-btn--ghost"
+                  onClick={() => void revoke(invite)}
+                >
                   {t('users:invites.revoke')}
                 </button>
               </li>
@@ -275,10 +369,13 @@ export function UsersTab({
       </section>
 
       {selected !== null ? (
-        <Dialog
+        <Drawer
+          open
           title={t('users:access.title', { name: selected.displayName || selected.username })}
-          onClose={() => setAccessFor(null)}
-          side
+          onClose={() => {
+            setAccessFor(null)
+            setError(null)
+          }}
         >
           <Assignments
             bindings={selected.bindings}
@@ -286,26 +383,27 @@ export function UsersTab({
             servers={servers}
             busy={busy}
             error={error}
-            onAdd={addAccess}
-            onRemove={removeAccess}
-            onChangeRole={changeAccess}
+            onAdd={(role, scope) => void addAccess(role, scope)}
+            onRemove={(binding) => void removeAccess(binding)}
+            onChangeRole={(binding, role) => void changeAccess(binding, role)}
           />
-        </Dialog>
+        </Drawer>
       ) : null}
 
       {editing !== null ? (
-        <Dialog
+        <Drawer
+          open
           title={t('users:editDialog.title')}
           onClose={() => setEditing(null)}
           footer={
             <div className="users__actions">
-              <button type="button" className="settings__button" onClick={() => setEditing(null)}>
+              <button type="button" className="ui-btn" onClick={() => setEditing(null)}>
                 {t('actions.cancel')}
               </button>
               <button
                 type="submit"
                 form="edit-user-form"
-                className="settings__button settings__button--primary"
+                className="ui-btn ui-btn--primary"
                 disabled={busy}
               >
                 {t('actions.save')}
@@ -351,92 +449,54 @@ export function UsersTab({
               ) : null}
             </label>
           </form>
-        </Dialog>
+        </Drawer>
       ) : null}
 
-      {toggling !== null ? (
-        <Dialog
-          title={
-            toggling.disabled
-              ? t('users:toggle.enableTitle', { name: toggling.username })
-              : t('users:toggle.disableTitle', { name: toggling.username })
-          }
-          onClose={() => setToggling(null)}
-          footer={
-            <div className="users__actions">
-              <button type="button" className="settings__button" onClick={() => setToggling(null)}>
-                {t('actions.cancel')}
-              </button>
-              <button
-                type="button"
-                className={
-                  toggling.disabled
-                    ? 'settings__button settings__button--primary'
-                    : 'settings__button settings__button--danger'
-                }
-                disabled={busy}
-                onClick={() => void toggleUser()}
-              >
-                {toggling.disabled ? t('users:enable') : t('users:disable')}
-              </button>
-            </div>
-          }
-        >
-          <p>{t(toggling.disabled ? 'users:toggle.enableBody' : 'users:toggle.disableBody')}</p>
-        </Dialog>
-      ) : null}
+      <ConfirmDialog
+        open={toggling !== null}
+        title={
+          toggling?.disabled
+            ? t('users:toggle.enableTitle', { name: toggling.username })
+            : t('users:toggle.disableTitle', { name: toggling?.username ?? '' })
+        }
+        body={
+          <>
+            <p>{t(toggling?.disabled ? 'users:toggle.enableBody' : 'users:toggle.disableBody')}</p>
+            {error !== null ? <p role="alert">{error}</p> : null}
+          </>
+        }
+        confirmLabel={toggling?.disabled ? t('users:enable') : t('users:disable')}
+        danger={!toggling?.disabled}
+        busy={busy}
+        onConfirm={() => void toggleUser()}
+        onCancel={() => {
+          setToggling(null)
+          setError(null)
+        }}
+      />
 
-      {deleting !== null ? (
-        <Dialog
-          title={t('users:deleteDialog.title', { name: deleting.username })}
-          onClose={() => {
-            setDeleting(null)
-            setDeleteConfirmation('')
-          }}
-          footer={
-            <div className="users__actions">
-              <button
-                type="button"
-                className="settings__button"
-                onClick={() => {
-                  setDeleting(null)
-                  setDeleteConfirmation('')
-                }}
-              >
-                {t('actions.cancel')}
-              </button>
-              <button
-                type="button"
-                className="settings__button settings__button--danger"
-                disabled={busy || deleteConfirmation !== deleting.username}
-                onClick={() => void deleteUser()}
-              >
-                {t('users:delete')}
-              </button>
-            </div>
-          }
-        >
-          <p>{t('users:deleteDialog.body')}</p>
-          <label className="field">
-            <span className="field__label">
-              {t('users:deleteDialog.confirm', { name: deleting.username })}
-            </span>
-            <input
-              className="field__input"
-              value={deleteConfirmation}
-              onChange={(event) => setDeleteConfirmation(event.target.value)}
-            />
-          </label>
-          {error !== null ? (
-            <p className="users__error" role="alert">
-              {error}
-            </p>
-          ) : null}
-        </Dialog>
-      ) : null}
+      <ConfirmDialog
+        open={deleting !== null}
+        title={t('users:deleteDialog.title', { name: deleting?.username ?? '' })}
+        body={
+          <>
+            <p>{t('users:deleteDialog.body')}</p>
+            {error !== null ? <p role="alert">{error}</p> : null}
+          </>
+        }
+        confirmLabel={t('users:delete')}
+        danger
+        busy={busy}
+        requireText={deleting?.username ?? ''}
+        onConfirm={() => void deleteUser()}
+        onCancel={() => {
+          setDeleting(null)
+          setError(null)
+        }}
+      />
 
       {inviting ? (
-        <InviteDialog
+        <InviteDrawer
           api={invitesApi}
           groups={groups}
           servers={servers}
@@ -448,7 +508,7 @@ export function UsersTab({
   )
 }
 
-function InviteDialog({
+function InviteDrawer({
   api,
   groups,
   servers,
@@ -462,6 +522,7 @@ function InviteDialog({
   onCreated: () => void
 }) {
   const { t, i18n } = useTranslation(['users', 'errors'])
+  const toast = useToast()
   const language = i18n.resolvedLanguage ?? i18n.language
   const [username, setUsername] = useState('')
   const [email, setEmail] = useState('')
@@ -497,6 +558,7 @@ function InviteDialog({
         scope,
       })
       setCreated(result)
+      toast.success(t('users:toast.invited', { name: username.trim() }))
       onCreated()
     } catch (cause) {
       setError(errorMessage(t, cause))
@@ -515,19 +577,20 @@ function InviteDialog({
   }
 
   return (
-    <Dialog
+    <Drawer
+      open
       title={t('users:invite.title')}
       onClose={onClose}
       footer={
         <div className="users__actions">
-          <button type="button" className="settings__button" onClick={onClose}>
+          <button type="button" className="ui-btn" onClick={onClose}>
             {created ? t('actions.done') : t('actions.cancel')}
           </button>
           {created === null ? (
             <button
               type="submit"
               form="invite-user-form"
-              className="settings__button settings__button--primary"
+              className="ui-btn ui-btn--primary"
               disabled={pending}
             >
               {pending ? t('users:invite.creating') : t('users:invite.create')}
@@ -602,7 +665,7 @@ function InviteDialog({
           <p className="users__hint">{t('users:invite.once')}</p>
           <code className="users__link">{link}</code>
           <div className="users__actions">
-            <button type="button" className="settings__button" onClick={() => void copy()}>
+            <button type="button" className="ui-btn" onClick={() => void copy()}>
               {copied ? <CheckIcon /> : <CopyIcon />}
               {copied ? t('users:invite.copied') : t('users:invite.copy')}
             </button>
@@ -617,6 +680,6 @@ function InviteDialog({
           </p>
         </div>
       )}
-    </Dialog>
+    </Drawer>
   )
 }

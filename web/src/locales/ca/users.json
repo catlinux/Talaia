@@ -26,7 +26,8 @@
     "access": "Accés",
     "status": "Estat",
     "actions": "Accions",
-    "email": "Correu electrònic"
+    "email": "Correu electrònic",
+    "totp": "2FA"
   },
   "invites": {
     "title": "Invitacions pendents",
@@ -172,6 +173,33 @@
     "close": "Tanca"
   },
   "tabs": {
-    "label": "Usuaris i permisos"
+    "label": "Usuaris i permisos",
+    "users": "Persones",
+    "teams": "Equips",
+    "groups": "Grups"
+  },
+  "noResults": "Cap usuari coincideix amb aquests filtres.",
+  "rowActions": "Accions per a {{name}}",
+  "filters": {
+    "search": "Cerca per nom, usuari, correu o rol",
+    "role": "Rol",
+    "allRoles": "Tots els rols"
+  },
+  "toast": {
+    "updated": "Usuari actualitzat.",
+    "enabled": "S'ha activat {{name}}.",
+    "disabled": "S'ha desactivat {{name}}.",
+    "deleted": "S'ha eliminat {{name}}.",
+    "invited": "S'ha creat la invitació per a {{name}}.",
+    "inviteRevoked": "S'ha revocat la invitació.",
+    "accessUpdated": "S'ha actualitzat l'accés.",
+    "teamCreated": "S'ha creat l'equip {{name}}.",
+    "teamRenamed": "L'equip s'ha reanomenat a {{name}}.",
+    "teamDeleted": "S'ha eliminat l'equip {{name}}.",
+    "memberAdded": "S'ha afegit el membre.",
+    "memberRemoved": "S'ha tret {{name}} de l'equip.",
+    "groupCreated": "S'ha creat el grup {{name}}.",
+    "groupRenamed": "El grup s'ha reanomenat a {{name}}.",
+    "groupDeleted": "S'ha eliminat el grup {{name}}."
   }
 }

@@ -26,7 +26,8 @@
     "access": "Access",
     "status": "Status",
     "actions": "Actions",
-    "email": "Email"
+    "email": "Email",
+    "totp": "2FA"
   },
   "invites": {
     "title": "Pending invitations",
@@ -172,6 +173,33 @@
     "close": "Close"
   },
   "tabs": {
-    "label": "Users and permissions"
+    "label": "Users and permissions",
+    "users": "People",
+    "teams": "Teams",
+    "groups": "Groups"
+  },
+  "noResults": "No users match these filters.",
+  "rowActions": "Actions for {{name}}",
+  "filters": {
+    "search": "Search by name, username, email or role",
+    "role": "Role",
+    "allRoles": "All roles"
+  },
+  "toast": {
+    "updated": "User updated.",
+    "enabled": "{{name}} enabled.",
+    "disabled": "{{name}} disabled.",
+    "deleted": "{{name}} deleted.",
+    "invited": "Invitation created for {{name}}.",
+    "inviteRevoked": "Invitation revoked.",
+    "accessUpdated": "Access updated.",
+    "teamCreated": "Team {{name}} created.",
+    "teamRenamed": "Team renamed to {{name}}.",
+    "teamDeleted": "Team {{name}} deleted.",
+    "memberAdded": "Member added.",
+    "memberRemoved": "{{name}} removed from the team.",
+    "groupCreated": "Group {{name}} created.",
+    "groupRenamed": "Group renamed to {{name}}.",
+    "groupDeleted": "Group {{name}} deleted."
   }
 }

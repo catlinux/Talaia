@@ -35,7 +35,7 @@ export function Breadcrumbs({ serverName }: BreadcrumbsProps) {
     crumbs = [{ label: t('nav.group.monitoring') }, { label: t('nav.alerts') }]
   } else if (routePath === '/audit') {
     crumbs = [{ label: t('nav.group.monitoring') }, { label: t('nav.audit') }]
-  } else if (routePath === '/users') {
+  } else if (routePath === '/users' || routePath.startsWith('/users/')) {
     crumbs = [{ label: t('nav.group.administration') }, { label: t('nav.users') }]
   } else if (routePath === '/settings' || routePath.startsWith('/settings/')) {
     crumbs = [{ label: t('nav.group.administration') }, { label: t('nav.settings') }]

@@ -171,7 +171,7 @@ function PanelShell({
   const isServers = matchRoute('/servers', path) !== null
   const isAlerts = matchRoute('/alerts/*', path) !== null
   const isAudit = matchRoute('/audit', path) !== null
-  const isUsers = matchRoute('/users', path) !== null
+  const isUsers = matchRoute('/users/*', path) !== null
   const isSettings = matchRoute('/settings/*', path) !== null
   const isAbout = matchRoute('/about', path) !== null
   const isContainers = matchRoute('/containers', path) !== null
