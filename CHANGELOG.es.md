@@ -13,6 +13,12 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+## [0.6.3] - 2026-10-30
+
+### Añadido
+
+- Acceso a Git endurecido en el agente (aún sin conexión con el core): solo repositorios de `github.com` por HTTPS o SSH, un `known_hosts` fijo con las claves de host publicadas por GitHub (sin confianza en el primer uso), claves de despliegue por app escritas en un temporal 0600 que siempre se borra, sin shell, sin hooks, sin submódulos, un `HOME` temporal vacío, límite de 1 GiB en el espacio de trabajo y de 1 y 5 minutos de tiempo.
+
 ## [0.6.2] - 2026-10-30
 
 ### Añadido
@@ -713,7 +719,8 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
   `.gitattributes` y `.gitignore`.
 - Licencia WNCL-1.0 aplicada: archivo `LICENSE` y sección de créditos en los README.
 
-[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.6.2...HEAD
+[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.6.3...HEAD
+[0.6.3]: https://github.com/catlinux/Talaia/releases/tag/v0.6.3
 [0.6.2]: https://github.com/catlinux/Talaia/releases/tag/v0.6.2
 [0.6.1]: https://github.com/catlinux/Talaia/releases/tag/v0.6.1
 [0.6.0]: https://github.com/catlinux/Talaia/releases/tag/v0.6.0

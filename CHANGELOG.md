@@ -18,6 +18,12 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.6.3] - 2026-10-30
+
+### Added
+
+- Hardened Git access in the agent (not reachable from the core yet): only repositories on `github.com` over HTTPS or SSH, a fixed `known_hosts` with GitHub's published host keys (no trust on first use), per-app deploy keys written to a temporary 0600 file that is always deleted, no shell, no hooks, no submodules, an empty temporary `HOME`, a 1 GiB workspace limit and 1 and 5 minute time limits.
+
 ## [0.6.2] - 2026-10-30
 
 ### Added
@@ -713,7 +719,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.6.2...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.6.3...HEAD
+[0.6.3]: https://github.com/catlinux/Talaia/releases/tag/v0.6.3
 [0.6.2]: https://github.com/catlinux/Talaia/releases/tag/v0.6.2
 [0.6.1]: https://github.com/catlinux/Talaia/releases/tag/v0.6.1
 [0.6.0]: https://github.com/catlinux/Talaia/releases/tag/v0.6.0
