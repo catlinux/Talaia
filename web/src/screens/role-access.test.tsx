@@ -13,7 +13,6 @@ import type { Server } from '../api/types'
 import { PermissionsProvider } from '../auth/permissions'
 import { App } from '../App'
 import i18n from '../i18n'
-import { Fleet } from './Fleet'
 import { ServerScreen } from './ServerScreen'
 
 const allPermissions: Permission[] = [
@@ -257,12 +256,6 @@ describe('role-based panel controls', () => {
       },
       servers: { 'srv-1': [] },
     })
-
-    mount(me, <Fleet client={fleetClient(fleetServer(true))} />)
-    expect(await screen.findByText('Limited access')).toBeTruthy()
-    expect(screen.queryByRole('meter')).toBeNull()
-    expect(screen.queryByRole('button', { name: 'Add server' })).toBeNull()
-    cleanup()
 
     serverScreen(me, true)
     expect(await screen.findByRole('tab', { name: 'Containers' })).toBeTruthy()

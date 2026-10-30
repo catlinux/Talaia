@@ -22,7 +22,7 @@ import i18n from './i18n'
 import { ATTRIBUTION } from './screens/About'
 
 const overviewTitles = { ca: 'Resum', es: 'Resumen', en: 'Overview' } as const
-const fleetTitles = { ca: 'Flota', es: 'Flota', en: 'Fleet' } as const
+const serversTitles = { ca: 'Servidors', es: 'Servidores', en: 'Servers' } as const
 const settingsTitles = { ca: 'Configuració', es: 'Ajustes', en: 'Settings' } as const
 const aboutTitles = { ca: 'Sobre Talaia', es: 'Acerca de Talaia', en: 'About Talaia' } as const
 const navOverview = { ca: 'Resum', es: 'Resumen', en: 'Overview' } as const
@@ -369,7 +369,7 @@ describe('App', () => {
 
     await openSidebarLink(navServers.en)
     expect(window.location.pathname).toBe('/servers')
-    expect(await screen.findByRole('heading', { level: 1, name: fleetTitles.en })).toBeTruthy()
+    expect(await screen.findByRole('heading', { level: 1, name: serversTitles.en })).toBeTruthy()
 
     await openSidebarLink(navContainers.en)
     expect(window.location.pathname).toBe('/containers')
@@ -494,7 +494,7 @@ describe('App', () => {
     await openSidebarLink(navServers.en)
     sessionStorage.setItem('talaia.serverTab.vps-web-01', 'containers')
 
-    fireEvent.click(await screen.findByRole('button', { name: 'vps-web-01' }))
+    fireEvent.click(await screen.findByRole('link', { name: 'vps-web-01' }))
 
     expect(await screen.findByText('shop-web-1')).toBeTruthy()
     expect(window.location.pathname).toBe('/servers/vps-web-01')
@@ -502,7 +502,7 @@ describe('App', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Back to the fleet' }))
     expect(window.location.pathname).toBe('/servers')
-    expect(currentTitle()).toBe(fleetTitles.en)
+    expect(currentTitle()).toBe(serversTitles.en)
   })
 
   it('loads a server from a deep link', async () => {
@@ -516,7 +516,7 @@ describe('App', () => {
     expect(within(crumbs).getByText('abc')).toBeTruthy()
   })
 
-  it('returns to the fleet on popstate', async () => {
+  it('returns to the servers on popstate', async () => {
     window.history.replaceState({}, '', '/servers/vps-web-01')
     renderApp(serverApis())
     await screen.findByRole('heading', { level: 1, name: 'vps-web-01' })
@@ -524,7 +524,7 @@ describe('App', () => {
     window.history.replaceState({}, '', '/servers')
     window.dispatchEvent(new PopStateEvent('popstate'))
 
-    expect(await screen.findByRole('heading', { level: 1, name: fleetTitles.en })).toBeTruthy()
+    expect(await screen.findByRole('heading', { level: 1, name: serversTitles.en })).toBeTruthy()
     expect(window.location.pathname).toBe('/servers')
   })
 

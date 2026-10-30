@@ -2,6 +2,54 @@
   "title": "Fleet",
   "subtitle_one": "{{count}} server · updated at {{time}}",
   "subtitle_other": "{{count}} servers · updated at {{time}}",
+  "servers": {
+    "title": "Servers",
+    "searchPlaceholder": "Search by name, hostname, OS, tag or location",
+    "view": {
+      "label": "View",
+      "table": "Table",
+      "cards": "Cards"
+    },
+    "filters": {
+      "status": "Status",
+      "allStatuses": "All statuses",
+      "online": "Correct",
+      "tag": "Tag",
+      "allTags": "All tags",
+      "security": "Security updates",
+      "reboot": "Reboot required"
+    },
+    "columns": {
+      "status": "Status",
+      "name": "Server",
+      "os": "OS · location",
+      "cpu": "CPU",
+      "ram": "RAM",
+      "disk": "Disk",
+      "containers": "Containers",
+      "alerts": "Alerts",
+      "updates": "Updates",
+      "agent": "Agent"
+    },
+    "securityUpdates_one": "{{count}} security update",
+    "securityUpdates_other": "{{count}} security updates",
+    "updates_one": "{{count}} update",
+    "updates_other": "{{count}} updates",
+    "reboot": "Reboot",
+    "empty": "No servers match these filters",
+    "clearFilters": "Clear filters",
+    "loading": "Loading the servers…",
+    "error": "The servers could not be loaded.",
+    "retry": "Retry",
+    "refreshFailed": "The servers could not be refreshed: showing the last data.",
+    "rowActions": "Actions for {{name}}",
+    "menu": {
+      "open": "Open",
+      "containers": "Containers",
+      "updates": "Updates",
+      "alerts": "Alerts"
+    }
+  },
   "loading": "Loading the fleet…",
   "error": "The fleet could not be loaded",
   "add": {

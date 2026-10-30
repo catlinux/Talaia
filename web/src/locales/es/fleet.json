@@ -2,6 +2,54 @@
   "title": "Flota",
   "subtitle_one": "{{count}} servidor · actualizado a las {{time}}",
   "subtitle_other": "{{count}} servidores · actualizado a las {{time}}",
+  "servers": {
+    "title": "Servidores",
+    "searchPlaceholder": "Busca por nombre, nombre de host, SO, etiqueta o ubicación",
+    "view": {
+      "label": "Vista",
+      "table": "Tabla",
+      "cards": "Tarjetas"
+    },
+    "filters": {
+      "status": "Estado",
+      "allStatuses": "Todos los estados",
+      "online": "Correcto",
+      "tag": "Etiqueta",
+      "allTags": "Todas las etiquetas",
+      "security": "Actualizaciones de seguridad",
+      "reboot": "Reinicio pendiente"
+    },
+    "columns": {
+      "status": "Estado",
+      "name": "Servidor",
+      "os": "SO · ubicación",
+      "cpu": "CPU",
+      "ram": "RAM",
+      "disk": "Disco",
+      "containers": "Contenedores",
+      "alerts": "Alertas",
+      "updates": "Actualizaciones",
+      "agent": "Agente"
+    },
+    "securityUpdates_one": "{{count}} actualización de seguridad",
+    "securityUpdates_other": "{{count}} actualizaciones de seguridad",
+    "updates_one": "{{count}} actualización",
+    "updates_other": "{{count}} actualizaciones",
+    "reboot": "Reiniciar",
+    "empty": "Ningún servidor coincide con estos filtros",
+    "clearFilters": "Borrar filtros",
+    "loading": "Cargando los servidores…",
+    "error": "No se han podido cargar los servidores.",
+    "retry": "Reintentar",
+    "refreshFailed": "No se han podido actualizar los servidores: se muestran los últimos datos.",
+    "rowActions": "Acciones de {{name}}",
+    "menu": {
+      "open": "Abrir",
+      "containers": "Contenedores",
+      "updates": "Actualizaciones",
+      "alerts": "Alertas"
+    }
+  },
   "loading": "Cargando la flota…",
   "error": "No se ha podido cargar la flota",
   "add": {

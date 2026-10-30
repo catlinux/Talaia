@@ -14,7 +14,6 @@ import type { InvitesApi } from './api/invites'
 import type { ServersApi } from './api/servers'
 import type { ServicesApi } from './api/services'
 import type { SystemApi } from './api/system'
-import type { Server } from './api/types'
 import { usePermissions } from './auth/permissions'
 import { Sidebar } from './components/shell/Sidebar'
 import { Topbar } from './components/shell/Topbar'
@@ -23,9 +22,9 @@ import { Link, matchRoute, RouterProvider, useNavigate, useRoute } from './route
 import { About } from './screens/About'
 import { Audit } from './screens/Audit'
 import { Alerts } from './screens/Alerts'
-import { Fleet } from './screens/Fleet'
 import { Overview } from './screens/Overview'
 import { ServerScreen } from './screens/ServerScreen'
+import { Servers } from './screens/Servers'
 import { Settings } from './screens/Settings'
 import { Users } from './screens/Users'
 
@@ -150,11 +149,6 @@ function PanelShell({
     [navigate],
   )
 
-  const fleetOpenServer = useCallback(
-    (server: Server) => openServer(server.id, server.name),
-    [openServer],
-  )
-
   const isServers = matchRoute('/servers', path) !== null
   const isAlerts = matchRoute('/alerts/*', path) !== null
   const isAudit = matchRoute('/audit', path) !== null
@@ -168,13 +162,7 @@ function PanelShell({
   if (path === '/') {
     page = <Overview client={fleetClient} alertsApi={canAlerts ? alerts : undefined} />
   } else if (isServers) {
-    page = (
-      <Fleet
-        client={fleetClient}
-        onOpenServer={fleetOpenServer}
-        alertsApi={canAlerts ? alerts : undefined}
-      />
-    )
+    page = <Servers client={fleetClient} alertsApi={alerts} />
   } else if (serverMatch !== null) {
     page = (
       <ServerScreen

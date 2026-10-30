@@ -18,6 +18,12 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.6.9] - 2026-10-30
+
+### Changed
+
+- Panel: the Servers page is now a table with search, filters (status, tag, security updates, pending reboot) and sorting kept in the address, a menu per row and an optional card view.
+
 ## [0.6.8] - 2026-10-30
 
 ### Added
@@ -750,7 +756,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.6.8...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.6.9...HEAD
+[0.6.9]: https://github.com/catlinux/Talaia/releases/tag/v0.6.9
 [0.6.8]: https://github.com/catlinux/Talaia/releases/tag/v0.6.8
 [0.6.7]: https://github.com/catlinux/Talaia/releases/tag/v0.6.7
 [0.6.6]: https://github.com/catlinux/Talaia/releases/tag/v0.6.6

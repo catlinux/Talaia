@@ -2,6 +2,54 @@
   "title": "Flota",
   "subtitle_one": "{{count}} servidor · actualitzat a les {{time}}",
   "subtitle_other": "{{count}} servidors · actualitzat a les {{time}}",
+  "servers": {
+    "title": "Servidors",
+    "searchPlaceholder": "Cerca per nom, nom d'amfitrió, SO, etiqueta o ubicació",
+    "view": {
+      "label": "Vista",
+      "table": "Taula",
+      "cards": "Targetes"
+    },
+    "filters": {
+      "status": "Estat",
+      "allStatuses": "Tots els estats",
+      "online": "Correcte",
+      "tag": "Etiqueta",
+      "allTags": "Totes les etiquetes",
+      "security": "Actualitzacions de seguretat",
+      "reboot": "Cal reiniciar"
+    },
+    "columns": {
+      "status": "Estat",
+      "name": "Servidor",
+      "os": "SO · ubicació",
+      "cpu": "CPU",
+      "ram": "RAM",
+      "disk": "Disc",
+      "containers": "Contenidors",
+      "alerts": "Alertes",
+      "updates": "Actualitzacions",
+      "agent": "Agent"
+    },
+    "securityUpdates_one": "{{count}} actualització de seguretat",
+    "securityUpdates_other": "{{count}} actualitzacions de seguretat",
+    "updates_one": "{{count}} actualització",
+    "updates_other": "{{count}} actualitzacions",
+    "reboot": "Reinicia",
+    "empty": "Cap servidor coincideix amb aquests filtres",
+    "clearFilters": "Neteja els filtres",
+    "loading": "S'estan carregant els servidors…",
+    "error": "No s'han pogut carregar els servidors.",
+    "retry": "Reintenta",
+    "refreshFailed": "No s'han pogut actualitzar els servidors: es mostren les últimes dades.",
+    "rowActions": "Accions de {{name}}",
+    "menu": {
+      "open": "Obre",
+      "containers": "Contenidors",
+      "updates": "Actualitzacions",
+      "alerts": "Alertes"
+    }
+  },
   "loading": "Carregant la flota…",
   "error": "No s'ha pogut carregar la flota",
   "add": {
