@@ -76,6 +76,35 @@ func TestAlertPermissionsByRole(t *testing.T) {
 	}
 }
 
+func TestServerProxyPermissionByRole(t *testing.T) {
+	cases := []struct {
+		role Role
+		want bool
+	}{
+		{RoleAdmin, true},
+		{RoleServerOperator, true},
+		{RoleAppOperator, false},
+		{RoleViewer, false},
+		{RoleMetricsOnly, false},
+	}
+	for _, tc := range cases {
+		if got := roleGrants(tc.role, PermServerProxy); got != tc.want {
+			t.Errorf("role %s permission %s = %v, want %v", tc.role, PermServerProxy, got, tc.want)
+		}
+	}
+	if got := PermServerProxy.MinScope(); got != ScopeServer {
+		t.Errorf("MinScope(%s) = %s, want %s", PermServerProxy, got, ScopeServer)
+	}
+
+	app := Resolve([]Binding{{Scope: Scope{Type: ScopeOrganization}, Role: RoleAppOperator}})
+	if app.Can(PermStackEdit, Target{ServerID: "s1", Stack: "st1"}) {
+		t.Error("app_operator got stack.edit")
+	}
+	if app.Can(PermServerProxy, Target{ServerID: "s1"}) {
+		t.Error("app_operator got server.proxy")
+	}
+}
+
 func TestMinimumLevelExamples(t *testing.T) {
 	target := Target{ServerID: "s1", GroupID: "g1", Stack: "st1", Container: "ct1"}
 

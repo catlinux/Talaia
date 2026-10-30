@@ -13,6 +13,13 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+## [0.6.2] - 2026-10-30
+
+### Añadido
+
+- Tablas de apps en la base de datos (migración `0017`, aún sin uso en el panel ni en la API): apps, sus variables de entorno (selladas por quien llama; el listado público omite los valores secretos), despliegues (numerados por app, log limitado a 256 KiB conservando el final, los encolados pueden quedar sustituidos) y dominios (nombres únicos entre todas las apps).
+- Permiso `server.proxy` (nivel servidor) para elegir cómo se publican las apps en un servidor; solo `admin` y `server_operator` lo tienen.
+
 ## [0.6.1] - 2026-10-30
 
 ### Añadido
@@ -706,7 +713,8 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
   `.gitattributes` y `.gitignore`.
 - Licencia WNCL-1.0 aplicada: archivo `LICENSE` y sección de créditos en los README.
 
-[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.6.1...HEAD
+[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.6.2...HEAD
+[0.6.2]: https://github.com/catlinux/Talaia/releases/tag/v0.6.2
 [0.6.1]: https://github.com/catlinux/Talaia/releases/tag/v0.6.1
 [0.6.0]: https://github.com/catlinux/Talaia/releases/tag/v0.6.0
 [0.5.20]: https://github.com/catlinux/Talaia/releases/tag/v0.5.20

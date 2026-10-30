@@ -133,7 +133,7 @@ of the current phase and the next one.
 Decisions closed on 2026-10-30: external proxy by default (Talaia never touches Apache or other services on the server), Dockerfile only, GitHub only, nothing installed on the real VPS until the final test.
 
 - [x] Contract: typed commands for Git source, build, release and proxy
-- [ ] Apps, environment variables, deployments and domains in the database; `server.proxy` permission
+- [x] Apps, environment variables, deployments and domains in the database; `server.proxy` permission
 - [ ] Agent: hardened Git fetch from GitHub with per-app deploy keys and a pinned host key
 - [ ] Core: signed GitHub push webhooks and branch polling
 - [ ] Agent: builds with a Dockerfile, one at a time per server

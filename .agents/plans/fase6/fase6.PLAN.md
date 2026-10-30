@@ -1,6 +1,6 @@
 # Fase 6 · Despliegues, dominios y plantillas (0.7.0)
 
-Estado: **plan escrito (2026-10-28, Opus); M1-M6 cerradas el 2026-10-30.** Paso 1 hecho (0.6.1).
+Estado: **plan escrito (2026-10-28, Opus); M1-M6 cerradas el 2026-10-30.** Pasos 1 y 2 hechos (0.6.2).
 Criterio del ROADMAP: *«hacer push a `main` publica la app por HTTPS sin hacer nada más»*. En modo externo (M1) se
 cumple a partir del segundo despliegue: el bloque de Apache de cada dominio se pone una vez, a mano, y desde ahí cada
 push publica solo.
@@ -155,7 +155,7 @@ CHANGELOG, o el script falla) y marca ✅ aquí y en los dos TODO. Ejecutor por 
 | # | Paso | Archivos | Terminado cuando | Ejecutor · esfuerzo | Versión |
 |---|---|---|---|---|---|
 | 1 ✅ | Proto: `AppSource`, `AppBuild`, `AppRelease`, `ProxyApply`, `ProxyInstall`, `GitProbe`; campos de proxy (modo, 80/443 libres) en `Inventory` | `proto/agent.proto` (+ generado) | `buf lint` y `buf breaking` en verde; ningún número reusado | Sonnet (sesión) · medio | 0.6.1 |
-| 2 | Migración 0017 y store de apps, variables, despliegues y dominios; permiso `server.proxy` | `core/internal/store/migrations/0017_apps.sql`, `core/internal/store/apps.go`, `core/internal/rbac/**` | pruebas con BD: únicos, secretos sellados, `superseded`; rbac (`app_operator` no `stack.edit`); la migración solo crea tablas | AgentRelay · alto | 0.6.2 |
+| 2 ✅ | Migración 0017 y store de apps, variables, despliegues y dominios; permiso `server.proxy` | `core/internal/store/migrations/0017_apps.sql`, `core/internal/store/apps.go`, `core/internal/rbac/**` | pruebas con BD: únicos, secretos sellados, `superseded`; rbac (`app_operator` no `stack.edit`); la migración solo crea tablas | AgentRelay · alto | 0.6.2 |
 | 3 | Agente: Git endurecido (D2), solo `github.com` | `agent/internal/source/**` | pruebas: esquemas, hosts y argumentos rechazados, hooks ignorados, submódulos no, clave de host fijada, temporales borrados | AgentRelay · alto + **revisión Opus** | 0.6.3 |
 | 4 | Core: webhook firmado de GitHub y sondeo (D4) | `core/internal/api/hooks.go`, `core/internal/deploy/poll.go`, `core/internal/api/authz.go` | pruebas: firma mala/ausente/repetida, `ping`, otra rama, cuerpo grande, límite; guardiana `chi.Walk` en verde | AgentRelay · alto + **revisión Opus** | 0.6.4 |
 | 5 | Agente: build con Dockerfile (D3), uno a la vez por servidor | `agent/internal/build/**` | pruebas con runner falso: argumentos exactos, espacio libre, tiempo, secretos fuera de build-args, limpieza solo de lo suyo | AgentRelay · medio | 0.6.5 |

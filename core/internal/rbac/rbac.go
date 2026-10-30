@@ -27,6 +27,7 @@ const (
 	PermHostReboot          Permission = "host.reboot"
 	PermHostTerminal        Permission = "host.terminal"
 	PermServerAgentUpdate   Permission = "server.agent_update"
+	PermServerProxy         Permission = "server.proxy"
 
 	PermServerRemove   Permission = "server.remove"
 	PermServerEnroll   Permission = "server.enroll"
@@ -46,7 +47,7 @@ var AllPermissions = []Permission{
 	PermStackView, PermStackDeploy, PermStackEdit, PermContainerRemove,
 	PermServerView, PermResourcesManage, PermHostServicesView, PermHostServicesControl,
 	PermHostJournal, PermHostAptView, PermHostAptUpgrade, PermHostReboot,
-	PermHostTerminal, PermServerAgentUpdate,
+	PermHostTerminal, PermServerAgentUpdate, PermServerProxy,
 	PermServerRemove, PermServerEnroll, PermUsersManage, PermSettingsManage,
 	PermAuditView, PermRecordingsView, PermAPIKeysManage,
 	PermAlertsView, PermAlertsSilence, PermAlertsManage,
@@ -142,7 +143,7 @@ func (p Permission) MinScope() ScopeType {
 		return ScopeStack
 	case PermServerView, PermResourcesManage, PermHostServicesView, PermHostServicesControl,
 		PermHostJournal, PermHostAptView, PermHostAptUpgrade, PermHostReboot,
-		PermHostTerminal, PermServerAgentUpdate:
+		PermHostTerminal, PermServerAgentUpdate, PermServerProxy:
 		return ScopeServer
 	case PermServerRemove, PermServerEnroll, PermUsersManage, PermSettingsManage,
 		PermAuditView, PermRecordingsView, PermAPIKeysManage, PermAlertsManage:
@@ -169,7 +170,8 @@ func (r Role) Permissions() []Permission {
 			PermStackView, PermStackDeploy, PermStackEdit, PermContainerRemove,
 			PermServerView, PermResourcesManage, PermHostServicesView, PermHostServicesControl,
 			PermHostJournal, PermHostAptView, PermHostAptUpgrade, PermHostReboot,
-			PermHostTerminal, PermServerAgentUpdate, PermAlertsView, PermAlertsSilence,
+			PermHostTerminal, PermServerAgentUpdate, PermServerProxy, PermAlertsView,
+			PermAlertsSilence,
 		}
 	case RoleAppOperator:
 		return allViewPermissions(
