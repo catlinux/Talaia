@@ -1,12 +1,14 @@
-import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { ReactNode } from 'react'
 
 import type { Alert, AlertSilence, AlertSummary, AlertsApi } from '../../api/alerts'
 import type { MeApi, MePermissions, Permission } from '../../api/me'
 import { PermissionsProvider } from '../../auth/permissions'
+import { ToastProvider } from '../../components/ui'
 import i18n from '../../i18n'
+import { RouterProvider } from '../../router'
 import { Alerts, AlertsBadge, alertCount } from '../Alerts'
-import { ActiveTab } from './ActiveTab'
 import { AlertMessage } from './AlertMessage'
 import { HistoryTab } from './HistoryTab'
 import { SilencesTab } from './SilencesTab'
@@ -83,32 +85,85 @@ function fakeApi(overrides: Partial<AlertsApi> = {}): AlertsApi {
   }
 }
 
-describe('alerts components', () => {
-  beforeEach(async () => {
-    await i18n.changeLanguage('en')
-  })
+function renderAlerts(ui: ReactNode) {
+  return render(
+    <ToastProvider>
+      <RouterProvider>{ui}</RouterProvider>
+    </ToastProvider>,
+  )
+}
 
-  afterEach(() => cleanup())
+beforeEach(async () => {
+  await i18n.changeLanguage('en')
+  window.history.replaceState({}, '', '/alerts')
+})
 
-  it('shows the three tabs and switches between them', async () => {
+afterEach(() => {
+  cleanup()
+  window.history.replaceState({}, '', '/')
+})
+
+describe('alerts screen', () => {
+  it('shows the three tabs as routes and switches between them', async () => {
+    const list = vi.fn((state?: 'active' | 'history') =>
+      Promise.resolve(state === 'active' ? [alert()] : []),
+    )
     const api = fakeApi({
-      list: () => Promise.resolve([alert()]),
+      list,
       silences: () => Promise.resolve([silence()]),
     })
-    render(<Alerts api={api} />)
+    renderAlerts(<Alerts api={api} />)
 
-    expect(await screen.findByRole('tab', { name: 'Active' })).toBeTruthy()
+    expect((await screen.findByRole('tab', { name: 'Active' })).getAttribute('aria-selected')).toBe(
+      'true',
+    )
     expect(screen.getByRole('tab', { name: 'History' })).toBeTruthy()
     expect(screen.getByRole('tab', { name: 'Silences' })).toBeTruthy()
 
     fireEvent.click(screen.getByRole('tab', { name: 'Silences' }))
+    expect(window.location.pathname).toBe('/alerts/silences')
     expect(await screen.findByText('maintenance')).toBeTruthy()
+    expect(screen.getByRole('tab', { name: 'Silences' }).getAttribute('aria-selected')).toBe('true')
+
     fireEvent.click(screen.getByRole('tab', { name: 'Active' }))
+    expect(window.location.pathname).toBe('/alerts')
     expect(await screen.findAllByText(/Container web is down/)).toHaveLength(1)
   })
 
+  it('opens history and silences directly from their routes', async () => {
+    window.history.replaceState({}, '', '/alerts/history')
+    const historyList = vi.fn(() =>
+      Promise.resolve([alert({ resolvedAt: '2026-10-24T11:00:00Z' })]),
+    )
+    renderAlerts(<Alerts api={fakeApi({ list: historyList })} />)
+    expect(
+      (await screen.findByRole('tab', { name: 'History' })).getAttribute('aria-selected'),
+    ).toBe('true')
+    await waitFor(() => expect(historyList).toHaveBeenCalledWith('history', 0, undefined))
+
+    cleanup()
+    window.history.replaceState({}, '', '/alerts/silences')
+    renderAlerts(<Alerts api={fakeApi({ silences: () => Promise.resolve([silence()]) })} />)
+    expect(await screen.findByText('maintenance')).toBeTruthy()
+    expect(screen.getByRole('tab', { name: 'Silences' }).getAttribute('aria-selected')).toBe('true')
+  })
+
+  it('shows the inbox subtitle with severity and new counts', async () => {
+    const api = fakeApi({
+      list: () =>
+        Promise.resolve([
+          alert({ id: 'critical' }),
+          alert({ id: 'warning', severity: 'warning' }),
+          alert({ id: 'seen', ackedBy: 'ana', severity: 'info' }),
+        ]),
+    })
+    renderAlerts(<Alerts api={api} />)
+
+    expect(await screen.findByText('1 critical · 1 warnings · 2 new')).toBeTruthy()
+  })
+
   it('shows the screen with a server-scoped alerts.view permission', async () => {
-    render(
+    renderAlerts(
       <PermissionsProvider
         meApi={me([], {
           servers: { s1: ['alerts.view' as Permission] },
@@ -151,124 +206,6 @@ describe('alerts components', () => {
         unmount()
       }
     }
-  })
-
-  it('sorts critical first and hides actions from a viewer', async () => {
-    const api = fakeApi({
-      list: () =>
-        Promise.resolve([
-          alert({ id: 'warning', severity: 'warning', startedAt: '2026-10-24T11:00:00Z' }),
-          alert({ id: 'critical', severity: 'critical', startedAt: '2026-10-24T10:00:00Z' }),
-        ]),
-    })
-    render(
-      <PermissionsProvider meApi={me(['alerts.view'])}>
-        <ActiveTab api={api} onRefresh={() => undefined} />
-      </PermissionsProvider>,
-    )
-
-    expect(await screen.findAllByText(/Container web is down/)).toHaveLength(2)
-    const cards = document.querySelectorAll('.alert-card')
-    expect(cards).toHaveLength(2)
-    expect(cards[0]?.textContent).toContain('Critical')
-    expect(screen.queryByRole('button', { name: 'Acknowledge' })).toBeNull()
-    expect(screen.queryByRole('button', { name: 'Silence' })).toBeNull()
-    expect(screen.queryByRole('button', { name: 'Stop watching' })).toBeNull()
-  })
-
-  it('opens the server from an alert when navigation is available', async () => {
-    const onOpenServer = vi.fn()
-    render(
-      <PermissionsProvider meApi={me(['alerts.view'])}>
-        <ActiveTab api={fakeApi()} onRefresh={() => undefined} onOpenServer={onOpenServer} />
-      </PermissionsProvider>,
-    )
-
-    fireEvent.click(await screen.findByRole('button', { name: 'vps-web-01' }))
-    expect(onOpenServer).toHaveBeenCalledWith('s1', 'vps-web-01')
-  })
-
-  it('acknowledges an alert and refreshes the list and the summary', async () => {
-    const acknowledge = vi.fn(() => Promise.resolve())
-    const list = vi
-      .fn<() => Promise<Alert[]>>()
-      .mockResolvedValueOnce([alert()])
-      .mockResolvedValueOnce([alert({ ackedBy: 'admin' })])
-    const onRefresh = vi.fn()
-    render(
-      <PermissionsProvider meApi={me(['alerts.view', 'alerts.silence'])}>
-        <ActiveTab api={fakeApi({ acknowledge, list })} onRefresh={onRefresh} />
-      </PermissionsProvider>,
-    )
-
-    fireEvent.click(await screen.findByRole('button', { name: 'Acknowledge' }))
-    await waitFor(() => expect(acknowledge).toHaveBeenCalledWith('a1'))
-    expect(onRefresh).toHaveBeenCalled()
-    expect(await screen.findByText('Acknowledged by admin')).toBeTruthy()
-  })
-
-  it('validates and posts a container silence with the alert scope', async () => {
-    const createSilence = vi.fn(() => Promise.resolve(silence()))
-    const onRefresh = vi.fn()
-    render(
-      <PermissionsProvider meApi={me(['alerts.view', 'alerts.silence'])}>
-        <ActiveTab api={fakeApi({ createSilence })} onRefresh={onRefresh} />
-      </PermissionsProvider>,
-    )
-
-    fireEvent.click(await screen.findByRole('button', { name: 'Silence' }))
-    const dialog = screen.getByRole('dialog')
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Silence' }))
-    expect(await within(dialog).findByRole('alert')).toBeTruthy()
-    expect(createSilence).not.toHaveBeenCalled()
-
-    fireEvent.change(within(dialog).getByLabelText(/Reason/), {
-      target: { value: 'x'.repeat(201) },
-    })
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Silence' }))
-    expect(createSilence).not.toHaveBeenCalled()
-
-    fireEvent.change(within(dialog).getByLabelText(/Reason/), {
-      target: { value: 'deploying' },
-    })
-    fireEvent.change(within(dialog).getByLabelText(/Duration/), { target: { value: 'custom' } })
-    fireEvent.change(within(dialog).getByLabelText(/Custom minutes/), {
-      target: { value: '50000' },
-    })
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Silence' }))
-    expect(createSilence).not.toHaveBeenCalled()
-
-    fireEvent.change(within(dialog).getByLabelText(/Duration/), {
-      target: { value: '30' },
-    })
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Silence' }))
-
-    await waitFor(() =>
-      expect(createSilence).toHaveBeenCalledWith({
-        scopeType: 'container',
-        serverId: 's1',
-        name: 'web',
-        ruleType: 'container_down',
-        durationMinutes: 30,
-        reason: 'deploying',
-      }),
-    )
-    expect(onRefresh).toHaveBeenCalled()
-  })
-
-  it('asks before stop watching a container', async () => {
-    const unwatch = vi.fn(() => Promise.resolve())
-    render(
-      <PermissionsProvider meApi={me(['alerts.view', 'alerts.silence'])}>
-        <ActiveTab api={fakeApi({ unwatch })} onRefresh={() => undefined} />
-      </PermissionsProvider>,
-    )
-
-    fireEvent.click(await screen.findByRole('button', { name: 'Stop watching' }))
-    const dialog = screen.getByRole('dialog')
-    expect(within(dialog).getByText(/will not be monitored again/)).toBeTruthy()
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Stop watching' }))
-    await waitFor(() => expect(unwatch).toHaveBeenCalledWith('a1'))
   })
 
   it('loads more history with the next offset', async () => {

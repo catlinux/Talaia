@@ -14,20 +14,25 @@ const ruleTypes = [
   'cert_expiry',
 ] as const
 
-/** AlertMessage renders the translated summary of an alert, falling back to its rule type. */
-export function AlertMessage({ alert }: { alert: Alert }) {
-  const { t } = useTranslation('alerts')
+/** alertMessageText is the translated summary of an alert, used by the component and search. */
+export function alertMessageText(t: TFunction, alert: Alert): string {
   const summaryKey = alert.summary?.key?.replace(/^alerts\./, '') ?? ''
   const rule = summaryKey === '' ? alert.ruleType : summaryKey
   if (!ruleTypes.includes(rule as (typeof ruleTypes)[number])) {
-    return <>{alert.ruleType || t('unknownRule', { rule: '—' })}</>
+    return alert.ruleType || t('unknownRule', { rule: '—' })
   }
   const params = {
     ...(alert.summary?.params ?? {}),
     server: alert.serverName || alert.serverId || '—',
     subject: alert.subjectName || '—',
   }
-  return <>{t(rule, params)}</>
+  return t(rule, params)
+}
+
+/** AlertMessage renders the translated summary of an alert, falling back to its rule type. */
+export function AlertMessage({ alert }: { alert: Alert }) {
+  const { t } = useTranslation('alerts')
+  return <>{alertMessageText(t, alert)}</>
 }
 
 /** ruleLabel is the short label of a rule, without its measured values. */

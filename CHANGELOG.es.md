@@ -13,6 +13,12 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+## [0.6.13] - 2026-10-30
+
+### Cambiado
+
+- Panel: la bandeja de alertas es ahora una tabla — las alertas nuevas se distinguen de las ya vistas o silenciadas; filtros por gravedad, estado, servidor, regla o texto (guardados en la dirección); agrupación por servidor o por regla; y confirmar, silenciar o dejar de vigilar varias alertas a la vez.
+
 ## [0.6.12] - 2026-10-30
 
 ### Añadido
@@ -774,7 +780,8 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
   `.gitattributes` y `.gitignore`.
 - Licencia WNCL-1.0 aplicada: archivo `LICENSE` y sección de créditos en los README.
 
-[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.6.12...HEAD
+[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.6.13...HEAD
+[0.6.13]: https://github.com/catlinux/Talaia/releases/tag/v0.6.13
 [0.6.12]: https://github.com/catlinux/Talaia/releases/tag/v0.6.12
 [0.6.11]: https://github.com/catlinux/Talaia/releases/tag/v0.6.11
 [0.6.10]: https://github.com/catlinux/Talaia/releases/tag/v0.6.10

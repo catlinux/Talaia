@@ -1,10 +1,13 @@
-import { useState, type KeyboardEvent } from 'react'
+import { useCallback, useEffect, useState, type KeyboardEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { createAlertsApi, type AlertsApi, type AlertSummary } from '../api/alerts'
 import { usePermissions } from '../auth/permissions'
-import { ActiveTab } from './alerts/ActiveTab'
+import { PageHeader } from '../components/ui'
+import { Link, useNavigate, useRoute } from '../router'
 import { HistoryTab } from './alerts/HistoryTab'
+import { Inbox } from './alerts/Inbox'
+import type { InboxCounts } from './alerts/inboxModel'
 import { SilencesTab } from './alerts/SilencesTab'
 
 const defaultApi = createAlertsApi()
@@ -27,8 +30,21 @@ export function AlertsBadge({ summary }: { summary: AlertSummary | null }) {
     </span>
   )
 }
+
 const tabs = ['active', 'history', 'silences'] as const
 type Tab = (typeof tabs)[number]
+
+/** alertsTabPath returns the canonical address of an alerts tab. */
+export function alertsTabPath(tab: Tab): string {
+  return tab === 'active' ? '/alerts' : `/alerts/${tab}`
+}
+
+function tabFromPath(path: string): Tab | null {
+  if (path === '/alerts') return 'active'
+  if (path === '/alerts/history') return 'history'
+  if (path === '/alerts/silences') return 'silences'
+  return null
+}
 
 interface AlertsProps {
   api?: AlertsApi
@@ -36,7 +52,7 @@ interface AlertsProps {
   onOpenServer?: (serverId: string, serverName: string) => void
 }
 
-/** Alerts is the active, history and silence screen. */
+/** Alerts is the inbox, history and silence screen. */
 export function Alerts({
   api = defaultApi,
   onRefresh = () => undefined,
@@ -44,11 +60,22 @@ export function Alerts({
 }: AlertsProps) {
   const { t } = useTranslation('alerts')
   const { canAnywhere } = usePermissions()
-  const [tab, setTab] = useState<Tab>('active')
+  const { path } = useRoute()
+  const navigate = useNavigate()
+  const [counts, setCounts] = useState<InboxCounts | null>(null)
   const canView = canAnywhere('alerts.view' as never)
+  const tab = tabFromPath(path)
+  const activeTab: Tab = tab ?? 'active'
+
+  useEffect(() => {
+    if (tab === null) navigate('/alerts', { replace: true })
+  }, [navigate, tab])
+
+  const onCounts = useCallback((next: InboxCounts) => setCounts(next), [])
+
   if (!canView) return null
 
-  const moveTab = (event: KeyboardEvent<HTMLButtonElement>, index: number) => {
+  const moveTab = (event: KeyboardEvent<HTMLAnchorElement>, index: number) => {
     let next: number
     switch (event.key) {
       case 'ArrowLeft':
@@ -67,48 +94,53 @@ export function Alerts({
         return
     }
     event.preventDefault()
-    setTab(tabs[next]!)
-    document.getElementById(`alerts-tab-${tabs[next]}`)?.focus()
+    const target = tabs[next]!
+    navigate(alertsTabPath(target))
+    document.getElementById(`alerts-tab-${target}`)?.focus()
   }
 
   return (
-    <section className="alerts" aria-labelledby="alerts-title">
-      <header className="alerts__head">
-        <p className="alerts__eyebrow">{t('eyebrow')}</p>
-        <h1 className="alerts__title" id="alerts-title">
-          {t('title')}
-        </h1>
-        <p className="alerts__intro">{t('intro')}</p>
-      </header>
+    <section className="alerts" aria-label={t('title')}>
+      <PageHeader
+        title={t('title')}
+        subtitle={
+          counts === null
+            ? undefined
+            : t('subtitle', {
+                critical: counts.critical,
+                warning: counts.warning,
+                new: counts.new,
+              })
+        }
+      />
 
       <div className="alerts__tabs" role="tablist" aria-label={t('tabs.label')}>
         {tabs.map((name, index) => (
-          <button
+          <Link
             key={name}
             id={`alerts-tab-${name}`}
-            type="button"
+            to={alertsTabPath(name)}
             role="tab"
-            aria-selected={tab === name}
+            aria-selected={activeTab === name}
             aria-controls={`alerts-panel-${name}`}
-            tabIndex={tab === name ? 0 : -1}
-            className={tab === name ? 'alerts__tab alerts__tab--on' : 'alerts__tab'}
-            onClick={() => setTab(name)}
+            tabIndex={activeTab === name ? 0 : -1}
+            className={activeTab === name ? 'alerts__tab alerts__tab--on' : 'alerts__tab'}
             onKeyDown={(event) => moveTab(event, index)}
           >
             {t(`tabs.${name}`)}
-          </button>
+          </Link>
         ))}
       </div>
 
       <div
         className="alerts__panel"
-        id={`alerts-panel-${tab}`}
+        id={`alerts-panel-${activeTab}`}
         role="tabpanel"
-        aria-labelledby={`alerts-tab-${tab}`}
+        aria-labelledby={`alerts-tab-${activeTab}`}
       >
-        {tab === 'active' ? (
-          <ActiveTab api={api} onRefresh={onRefresh} onOpenServer={onOpenServer} />
-        ) : tab === 'history' ? (
+        {activeTab === 'active' ? (
+          <Inbox api={api} onRefresh={onRefresh} onOpenServer={onOpenServer} onCounts={onCounts} />
+        ) : activeTab === 'history' ? (
           <HistoryTab api={api} />
         ) : (
           <SilencesTab api={api} onRefresh={onRefresh} />

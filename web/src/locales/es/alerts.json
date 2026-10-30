@@ -1,9 +1,11 @@
 {
   "eyebrow": "Operaciones",
   "title": "Alertas",
+  "subtitle": "{{critical}} críticas · {{warning}} avisos · {{new}} nuevas",
   "intro": "Lo que requiere atención ahora, lo que ha pasado y los silencios activos.",
   "loading": "Cargando alertas…",
   "error": "No se han podido cargar las alertas.",
+  "retry": "Reintentar",
   "tabs": {
     "label": "Secciones de alertas",
     "active": "Activas",
@@ -12,7 +14,10 @@
   },
   "empty": {
     "title": "No hay alertas activas",
+    "allClear": "Todo en orden",
     "body": "Ahora mismo no hay nada que requiera tu atención.",
+    "noResults": "Ninguna alerta coincide con estos filtros",
+    "noResultsBody": "Cambia o limpia los filtros para ver más alertas.",
     "history": "No hay alertas anteriores.",
     "silences": "No hay silencios activos."
   },
@@ -23,9 +28,58 @@
   },
   "acknowledgedBy": "Confirmada por {{user}}",
   "silenced": "Silenciada",
+  "state": {
+    "new": "Nueva",
+    "seen": "Vista",
+    "seenBy": "Vista por {{user}}",
+    "silenced": "Silenciada",
+    "unknownUser": "alguien"
+  },
+  "menu": {
+    "row": "Acciones de {{subject}}"
+  },
+  "filters": {
+    "search": "Buscar alertas por mensaje, servidor, stack o contenedor",
+    "severity": "Gravedad",
+    "allSeverities": "Todas las gravedades",
+    "state": "Estado",
+    "allStates": "Todos los estados",
+    "server": "Servidor",
+    "allServers": "Todos los servidores",
+    "rule": "Regla",
+    "allRules": "Todas las reglas",
+    "group": "Agrupar por",
+    "groupNone": "Sin agrupación",
+    "groupServer": "Servidor",
+    "groupRule": "Regla",
+    "clear": "Limpiar filtros"
+  },
+  "columns": {
+    "severity": "Gravedad",
+    "what": "Qué pasa",
+    "where": "Dónde",
+    "since": "Desde",
+    "state": "Estado",
+    "actions": "Acciones"
+  },
+  "bulk": {
+    "notAllowed_one": "1 no permitida",
+    "notAllowed_other": "{{count}} no permitidas",
+    "result": "{{done}} hechas · {{failed}} fallidas · {{skipped}} no permitidas",
+    "unwatchTitle_one": "¿Dejar de vigilar {{count}} contenedor?",
+    "unwatchTitle_other": "¿Dejar de vigilar {{count}} contenedores?",
+    "unwatchBody": "Estos contenedores no se volverán a vigilar hasta que vuelvan a ejecutarse."
+  },
+  "bulkSilence": {
+    "title": "Silenciar las alertas seleccionadas",
+    "scopeCount_one": "Se silenciará 1 ámbito distinto.",
+    "scopeCount_other": "Se silenciarán {{count}} ámbitos distintos."
+  },
   "actions": {
     "acknowledge": "Confirmar",
     "silence": "Silenciar",
+    "silenceMenu": "Silenciar…",
+    "openServer": "Abrir servidor",
     "unwatch": "Dejar de vigilar",
     "unwatchConfirm": "¿Dejar de vigilar {{subject}}?",
     "cancel": "Cancelar",

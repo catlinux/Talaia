@@ -649,3 +649,95 @@ table td code,
 table td .mono {
   overflow-wrap: anywhere;
 }
+
+/* Alerts inbox */
+
+.alerts-inbox {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.alerts__tab {
+  text-decoration: none;
+}
+
+.alerts-inbox__message--new {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.alerts-inbox__where {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0 2px;
+  align-items: baseline;
+}
+
+.alerts-inbox__where-extra {
+  display: contents;
+}
+
+.alerts-inbox__container {
+  font-family: var(--f-mono);
+  overflow-wrap: anywhere;
+}
+
+.alerts-inbox__state {
+  white-space: nowrap;
+}
+
+.alerts-inbox__state--new {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.alerts-inbox__state--seen {
+  color: var(--muted);
+}
+
+.alerts-inbox__state--silenced {
+  color: var(--muted);
+}
+
+.alerts-inbox__row--new td {
+  background: color-mix(in srgb, var(--accent-soft) 35%, transparent);
+}
+
+.alerts-inbox__row--focus td {
+  background: var(--accent-soft);
+}
+
+.alerts-inbox__row--focus td:first-child {
+  box-shadow: inset 2px 0 var(--accent);
+}
+
+.alerts-inbox__menu {
+  width: 30px;
+  min-width: 30px;
+  padding: 0;
+  font-size: 17px;
+  line-height: 1;
+}
+
+.alerts-inbox__muted {
+  color: var(--muted);
+}
+
+.alerts-inbox__bulk-note {
+  margin-left: 5px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 400;
+  white-space: nowrap;
+}
+
+.alerts-inbox__all-clear .alerts__empty-mark {
+  color: var(--ok);
+}
+
+@media (max-width: 640px) {
+  .alerts-inbox__where-extra {
+    display: none;
+  }
+}

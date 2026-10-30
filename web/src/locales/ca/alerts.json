@@ -1,9 +1,11 @@
 {
   "eyebrow": "Operacions",
   "title": "Alertes",
+  "subtitle": "{{critical}} crítiques · {{warning}} avisos · {{new}} noves",
   "intro": "El que necessita atenció ara, el que ha passat i els silencis actius.",
   "loading": "Carregant alertes…",
   "error": "No s'han pogut carregar les alertes.",
+  "retry": "Reintenta",
   "tabs": {
     "label": "Seccions d'alertes",
     "active": "Actives",
@@ -12,7 +14,10 @@
   },
   "empty": {
     "title": "No hi ha alertes actives",
+    "allClear": "Tot en ordre",
     "body": "Ara mateix no hi ha res que necessiti la teva atenció.",
+    "noResults": "Cap alerta coincideix amb aquests filtres",
+    "noResultsBody": "Canvia o neteja els filtres per veure més alertes.",
     "history": "No hi ha alertes anteriors.",
     "silences": "No hi ha silencis actius."
   },
@@ -23,9 +28,58 @@
   },
   "acknowledgedBy": "Confirmada per {{user}}",
   "silenced": "Silenciada",
+  "state": {
+    "new": "Nova",
+    "seen": "Vista",
+    "seenBy": "Vista per {{user}}",
+    "silenced": "Silenciada",
+    "unknownUser": "algú"
+  },
+  "menu": {
+    "row": "Accions de {{subject}}"
+  },
+  "filters": {
+    "search": "Cerca alertes per missatge, servidor, stack o contenidor",
+    "severity": "Gravetat",
+    "allSeverities": "Totes les gravetats",
+    "state": "Estat",
+    "allStates": "Tots els estats",
+    "server": "Servidor",
+    "allServers": "Tots els servidors",
+    "rule": "Regla",
+    "allRules": "Totes les regles",
+    "group": "Agrupa per",
+    "groupNone": "Sense agrupació",
+    "groupServer": "Servidor",
+    "groupRule": "Regla",
+    "clear": "Neteja els filtres"
+  },
+  "columns": {
+    "severity": "Gravetat",
+    "what": "Què passa",
+    "where": "On",
+    "since": "Des de",
+    "state": "Estat",
+    "actions": "Accions"
+  },
+  "bulk": {
+    "notAllowed_one": "1 no permesa",
+    "notAllowed_other": "{{count}} no permeses",
+    "result": "{{done}} fetes · {{failed}} fallides · {{skipped}} no permeses",
+    "unwatchTitle_one": "Deixar de vigilar {{count}} contenidor?",
+    "unwatchTitle_other": "Deixar de vigilar {{count}} contenidors?",
+    "unwatchBody": "Aquests contenidors no es tornaran a vigilar fins que es tornin a executar."
+  },
+  "bulkSilence": {
+    "title": "Silencia les alertes seleccionades",
+    "scopeCount_one": "Se silenciarà 1 àmbit diferent.",
+    "scopeCount_other": "Se silenciaran {{count}} àmbits diferents."
+  },
   "actions": {
     "acknowledge": "Confirma",
     "silence": "Silencia",
+    "silenceMenu": "Silencia…",
+    "openServer": "Obre el servidor",
     "unwatch": "Deixa de vigilar",
     "unwatchConfirm": "Vols deixar de vigilar {{subject}}?",
     "cancel": "Cancel·la",

@@ -1,9 +1,11 @@
 {
   "eyebrow": "Operations",
   "title": "Alerts",
+  "subtitle": "{{critical}} critical · {{warning}} warnings · {{new}} new",
   "intro": "What needs attention now, what happened and the silences in force.",
   "loading": "Loading alerts…",
   "error": "The alerts could not be loaded.",
+  "retry": "Retry",
   "tabs": {
     "label": "Alert sections",
     "active": "Active",
@@ -12,7 +14,10 @@
   },
   "empty": {
     "title": "No active alerts",
+    "allClear": "All clear",
     "body": "Nothing needs your attention right now.",
+    "noResults": "No alerts match these filters",
+    "noResultsBody": "Change or clear the filters to see more alerts.",
     "history": "There are no past alerts.",
     "silences": "There are no active silences."
   },
@@ -23,9 +28,58 @@
   },
   "acknowledgedBy": "Acknowledged by {{user}}",
   "silenced": "Silenced",
+  "state": {
+    "new": "New",
+    "seen": "Seen",
+    "seenBy": "Seen by {{user}}",
+    "silenced": "Silenced",
+    "unknownUser": "someone"
+  },
+  "menu": {
+    "row": "Actions for {{subject}}"
+  },
+  "filters": {
+    "search": "Search alerts by message, server, stack or container",
+    "severity": "Severity",
+    "allSeverities": "All severities",
+    "state": "State",
+    "allStates": "All states",
+    "server": "Server",
+    "allServers": "All servers",
+    "rule": "Rule",
+    "allRules": "All rules",
+    "group": "Group by",
+    "groupNone": "No grouping",
+    "groupServer": "Server",
+    "groupRule": "Rule",
+    "clear": "Clear filters"
+  },
+  "columns": {
+    "severity": "Severity",
+    "what": "What",
+    "where": "Where",
+    "since": "Since",
+    "state": "State",
+    "actions": "Actions"
+  },
+  "bulk": {
+    "notAllowed_one": "1 not allowed",
+    "notAllowed_other": "{{count}} not allowed",
+    "result": "{{done}} done · {{failed}} failed · {{skipped}} not allowed",
+    "unwatchTitle_one": "Stop watching {{count}} container?",
+    "unwatchTitle_other": "Stop watching {{count}} containers?",
+    "unwatchBody": "These containers will not be monitored again until they run again."
+  },
+  "bulkSilence": {
+    "title": "Silence selected alerts",
+    "scopeCount_one": "1 distinct scope will be silenced.",
+    "scopeCount_other": "{{count}} distinct scopes will be silenced."
+  },
   "actions": {
     "acknowledge": "Acknowledge",
     "silence": "Silence",
+    "silenceMenu": "Silence…",
+    "openServer": "Open server",
     "unwatch": "Stop watching",
     "unwatchConfirm": "Stop watching {{subject}}?",
     "cancel": "Cancel",
