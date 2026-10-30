@@ -169,8 +169,7 @@ describe('Topbar', () => {
     )
     expect(within(crumbs).getByText('vps-web-01')).toBeTruthy()
 
-    const bell = await screen.findByRole('link', { name: '3 open alerts' })
-    expect(bell.getAttribute('href')).toBe('/alerts')
+    const bell = await screen.findByRole('button', { name: 'Alerts: 3 open' })
     expect(within(bell).getByText('3').classList.contains('shell__bell-dot--crit')).toBe(true)
   })
 })

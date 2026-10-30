@@ -90,6 +90,65 @@
     "body": "This container will not be monitored again until it runs again. The alert is resolved now.",
     "confirm": "Stop watching"
   },
+  "bell": {
+    "title": "Open alerts",
+    "viewAll": "View all alerts",
+    "loading": "Loading alerts…",
+    "empty": "No new or critical alerts.",
+    "error": "The alerts could not be loaded."
+  },
+  "drawer": {
+    "missingTitle": "Alert not found",
+    "missing": "This alert no longer exists.",
+    "where": "Where",
+    "actions": "Actions",
+    "agentHint": "Check that the agent is running: systemctl status talaia-agent.",
+    "above": "> {{value}}",
+    "for": "for {{duration}}",
+    "actionFailed": "The action failed.",
+    "timeout": "The agent did not answer in time.",
+    "containerActionDone": "{{action}} on {{name}} finished.",
+    "containerActionFailed": "{{action}} on {{name}} failed: {{message}}",
+    "state": {
+      "resolved": "Resolved"
+    },
+    "action": {
+      "openServer": "Open server",
+      "startContainer": "Start container",
+      "restartContainer": "Restart container",
+      "logs": "View logs",
+      "terminal": "Open terminal",
+      "openStack": "Open stack",
+      "openServices": "Open services",
+      "viewUpdates": "View updates",
+      "cleanupResources": "Clean up resources"
+    },
+    "confirm": {
+      "startTitle": "Start {{name}}?",
+      "startBody": "The container starts now. This may change the state of the service.",
+      "restartTitle": "Restart {{name}}?",
+      "restartBody": "The container restarts and its connections are interrupted for a moment."
+    },
+    "timeline": {
+      "title": "Timeline",
+      "started": "Started",
+      "acknowledged": "Acknowledged",
+      "acknowledgedBy": "Acknowledged by {{user}}",
+      "silenced": "Silenced",
+      "resolved": "Resolved"
+    },
+    "rule": {
+      "title": "Rule",
+      "edit": "Edit rule"
+    },
+    "metric": {
+      "title": "Metric",
+      "failed": "The metric could not be loaded."
+    },
+    "metricCpu": "CPU",
+    "metricMemory": "Memory",
+    "metricDisk": "Disk"
+  },
   "cpu_high": "CPU at {{value}}% on {{server}}",
   "mem_high": "Memory at {{value}}% on {{server}}",
   "disk_high": "Disk at {{value}}% on {{server}}",
@@ -119,6 +178,13 @@
     "more": "Load more",
     "loading": "Loading history…",
     "error": "The alert history could not be loaded."
+  },
+  "bell": {
+    "title": "Open alerts",
+    "loading": "Loading alerts…",
+    "error": "The open alerts could not be loaded.",
+    "empty": "There are no new or critical alerts.",
+    "viewAll": "View all alerts"
   },
   "silence": {
     "title": "Silence this alert",

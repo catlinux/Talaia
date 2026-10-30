@@ -4,8 +4,10 @@ import { useTranslation } from 'react-i18next'
 import type { AptApi } from './api/apt'
 import type { AuditApi } from './api/audit'
 import { createAlertsApi, type AlertsApi, type AlertSummary } from './api/alerts'
+import { createAlertsAdminApi, type AlertsAdminApi } from './api/alertsAdmin'
 import { createApiFleetClient, type FleetClient } from './api/client'
-import type { ContainersApi } from './api/containers'
+import { createContainersApi, type ContainersApi } from './api/containers'
+import { createMetricsApi, type MetricsApi } from './api/metrics'
 import type { JournalApi } from './api/journal'
 import type { UsersApi } from './api/users'
 import type { TeamsApi } from './api/teams'
@@ -47,6 +49,8 @@ interface AppProps {
   /** Audit API of the audit screen. Tests inject their own. */
   auditApi?: AuditApi
   alertsApi?: AlertsApi
+  alertsAdminApi?: AlertsAdminApi
+  metricsApi?: MetricsApi
   usersApi?: UsersApi
   teamsApi?: TeamsApi
   groupsApi?: GroupsApi
@@ -74,6 +78,8 @@ function PanelShell({
   systemApi,
   auditApi,
   alertsApi,
+  alertsAdminApi,
+  metricsApi,
   usersApi,
   teamsApi,
   groupsApi,
@@ -93,6 +99,9 @@ function PanelShell({
   const canStacks = canAnywhere('stack.view')
 
   const alerts = alertsApi ?? defaultAlertsApi
+  const alertsAdmin = alertsAdminApi ?? defaultAlertsAdminApi
+  const metrics = metricsApi ?? defaultMetricsApi
+  const containers = containersApi ?? defaultContainersApi
   const [alertSummary, setAlertSummary] = useState<AlertSummary | null>(null)
   const refreshAlertSummary = useCallback(() => {
     if (!canAlerts) return
@@ -195,6 +204,9 @@ function PanelShell({
         api={alerts}
         onRefresh={refreshAlertSummary}
         onOpenServer={(id, name) => openServer(id, name)}
+        alertsAdminApi={alertsAdmin}
+        metricsApi={metrics}
+        containersApi={containers}
       />
     ) : (
       <PanelMessage title={t('shell.noAccess')} />
@@ -249,6 +261,7 @@ function PanelShell({
       <div className="shell__content">
         <Topbar
           alertSummary={alertSummary}
+          alertsApi={alerts}
           serverName={serverID === '' ? undefined : (serverName ?? serverDetail?.name ?? serverID)}
           onOpenMenu={() => setMobileOpen(true)}
         />
@@ -281,3 +294,6 @@ function PanelMessage({
 }
 
 const defaultAlertsApi = createAlertsApi()
+const defaultAlertsAdminApi = createAlertsAdminApi()
+const defaultMetricsApi = createMetricsApi()
+const defaultContainersApi = createContainersApi()

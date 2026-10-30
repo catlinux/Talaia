@@ -138,7 +138,7 @@ tareas concretas de la fase actual y de la siguiente.
 - [x] Ficha de servidor con cabecera fija y pestañas como rutas
 - [x] Contenedores y stacks de toda la flota con acciones por fila y en bloque
 - [x] Catálogo «¿qué es esto?»: descripción, importancia y qué hacer si falla de los servicios de Debian y las imágenes Docker habituales, como tooltip en las tablas
-- [ ] Bandeja de alertas: filtros, agrupación, nueva/vista/silenciada, acciones en bloque, detalle con acciones sobre la causa
+- [x] Bandeja de alertas: filtros, agrupación, nueva/vista/silenciada, acciones en bloque, detalle con acciones sobre la causa
 - [ ] Reglas, canales y comprobaciones de alertas movidos de Ajustes a Alertas
 - [ ] Paleta de comandos (Ctrl+K); Usuarios, Auditoría y Ajustes con los componentes nuevos; repaso móvil y docs
 

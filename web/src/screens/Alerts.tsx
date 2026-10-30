@@ -2,12 +2,15 @@ import { useCallback, useEffect, useState, type KeyboardEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { createAlertsApi, type AlertsApi, type AlertSummary } from '../api/alerts'
+import type { AlertsAdminApi } from '../api/alertsAdmin'
+import type { ContainersApi } from '../api/containers'
+import type { MetricsApi } from '../api/metrics'
 import { usePermissions } from '../auth/permissions'
 import { PageHeader } from '../components/ui'
 import { Link, useNavigate, useRoute } from '../router'
 import { HistoryTab } from './alerts/HistoryTab'
 import { Inbox } from './alerts/Inbox'
-import type { InboxCounts } from './alerts/inboxModel'
+import { inboxCounts, type InboxCounts } from './alerts/inboxModel'
 import { SilencesTab } from './alerts/SilencesTab'
 
 const defaultApi = createAlertsApi()
@@ -50,6 +53,9 @@ interface AlertsProps {
   api?: AlertsApi
   onRefresh?: () => void
   onOpenServer?: (serverId: string, serverName: string) => void
+  alertsAdminApi?: AlertsAdminApi
+  metricsApi?: MetricsApi
+  containersApi?: ContainersApi
 }
 
 /** Alerts is the inbox, history and silence screen. */
@@ -57,6 +63,9 @@ export function Alerts({
   api = defaultApi,
   onRefresh = () => undefined,
   onOpenServer,
+  alertsAdminApi,
+  metricsApi,
+  containersApi,
 }: AlertsProps) {
   const { t } = useTranslation('alerts')
   const { canAnywhere } = usePermissions()
@@ -72,6 +81,20 @@ export function Alerts({
   }, [navigate, tab])
 
   const onCounts = useCallback((next: InboxCounts) => setCounts(next), [])
+
+  useEffect(() => {
+    if (!canView || activeTab === 'active' || counts !== null) return
+    let active = true
+    api.list('active').then(
+      (rows) => {
+        if (active) setCounts(inboxCounts(rows))
+      },
+      () => undefined,
+    )
+    return () => {
+      active = false
+    }
+  }, [activeTab, api, canView, counts])
 
   if (!canView) return null
 
@@ -139,7 +162,15 @@ export function Alerts({
         aria-labelledby={`alerts-tab-${activeTab}`}
       >
         {activeTab === 'active' ? (
-          <Inbox api={api} onRefresh={onRefresh} onOpenServer={onOpenServer} onCounts={onCounts} />
+          <Inbox
+            api={api}
+            onRefresh={onRefresh}
+            onOpenServer={onOpenServer}
+            onCounts={onCounts}
+            alertsAdminApi={alertsAdminApi}
+            metricsApi={metricsApi}
+            containersApi={containersApi}
+          />
         ) : activeTab === 'history' ? (
           <HistoryTab api={api} />
         ) : (

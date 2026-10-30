@@ -319,13 +319,107 @@
   place-items: center;
   width: 32px;
   height: 32px;
+  padding: 0;
   border: 1px solid transparent;
   border-radius: var(--r);
+  background: none;
   color: var(--ink-2);
   text-decoration: none;
+  cursor: pointer;
 }
 
 .shell__bell:hover {
+  background: var(--sunken);
+  text-decoration: none;
+}
+
+.shell__bell-wrap {
+  position: relative;
+  flex: none;
+}
+
+.alert-bell {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  width: min(360px, calc(100vw - 32px));
+  overflow: hidden;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.alert-bell__head {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line);
+  font-size: 13px;
+}
+
+.alert-bell__state {
+  margin: 0;
+  padding: 16px 12px;
+  color: var(--muted);
+  font-size: 13px;
+  text-align: center;
+}
+
+.alert-bell__list {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.alert-bell__item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line);
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.alert-bell__item:hover,
+.alert-bell__item:focus-visible {
+  background: var(--sunken);
+  text-decoration: none;
+}
+
+.alert-bell__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.alert-bell__top time,
+.alert-bell__where {
+  color: var(--muted);
+  font-family: var(--f-mono);
+  font-size: 11px;
+}
+
+.alert-bell__message {
+  overflow-wrap: anywhere;
+  font-size: 13px;
+}
+
+.alert-bell__all {
+  padding: 10px 12px;
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 500;
+  text-align: center;
+  text-decoration: none;
+}
+
+.alert-bell__all:hover {
   background: var(--sunken);
   text-decoration: none;
 }
@@ -356,6 +450,98 @@
 
 .shell__bell-dot--crit {
   background: var(--crit);
+}
+
+.shell__bell-wrap {
+  position: relative;
+  flex: none;
+}
+
+.alert-bell {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  width: min(360px, calc(100vw - 32px));
+  overflow: hidden;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.alert-bell__head {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line);
+  font-size: 13px;
+}
+
+.alert-bell__state {
+  margin: 0;
+  padding: 16px 12px;
+  color: var(--muted);
+  font-size: 13px;
+  text-align: center;
+}
+
+.alert-bell__list {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.alert-bell__item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 12px;
+  border-top: 1px solid var(--line);
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.alert-bell__item:hover,
+.alert-bell__item:focus-visible {
+  background: var(--sunken);
+  text-decoration: none;
+}
+
+.alert-bell__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.alert-bell__top time,
+.alert-bell__where {
+  color: var(--muted);
+  font-family: var(--f-mono);
+  font-size: 11px;
+}
+
+.alert-bell__message {
+  overflow-wrap: anywhere;
+  font-size: 13px;
+}
+
+.alert-bell__all {
+  padding: 10px 12px;
+  border-top: 1px solid var(--line);
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 500;
+  text-align: center;
+  text-decoration: none;
+}
+
+.alert-bell__all:hover {
+  background: var(--sunken);
+  text-decoration: none;
 }
 
 .shell__user-button {
@@ -602,4 +788,102 @@
     padding: 0 5px;
     font-size: 0.65rem;
   }
+}
+
+/* Alert bell */
+
+.shell__bell {
+  background: none;
+  cursor: pointer;
+  font: inherit;
+}
+
+.shell__bell-wrap {
+  position: relative;
+  flex: none;
+}
+
+.alert-bell {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 80;
+  width: min(360px, calc(100vw - 32px));
+  overflow: hidden;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.alert-bell__head {
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--line);
+  font-size: 13px;
+}
+
+.alert-bell__state {
+  margin: 0;
+  padding: 16px 12px;
+  color: var(--muted);
+  font-size: 13px;
+  text-align: center;
+}
+
+.alert-bell__list {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.alert-bell__item {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 9px 12px;
+  border-top: 1px solid var(--line);
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.alert-bell__item:hover,
+.alert-bell__item:focus-visible {
+  background: var(--sunken);
+  text-decoration: none;
+}
+
+.alert-bell__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.alert-bell__top time,
+.alert-bell__where {
+  color: var(--muted);
+  font-family: var(--f-mono);
+  font-size: 11px;
+}
+
+.alert-bell__message {
+  overflow-wrap: anywhere;
+  font-size: 13px;
+}
+
+.alert-bell__all {
+  padding: 10px 12px;
+  border-top: 1px solid var(--line);
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 500;
+  text-align: center;
+  text-decoration: none;
+}
+
+.alert-bell__all:hover {
+  background: var(--sunken);
+  text-decoration: none;
 }

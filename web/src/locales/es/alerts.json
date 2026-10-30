@@ -90,6 +90,65 @@
     "body": "Este contenedor no se volverá a vigilar hasta que vuelva a ejecutarse. La alerta se resuelve ahora.",
     "confirm": "Dejar de vigilar"
   },
+  "bell": {
+    "title": "Alertas abiertas",
+    "viewAll": "Ver todas las alertas",
+    "loading": "Cargando alertas…",
+    "empty": "No hay alertas nuevas ni críticas.",
+    "error": "No se han podido cargar las alertas."
+  },
+  "drawer": {
+    "missingTitle": "Alerta no encontrada",
+    "missing": "Esta alerta ya no existe.",
+    "where": "Dónde",
+    "actions": "Acciones",
+    "agentHint": "Comprueba que el agente se está ejecutando: systemctl status talaia-agent.",
+    "above": "> {{value}}",
+    "for": "durante {{duration}}",
+    "actionFailed": "La acción ha fallado.",
+    "timeout": "El agente no ha respondido a tiempo.",
+    "containerActionDone": "{{action}} de {{name}} ha terminado.",
+    "containerActionFailed": "{{action}} de {{name}} ha fallado: {{message}}",
+    "state": {
+      "resolved": "Resuelta"
+    },
+    "action": {
+      "openServer": "Abrir servidor",
+      "startContainer": "Iniciar contenedor",
+      "restartContainer": "Reiniciar contenedor",
+      "logs": "Ver registros",
+      "terminal": "Abrir terminal",
+      "openStack": "Abrir stack",
+      "openServices": "Abrir servicios",
+      "viewUpdates": "Ver actualizaciones",
+      "cleanupResources": "Limpiar recursos"
+    },
+    "confirm": {
+      "startTitle": "¿Iniciar {{name}}?",
+      "startBody": "El contenedor se inicia ahora. Esto puede cambiar el estado del servicio.",
+      "restartTitle": "¿Reiniciar {{name}}?",
+      "restartBody": "El contenedor se reinicia y sus conexiones se interrumpen un momento."
+    },
+    "timeline": {
+      "title": "Cronología",
+      "started": "Iniciada",
+      "acknowledged": "Confirmada",
+      "acknowledgedBy": "Confirmada por {{user}}",
+      "silenced": "Silenciada",
+      "resolved": "Resuelta"
+    },
+    "rule": {
+      "title": "Regla",
+      "edit": "Editar regla"
+    },
+    "metric": {
+      "title": "Métrica",
+      "failed": "No se ha podido cargar la métrica."
+    },
+    "metricCpu": "CPU",
+    "metricMemory": "Memoria",
+    "metricDisk": "Disco"
+  },
   "cpu_high": "CPU al {{value}}% en {{server}}",
   "mem_high": "Memoria al {{value}}% en {{server}}",
   "disk_high": "Disco al {{value}}% en {{server}}",
@@ -119,6 +178,13 @@
     "more": "Cargar más",
     "loading": "Cargando historial…",
     "error": "No se ha podido cargar el historial de alertas."
+  },
+  "bell": {
+    "title": "Alertas abiertas",
+    "loading": "Cargando alertas…",
+    "error": "No se han podido cargar las alertas abiertas.",
+    "empty": "No hay alertas nuevas ni críticas.",
+    "viewAll": "Ver todas las alertas"
   },
   "silence": {
     "title": "Silenciar esta alerta",

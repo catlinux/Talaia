@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { Alert, AlertSilence, AlertsApi } from '../../api/alerts'
@@ -306,10 +306,36 @@ describe('Inbox', () => {
     const focused = document.querySelectorAll('.alerts-inbox__row--focus')
     expect(focused).toHaveLength(1)
     expect(focused[0]!.textContent).toContain('Container db is down')
+    expect(screen.getByRole('dialog')).toBeTruthy()
     fireEvent.click(
       within(rows().find((row) => row !== focused[0])!).getByText(/Container web is down/),
     )
     await waitFor(() => expect(window.location.search).toContain('focus=a1'))
+  })
+
+  it('opens the drawer on row click and closes it with Back', async () => {
+    const { api } = fakeApi()
+    renderInbox(api)
+    await screen.findAllByText(/Container web is down/)
+
+    fireEvent.click(rows()[0]!)
+    expect(await screen.findByRole('dialog')).toBeTruthy()
+    expect(window.location.search).toContain('focus=a1')
+
+    act(() => window.history.back())
+    await waitFor(() => expect(window.location.search).not.toContain('focus='))
+    expect(screen.queryByRole('dialog')).toBeNull()
+  })
+
+  it('shows a missing drawer when the focused alert is gone', async () => {
+    window.history.replaceState({}, '', '/alerts?focus=missing')
+    const history = vi.fn(() => Promise.resolve([]))
+    const { api } = fakeApi({
+      list: (state) => Promise.resolve(state === 'history' ? history() : []),
+    })
+    renderInbox(api)
+
+    expect(await screen.findByText('This alert no longer exists.')).toBeTruthy()
   })
 
   it('hides every action from a viewer', async () => {

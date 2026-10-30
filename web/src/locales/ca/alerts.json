@@ -90,6 +90,65 @@
     "body": "Aquest contenidor no es tornarà a vigilar fins que es torni a executar. L'alerta es resol ara.",
     "confirm": "Deixa de vigilar"
   },
+  "bell": {
+    "title": "Alertes obertes",
+    "viewAll": "Veure totes les alertes",
+    "loading": "S'estan carregant les alertes…",
+    "empty": "No hi ha alertes noves ni crítiques.",
+    "error": "No s'han pogut carregar les alertes."
+  },
+  "drawer": {
+    "missingTitle": "Alerta no trobada",
+    "missing": "Aquesta alerta ja no existeix.",
+    "where": "On",
+    "actions": "Accions",
+    "agentHint": "Comprova que l'agent s'està executant: systemctl status talaia-agent.",
+    "above": "> {{value}}",
+    "for": "durant {{duration}}",
+    "actionFailed": "L'acció ha fallat.",
+    "timeout": "L'agent no ha respost a temps.",
+    "containerActionDone": "{{action}} de {{name}} ha acabat.",
+    "containerActionFailed": "{{action}} de {{name}} ha fallat: {{message}}",
+    "state": {
+      "resolved": "Resolta"
+    },
+    "action": {
+      "openServer": "Obre el servidor",
+      "startContainer": "Inicia el contenidor",
+      "restartContainer": "Reinicia el contenidor",
+      "logs": "Mostra els registres",
+      "terminal": "Obre el terminal",
+      "openStack": "Obre la stack",
+      "openServices": "Obre els serveis",
+      "viewUpdates": "Mostra les actualitzacions",
+      "cleanupResources": "Neteja recursos"
+    },
+    "confirm": {
+      "startTitle": "Iniciar {{name}}?",
+      "startBody": "El contenidor s'inicia ara. Això pot canviar l'estat del servei.",
+      "restartTitle": "Reiniciar {{name}}?",
+      "restartBody": "El contenidor es reinicia i les seves connexions s'interrompen un moment."
+    },
+    "timeline": {
+      "title": "Cronologia",
+      "started": "Iniciada",
+      "acknowledged": "Confirmada",
+      "acknowledgedBy": "Confirmada per {{user}}",
+      "silenced": "Silenciada",
+      "resolved": "Resolta"
+    },
+    "rule": {
+      "title": "Regla",
+      "edit": "Edita la regla"
+    },
+    "metric": {
+      "title": "Mètrica",
+      "failed": "No s'ha pogut carregar la mètrica."
+    },
+    "metricCpu": "CPU",
+    "metricMemory": "Memòria",
+    "metricDisk": "Disc"
+  },
   "cpu_high": "CPU al {{value}}% a {{server}}",
   "mem_high": "Memòria al {{value}}% a {{server}}",
   "disk_high": "Disc al {{value}}% a {{server}}",
@@ -119,6 +178,13 @@
     "more": "Carrega'n més",
     "loading": "Carregant historial…",
     "error": "No s'ha pogut carregar l'historial d'alertes."
+  },
+  "bell": {
+    "title": "Alertes obertes",
+    "loading": "Carregant alertes…",
+    "error": "No s'han pogut carregar les alertes obertes.",
+    "empty": "No hi ha alertes noves ni crítiques.",
+    "viewAll": "Mostra totes les alertes"
   },
   "silence": {
     "title": "Silencia aquesta alerta",

@@ -2,6 +2,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import type { Alert, AlertsApi } from '../../api/alerts'
+import type { AlertsAdminApi } from '../../api/alertsAdmin'
+import type { ContainersApi } from '../../api/containers'
+import type { MetricsApi } from '../../api/metrics'
 import { errorMessage } from '../../auth/AuthGate'
 import { usePermissions } from '../../auth/permissions'
 import {
@@ -19,6 +22,7 @@ import {
 import { Link, useNavigate, useRoute, useSetQuery } from '../../router'
 import { formatRelativeTime } from '../fleet/format'
 import { Dialog } from '../users/Dialog'
+import { AlertDrawer } from './AlertDrawer'
 import { AlertMessage, alertMessageText, ruleLabel } from './AlertMessage'
 import { BulkActions } from './BulkActions'
 import { BulkSilenceDialog } from './BulkSilenceDialog'
@@ -45,6 +49,10 @@ interface InboxProps {
   onRefresh: () => void
   onOpenServer?: (serverId: string, serverName: string) => void
   onCounts?: (counts: InboxCounts) => void
+  alertsAdminApi?: AlertsAdminApi
+  metricsApi?: MetricsApi
+  containersApi?: ContainersApi
+  pollMs?: number
   refreshMs?: number
 }
 
@@ -178,6 +186,10 @@ export function Inbox({
   onRefresh,
   onOpenServer,
   onCounts,
+  alertsAdminApi,
+  metricsApi,
+  containersApi,
+  pollMs = 800,
   refreshMs = refreshInterval,
 }: InboxProps) {
   const { t, i18n } = useTranslation(['alerts', 'errors'])
@@ -198,6 +210,7 @@ export function Inbox({
   const [unwatch, setUnwatch] = useState<Alert | null>(null)
   const [bulkSilence, setBulkSilence] = useState<{ alerts: Alert[]; skipped: number } | null>(null)
   const [bulkUnwatch, setBulkUnwatch] = useState<{ alerts: Alert[]; skipped: number } | null>(null)
+  const [historyFocus, setHistoryFocus] = useState<{ id: string; alert: Alert | null } | null>(null)
   const alive = useRef(true)
   const countsCallback = useRef(onCounts)
   const request = useRef(0)
@@ -253,6 +266,37 @@ export function Inbox({
     const row = document.querySelector<HTMLElement>('.alerts-inbox__row--focus')
     row?.scrollIntoView?.({ block: 'center' })
   }, [focus, alerts])
+
+  const activeFocus = alerts?.find((alert) => alert.id === focus)
+  const historyAlert = historyFocus?.id === focus ? historyFocus.alert : null
+  const drawerAlert = activeFocus ?? historyAlert
+  const focusMissing =
+    focus !== '' &&
+    alerts !== null &&
+    activeFocus === undefined &&
+    historyFocus?.id === focus &&
+    historyAlert === null
+
+  useEffect(() => {
+    if (focus === '' || alerts === null || activeFocus !== undefined) return
+    if (historyFocus?.id === focus) return
+    let active = true
+    api.list('history').then(
+      (rows) => {
+        if (!active) return
+        setHistoryFocus({
+          id: focus,
+          alert: rows.find((alert) => alert.id === focus) ?? null,
+        })
+      },
+      () => {
+        if (active) setHistoryFocus({ id: focus, alert: null })
+      },
+    )
+    return () => {
+      active = false
+    }
+  }, [focus, alerts, activeFocus, historyFocus, api])
 
   const rows = useMemo(() => {
     if (alerts === null) return []
@@ -328,6 +372,18 @@ export function Inbox({
     if (!alert.serverId) return
     if (onOpenServer) onOpenServer(alert.serverId, alert.serverName || alert.serverId)
     else navigate(`/servers/${encodeURIComponent(alert.serverId)}`)
+  }
+
+  const openFocus = (alert: Alert) => {
+    const params = new URLSearchParams(window.location.search)
+    params.set('focus', alert.id)
+    navigate(`${window.location.pathname}?${params.toString()}${window.location.hash}`)
+  }
+
+  const closeDrawer = () => setQuery({ focus: null })
+  const refreshDrawer = () => {
+    void load()
+    onRefresh()
   }
 
   const runSingle = async (action: () => Promise<void>) => {
@@ -571,7 +627,7 @@ export function Inbox({
           selectable={canAnywhere('alerts.silence')}
           selected={selected}
           onSelectionChange={setSelected}
-          onRowClick={(alert) => setQuery({ focus: alert.id })}
+          onRowClick={openFocus}
           rowClassName={(alert) => {
             const classes = [
               alert.id === focus ? 'alerts-inbox__row--focus' : '',
@@ -685,6 +741,19 @@ export function Inbox({
           onCancel={() => setBulkUnwatch(null)}
         />
       ) : null}
+
+      <AlertDrawer
+        key={drawerAlert?.id ?? (focusMissing ? 'missing' : 'none')}
+        alert={drawerAlert}
+        missing={focusMissing}
+        api={api}
+        alertsAdminApi={alertsAdminApi}
+        metricsApi={metricsApi}
+        containersApi={containersApi}
+        onClose={closeDrawer}
+        onRefresh={refreshDrawer}
+        pollMs={pollMs}
+      />
     </section>
   )
 }
