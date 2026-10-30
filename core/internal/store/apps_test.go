@@ -6,12 +6,15 @@ import (
 	"fmt"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 )
 
+var testStackSeq atomic.Uint64
+
 func testStackName() string {
-	return fmt.Sprintf("stack-%d", time.Now().UnixNano())
+	return fmt.Sprintf("stack-%d-%d", time.Now().UnixNano(), testStackSeq.Add(1))
 }
 
 func createTestApp(t *testing.T, s *Store, serverID string) App {
@@ -126,6 +129,53 @@ func containsDomain(domains []Domain, hostname string) bool {
 		}
 	}
 	return false
+}
+
+func TestPollEnabledAndListPollableApps(t *testing.T) {
+	s := newTestStore(t)
+	ctx := context.Background()
+	serverID := newTestServerID(t, s)
+
+	pollable := createTestApp(t, s, serverID)
+	if pollable.PollEnabled {
+		t.Fatal("a new app has polling enabled by default")
+	}
+	pollable.PollEnabled = true
+	pollable, err := s.UpdateApp(ctx, pollable)
+	if err != nil {
+		t.Fatalf("enable polling: %v", err)
+	}
+	if !pollable.PollEnabled {
+		t.Fatal("polling was not stored")
+	}
+
+	notPolled := createTestApp(t, s, serverID)
+	off := createTestApp(t, s, serverID)
+	off.PollEnabled = true
+	off.AutoDeploy = false
+	if _, err := s.UpdateApp(ctx, off); err != nil {
+		t.Fatalf("disable auto deploy: %v", err)
+	}
+	image := createTestApp(t, s, serverID)
+	image.Source = AppSourceImage
+	image.PollEnabled = true
+	if _, err := s.UpdateApp(ctx, image); err != nil {
+		t.Fatalf("make image app: %v", err)
+	}
+
+	apps, err := s.ListPollableApps(ctx)
+	if err != nil {
+		t.Fatalf("ListPollableApps: %v", err)
+	}
+	var ids []string
+	for _, app := range apps {
+		if app.ServerID == serverID {
+			ids = append(ids, app.ID)
+		}
+	}
+	if len(ids) != 1 || ids[0] != pollable.ID {
+		t.Fatalf("pollable apps = %v, want only %s (notPolled=%s)", ids, pollable.ID, notPolled.ID)
+	}
 }
 
 func TestAppEnvPublicListingHidesSecretValues(t *testing.T) {

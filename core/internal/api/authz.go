@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 	"regexp"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 
@@ -88,6 +89,8 @@ const (
 	permExact permissionMode = iota
 	permAny
 	permSeeServer
+	// permPublicSigned is outside the session: the handler verifies an HMAC.
+	permPublicSigned
 )
 
 type routeKey struct {
@@ -102,9 +105,10 @@ type routePermission struct {
 	noAPIKey   bool
 }
 
-// routePerms is the single permission decision for every protected route.
+// routePerms is the single permission decision for every non-auth API route.
 // Patterns are relative to /api/v1, matching the registration in api.go.
 var routePerms = map[routeKey]routePermission{
+	{http.MethodPost, "/hooks/git/{appID}"}:                                  {mode: permPublicSigned},
 	{http.MethodGet, "/alerts"}:                                              {mode: permAny},
 	{http.MethodGet, "/alerts/summary"}:                                      {mode: permAny},
 	{http.MethodPost, "/alerts/{alertID}/ack"}:                               {mode: permAny},
@@ -200,11 +204,16 @@ var routePerms = map[routeKey]routePermission{
 // missing declaration or authorizer answers 403, so a new route is never open
 // by accident.
 func registerRoute(r chi.Router, authorizer *Authorizer, method, pattern string, handler http.Handler) {
-	permission, ok := routePerms[routeKey{Method: method, Pattern: pattern}]
+	lookup := strings.TrimPrefix(pattern, "/api/v1")
+	permission, ok := routePerms[routeKey{Method: method, Pattern: lookup}]
 	if !ok {
 		r.Method(method, pattern, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 			writeError(w, http.StatusForbidden, "forbidden")
 		}))
+		return
+	}
+	if permission.mode == permPublicSigned {
+		r.Method(method, pattern, handler)
 		return
 	}
 	r.Method(method, pattern, authorizer.requireRoute(permission, handler))
@@ -213,6 +222,10 @@ func registerRoute(r chi.Router, authorizer *Authorizer, method, pattern string,
 // requireRoute applies the permission mode declared in routePerms.
 func (a *Authorizer) requireRoute(route routePermission, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if route.mode == permPublicSigned {
+			next.ServeHTTP(w, r)
+			return
+		}
 		session, ok := sessionFromContext(r.Context())
 		if !ok || session.Stage != store.StageFull {
 			writeError(w, http.StatusUnauthorized, sessionDeniedCode(r.Context()))

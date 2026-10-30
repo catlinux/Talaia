@@ -76,6 +76,12 @@ func authzRequest(method, path string, session Session) *http.Request {
 	return request.WithContext(withSession(context.Background(), session))
 }
 
+type hookRouteApps struct{}
+
+func (hookRouteApps) GetApp(context.Context, string) (store.App, error) {
+	return store.App{}, nil
+}
+
 func fullRouter(t *testing.T) http.Handler {
 	t.Helper()
 	servers := authzServers()
@@ -99,6 +105,7 @@ func fullRouter(t *testing.T) http.Handler {
 		Terminal:           NewTerminalDeps(TerminalDeps{}),
 		Recordings:         &RecordingDeps{},
 		System:             &SystemDeps{},
+		Hooks:              &HooksDeps{Apps: hookRouteApps{}},
 		Authz:              NewAuthorizer(AuthorizerDeps{}),
 		Auth:               AuthDeps{},
 	})
@@ -135,6 +142,48 @@ func TestRouteGuardian(t *testing.T) {
 	}
 }
 
+func TestOnlyWebhookRoutesArePubliclySigned(t *testing.T) {
+	found := 0
+	for key, permission := range routePerms {
+		if permission.mode != permPublicSigned {
+			continue
+		}
+		found++
+		if !strings.HasPrefix(key.Pattern, "/hooks/") {
+			t.Errorf("public signed route %s %s is outside /hooks/", key.Method, key.Pattern)
+		}
+	}
+	if found != 1 {
+		t.Fatalf("public signed routes = %d, want only the Git webhook", found)
+	}
+}
+
+func TestWebhookRouteSkipsSessionAndOriginMiddleware(t *testing.T) {
+	router := fullRouter(t)
+	request := httptest.NewRequest(http.MethodPost,
+		"/api/v1/hooks/git/00000000-0000-0000-0000-000000000009", nil)
+	response := httptest.NewRecorder()
+	router.ServeHTTP(response, request)
+	if response.Code != http.StatusUnauthorized {
+		t.Fatalf("webhook without signature = %d, want 401 from the handler", response.Code)
+	}
+}
+
+func TestPublicSignedRouteDoesNotRequireASession(t *testing.T) {
+	router := chi.NewRouter()
+	router.Route("/api/v1", func(r chi.Router) {
+		registerRoute(r, nil, http.MethodPost, "/hooks/git/{appID}", http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			w.WriteHeader(http.StatusNoContent)
+		}))
+	})
+	request := httptest.NewRequest(http.MethodPost, "/api/v1/hooks/git/00000000-0000-0000-0000-000000000009", nil)
+	response := httptest.NewRecorder()
+	router.ServeHTTP(response, request)
+	if response.Code != http.StatusNoContent {
+		t.Fatalf("public route without a session = %d, want 204", response.Code)
+	}
+}
+
 func routePath(method string, pattern string) string {
 	path := strings.NewReplacer(
 		"{serverID}", "s1",
@@ -149,6 +198,7 @@ func routePath(method string, pattern string) string {
 		"{groupID}", "00000000-0000-0000-0000-000000000006",
 		"{teamID}", "00000000-0000-0000-0000-000000000007",
 		"{id}", "00000000-0000-0000-0000-000000000008",
+		"{appID}", "00000000-0000-0000-0000-000000000009",
 	).Replace(pattern)
 	return "/api/v1" + path
 }

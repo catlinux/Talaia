@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -59,6 +60,8 @@ type RouterDeps struct {
 	Recordings *RecordingDeps
 	// System enables the version and update endpoints; nil leaves them out.
 	System *SystemDeps
+	// Hooks enables the public GitHub push webhook; nil leaves it out.
+	Hooks *HooksDeps
 	// Authz enforces the permissions of the protected API. Nil fails closed.
 	Authz *Authorizer
 }
@@ -70,6 +73,13 @@ func NewRouter(deps RouterDeps) http.Handler {
 	r.Use(securityHeaders(deps.Security))
 
 	r.Get("/healthz", health(deps.DB))
+
+	// The Git webhook is authenticated by its own signature and is deliberately
+	// outside securityOrigin, which GitHub cannot satisfy.
+	if deps.Hooks != nil {
+		registerRoute(r, deps.Authz, http.MethodPost, "/api/v1/hooks/git/{appID}",
+			NewGitHookHandler(*deps.Hooks))
+	}
 
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Use(Sessions(deps.Session))
@@ -248,7 +258,13 @@ func NewRouter(deps RouterDeps) http.Handler {
 		})
 	})
 
-	r.NotFound(Static(deps.WebDir).ServeHTTP)
+	r.NotFound(func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasPrefix(r.URL.Path, "/api/") {
+			writeError(w, http.StatusNotFound, "not_found")
+			return
+		}
+		Static(deps.WebDir).ServeHTTP(w, r)
+	})
 	return r
 }
 

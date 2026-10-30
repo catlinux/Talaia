@@ -18,6 +18,13 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.6.4] - 2026-10-30
+
+### Added
+
+- Signed GitHub push webhook in the core (`POST /api/v1/hooks/git/{app}`, not reachable from the panel yet): public, authenticated only by the `X-Hub-Signature-256` HMAC checked in constant time before the body is read as JSON; 1 MiB body limit, per-IP and per-app rate limits, `ping` answered without deploying, only pushes to the configured branch, repeated deliveries ignored (a delivery that failed on our side can be retried), every outcome audited as `app_webhook`.
+- Optional branch polling every 2 minutes for apps without a webhook (`poll_enabled`, migration `0018`): the first observation only records the commit, and a failed enqueue is retried on the next round.
+
 ## [0.6.3] - 2026-10-30
 
 ### Added
@@ -719,7 +726,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.6.3...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.6.4...HEAD
+[0.6.4]: https://github.com/catlinux/Talaia/releases/tag/v0.6.4
 [0.6.3]: https://github.com/catlinux/Talaia/releases/tag/v0.6.3
 [0.6.2]: https://github.com/catlinux/Talaia/releases/tag/v0.6.2
 [0.6.1]: https://github.com/catlinux/Talaia/releases/tag/v0.6.1

@@ -52,6 +52,7 @@ type App struct {
 	Service          string
 	Port             int
 	AutoDeploy       bool
+	PollEnabled      bool
 	ZeroDowntime     bool
 	TemplateID       string
 	TemplateVersion  string
@@ -100,7 +101,7 @@ type Domain struct {
 }
 
 const appColumns = `id, server_id, stack_name, source, repo_url, branch, build, dockerfile_path,
-	build_context, image, service, port, auto_deploy, zero_downtime, template_id,
+	build_context, image, service, port, auto_deploy, poll_enabled, zero_downtime, template_id,
 	template_version, deploy_key_pub, deploy_key_enc, webhook_secret_enc, known_host,
 	created_at, updated_at, updated_by`
 
@@ -115,7 +116,8 @@ func scanApp(row rowScanner) (App, error) {
 	var app App
 	err := row.Scan(&app.ID, &app.ServerID, &app.StackName, &app.Source, &app.RepoURL, &app.Branch,
 		&app.Build, &app.DockerfilePath, &app.BuildContext, &app.Image, &app.Service, &app.Port,
-		&app.AutoDeploy, &app.ZeroDowntime, &app.TemplateID, &app.TemplateVersion, &app.DeployKeyPub,
+		&app.AutoDeploy, &app.PollEnabled, &app.ZeroDowntime, &app.TemplateID, &app.TemplateVersion,
+		&app.DeployKeyPub,
 		&app.DeployKeyEnc, &app.WebhookSecretEnc, &app.KnownHost, &app.CreatedAt, &app.UpdatedAt,
 		&app.UpdatedBy)
 	if errors.Is(err, pgx.ErrNoRows) {
@@ -175,16 +177,16 @@ func (s *Store) CreateApp(ctx context.Context, app App) (App, error) {
 	created, err := scanApp(s.pool.QueryRow(ctx,
 		`INSERT INTO app
 		     (server_id, stack_name, source, repo_url, branch, build, dockerfile_path,
-		      build_context, image, service, port, auto_deploy, zero_downtime, template_id,
-		      template_version, deploy_key_pub, deploy_key_enc, webhook_secret_enc, known_host,
-		      updated_by)
+		      build_context, image, service, port, auto_deploy, poll_enabled, zero_downtime,
+		      template_id, template_version, deploy_key_pub, deploy_key_enc, webhook_secret_enc,
+		      known_host, updated_by)
 		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16,
-		         $17, $18, $19, $20)
+		         $17, $18, $19, $20, $21)
 		 RETURNING `+appColumns,
 		app.ServerID, app.StackName, app.Source, app.RepoURL, app.Branch, app.Build,
 		app.DockerfilePath, app.BuildContext, app.Image, app.Service, app.Port, app.AutoDeploy,
-		app.ZeroDowntime, app.TemplateID, app.TemplateVersion, app.DeployKeyPub, app.DeployKeyEnc,
-		app.WebhookSecretEnc, app.KnownHost, app.UpdatedBy))
+		app.PollEnabled, app.ZeroDowntime, app.TemplateID, app.TemplateVersion, app.DeployKeyPub,
+		app.DeployKeyEnc, app.WebhookSecretEnc, app.KnownHost, app.UpdatedBy))
 	if isUniqueViolation(err) {
 		return App{}, ErrAppExists
 	}
@@ -217,6 +219,14 @@ func (s *Store) ListAppsByServer(ctx context.Context, serverID string) ([]App, e
 		`SELECT `+appColumns+` FROM app WHERE server_id = $1 ORDER BY stack_name, id`, serverID)
 }
 
+// ListPollableApps returns the Git apps that asked for automatic polling.
+func (s *Store) ListPollableApps(ctx context.Context) ([]App, error) {
+	return s.listApps(ctx,
+		`SELECT `+appColumns+` FROM app
+		 WHERE source = $1 AND auto_deploy AND poll_enabled
+		 ORDER BY server_id, stack_name, id`, AppSourceGit)
+}
+
 func (s *Store) listApps(ctx context.Context, query string, args ...any) ([]App, error) {
 	rows, err := s.pool.Query(ctx, query, args...)
 	if err != nil {
@@ -244,15 +254,16 @@ func (s *Store) UpdateApp(ctx context.Context, app App) (App, error) {
 		`UPDATE app SET
 		     server_id = $2, stack_name = $3, source = $4, repo_url = $5, branch = $6,
 		     build = $7, dockerfile_path = $8, build_context = $9, image = $10, service = $11,
-		     port = $12, auto_deploy = $13, zero_downtime = $14, template_id = $15,
-		     template_version = $16, deploy_key_pub = $17, deploy_key_enc = $18,
-		     webhook_secret_enc = $19, known_host = $20, updated_at = now(), updated_by = $21
+		     port = $12, auto_deploy = $13, poll_enabled = $14, zero_downtime = $15,
+		     template_id = $16, template_version = $17, deploy_key_pub = $18,
+		     deploy_key_enc = $19, webhook_secret_enc = $20, known_host = $21,
+		     updated_at = now(), updated_by = $22
 		 WHERE id = $1
 		 RETURNING `+appColumns,
 		app.ID, app.ServerID, app.StackName, app.Source, app.RepoURL, app.Branch, app.Build,
 		app.DockerfilePath, app.BuildContext, app.Image, app.Service, app.Port, app.AutoDeploy,
-		app.ZeroDowntime, app.TemplateID, app.TemplateVersion, app.DeployKeyPub, app.DeployKeyEnc,
-		app.WebhookSecretEnc, app.KnownHost, app.UpdatedBy))
+		app.PollEnabled, app.ZeroDowntime, app.TemplateID, app.TemplateVersion, app.DeployKeyPub,
+		app.DeployKeyEnc, app.WebhookSecretEnc, app.KnownHost, app.UpdatedBy))
 	if errors.Is(err, ErrNotFound) {
 		return App{}, ErrNotFound
 	}
