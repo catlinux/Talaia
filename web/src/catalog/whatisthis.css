@@ -1,0 +1,90 @@
+/* "What is this?" catalogue card. */
+
+.whatisthis {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  color: var(--ink);
+}
+
+.whatisthis__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.whatisthis__name {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.whatisthis__tags {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-left: auto;
+}
+
+.tag.whatisthis__importance--essential {
+  background: var(--crit-soft);
+  color: var(--crit);
+}
+
+.tag.whatisthis__importance--important {
+  background: var(--warn-soft);
+  color: var(--warn);
+}
+
+.tag.whatisthis__importance--optional,
+.tag.whatisthis__importance--unknown {
+  background: var(--surface-2);
+  color: var(--muted);
+}
+
+.whatisthis__what,
+.whatisthis__fail,
+.whatisthis__origin,
+.whatisthis__help {
+  margin: 0;
+  color: var(--ink-2);
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+
+.whatisthis__fail {
+  padding: 7px 8px;
+  border-left: 2px solid var(--warn);
+  border-radius: 2px;
+  background: var(--warn-soft);
+}
+
+.whatisthis__fail strong {
+  color: var(--warn);
+}
+
+.whatisthis__origin,
+.whatisthis__help {
+  color: var(--muted);
+  font-size: 11.5px;
+}
+
+.whatisthis--full {
+  gap: 10px;
+}
+
+.whatisthis--full .whatisthis__name {
+  font-size: 18px;
+}
+
+.whatisthis--full .whatisthis__what,
+.whatisthis--full .whatisthis__fail,
+.whatisthis--full .whatisthis__origin,
+.whatisthis--full .whatisthis__help {
+  font-size: 14px;
+}
+
+.tag.tag--essential {
+  background: var(--crit-soft);
+  color: var(--crit);
+}

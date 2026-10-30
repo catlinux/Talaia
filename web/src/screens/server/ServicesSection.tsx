@@ -10,6 +10,9 @@ import {
   parseServiceState,
 } from '../../api/services'
 import { errorMessage } from '../../auth/AuthGate'
+import { lookupService } from '../../catalog/catalog'
+import { WhatIsThis } from '../../catalog/WhatIsThis'
+import { InfoTip } from '../../components/ui'
 import { TimedOut, waitForJob } from './waitForJob'
 
 /** accessCritical are the services whose interruption can cut the connection. */
@@ -111,7 +114,7 @@ function applyState(
  * person confirms.
  */
 export function ServicesSection({ api, serverId, pollMs, onLoaded }: ServicesSectionProps) {
-  const { t } = useTranslation(['server', 'errors'])
+  const { t } = useTranslation(['server', 'errors', 'catalog'])
   const [state, setState] = useState<ListState>({ status: 'loading' })
   const [filter, setFilter] = useState<Filter>('all')
   const [search, setSearch] = useState('')
@@ -257,6 +260,7 @@ export function ServicesSection({ api, serverId, pollMs, onLoaded }: ServicesSec
   })
   const filters: Filter[] = ['all', 'active', 'failed', 'inactive']
   const busy = busyUnit !== null
+  const pendingCatalog = pending === null ? undefined : lookupService(pending.service.name)
 
   return (
     <section className="services" aria-labelledby="services-title" aria-busy={busy}>
@@ -359,11 +363,15 @@ export function ServicesSection({ api, serverId, pollMs, onLoaded }: ServicesSec
               const fileActions = fileStateActions(service)
               const outcome = outcomes[service.name]
               const working = busyUnit === service.name
+              const catalogEntry = lookupService(service.name)
               return (
                 <li key={service.name} className="servicerow">
                   <div className="services__main">
                     <div className="services__headline">
                       <h3 className="services__name">{service.name}</h3>
+                      <InfoTip>
+                        <WhatIsThis target={{ kind: 'service', unit: service }} />
+                      </InfoTip>
                       <span className={`status status--${stateTone(service.activeState)}`}>
                         {service.activeState
                           ? t(`server:services.state.${service.activeState}`, {
@@ -371,6 +379,11 @@ export function ServicesSection({ api, serverId, pollMs, onLoaded }: ServicesSec
                             })
                           : t('server:services.unknown')}
                       </span>
+                      {catalogEntry?.importance === 'essential' ? (
+                        <span className="tag tag--essential">
+                          {t('catalog:importance.essential')}
+                        </span>
+                      ) : null}
                       <span className="tag">
                         {service.unitFileState
                           ? t(`server:services.fileState.${service.unitFileState}`, {
@@ -489,6 +502,12 @@ export function ServicesSection({ api, serverId, pollMs, onLoaded }: ServicesSec
             </p>
             {accessCritical.has(pending.service.name) ? (
               <p className="services__warning">{t('server:services.accessWarning')}</p>
+            ) : null}
+            {pendingCatalog?.importance === 'essential' &&
+            (pending.action === 'stop' || pending.action === 'restart') ? (
+              <p className="services__warning">
+                {t(`catalog:entries.${pendingCatalog.id}.ifFails`)}
+              </p>
             ) : null}
             <div className="settings__dialog-actions">
               <button

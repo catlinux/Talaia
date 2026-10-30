@@ -190,6 +190,7 @@ describe('Stacks', () => {
     expect(within(table).getByText('Some stopped')).toBeTruthy()
     expect(within(table).getByText('Adopted')).toBeTruthy()
     expect(within(table).getByText('Files missing')).toBeTruthy()
+    expect(within(table).getAllByRole('button', { name: 'More information' }).length).toBe(2)
 
     expect(screen.getByRole('heading', { name: 'Not managed' })).toBeTruthy()
     expect(screen.getByText('orphan')).toBeTruthy()

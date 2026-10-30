@@ -1,0 +1,511 @@
+{
+  "category": {
+    "system": "Sistema",
+    "access": "Acceso remoto",
+    "security": "Seguridad",
+    "network": "Red",
+    "web": "Web",
+    "database": "Base de datos",
+    "cache": "Caché",
+    "queue": "Cola",
+    "monitoring": "Monitorización",
+    "backup": "Copias de seguridad",
+    "containers": "Contenedores",
+    "mail": "Correo",
+    "dns": "DNS",
+    "time": "Hora",
+    "logs": "Registros",
+    "updates": "Actualizaciones",
+    "talaia": "Talaia",
+    "app": "Aplicación"
+  },
+  "categoryHelp": {
+    "system": "Servicios básicos del sistema operativo; la mayoría deben seguir en marcha.",
+    "access": "Servicios que te permiten llegar o iniciar sesión en el servidor.",
+    "security": "Cortafuegos, control de acceso y vigilancia de seguridad.",
+    "network": "Red, enrutamiento y conectividad VPN.",
+    "web": "Servidores web, proxys inversos y aplicaciones web.",
+    "database": "Servidores que guardan datos estructurados de las aplicaciones.",
+    "cache": "Almacenes rápidos en memoria para sesiones, colas y datos temporales.",
+    "queue": "Gestores de mensajes que pasan trabajos entre servicios.",
+    "monitoring": "Métricas, paneles y comprobaciones de estado.",
+    "backup": "Almacenamiento y herramientas que protegen o copian datos.",
+    "containers": "Runtimes de Docker, registros y gestión de contenedores.",
+    "mail": "Servicios de correo SMTP, IMAP y POP3.",
+    "dns": "Resolución de nombres y descubrimiento en la red local.",
+    "time": "Sincronización del reloj con servidores de tiempo.",
+    "logs": "Recogida, almacenamiento y envío de mensajes de registro.",
+    "updates": "Actualización de listas de paquetes y actualizaciones de seguridad automáticas.",
+    "talaia": "Componentes del panel Talaia y de sus agentes.",
+    "app": "Software que no encaja en otra categoría."
+  },
+  "importance": {
+    "essential": "Esencial",
+    "important": "Importante",
+    "optional": "Opcional",
+    "unknown": "Desconocida"
+  },
+  "importanceHelp": {
+    "essential": "El servidor o tu acceso dejan de funcionar sin esto.",
+    "important": "Algo que utilizas depende de ello.",
+    "optional": "Se puede detener si no lo utilizas.",
+    "unknown": "Talaia no tiene suficiente información para valorar su importancia."
+  },
+  "label": {
+    "what": "Qué es",
+    "ifFails": "Si falla",
+    "origin": "Origen"
+  },
+  "origin": {
+    "service": "unidad de systemd {{unit}}",
+    "stackService": "Parte de la stack {{stack}} (servicio {{service}}) · imagen {{image}}",
+    "stack": "Parte de la stack {{stack}} · imagen {{image}}",
+    "stackImages": "Parte de la stack {{stack}} · imágenes {{images}}",
+    "stackNoContainers": "Parte de la stack {{stack}} · sin contenedores",
+    "standalone": "Contenedor independiente · imagen {{image}}"
+  },
+  "unknownService": "systemd dice: {{description}}",
+  "unknownServiceDescription": "No se ha informado de ninguna descripción.",
+  "entries": {
+    "ssh": {
+      "name": "Servidor OpenSSH",
+      "what": "El servidor SSH permite abrir una shell remota segura y copiar archivos en esta máquina.",
+      "ifFails": "Pierdes el acceso remoto al servidor. No lo detengas ni lo reinicies desde una sesión de la que dependas; revisa sus registros y su configuración antes de reiniciarlo."
+    },
+    "cron": {
+      "name": "Planificador cron",
+      "what": "Ejecuta tareas programadas, como copias de seguridad, limpieza y mantenimiento.",
+      "ifFails": "Las tareas programadas dejan de ejecutarse hasta que cron vuelva a estar activo. Revisa los registros de la unidad y corrige las tareas fallidas antes de reiniciar."
+    },
+    "systemd-journald": {
+      "name": "Registro de systemd",
+      "what": "Recoge los registros del sistema operativo y de sus servicios.",
+      "ifFails": "Los registros dejan de guardarse y herramientas como journalctl no pueden leer entradas nuevas. Reinícialo solo si el registro no está sano y guarda antes una copia."
+    },
+    "systemd-logind": {
+      "name": "Gestor de sesiones de systemd",
+      "what": "Hace un seguimiento de usuarios, sesiones y asientos para los accesos locales y remotos.",
+      "ifFails": "Los accesos nuevos y el seguimiento de sesiones pueden fallar, y las sesiones abiertas pueden verse afectadas. Revisa los registros antes de reiniciar; evítalo si eres el único usuario conectado."
+    },
+    "systemd-networkd": {
+      "name": "Gestor de red de systemd",
+      "what": "Configura interfaces de red y rutas en servidores que usan systemd-networkd.",
+      "ifFails": "El servidor puede perder la conectividad de red. No lo reinicies en remoto si no tienes acceso a la consola; revisa antes su configuración y sus registros."
+    },
+    "systemd-resolved": {
+      "name": "Resolutor DNS de systemd",
+      "what": "Proporciona resolución DNS local y caché para la máquina.",
+      "ifFails": "La resolución de nombres puede fallar y los servicios no encontrarán equipos ni direcciones externas. Revisa /etc/resolv.conf y los registros del resolutor antes de reiniciar."
+    },
+    "systemd-timesyncd": {
+      "name": "Sincronización horaria de systemd",
+      "what": "Mantiene el reloj del sistema alineado con servidores NTP.",
+      "ifFails": "El reloj puede desviarse, lo que rompe TLS, los registros y las tareas programadas. Comprueba el acceso a la fuente de tiempo; puede que otro servicio ya gestione el reloj."
+    },
+    "systemd-udevd": {
+      "name": "Gestor de dispositivos de systemd",
+      "what": "Detecta hardware y crea los nodos de dispositivo que usan los servicios.",
+      "ifFails": "Los dispositivos, discos o interfaces nuevos pueden no aparecer y algunos servicios no podrán usar el hardware. Reinícialo solo desde una consola local y después de revisar los registros."
+    },
+    "dbus": {
+      "name": "Bus de mensajes D-Bus",
+      "what": "Transporta mensajes del sistema y del escritorio entre servicios que usan D-Bus.",
+      "ifFails": "Los servicios que dependen de D-Bus pueden no iniciarse o no comunicarse. Reiniciar el bus puede interrumpir muchos servicios; revisa los registros y valora reiniciar la máquina si no está sano."
+    },
+    "getty": {
+      "name": "Acceso a la consola",
+      "what": "Muestra un inicio de sesión de texto en una consola local o línea serie.",
+      "ifFails": "Puedes perder el acceso a la consola local. Normalmente no pasa nada en un servidor remoto; revisa la configuración de consola o serie si lo necesitas."
+    },
+    "networking": {
+      "name": "Red de Debian",
+      "what": "Activa las interfaces de red configuradas en /etc/network/interfaces.",
+      "ifFails": "El servidor puede perder la conectividad de red. No lo reinicies en remoto sin acceso a la consola; comprueba antes la configuración de las interfaces."
+    },
+    "ifupdown": {
+      "name": "Configuración de interfaz de red",
+      "what": "Configura una interfaz de red cuando se activa.",
+      "ifFails": "Esa interfaz puede dejar de funcionar. Revisa su configuración y los registros, y mantén acceso a la consola por si la red no vuelve."
+    },
+    "rsyslog": {
+      "name": "Rsyslog",
+      "what": "Escribe los registros del sistema en archivos locales y puede enviarlos a un servidor de registros.",
+      "ifFails": "Los registros pueden dejar de llegar a los archivos o al recolector remoto. Comprueba el espacio de disco y la configuración de rsyslog antes de reiniciar."
+    },
+    "chrony": {
+      "name": "Sincronización horaria con Chrony",
+      "what": "Mantiene el reloj preciso, también en máquinas con red inestable.",
+      "ifFails": "El reloj puede desviarse o saltar y afectar a TLS, los registros y las planificaciones. Comprueba las fuentes de tiempo configuradas antes de reiniciar."
+    },
+    "ntp": {
+      "name": "Servicio de tiempo NTP",
+      "what": "Mantiene el reloj del sistema sincronizado con servidores NTP.",
+      "ifFails": "El reloj puede desviarse y romper TLS, los registros o las tareas programadas. Comprueba la configuración del servidor NTP y el acceso a la red antes de reiniciar."
+    },
+    "unattended-upgrades": {
+      "name": "Actualizaciones automáticas",
+      "what": "Instala actualizaciones de seguridad automáticamente en segundo plano.",
+      "ifFails": "Las actualizaciones de seguridad pueden dejar de instalarse. Revisa los registros y el espacio de disco, y vuelve a iniciarlo para que continúen."
+    },
+    "apt-daily": {
+      "name": "Tareas diarias de APT",
+      "what": "Actualiza las listas de paquetes y prepara las actualizaciones pendientes cada día.",
+      "ifFails": "Las listas de paquetes y la información de actualizaciones pueden quedar desfasadas. Vuelve a iniciarlo o ejecuta apt update manualmente; no interrumpas una actualización en curso."
+    },
+    "docker": {
+      "name": "Motor Docker",
+      "what": "Ejecuta contenedores y gestiona imágenes, redes y volúmenes con el demonio Docker.",
+      "ifFails": "Todos los contenedores del servidor se detienen o quedan sin gestionar. Comprueba el espacio de disco y el registro del demonio; reiniciar Docker reinicia los contenedores en marcha."
+    },
+    "containerd": {
+      "name": "Runtime containerd",
+      "what": "El runtime de contenedores que Docker usa para iniciar y detener contenedores.",
+      "ifFails": "Docker no puede iniciar ni gestionar contenedores. Revisa su registro y el espacio de disco; reiniciar containerd puede afectar a todos los contenedores del servidor."
+    },
+    "apache2": {
+      "name": "Servidor HTTP Apache",
+      "what": "Sirve sitios web y aplicaciones web por HTTP.",
+      "ifFails": "Los sitios servidos por Apache dejan de responder. Revisa el registro de errores y valida la configuración con apachectl configtest antes de reiniciar."
+    },
+    "nginx": {
+      "name": "Nginx",
+      "what": "Sirve sitios web y a menudo actúa como proxy inverso de otros servicios.",
+      "ifFails": "Los sitios y servicios proxificados pueden dejar de responder. Ejecuta nginx -t para validar la configuración, revisa el registro de errores y recarga o reinicia."
+    },
+    "caddy": {
+      "name": "Caddy",
+      "what": "Sirve sitios web y obtiene certificados TLS automáticamente.",
+      "ifFails": "Los sitios pueden dejar de responder y la renovación de certificados puede fallar. Valida el Caddyfile y revisa los registros antes de recargar."
+    },
+    "haproxy": {
+      "name": "HAProxy",
+      "what": "Reparte el tráfico entre servidores de fondo y puede terminar TLS.",
+      "ifFails": "Los clientes no pueden llegar a los servicios que hay detrás de HAProxy. Revisa la configuración y las estadísticas, y recarga con cuidado; una configuración mala puede dejarlo detenido."
+    },
+    "postfix": {
+      "name": "Postfix",
+      "what": "Servidor de correo SMTP que envía y recibe correo.",
+      "ifFails": "El envío y la recepción de correo se detienen, y los mensajes pueden quedar en cola o rechazarse. Revisa la cola y los registros antes de reiniciar."
+    },
+    "exim4": {
+      "name": "Servidor de correo Exim",
+      "what": "El agente de transporte de correo por defecto de Debian para el correo local y saliente.",
+      "ifFails": "La entrega local o el envío de correo puede fallar y los mensajes pueden quedar en cola. Revisa los registros y la cola antes de reiniciar."
+    },
+    "dovecot": {
+      "name": "Dovecot",
+      "what": "Proporciona acceso IMAP y POP3 a los buzones de correo.",
+      "ifFails": "Los clientes de correo no pueden descargar el correo. Las entregas existentes pueden quedar en cola; revisa los registros y la configuración de autenticación antes de reiniciar."
+    },
+    "fail2ban": {
+      "name": "Fail2ban",
+      "what": "Bloquea direcciones IP que fallan repetidamente la autenticación en los servicios.",
+      "ifFails": "La protección contra ataques de fuerza bruta se detiene y los ataques repetidos pueden no bloquearse. Revisa la configuración de las cárceles y los registros antes de reiniciar."
+    },
+    "ufw": {
+      "name": "Cortafuegos UFW",
+      "what": "Gestiona un conjunto simple de reglas de cortafuegos con iptables o nftables.",
+      "ifFails": "Las reglas de cortafuegos pueden no cargarse o no cambiar. Revisa las reglas y mantén acceso a la consola; un conjunto malo puede cortarte el acceso remoto."
+    },
+    "nftables": {
+      "name": "Cortafuegos nftables",
+      "what": "El filtro de paquetes moderno de Linux que se usa para las reglas de cortafuegos.",
+      "ifFails": "Las reglas de cortafuegos pueden desaparecer o no cargarse, dejando servicios expuestos o inaccesibles. Revisa el conjunto de reglas y mantén acceso a la consola."
+    },
+    "iptables": {
+      "name": "Cortafuegos iptables",
+      "what": "El cortafuegos clásico de Linux y su cargador de reglas persistentes.",
+      "ifFails": "Pueden faltar reglas de cortafuegos después de reiniciar o recargar. Revisa las reglas guardadas y mantén acceso a la consola antes de cambiarlas."
+    },
+    "apparmor": {
+      "name": "AppArmor",
+      "what": "Limita a qué pueden acceder los programas con perfiles de seguridad por aplicación.",
+      "ifFails": "Los perfiles nuevos de AppArmor pueden no cargarse y las aplicaciones confinadas pueden no iniciarse. Revisa el registro del núcleo y los perfiles antes de reiniciar."
+    },
+    "auditd": {
+      "name": "Demonio de auditoría de Linux",
+      "what": "Registra eventos del sistema relevantes para la seguridad y la auditoría.",
+      "ifFails": "Los eventos de seguridad dejan de registrarse. Comprueba el espacio de disco y las reglas de auditoría antes de reiniciar; los fallos de auditoría pueden afectar al cumplimiento normativo."
+    },
+    "polkit": {
+      "name": "PolicyKit",
+      "what": "Controla si usuarios y servicios pueden realizar acciones privilegiadas del sistema.",
+      "ifFails": "Las herramientas gráficas o de servicio pueden no poder autorizar operaciones privilegiadas. Revisa los registros; reiniciarlo puede interrumpir sesiones activas."
+    },
+    "qemu-guest-agent": {
+      "name": "Agente invitado de QEMU",
+      "what": "Permite que el anfitrión de la máquina virtual consulte y controle este invitado.",
+      "ifFails": "El anfitrión no puede consultar el invitado ni ejecutar apagados ordenados o instantáneas. Comprueba el canal virtio; la mayoría de servicios no lo necesitan."
+    },
+    "cloud-init": {
+      "name": "Cloud-init",
+      "what": "Configura una instancia en la nube en el primer arranque, incluyendo usuarios, claves SSH y red.",
+      "ifFails": "El aprovisionamiento o pasos de configuración posteriores pueden fallar en el próximo arranque. Revisa sus registros y su configuración; no lo vuelvas a ejecutar a ciegas en un servidor en producción."
+    },
+    "snapd": {
+      "name": "Demonio Snap",
+      "what": "Instala y actualiza paquetes snap y sus servicios.",
+      "ifFails": "Las aplicaciones snap pueden dejar de actualizarse o iniciarse. Revisa los registros de snapd; si no usas snaps, puede quedarse detenido."
+    },
+    "modemmanager": {
+      "name": "ModemManager",
+      "what": "Detecta y gestiona módems de banda ancha móvil.",
+      "ifFails": "Las conexiones de banda ancha móvil pueden no configurarse o reconectarse. Es opcional en servidores sin módem."
+    },
+    "wpa-supplicant": {
+      "name": "Suplicante WPA",
+      "what": "Conecta la máquina a redes Wi-Fi protegidas.",
+      "ifFails": "La conexión Wi-Fi puede caer o no reconectarse. Mantén acceso por cable o consola; revisa la configuración Wi-Fi antes de reiniciar."
+    },
+    "avahi": {
+      "name": "Avahi",
+      "what": "Anuncia servicios en la red local con mDNS/DNS-SD.",
+      "ifFails": "El descubrimiento local de impresoras o servicios puede detenerse. Normalmente es opcional en un servidor; revisa los registros si dependes de él."
+    },
+    "cups": {
+      "name": "Impresión CUPS",
+      "what": "Ejecuta el servicio de impresión local y las colas de impresión.",
+      "ifFails": "La impresión y las colas dejan de funcionar. Es opcional en servidores; revisa los registros si esta máquina gestiona impresoras."
+    },
+    "bluetooth": {
+      "name": "Servicio Bluetooth",
+      "what": "Gestiona adaptadores y conexiones Bluetooth.",
+      "ifFails": "Los dispositivos Bluetooth no pueden conectarse. Es opcional en la mayoría de servidores y normalmente puede quedarse detenido."
+    },
+    "mariadb": {
+      "name": "MariaDB / MySQL",
+      "what": "Un servidor de bases de datos relacionales que usan muchas aplicaciones web.",
+      "ifFails": "Las aplicaciones pierden su base de datos y pueden devolver errores o detenerse. Comprueba el espacio de disco y los registros antes de reiniciar; reiniciar corta todas las conexiones, así que hazlo cuando las aplicaciones aguanten un corte breve."
+    },
+    "mysql": {
+      "name": "MySQL",
+      "what": "El servidor de bases de datos relacionales MySQL.",
+      "ifFails": "Las aplicaciones pierden su base de datos y pueden devolver errores o detenerse. Comprueba el espacio de disco y los registros antes de reiniciar; reiniciar corta todas las conexiones, así que hazlo cuando las aplicaciones aguanten un corte breve."
+    },
+    "postgresql": {
+      "name": "PostgreSQL",
+      "what": "Un servidor de bases de datos relacionales conocido por su fiabilidad y sus funciones SQL.",
+      "ifFails": "Las aplicaciones pierden su base de datos y pueden devolver errores o detenerse. Comprueba el espacio de disco y los registros antes de reiniciar; reiniciar corta todas las conexiones, así que hazlo cuando las aplicaciones aguanten un corte breve."
+    },
+    "redis": {
+      "name": "Redis",
+      "what": "Un almacén de datos en memoria para caché, colas y sesiones.",
+      "ifFails": "Las cachés y sesiones pueden desaparecer o las escrituras pueden fallar. Revisa la memoria y los registros de persistencia; reinicia solo después de decidir si aceptas perder datos volátiles."
+    },
+    "valkey": {
+      "name": "Valkey",
+      "what": "Un almacén de datos en memoria de código abierto compatible con Redis.",
+      "ifFails": "Las cachés y sesiones pueden desaparecer o las escrituras pueden fallar. Revisa la memoria y los registros de persistencia; reinicia solo después de decidir si aceptas perder datos volátiles."
+    },
+    "memcached": {
+      "name": "Memcached",
+      "what": "Una pequeña caché en memoria que acelera las aplicaciones.",
+      "ifFails": "La caché se pierde y las aplicaciones vuelven a su fuente de datos más lenta. Normalmente es seguro reiniciarlo, pero las sesiones que contenga pueden perderse."
+    },
+    "mongodb": {
+      "name": "MongoDB",
+      "what": "Una base de datos de documentos que guarda registros similares a JSON.",
+      "ifFails": "Las aplicaciones pierden su base de datos y pueden devolver errores o detenerse. Comprueba el espacio de disco, los registros y el estado del conjunto de réplicas antes de reiniciar."
+    },
+    "rabbitmq": {
+      "name": "RabbitMQ",
+      "what": "Un gestor de mensajes que encola trabajos y eventos entre servicios.",
+      "ifFails": "Los mensajes pueden acumularse y los trabajadores dejan de recibir tareas. Revisa el espacio de disco, la memoria y la interfaz de gestión antes de reiniciar."
+    },
+    "php-fpm": {
+      "name": "PHP-FPM",
+      "what": "Ejecuta aplicaciones web PHP para un servidor como Nginx o Apache.",
+      "ifFails": "Los sitios PHP devuelven errores o dejan de responder. Revisa la configuración del pool y los registros de PHP antes de reiniciar."
+    },
+    "wireguard": {
+      "name": "VPN WireGuard",
+      "what": "Un túnel VPN rápido para acceso remoto o para conectar redes.",
+      "ifFails": "Los pares VPN pierden el túnel y pueden perder acceso a servicios privados. Revisa la configuración de la interfaz y las claves; reiniciarlo corta las conexiones activas."
+    },
+    "tailscale": {
+      "name": "Tailscale",
+      "what": "Conecta esta máquina a una red privada de Tailscale.",
+      "ifFails": "La máquina desaparece de la red Tailscale y se detiene el acceso remoto a través de ella. Comprueba la autenticación y el acceso a la red antes de reiniciar."
+    },
+    "openvpn": {
+      "name": "OpenVPN",
+      "what": "Un servidor o cliente VPN que proporciona acceso de red cifrado.",
+      "ifFails": "Los clientes VPN pierden el túnel y los servicios remotos pueden quedar inaccesibles. Revisa la configuración y los registros; reiniciarlo corta las conexiones activas."
+    },
+    "bind9": {
+      "name": "Servidor DNS BIND",
+      "what": "Un servidor DNS autoritativo y recursivo.",
+      "ifFails": "La resolución DNS puede fallar para todo lo que depende de él. Valida la configuración con named-checkconf y revisa los registros antes de reiniciar."
+    },
+    "unbound": {
+      "name": "Resolutor DNS Unbound",
+      "what": "Un resolutor DNS recursivo y validador.",
+      "ifFails": "La resolución de nombres puede fallar para clientes y servicios locales. Revisa la configuración y los registros; una configuración mala le impide arrancar."
+    },
+    "dnsmasq": {
+      "name": "Dnsmasq",
+      "what": "Un pequeño reenviador DNS y servidor DHCP para redes locales.",
+      "ifFails": "El DNS o DHCP local puede detenerse, y los clientes pueden perder direcciones o resolución de nombres. Revisa la configuración y los registros antes de reiniciar."
+    },
+    "smartd": {
+      "name": "Monitorización S.M.A.R.T.",
+      "what": "Avisa de discos que están fallando con sus datos de salud S.M.A.R.T.",
+      "ifFails": "Los avisos de salud de los discos pueden no enviarse. Es opcional, pero revisa los registros y vuelve a iniciarlo si dependes de la monitorización de discos."
+    },
+    "lvm2": {
+      "name": "LVM",
+      "what": "Gestiona volúmenes lógicos e instantáneas sobre discos físicos.",
+      "ifFails": "Los volúmenes lógicos pueden no activarse y los sistemas de archivos pueden quedar no disponibles. Revisa los registros de LVM y el estado de los discos; no fuerces cambios sin una copia de seguridad."
+    },
+    "mdmonitor": {
+      "name": "RAID por software de Linux",
+      "what": "Monitoriza y gestiona matrices RAID md.",
+      "ifFails": "Los problemas de la matriz pueden pasar desapercibidos y las matrices degradadas pueden no repararse. Revisa /proc/mdstat y los registros antes de reiniciar."
+    },
+    "zfs": {
+      "name": "OpenZFS",
+      "what": "Gestiona pools, conjuntos de datos, instantáneas y scrubs de ZFS.",
+      "ifFails": "Los conjuntos de datos ZFS pueden quedar no disponibles y los problemas del pool pueden pasar desapercibidos. Revisa zpool status y los registros; no importes nunca a la fuerza un pool dañado."
+    },
+    "talaia-agent": {
+      "name": "Agente de Talaia",
+      "what": "Conecta este servidor con Talaia y ejecuta las acciones pedidas desde el panel.",
+      "ifFails": "El servidor aparece sin conexión en Talaia y no se puede gestionar desde el panel. Revisa los registros del agente y su conexión con el core antes de reiniciar."
+    },
+    "talaia-hostd": {
+      "name": "Servicio de anfitrión de Talaia",
+      "what": "Ejecuta operaciones privilegiadas del anfitrión pedidas por el panel Talaia.",
+      "ifFails": "Los servicios del anfitrión, las actualizaciones y las terminales de Talaia pueden fallar. Revisa sus registros y la conexión del agente antes de reiniciar."
+    },
+    "talaia-core": {
+      "name": "Core de Talaia",
+      "what": "El servidor Talaia que guarda datos, sirve el panel y coordina los agentes.",
+      "ifFails": "El panel y las conexiones de los agentes dejan de funcionar. Revisa la base de datos y los registros del core antes de reiniciar, y guarda una copia de sus datos."
+    },
+    "httpd": {
+      "name": "Imagen del servidor HTTP Apache",
+      "what": "Sirve sitios web y archivos estáticos desde un contenedor.",
+      "ifFails": "El servicio web de este contenedor deja de responder. Revisa los registros del contenedor y la configuración montada antes de reiniciar."
+    },
+    "traefik": {
+      "name": "Traefik",
+      "what": "Un proxy inverso y balanceador de carga que descubre servicios de contenedores.",
+      "ifFails": "Las rutas hacia los contenedores pueden dejar de funcionar y los certificados pueden no renovarse. Revisa sus registros, proveedores y etiquetas de enrutamiento antes de reiniciar."
+    },
+    "nginx-proxy-manager": {
+      "name": "Nginx Proxy Manager",
+      "what": "Una interfaz web que gestiona proxys inversos de Nginx y certificados TLS.",
+      "ifFails": "Los sitios proxificados o la renovación de certificados pueden detenerse. Revisa sus registros y su base de datos; guarda una copia de su configuración."
+    },
+    "portainer": {
+      "name": "Portainer",
+      "what": "Una interfaz web para gestionar contenedores, imágenes y stacks de Docker.",
+      "ifFails": "La interfaz de gestión de Docker deja de estar disponible, pero los contenedores en marcha continúan. Revisa su volumen de datos y sus registros antes de reiniciar."
+    },
+    "portainer-agent": {
+      "name": "Agente de Portainer",
+      "what": "Permite que un servidor Portainer gestione el anfitrión Docker donde se ejecuta.",
+      "ifFails": "Portainer ya no puede gestionar este anfitrión Docker. Revisa su conexión y sus registros; los contenedores en marcha no se ven afectados."
+    },
+    "watchtower": {
+      "name": "Watchtower",
+      "what": "Actualiza periódicamente los contenedores en marcha cuando cambian sus imágenes.",
+      "ifFails": "Los contenedores dejan de actualizarse automáticamente. Revisa sus registros y su planificación; es opcional si actualizas las imágenes de otra forma."
+    },
+    "grafana": {
+      "name": "Grafana",
+      "what": "Crea paneles y gráficos a partir de métricas, registros y otras fuentes.",
+      "ifFails": "Los paneles y alertas de Grafana dejan de cargarse. Revisa su base de datos y las conexiones de las fuentes antes de reiniciar."
+    },
+    "prometheus": {
+      "name": "Prometheus",
+      "what": "Recoge y guarda métricas de series temporales y evalúa reglas de alerta.",
+      "ifFails": "Las métricas dejan de recogerse y las alertas dejan de dispararse. Comprueba el espacio de disco, su configuración y los objetivos; reinicia solo después de revisar el estado del WAL."
+    },
+    "node-exporter": {
+      "name": "Prometheus Node Exporter",
+      "what": "Expone métricas de CPU, memoria, disco y red del anfitrión.",
+      "ifFails": "Las métricas del anfitrión desaparecen de los paneles y alertas. Revisa sus registros y su puerto; reiniciarlo no afecta a los servicios del anfitrión."
+    },
+    "cadvisor": {
+      "name": "cAdvisor",
+      "what": "Recoge métricas de uso de recursos de los contenedores Docker.",
+      "ifFails": "Las métricas de los contenedores desaparecen de los paneles y alertas. Revisa sus registros y el acceso al socket de Docker antes de reiniciar."
+    },
+    "loki": {
+      "name": "Grafana Loki",
+      "what": "Guarda y consulta registros en un almacén compacto basado en etiquetas.",
+      "ifFails": "La búsqueda de registros y las alertas basadas en registros dejan de funcionar; los registros nuevos pueden descartarse. Comprueba el espacio de disco y su configuración antes de reiniciar."
+    },
+    "promtail": {
+      "name": "Grafana Promtail",
+      "what": "Envía registros del anfitrión o de los contenedores a Grafana Loki.",
+      "ifFails": "Los registros nuevos dejan de llegar a Loki, pero las aplicaciones siguen funcionando. Revisa su configuración y su conexión con Loki antes de reiniciar."
+    },
+    "wordpress": {
+      "name": "WordPress",
+      "what": "Publica sitios y blogs y guarda su contenido en una base de datos.",
+      "ifFails": "El sitio devuelve errores o deja de cargarse. Revisa los registros del contenedor, la conexión a la base de datos y el espacio de disco antes de reiniciar."
+    },
+    "nextcloud": {
+      "name": "Nextcloud",
+      "what": "Ofrece sincronización, compartición y colaboración de archivos privada.",
+      "ifFails": "Los usuarios no pueden sincronizar ni abrir archivos. Revisa la base de datos, el volumen de datos y los registros antes de reiniciar; no borres el volumen de datos."
+    },
+    "gitea": {
+      "name": "Gitea",
+      "what": "Un servicio Git autoalojado para repositorios, incidencias y solicitudes de incorporación.",
+      "ifFails": "El acceso Git y la interfaz web dejan de funcionar. Revisa su base de datos, el volumen de repositorios y los registros antes de reiniciar."
+    },
+    "vaultwarden": {
+      "name": "Vaultwarden",
+      "what": "Un servidor de gestor de contraseñas ligero compatible con Bitwarden.",
+      "ifFails": "Los clientes de contraseñas no pueden sincronizar ni iniciar sesión. Revisa su base de datos y sus registros antes de reiniciar; guarda una copia del volumen de datos."
+    },
+    "minio": {
+      "name": "MinIO",
+      "what": "Un servidor de almacenamiento de objetos compatible con S3 para archivos y copias.",
+      "ifFails": "Las aplicaciones y copias no pueden leer ni escribir objetos. Comprueba el espacio de disco, los volúmenes de datos y la salud del clúster antes de reiniciar."
+    },
+    "adminer": {
+      "name": "Adminer",
+      "what": "Una pequeña interfaz web para gestionar bases de datos SQL.",
+      "ifFails": "La interfaz web de bases de datos no está disponible, pero las bases de datos siguen funcionando. Revisa sus registros y el acceso a la red antes de reiniciar."
+    },
+    "phpmyadmin": {
+      "name": "phpMyAdmin",
+      "what": "Una interfaz web para gestionar bases de datos MySQL y MariaDB.",
+      "ifFails": "La interfaz web de bases de datos no está disponible, pero las bases de datos siguen funcionando. Revisa su servidor web, PHP y la conexión a la base de datos antes de reiniciar."
+    },
+    "pgadmin": {
+      "name": "pgAdmin",
+      "what": "Una interfaz web para gestionar bases de datos PostgreSQL.",
+      "ifFails": "La interfaz web de PostgreSQL no está disponible, pero las bases de datos siguen funcionando. Revisa su volumen de datos y la conexión a la base de datos antes de reiniciar."
+    },
+    "uptime-kuma": {
+      "name": "Uptime Kuma",
+      "what": "Monitoriza sitios y servicios y envía avisos cuando están caídos.",
+      "ifFails": "La monitorización y los avisos de caída se detienen. Revisa su volumen de datos y sus registros; las comprobaciones se reanudan cuando vuelve a iniciarse."
+    },
+    "pihole": {
+      "name": "Pi-hole",
+      "what": "Un sumidero DNS y servidor DNS local que bloquea dominios de publicidad.",
+      "ifFails": "Los clientes que lo usan pierden DNS y pueden perder el acceso a internet. Revisa su configuración y su DNS superior; mantén otro resolutor disponible si puedes."
+    },
+    "adguard": {
+      "name": "AdGuard Home",
+      "what": "Un servidor DNS que filtra publicidad y seguimiento en la red local.",
+      "ifFails": "Los clientes que lo usan pierden DNS y pueden perder el acceso a internet. Revisa su configuración y su DNS superior; mantén otro resolutor disponible si puedes."
+    },
+    "certbot": {
+      "name": "Certbot",
+      "what": "Obtiene y renueva certificados TLS de Let's Encrypt.",
+      "ifFails": "Los certificados pueden caducar y los sitios HTTPS mostrarán errores. Revisa sus registros, el DNS y el acceso a los puertos 80/443; ejecútalo manualmente solo después de corregir la causa."
+    },
+    "registry": {
+      "name": "Registro Docker",
+      "what": "Guarda y sirve imágenes Docker para descargas y subidas.",
+      "ifFails": "Las descargas y subidas de imágenes fallan, y los despliegues que necesitan imágenes nuevas se detienen. Comprueba el espacio de disco, la autenticación y el backend de almacenamiento antes de reiniciar."
+    }
+  }
+}

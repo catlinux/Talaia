@@ -1,0 +1,511 @@
+{
+  "category": {
+    "system": "System",
+    "access": "Remote access",
+    "security": "Security",
+    "network": "Network",
+    "web": "Web",
+    "database": "Database",
+    "cache": "Cache",
+    "queue": "Queue",
+    "monitoring": "Monitoring",
+    "backup": "Backup",
+    "containers": "Containers",
+    "mail": "Mail",
+    "dns": "DNS",
+    "time": "Time",
+    "logs": "Logs",
+    "updates": "Updates",
+    "talaia": "Talaia",
+    "app": "Application"
+  },
+  "categoryHelp": {
+    "system": "Core operating-system services; most must keep running.",
+    "access": "Services that let you reach or log in to the server.",
+    "security": "Firewalls, access control and security monitoring.",
+    "network": "Networking, routing and VPN connectivity.",
+    "web": "Web servers, reverse proxies and web applications.",
+    "database": "Servers that store structured application data.",
+    "cache": "Fast in-memory stores for sessions, queues and cached data.",
+    "queue": "Message brokers that pass jobs between services.",
+    "monitoring": "Metrics, dashboards and health checks.",
+    "backup": "Storage and tools that protect or copy data.",
+    "containers": "Docker runtimes, registries and container management.",
+    "mail": "SMTP, IMAP and POP3 mail services.",
+    "dns": "Name resolution and local network discovery.",
+    "time": "Clock synchronization with time servers.",
+    "logs": "Collection, storage and shipping of log messages.",
+    "updates": "Package-list refresh and automatic security updates.",
+    "talaia": "Components of the Talaia panel and its agents.",
+    "app": "Application software that does not fit another category."
+  },
+  "importance": {
+    "essential": "Essential",
+    "important": "Important",
+    "optional": "Optional",
+    "unknown": "Unknown"
+  },
+  "importanceHelp": {
+    "essential": "The server or your access breaks without it.",
+    "important": "Something you run depends on it.",
+    "optional": "Can be stopped if you do not use it.",
+    "unknown": "Talaia does not have enough information to judge its importance."
+  },
+  "label": {
+    "what": "What it is",
+    "ifFails": "If it fails",
+    "origin": "Origin"
+  },
+  "origin": {
+    "service": "systemd unit {{unit}}",
+    "stackService": "Part of stack {{stack}} (service {{service}}) · image {{image}}",
+    "stack": "Part of stack {{stack}} · image {{image}}",
+    "stackImages": "Part of stack {{stack}} · images {{images}}",
+    "stackNoContainers": "Part of stack {{stack}} · no containers",
+    "standalone": "Standalone container · image {{image}}"
+  },
+  "unknownService": "systemd says: {{description}}",
+  "unknownServiceDescription": "No description was reported.",
+  "entries": {
+    "ssh": {
+      "name": "OpenSSH server",
+      "what": "The SSH server lets you open a secure remote shell and copy files to this machine.",
+      "ifFails": "You lose remote access to the server. Do not stop or restart it from a session you depend on; check its logs and configuration before restarting."
+    },
+    "cron": {
+      "name": "Cron scheduler",
+      "what": "Runs scheduled jobs, such as backups, cleanup and maintenance tasks.",
+      "ifFails": "Scheduled jobs stop running until cron is started again. Check the unit logs and fix any failed job before restarting."
+    },
+    "systemd-journald": {
+      "name": "systemd journal",
+      "what": "Collects the logs of the operating system and its services.",
+      "ifFails": "Logs stop being recorded and tools such as journalctl cannot read new entries. Restart it only if the journal is unhealthy and keep a copy of the logs first."
+    },
+    "systemd-logind": {
+      "name": "systemd login manager",
+      "what": "Tracks users, sessions and seats for local and remote logins.",
+      "ifFails": "New logins and session tracking may fail, and open sessions can be affected. Check the logs before restarting; avoid doing it while you are the only logged-in user."
+    },
+    "systemd-networkd": {
+      "name": "systemd network manager",
+      "what": "Configures network interfaces and routes on servers that use systemd-networkd.",
+      "ifFails": "The server can lose network connectivity. Do not restart it remotely unless you have console access; check its configuration and logs first."
+    },
+    "systemd-resolved": {
+      "name": "systemd DNS resolver",
+      "what": "Provides local DNS resolution and caching for the machine.",
+      "ifFails": "Name resolution can fail, so services cannot find hosts or external addresses. Check /etc/resolv.conf and the resolver logs before restarting."
+    },
+    "systemd-timesyncd": {
+      "name": "systemd time sync",
+      "what": "Keeps the system clock aligned with NTP time servers.",
+      "ifFails": "The clock can drift, which breaks TLS, logs and scheduled jobs. Check network access to the time source; other time services may already manage the clock."
+    },
+    "systemd-udevd": {
+      "name": "systemd device manager",
+      "what": "Detects hardware and creates the device nodes services use.",
+      "ifFails": "New devices, disks or network interfaces may not appear and some services cannot use hardware. Restart it only from a local console after checking the logs."
+    },
+    "dbus": {
+      "name": "D-Bus message bus",
+      "what": "Carries system and desktop messages between services that use D-Bus.",
+      "ifFails": "Services that depend on D-Bus can fail to start or communicate. Restarting the bus can interrupt many services; check the logs and prefer a reboot if it is unhealthy."
+    },
+    "getty": {
+      "name": "Console login",
+      "what": "Shows a text login prompt on a local console or serial line.",
+      "ifFails": "You may lose the local console login. This is usually harmless on a remote server; check the serial or console configuration if you need it."
+    },
+    "networking": {
+      "name": "Debian networking",
+      "what": "Brings up the network interfaces configured by /etc/network/interfaces.",
+      "ifFails": "The server can lose network connectivity. Do not restart it remotely without console access; verify the interface configuration first."
+    },
+    "ifupdown": {
+      "name": "Network interface setup",
+      "what": "Configures one network interface when it is brought up.",
+      "ifFails": "That interface may stop working. Check its configuration and the unit logs, and keep console access in case the network does not return."
+    },
+    "rsyslog": {
+      "name": "Rsyslog",
+      "what": "Writes system logs to local files and can forward them to a log server.",
+      "ifFails": "Logs may stop reaching files or the remote collector. Check disk space and the rsyslog configuration before restarting."
+    },
+    "chrony": {
+      "name": "Chrony time sync",
+      "what": "Keeps the clock accurate, including on machines with unstable network access.",
+      "ifFails": "The clock can drift or jump, affecting TLS, logs and schedules. Check the configured time sources before restarting."
+    },
+    "ntp": {
+      "name": "NTP time service",
+      "what": "Keeps the system clock synchronized with NTP servers.",
+      "ifFails": "The clock can drift and break TLS, logs or scheduled jobs. Check the NTP server configuration and network access before restarting."
+    },
+    "unattended-upgrades": {
+      "name": "Unattended upgrades",
+      "what": "Installs security updates automatically in the background.",
+      "ifFails": "Security updates may stop being installed. Check logs and free disk space, then start it again so updates resume."
+    },
+    "apt-daily": {
+      "name": "APT daily jobs",
+      "what": "Refreshes package lists and prepares pending updates each day.",
+      "ifFails": "Package lists and update information can become stale. Start it again or run apt update manually; do not interrupt an upgrade already in progress."
+    },
+    "docker": {
+      "name": "Docker engine",
+      "what": "Runs containers and manages images, networks and volumes through the Docker daemon.",
+      "ifFails": "All containers on this server stop or become unmanageable. Check disk space and the daemon log; restarting Docker restarts its running containers."
+    },
+    "containerd": {
+      "name": "containerd runtime",
+      "what": "The container runtime Docker uses to start and stop containers.",
+      "ifFails": "Docker cannot start or manage containers. Check its log and disk space; restarting containerd can disrupt every container on the server."
+    },
+    "apache2": {
+      "name": "Apache HTTP Server",
+      "what": "Serves websites and web applications over HTTP.",
+      "ifFails": "Websites served by Apache stop answering. Check the error log and the configuration with apachectl configtest before restarting."
+    },
+    "nginx": {
+      "name": "Nginx",
+      "what": "Serves websites and often acts as a reverse proxy for other services.",
+      "ifFails": "Websites and proxied services may stop answering. Run nginx -t to validate the configuration, check the error log, then reload or restart."
+    },
+    "caddy": {
+      "name": "Caddy",
+      "what": "Serves websites and obtains TLS certificates automatically.",
+      "ifFails": "Websites may stop answering and certificate renewal can fail. Validate the Caddyfile and check the logs before reloading."
+    },
+    "haproxy": {
+      "name": "HAProxy",
+      "what": "Balances traffic between backend servers and can terminate TLS.",
+      "ifFails": "Clients cannot reach the services behind HAProxy. Check the configuration and stats, then reload carefully; a bad configuration can keep it down."
+    },
+    "postfix": {
+      "name": "Postfix",
+      "what": "An SMTP mail server that sends and receives email.",
+      "ifFails": "Email delivery and reception stop, and messages may be queued or rejected. Check the mail queue and logs before restarting."
+    },
+    "exim4": {
+      "name": "Exim mail server",
+      "what": "The default Debian mail transfer agent for local and outgoing email.",
+      "ifFails": "Local mail delivery or outgoing email can fail and messages may queue. Check the logs and queue before restarting."
+    },
+    "dovecot": {
+      "name": "Dovecot",
+      "what": "Provides IMAP and POP3 access to mailboxes.",
+      "ifFails": "Mail clients cannot fetch mail. Existing deliveries may queue; check the logs and authentication configuration before restarting."
+    },
+    "fail2ban": {
+      "name": "Fail2ban",
+      "what": "Bans IP addresses that repeatedly fail to authenticate to services.",
+      "ifFails": "Brute-force protection stops and repeated attacks may not be blocked. Check its jail and log configuration before restarting."
+    },
+    "ufw": {
+      "name": "Uncomplicated Firewall",
+      "what": "Manages a simple set of firewall rules with iptables or nftables.",
+      "ifFails": "Firewall rules may not load or change. Check the rules and keep console access; a bad rule set can cut off remote access."
+    },
+    "nftables": {
+      "name": "nftables firewall",
+      "what": "The modern Linux packet filter used for firewall rules.",
+      "ifFails": "Firewall rules may disappear or fail to load, leaving services exposed or unreachable. Check the ruleset and keep console access."
+    },
+    "iptables": {
+      "name": "iptables firewall",
+      "what": "The legacy Linux firewall and its persistent rule loader.",
+      "ifFails": "Firewall rules may be missing after a restart or reload. Check the saved rules and keep console access before changing them."
+    },
+    "apparmor": {
+      "name": "AppArmor",
+      "what": "Restricts what programs can access with per-application security profiles.",
+      "ifFails": "New AppArmor profiles may not load and confined applications may fail to start. Check the kernel log and profiles before restarting."
+    },
+    "auditd": {
+      "name": "Linux audit daemon",
+      "what": "Records security-relevant system events for auditing.",
+      "ifFails": "Security events stop being recorded. Check disk space and the audit rules before restarting; audit failures can affect compliance."
+    },
+    "polkit": {
+      "name": "PolicyKit",
+      "what": "Controls whether users and services may perform privileged system actions.",
+      "ifFails": "Graphical or service tools may be unable to authorize privileged operations. Check the logs; restarting can interrupt active sessions."
+    },
+    "qemu-guest-agent": {
+      "name": "QEMU guest agent",
+      "what": "Lets the virtual machine host query and control this guest.",
+      "ifFails": "The host cannot query the guest or run graceful shutdown and snapshot commands. Check the virtio channel; it is not needed by most services."
+    },
+    "cloud-init": {
+      "name": "Cloud-init",
+      "what": "Configures a cloud instance on first boot, including users, SSH keys and networking.",
+      "ifFails": "Provisioning or later configuration steps can fail on the next boot. Check its logs and configuration; avoid rerunning it blindly on a live server."
+    },
+    "snapd": {
+      "name": "Snap daemon",
+      "what": "Installs and updates snap packages and their services.",
+      "ifFails": "Snap applications may stop updating or start. Check the snapd logs; if you do not use snaps, it can stay stopped."
+    },
+    "modemmanager": {
+      "name": "ModemManager",
+      "what": "Detects and manages mobile broadband modems.",
+      "ifFails": "Mobile broadband connections may not be configured or reconnected. It is optional on servers without a modem."
+    },
+    "wpa-supplicant": {
+      "name": "WPA supplicant",
+      "what": "Connects the machine to protected Wi-Fi networks.",
+      "ifFails": "A Wi-Fi connection may drop or fail to reconnect. Keep wired or console access; check the Wi-Fi configuration before restarting."
+    },
+    "avahi": {
+      "name": "Avahi",
+      "what": "Advertises services on the local network with mDNS/DNS-SD.",
+      "ifFails": "Local discovery of printers or services may stop. This is usually optional on a server; check the logs if you rely on it."
+    },
+    "cups": {
+      "name": "CUPS printing",
+      "what": "Runs the local printing service and print queues.",
+      "ifFails": "Printing and print queues stop working. It is optional on servers; check the logs if this machine manages printers."
+    },
+    "bluetooth": {
+      "name": "Bluetooth service",
+      "what": "Manages Bluetooth adapters and connections.",
+      "ifFails": "Bluetooth devices cannot connect. It is optional on most servers and can usually stay stopped."
+    },
+    "mariadb": {
+      "name": "MariaDB / MySQL",
+      "what": "A relational database server used by many web applications.",
+      "ifFails": "Applications lose their database and may return errors or stop. Check disk space and logs before restarting; a restart cuts every open connection, so do it when the applications can tolerate a short outage."
+    },
+    "mysql": {
+      "name": "MySQL",
+      "what": "The MySQL relational database server.",
+      "ifFails": "Applications lose their database and may return errors or stop. Check disk space and logs before restarting; a restart cuts every open connection, so do it when the applications can tolerate a short outage."
+    },
+    "postgresql": {
+      "name": "PostgreSQL",
+      "what": "A relational database server known for reliability and SQL features.",
+      "ifFails": "Applications lose their database and may return errors or stop. Check disk space and logs before restarting; a restart cuts every open connection, so do it when the applications can tolerate a short outage."
+    },
+    "redis": {
+      "name": "Redis",
+      "what": "An in-memory data store used for caching, queues and sessions.",
+      "ifFails": "Caches and sessions can disappear or writes can fail. Check memory and persistence logs; restart only after deciding whether losing volatile data is acceptable."
+    },
+    "valkey": {
+      "name": "Valkey",
+      "what": "An open-source in-memory data store compatible with Redis.",
+      "ifFails": "Caches and sessions can disappear or writes can fail. Check memory and persistence logs; restart only after deciding whether losing volatile data is acceptable."
+    },
+    "memcached": {
+      "name": "Memcached",
+      "what": "A small in-memory cache used to speed up applications.",
+      "ifFails": "The cache is lost and applications fall back to their slower data source. It is usually safe to restart, but sessions stored there may be lost."
+    },
+    "mongodb": {
+      "name": "MongoDB",
+      "what": "A document database that stores JSON-like records.",
+      "ifFails": "Applications lose their database and may return errors or stop. Check disk space, logs and replica set health before restarting."
+    },
+    "rabbitmq": {
+      "name": "RabbitMQ",
+      "what": "A message broker that queues jobs and events between services.",
+      "ifFails": "Messages may queue up and workers stop receiving jobs. Check disk space, memory and the management UI before restarting."
+    },
+    "php-fpm": {
+      "name": "PHP-FPM",
+      "what": "Runs PHP web applications for a web server such as Nginx or Apache.",
+      "ifFails": "PHP sites return errors or stop answering. Check the pool configuration and PHP logs before restarting."
+    },
+    "wireguard": {
+      "name": "WireGuard VPN",
+      "what": "A fast VPN tunnel used for remote access or connecting networks.",
+      "ifFails": "VPN peers lose the tunnel and may lose access to private services. Check the interface configuration and keys; restarting drops active connections."
+    },
+    "tailscale": {
+      "name": "Tailscale",
+      "what": "Connects this machine to a private Tailscale network.",
+      "ifFails": "The machine disappears from the tailnet and remote access through it stops. Check authentication and network access before restarting."
+    },
+    "openvpn": {
+      "name": "OpenVPN",
+      "what": "A VPN server or client that provides encrypted network access.",
+      "ifFails": "VPN clients lose their tunnel and remote services may become unreachable. Check the configuration and logs; restarting drops active connections."
+    },
+    "bind9": {
+      "name": "BIND DNS server",
+      "what": "An authoritative and recursive DNS server.",
+      "ifFails": "DNS resolution can fail for everything that depends on it. Validate the configuration with named-checkconf and check logs before restarting."
+    },
+    "unbound": {
+      "name": "Unbound DNS resolver",
+      "what": "A validating, recursive DNS resolver.",
+      "ifFails": "Name resolution can fail for local clients and services. Check the configuration and logs; a bad config prevents it from starting."
+    },
+    "dnsmasq": {
+      "name": "Dnsmasq",
+      "what": "A small DNS forwarder and DHCP server for local networks.",
+      "ifFails": "Local DNS or DHCP can stop, and clients may lose addresses or name resolution. Check the configuration and logs before restarting."
+    },
+    "smartd": {
+      "name": "S.M.A.R.T. monitoring",
+      "what": "Warns about failing disks using their S.M.A.R.T. health data.",
+      "ifFails": "Disk health warnings may not be sent. It is optional, but check the logs and start it again if you rely on disk monitoring."
+    },
+    "lvm2": {
+      "name": "LVM",
+      "what": "Manages logical volumes and snapshots on top of physical disks.",
+      "ifFails": "Logical volumes may not activate and filesystems can become unavailable. Check the LVM logs and disk state; do not force changes without a backup."
+    },
+    "mdmonitor": {
+      "name": "Linux software RAID",
+      "what": "Monitors and manages md RAID arrays.",
+      "ifFails": "Array problems may go unnoticed and degraded arrays may not be repaired. Check /proc/mdstat and the logs before restarting."
+    },
+    "zfs": {
+      "name": "OpenZFS",
+      "what": "Manages ZFS pools, datasets, snapshots and scrubs.",
+      "ifFails": "ZFS datasets may become unavailable and pool problems may go unnoticed. Check zpool status and the logs; never force-import a damaged pool."
+    },
+    "talaia-agent": {
+      "name": "Talaia agent",
+      "what": "Connects this server to Talaia and runs the actions requested from the panel.",
+      "ifFails": "The server appears offline in Talaia and cannot be managed from the panel. Check the agent logs and its connection to the core before restarting."
+    },
+    "talaia-hostd": {
+      "name": "Talaia host service",
+      "what": "Runs privileged host operations requested by the Talaia panel.",
+      "ifFails": "Host services, updates and terminal actions from Talaia may fail. Check its logs and the agent connection before restarting."
+    },
+    "talaia-core": {
+      "name": "Talaia core",
+      "what": "The Talaia server that stores data, serves the panel and coordinates agents.",
+      "ifFails": "The panel and agent connections stop working. Check the database and core logs before restarting, and keep a backup of its data."
+    },
+    "httpd": {
+      "name": "Apache HTTP Server image",
+      "what": "Serves websites and static files from a container.",
+      "ifFails": "The web service in this container stops answering. Check the container logs and its mounted configuration before restarting."
+    },
+    "traefik": {
+      "name": "Traefik",
+      "what": "A reverse proxy and load balancer that discovers container services.",
+      "ifFails": "Routes to containers may stop working and certificates may not renew. Check its logs, providers and routing labels before restarting."
+    },
+    "nginx-proxy-manager": {
+      "name": "Nginx Proxy Manager",
+      "what": "A web UI that manages Nginx reverse proxies and TLS certificates.",
+      "ifFails": "Proxied sites or certificate renewal may stop. Check its logs and database; keep a backup of its configuration."
+    },
+    "portainer": {
+      "name": "Portainer",
+      "what": "A web interface for managing Docker containers, images and stacks.",
+      "ifFails": "The Docker management UI becomes unavailable, but running containers continue. Check its data volume and logs before restarting."
+    },
+    "portainer-agent": {
+      "name": "Portainer agent",
+      "what": "Lets a Portainer server manage the Docker host it runs on.",
+      "ifFails": "Portainer can no longer manage this Docker host. Check its connection and logs; running containers are not affected."
+    },
+    "watchtower": {
+      "name": "Watchtower",
+      "what": "Periodically updates running containers when their images change.",
+      "ifFails": "Containers stop being updated automatically. Check its logs and schedule; it is optional if you update images another way."
+    },
+    "grafana": {
+      "name": "Grafana",
+      "what": "Builds dashboards and graphs from metrics, logs and other data sources.",
+      "ifFails": "Dashboards and alerts in Grafana stop loading. Check its database and data source connections before restarting."
+    },
+    "prometheus": {
+      "name": "Prometheus",
+      "what": "Collects and stores time-series metrics and evaluates alert rules.",
+      "ifFails": "Metrics stop being collected and alert rules stop firing. Check disk space, its configuration and the targets; restart only after checking the WAL state."
+    },
+    "node-exporter": {
+      "name": "Prometheus Node Exporter",
+      "what": "Exposes CPU, memory, disk and network metrics of the host.",
+      "ifFails": "Host metrics disappear from dashboards and alerts. Check its logs and port; restarting it does not affect the host services."
+    },
+    "cadvisor": {
+      "name": "cAdvisor",
+      "what": "Collects resource usage metrics from Docker containers.",
+      "ifFails": "Container metrics disappear from dashboards and alerts. Check its logs and access to the Docker socket before restarting."
+    },
+    "loki": {
+      "name": "Grafana Loki",
+      "what": "Stores and queries logs in a compact, label-based store.",
+      "ifFails": "Log search and log-based alerts stop working; new logs may be dropped. Check disk space and its configuration before restarting."
+    },
+    "promtail": {
+      "name": "Grafana Promtail",
+      "what": "Ships logs from the host or containers to Grafana Loki.",
+      "ifFails": "New logs stop reaching Loki, but the applications keep running. Check its configuration and connection to Loki before restarting."
+    },
+    "wordpress": {
+      "name": "WordPress",
+      "what": "Publishes websites and blogs and stores their content in a database.",
+      "ifFails": "The site returns errors or stops loading. Check the container logs, database connection and disk space before restarting."
+    },
+    "nextcloud": {
+      "name": "Nextcloud",
+      "what": "Provides private file sync, sharing and collaboration.",
+      "ifFails": "Users cannot sync or open files. Check the database, data volume and logs before restarting; do not delete the data volume."
+    },
+    "gitea": {
+      "name": "Gitea",
+      "what": "A self-hosted Git service for repositories, issues and pull requests.",
+      "ifFails": "Git access and the web interface stop working. Check its database, repositories volume and logs before restarting."
+    },
+    "vaultwarden": {
+      "name": "Vaultwarden",
+      "what": "A lightweight Bitwarden-compatible password manager server.",
+      "ifFails": "Password clients cannot sync or log in. Check its database and logs before restarting; keep a backup of the data volume."
+    },
+    "minio": {
+      "name": "MinIO",
+      "what": "An S3-compatible object storage server for files and backups.",
+      "ifFails": "Applications and backups cannot read or write objects. Check disk space, the data volumes and cluster health before restarting."
+    },
+    "adminer": {
+      "name": "Adminer",
+      "what": "A small web interface for managing SQL databases.",
+      "ifFails": "The database web interface is unavailable, but the databases keep running. Check its logs and network access before restarting."
+    },
+    "phpmyadmin": {
+      "name": "phpMyAdmin",
+      "what": "A web interface for managing MySQL and MariaDB databases.",
+      "ifFails": "The database web interface is unavailable, but the databases keep running. Check its web server, PHP and database connection before restarting."
+    },
+    "pgadmin": {
+      "name": "pgAdmin",
+      "what": "A web interface for managing PostgreSQL databases.",
+      "ifFails": "The PostgreSQL web interface is unavailable, but the databases keep running. Check its data volume and database connection before restarting."
+    },
+    "uptime-kuma": {
+      "name": "Uptime Kuma",
+      "what": "Monitors websites and services and sends downtime notifications.",
+      "ifFails": "Monitoring and downtime alerts stop. Check its data volume and logs; uptime checks resume when it starts again."
+    },
+    "pihole": {
+      "name": "Pi-hole",
+      "what": "A DNS sinkhole and local DNS server that blocks advertising domains.",
+      "ifFails": "Clients using it lose DNS and may lose internet access. Check its configuration and upstream DNS; keep another resolver available if possible."
+    },
+    "adguard": {
+      "name": "AdGuard Home",
+      "what": "A DNS server that filters ads and tracking for the local network.",
+      "ifFails": "Clients using it lose DNS and may lose internet access. Check its configuration and upstream DNS; keep another resolver available if possible."
+    },
+    "certbot": {
+      "name": "Certbot",
+      "what": "Obtains and renews TLS certificates from Let's Encrypt.",
+      "ifFails": "Certificates may expire and HTTPS sites will show errors. Check its logs, DNS and port 80/443 access; run it manually only after fixing the cause."
+    },
+    "registry": {
+      "name": "Docker registry",
+      "what": "Stores and serves Docker images for pulls and pushes.",
+      "ifFails": "Image pulls and pushes fail, and deployments that need new images stop. Check disk space, authentication and the storage backend before restarting."
+    }
+  }
+}

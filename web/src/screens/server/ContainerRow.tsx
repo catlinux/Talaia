@@ -3,6 +3,8 @@ import { useTranslation } from 'react-i18next'
 
 import type { Container, ContainerAction } from '../../api/containers'
 import { usePermissions } from '../../auth/permissions'
+import { WhatIsThis } from '../../catalog/WhatIsThis'
+import { InfoTip } from '../../components/ui'
 import {
   LogsIcon,
   PlayIcon,
@@ -82,6 +84,9 @@ export function ContainerRow({
       <div className="container__main">
         <div className="container__head">
           <h3 className="container__name">{container.name}</h3>
+          <InfoTip>
+            <WhatIsThis target={{ kind: 'container', container }} />
+          </InfoTip>
           <span className={`status status--${isRunning ? 'online' : 'offline'}`}>
             {t(`state.${container.state}`, { defaultValue: container.state })}
           </span>

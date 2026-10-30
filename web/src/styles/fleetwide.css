@@ -72,6 +72,12 @@
   min-width: 0;
 }
 
+.fleetwide__name-line {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
 .fleetwide__name strong,
 .fleetwide__strong {
   color: var(--ink);

@@ -208,6 +208,7 @@ describe('Containers', () => {
       within(table).getAllByRole('link', { name: 'vps-web-01' })[0]?.getAttribute('href'),
     ).toBe('/servers/srv-1/containers')
     expect(within(table).getAllByText('service web').length).toBeGreaterThan(0)
+    expect(within(table).getAllByRole('button', { name: 'More information' }).length).toBe(4)
   })
 
   it('filters by URL query and clears the filters', async () => {

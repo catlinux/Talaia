@@ -13,6 +13,7 @@ import {
   ConfirmDialog,
   DataTable,
   FilterBar,
+  InfoTip,
   Menu,
   PageHeader,
   Select,
@@ -23,6 +24,7 @@ import {
   type MenuEntry,
   type Status,
 } from '../components/ui'
+import { WhatIsThis } from '../catalog/WhatIsThis'
 import { Link, useNavigate, useSetQuery, useRoute } from '../router'
 import { formatBytes, formatPercent, formatTime } from './fleet/format'
 import { stackPath } from './server/serverTabs'
@@ -471,7 +473,12 @@ export function Containers({
       header: t('containers.columns.name'),
       cell: (row) => (
         <div className="fleetwide__name">
-          <strong>{row.container.name}</strong>
+          <span className="fleetwide__name-line">
+            <strong>{row.container.name}</strong>
+            <InfoTip>
+              <WhatIsThis target={{ kind: 'container', container: row.container }} />
+            </InfoTip>
+          </span>
           {row.container.composeService !== '' ? (
             <span className="fleetwide__sub">
               {t('common.service', { name: row.container.composeService })}

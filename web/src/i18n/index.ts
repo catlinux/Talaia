@@ -4,6 +4,7 @@ import { initReactI18next } from 'react-i18next'
 
 import caAbout from '../locales/ca/about.json'
 import caAudit from '../locales/ca/audit.json'
+import caCatalog from '../locales/ca/catalog.json'
 import caAuth from '../locales/ca/auth.json'
 import caCommon from '../locales/ca/common.json'
 import caErrors from '../locales/ca/errors.json'
@@ -20,6 +21,7 @@ import caUsers from '../locales/ca/users.json'
 import caValidation from '../locales/ca/validation.json'
 import enAbout from '../locales/en/about.json'
 import enAudit from '../locales/en/audit.json'
+import enCatalog from '../locales/en/catalog.json'
 import enAuth from '../locales/en/auth.json'
 import enCommon from '../locales/en/common.json'
 import enErrors from '../locales/en/errors.json'
@@ -36,6 +38,7 @@ import enUsers from '../locales/en/users.json'
 import enValidation from '../locales/en/validation.json'
 import esAbout from '../locales/es/about.json'
 import esAudit from '../locales/es/audit.json'
+import esCatalog from '../locales/es/catalog.json'
 import esAuth from '../locales/es/auth.json'
 import esCommon from '../locales/es/common.json'
 import esErrors from '../locales/es/errors.json'
@@ -67,6 +70,7 @@ void i18n
         common: caCommon,
         about: caAbout,
         audit: caAudit,
+        catalog: caCatalog,
         fleet: caFleet,
         fleetwide: caFleetwide,
         metrics: caMetrics,
@@ -85,6 +89,7 @@ void i18n
         common: esCommon,
         about: esAbout,
         audit: esAudit,
+        catalog: esCatalog,
         fleet: esFleet,
         fleetwide: esFleetwide,
         metrics: esMetrics,
@@ -103,6 +108,7 @@ void i18n
         common: enCommon,
         about: enAbout,
         audit: enAudit,
+        catalog: enCatalog,
         fleet: enFleet,
         fleetwide: enFleetwide,
         metrics: enMetrics,
@@ -124,6 +130,7 @@ void i18n
       'common',
       'about',
       'audit',
+      'catalog',
       'fleet',
       'fleetwide',
       'metrics',

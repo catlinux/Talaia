@@ -15,5 +15,6 @@ export type { MenuEntry, MenuHeading, MenuItem, MenuSeparator, MenuTriggerProps 
 export { ToastProvider, useToast } from './Toast'
 export type { ToastKind } from './Toast'
 export { ConfirmDialog } from './ConfirmDialog'
+export { InfoTip } from './InfoTip'
 export { FilterBar, Select, BulkBar } from './FilterBar'
 export type { FilterSearch, SelectOption } from './FilterBar'

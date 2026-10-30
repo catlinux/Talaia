@@ -1,0 +1,511 @@
+{
+  "category": {
+    "system": "Sistema",
+    "access": "Accés remot",
+    "security": "Seguretat",
+    "network": "Xarxa",
+    "web": "Web",
+    "database": "Base de dades",
+    "cache": "Memòria cau",
+    "queue": "Cua",
+    "monitoring": "Monitoratge",
+    "backup": "Còpies de seguretat",
+    "containers": "Contenidors",
+    "mail": "Correu",
+    "dns": "DNS",
+    "time": "Hora",
+    "logs": "Registres",
+    "updates": "Actualitzacions",
+    "talaia": "Talaia",
+    "app": "Aplicació"
+  },
+  "categoryHelp": {
+    "system": "Serveis bàsics del sistema operatiu; la majoria han de continuar en marxa.",
+    "access": "Serveis que et permeten arribar o iniciar sessió al servidor.",
+    "security": "Tallafocs, control d'accés i vigilància de seguretat.",
+    "network": "Xarxa, encaminament i connectivitat VPN.",
+    "web": "Servidors web, proxys inversos i aplicacions web.",
+    "database": "Servidors que guarden dades estructurades de les aplicacions.",
+    "cache": "Magatzems ràpids en memòria per a sessions, cues i dades temporals.",
+    "queue": "Gestors de missatges que passen feines entre serveis.",
+    "monitoring": "Mètriques, quadres de comandament i comprovacions d'estat.",
+    "backup": "Emmagatzematge i eines que protegeixen o copien dades.",
+    "containers": "Runtimes de Docker, registres i gestió de contenidors.",
+    "mail": "Serveis de correu SMTP, IMAP i POP3.",
+    "dns": "Resolució de noms i descoberta a la xarxa local.",
+    "time": "Sincronització del rellotge amb servidors de temps.",
+    "logs": "Recollida, emmagatzematge i enviament de missatges de registre.",
+    "updates": "Actualització de llistes de paquets i actualitzacions de seguretat automàtiques.",
+    "talaia": "Components del panell Talaia i dels seus agents.",
+    "app": "Programari que no encaixa en cap altra categoria."
+  },
+  "importance": {
+    "essential": "Essencial",
+    "important": "Important",
+    "optional": "Opcional",
+    "unknown": "Desconeguda"
+  },
+  "importanceHelp": {
+    "essential": "El servidor o el teu accés deixen de funcionar sense això.",
+    "important": "Alguna cosa que utilitzes en depèn.",
+    "optional": "Es pot aturar si no ho utilitzes.",
+    "unknown": "Talaia no té prou informació per valorar-ne la importància."
+  },
+  "label": {
+    "what": "Què és",
+    "ifFails": "Si falla",
+    "origin": "Origen"
+  },
+  "origin": {
+    "service": "unitat de systemd {{unit}}",
+    "stackService": "Part de la stack {{stack}} (servei {{service}}) · imatge {{image}}",
+    "stack": "Part de la stack {{stack}} · imatge {{image}}",
+    "stackImages": "Part de la stack {{stack}} · imatges {{images}}",
+    "stackNoContainers": "Part de la stack {{stack}} · sense contenidors",
+    "standalone": "Contenidor independent · imatge {{image}}"
+  },
+  "unknownService": "systemd diu: {{description}}",
+  "unknownServiceDescription": "No s'ha informat cap descripció.",
+  "entries": {
+    "ssh": {
+      "name": "Servidor OpenSSH",
+      "what": "El servidor SSH permet obrir una shell remota segura i copiar fitxers en aquesta màquina.",
+      "ifFails": "Perds l'accés remot al servidor. No l'aturis ni el reiniciïs des d'una sessió de la qual depenguis; revisa els registres i la configuració abans de reiniciar-lo."
+    },
+    "cron": {
+      "name": "Planificador cron",
+      "what": "Executa tasques programades, com còpies de seguretat, neteja i manteniment.",
+      "ifFails": "Les tasques programades deixen de funcionar fins que cron torni a estar actiu. Revisa els registres de la unitat i arregla les tasques fallides abans de reiniciar."
+    },
+    "systemd-journald": {
+      "name": "Registre de systemd",
+      "what": "Recull els registres del sistema operatiu i dels seus serveis.",
+      "ifFails": "Els registres deixen de desar-se i eines com journalctl no poden llegir entrades noves. Reinicia'l només si el registre no està sa i desa'n una còpia abans."
+    },
+    "systemd-logind": {
+      "name": "Gestor d'inicis de sessió de systemd",
+      "what": "Fa el seguiment d'usuaris, sessions i seients per als accessos locals i remots.",
+      "ifFails": "Els accessos nous i el seguiment de sessions poden fallar, i les sessions obertes es poden veure afectades. Revisa els registres abans de reiniciar; evita-ho si ets l'únic usuari connectat."
+    },
+    "systemd-networkd": {
+      "name": "Gestor de xarxa de systemd",
+      "what": "Configura interfícies de xarxa i rutes en servidors que fan servir systemd-networkd.",
+      "ifFails": "El servidor pot perdre la connectivitat de xarxa. No el reiniciïs en remot si no tens accés a la consola; revisa'n la configuració i els registres."
+    },
+    "systemd-resolved": {
+      "name": "Resolutor DNS de systemd",
+      "what": "Proporciona resolució DNS local i memòria cau per a la màquina.",
+      "ifFails": "La resolució de noms pot fallar i els serveis no trobaran equips ni adreces externes. Revisa /etc/resolv.conf i els registres del resolutor abans de reiniciar."
+    },
+    "systemd-timesyncd": {
+      "name": "Sincronització horària de systemd",
+      "what": "Manté el rellotge del sistema alineat amb servidors NTP.",
+      "ifFails": "El rellotge es pot desviar, cosa que trenca TLS, registres i tasques programades. Comprova l'accés a la font de temps; potser ja hi ha un altre servei que gestiona el rellotge."
+    },
+    "systemd-udevd": {
+      "name": "Gestor de dispositius de systemd",
+      "what": "Detecta maquinari i crea els nodes de dispositiu que fan servir els serveis.",
+      "ifFails": "Els dispositius, discs o interfícies nous poden no aparèixer i alguns serveis no podran usar el maquinari. Reinicia'l només des d'una consola local i després de revisar els registres."
+    },
+    "dbus": {
+      "name": "Bus de missatges D-Bus",
+      "what": "Transporta missatges del sistema i d'escriptori entre serveis que fan servir D-Bus.",
+      "ifFails": "Els serveis que depenen de D-Bus poden no iniciar-se o no comunicar-se. Reiniciar el bus pot interrompre molts serveis; revisa els registres i valora reiniciar la màquina si no està sa."
+    },
+    "getty": {
+      "name": "Accés a la consola",
+      "what": "Mostra un inici de sessió de text en una consola local o línia sèrie.",
+      "ifFails": "Pots perdre l'accés a la consola local. Normalment no passa res en un servidor remot; revisa la configuració de consola o sèrie si el necessites."
+    },
+    "networking": {
+      "name": "Xarxa de Debian",
+      "what": "Activa les interfícies de xarxa configurades a /etc/network/interfaces.",
+      "ifFails": "El servidor pot perdre la connectivitat de xarxa. No el reiniciïs en remot sense accés a la consola; comprova abans la configuració de les interfícies."
+    },
+    "ifupdown": {
+      "name": "Configuració d'interfície de xarxa",
+      "what": "Configura una interfície de xarxa quan s'activa.",
+      "ifFails": "Aquesta interfície pot deixar de funcionar. Revisa'n la configuració i els registres, i mantén accés a la consola per si la xarxa no torna."
+    },
+    "rsyslog": {
+      "name": "Rsyslog",
+      "what": "Escriu els registres del sistema en fitxers locals i els pot enviar a un servidor de registres.",
+      "ifFails": "Els registres poden deixar d'arribar als fitxers o al recopilador remot. Comprova l'espai de disc i la configuració de rsyslog abans de reiniciar."
+    },
+    "chrony": {
+      "name": "Sincronització horària amb Chrony",
+      "what": "Manté el rellotge precís, també en màquines amb xarxa inestable.",
+      "ifFails": "El rellotge es pot desviar o saltar i afectar TLS, registres i planificacions. Comprova les fonts de temps configurades abans de reiniciar."
+    },
+    "ntp": {
+      "name": "Servei de temps NTP",
+      "what": "Manté el rellotge del sistema sincronitzat amb servidors NTP.",
+      "ifFails": "El rellotge es pot desviar i trencar TLS, registres o tasques programades. Comprova la configuració del servidor NTP i l'accés a la xarxa abans de reiniciar."
+    },
+    "unattended-upgrades": {
+      "name": "Actualitzacions automàtiques",
+      "what": "Instal·la actualitzacions de seguretat automàticament en segon pla.",
+      "ifFails": "Les actualitzacions de seguretat poden deixar d'instal·lar-se. Revisa els registres i l'espai de disc, i torna'l a iniciar perquè continuïn."
+    },
+    "apt-daily": {
+      "name": "Feines diàries d'APT",
+      "what": "Actualitza les llistes de paquets i prepara les actualitzacions pendents cada dia.",
+      "ifFails": "Les llistes de paquets i la informació d'actualitzacions es poden quedar desfasades. Torna'l a iniciar o executa apt update manualment; no interrompis una actualització en curs."
+    },
+    "docker": {
+      "name": "Motor Docker",
+      "what": "Executa contenidors i gestiona imatges, xarxes i volums amb el dimoni Docker.",
+      "ifFails": "Tots els contenidors del servidor s'aturen o queden sense gestió. Comprova l'espai de disc i el registre del dimoni; reiniciar Docker reinicia els contenidors en marxa."
+    },
+    "containerd": {
+      "name": "Runtime containerd",
+      "what": "El runtime de contenidors que Docker fa servir per iniciar i aturar contenidors.",
+      "ifFails": "Docker no pot iniciar ni gestionar contenidors. Revisa'n el registre i l'espai de disc; reiniciar containerd pot afectar tots els contenidors del servidor."
+    },
+    "apache2": {
+      "name": "Servidor HTTP Apache",
+      "what": "Serveix llocs web i aplicacions web per HTTP.",
+      "ifFails": "Els llocs servits per Apache deixen de respondre. Revisa el registre d'errors i valida la configuració amb apachectl configtest abans de reiniciar."
+    },
+    "nginx": {
+      "name": "Nginx",
+      "what": "Serveix llocs web i sovint fa de proxy invers per a altres serveis.",
+      "ifFails": "Els llocs i serveis proxificats poden deixar de respondre. Executa nginx -t per validar la configuració, revisa el registre d'errors i recarrega o reinicia."
+    },
+    "caddy": {
+      "name": "Caddy",
+      "what": "Serveix llocs web i obté certificats TLS automàticament.",
+      "ifFails": "Els llocs poden deixar de respondre i la renovació de certificats pot fallar. Valida el Caddyfile i revisa els registres abans de recarregar."
+    },
+    "haproxy": {
+      "name": "HAProxy",
+      "what": "Reparteix el trànsit entre servidors de fons i pot acabar TLS.",
+      "ifFails": "Els clients no poden arribar als serveis que hi ha darrere d'HAProxy. Revisa la configuració i les estadístiques, i recarrega amb cura; una configuració dolenta el pot deixar aturat."
+    },
+    "postfix": {
+      "name": "Postfix",
+      "what": "Servidor de correu SMTP que envia i rep correu.",
+      "ifFails": "L'enviament i la recepció de correu s'aturen, i els missatges es poden encuar o rebutjar. Revisa la cua i els registres abans de reiniciar."
+    },
+    "exim4": {
+      "name": "Servidor de correu Exim",
+      "what": "L'agent de transport de correu per defecte de Debian per al correu local i sortint.",
+      "ifFails": "El lliurament local o l'enviament de correu pot fallar i els missatges es poden encuar. Revisa els registres i la cua abans de reiniciar."
+    },
+    "dovecot": {
+      "name": "Dovecot",
+      "what": "Proporciona accés IMAP i POP3 als bústies de correu.",
+      "ifFails": "Els clients de correu no poden descarregar el correu. Els lliuraments existents es poden encuar; revisa els registres i la configuració d'autenticació abans de reiniciar."
+    },
+    "fail2ban": {
+      "name": "Fail2ban",
+      "what": "Bloqueja adreces IP que fallen repetidament l'autenticació als serveis.",
+      "ifFails": "La protecció contra atacs de força bruta s'atura i els atacs repetits poden no bloquejar-se. Revisa la configuració de les presons i dels registres abans de reiniciar."
+    },
+    "ufw": {
+      "name": "Tallafocs UFW",
+      "what": "Gestiona un conjunt simple de regles de tallafocs amb iptables o nftables.",
+      "ifFails": "Les regles de tallafocs poden no carregar-se o no canviar. Revisa les regles i mantén accés a la consola; un conjunt dolent et pot tallar l'accés remot."
+    },
+    "nftables": {
+      "name": "Tallafocs nftables",
+      "what": "El filtre de paquets modern de Linux que s'usa per a les regles de tallafocs.",
+      "ifFails": "Les regles de tallafocs poden desaparèixer o no carregar-se, deixant serveis exposats o inaccessibles. Revisa el conjunt de regles i mantén accés a la consola."
+    },
+    "iptables": {
+      "name": "Tallafocs iptables",
+      "what": "El tallafocs clàssic de Linux i el seu carregador de regles persistents.",
+      "ifFails": "Pot ser que faltin regles de tallafocs després de reiniciar o recarregar. Revisa les regles desades i mantén accés a la consola abans de canviar-les."
+    },
+    "apparmor": {
+      "name": "AppArmor",
+      "what": "Limita què poden accedir els programes amb perfils de seguretat per aplicació.",
+      "ifFails": "Els perfils nous d'AppArmor poden no carregar-se i les aplicacions confinades poden no iniciar-se. Revisa el registre del nucli i els perfils abans de reiniciar."
+    },
+    "auditd": {
+      "name": "Dimoni d'auditoria de Linux",
+      "what": "Registra esdeveniments del sistema rellevants per a la seguretat i l'auditoria.",
+      "ifFails": "Els esdeveniments de seguretat deixen de registrar-se. Comprova l'espai de disc i les regles d'auditoria abans de reiniciar; les fallades d'auditoria poden afectar el compliment normatiu."
+    },
+    "polkit": {
+      "name": "PolicyKit",
+      "what": "Controla si usuaris i serveis poden fer accions privilegiades del sistema.",
+      "ifFails": "Les eines gràfiques o de servei poden no poder autoritzar operacions privilegiades. Revisa els registres; reiniciar-lo pot interrompre sessions actives."
+    },
+    "qemu-guest-agent": {
+      "name": "Agent convidat de QEMU",
+      "what": "Permet que l'amfitrió de la màquina virtual consulti i controli aquest convidat.",
+      "ifFails": "L'amfitrió no pot consultar el convidat ni executar aturades ordenades o instantànies. Comprova el canal virtio; la majoria de serveis no el necessiten."
+    },
+    "cloud-init": {
+      "name": "Cloud-init",
+      "what": "Configura una instància al núvol en el primer arrencada, incloent usuaris, claus SSH i xarxa.",
+      "ifFails": "El proveïment o passos de configuració posteriors poden fallar en la propera arrencada. Revisa els registres i la configuració; no el tornis a executar a cegues en un servidor en producció."
+    },
+    "snapd": {
+      "name": "Dimoni Snap",
+      "what": "Instal·la i actualitza paquets snap i els seus serveis.",
+      "ifFails": "Les aplicacions snap poden deixar d'actualitzar-se o iniciar-se. Revisa els registres de snapd; si no uses snaps, pot quedar aturat."
+    },
+    "modemmanager": {
+      "name": "ModemManager",
+      "what": "Detecta i gestiona mòdems de banda ampla mòbil.",
+      "ifFails": "Les connexions de banda ampla mòbil poden no configurar-se o reconnectar-se. És opcional en servidors sense mòdem."
+    },
+    "wpa-supplicant": {
+      "name": "Suplicant WPA",
+      "what": "Connecta la màquina a xarxes Wi-Fi protegides.",
+      "ifFails": "La connexió Wi-Fi pot caure o no reconnectar-se. Mantén accés per cable o consola; revisa la configuració Wi-Fi abans de reiniciar."
+    },
+    "avahi": {
+      "name": "Avahi",
+      "what": "Anuncia serveis a la xarxa local amb mDNS/DNS-SD.",
+      "ifFails": "La descoberta local d'impressores o serveis pot aturar-se. Normalment és opcional en un servidor; revisa els registres si en depens."
+    },
+    "cups": {
+      "name": "Impressió CUPS",
+      "what": "Executa el servei d'impressió local i les cues d'impressió.",
+      "ifFails": "La impressió i les cues deixen de funcionar. És opcional en servidors; revisa els registres si aquesta màquina gestiona impressores."
+    },
+    "bluetooth": {
+      "name": "Servei Bluetooth",
+      "what": "Gestiona adaptadors i connexions Bluetooth.",
+      "ifFails": "Els dispositius Bluetooth no es poden connectar. És opcional a la majoria de servidors i normalment pot quedar aturat."
+    },
+    "mariadb": {
+      "name": "MariaDB / MySQL",
+      "what": "Un servidor de bases de dades relacionals que fan servir moltes aplicacions web.",
+      "ifFails": "Les aplicacions perden la base de dades i poden donar errors o aturar-se. Comprova l'espai de disc i els registres abans de reiniciar; reiniciar talla totes les connexions, així que fes-ho quan les aplicacions puguin aguantar un tall breu."
+    },
+    "mysql": {
+      "name": "MySQL",
+      "what": "El servidor de bases de dades relacionals MySQL.",
+      "ifFails": "Les aplicacions perden la base de dades i poden donar errors o aturar-se. Comprova l'espai de disc i els registres abans de reiniciar; reiniciar talla totes les connexions, així que fes-ho quan les aplicacions puguin aguantar un tall breu."
+    },
+    "postgresql": {
+      "name": "PostgreSQL",
+      "what": "Un servidor de bases de dades relacionals conegut per la fiabilitat i les funcions SQL.",
+      "ifFails": "Les aplicacions perden la base de dades i poden donar errors o aturar-se. Comprova l'espai de disc i els registres abans de reiniciar; reiniciar talla totes les connexions, així que fes-ho quan les aplicacions puguin aguantar un tall breu."
+    },
+    "redis": {
+      "name": "Redis",
+      "what": "Un magatzem de dades en memòria per a memòria cau, cues i sessions.",
+      "ifFails": "Les memòries cau i sessions poden desaparèixer o les escriptures poden fallar. Revisa la memòria i els registres de persistència; reinicia només després de decidir si acceptes perdre dades volàtils."
+    },
+    "valkey": {
+      "name": "Valkey",
+      "what": "Un magatzem de dades en memòria de codi obert compatible amb Redis.",
+      "ifFails": "Les memòries cau i sessions poden desaparèixer o les escriptures poden fallar. Revisa la memòria i els registres de persistència; reinicia només després de decidir si acceptes perdre dades volàtils."
+    },
+    "memcached": {
+      "name": "Memcached",
+      "what": "Una memòria cau petita en memòria que accelera les aplicacions.",
+      "ifFails": "La memòria cau es perd i les aplicacions tornen a la font de dades més lenta. Normalment és segur reiniciar-lo, però les sessions que hi hagi es poden perdre."
+    },
+    "mongodb": {
+      "name": "MongoDB",
+      "what": "Una base de dades de documents que guarda registres semblants a JSON.",
+      "ifFails": "Les aplicacions perden la base de dades i poden donar errors o aturar-se. Comprova l'espai de disc, els registres i l'estat del conjunt de rèpliques abans de reiniciar."
+    },
+    "rabbitmq": {
+      "name": "RabbitMQ",
+      "what": "Un gestor de missatges que encua feines i esdeveniments entre serveis.",
+      "ifFails": "Els missatges es poden acumular i els treballadors deixen de rebre feines. Revisa l'espai de disc, la memòria i la interfície de gestió abans de reiniciar."
+    },
+    "php-fpm": {
+      "name": "PHP-FPM",
+      "what": "Executa aplicacions web PHP per a un servidor com Nginx o Apache.",
+      "ifFails": "Els llocs PHP donen errors o deixen de respondre. Revisa la configuració del pool i els registres de PHP abans de reiniciar."
+    },
+    "wireguard": {
+      "name": "VPN WireGuard",
+      "what": "Un túnel VPN ràpid per a accés remot o per connectar xarxes.",
+      "ifFails": "Els parells VPN perden el túnel i poden perdre accés a serveis privats. Revisa la configuració de la interfície i les claus; reiniciar-lo talla les connexions actives."
+    },
+    "tailscale": {
+      "name": "Tailscale",
+      "what": "Connecta aquesta màquina a una xarxa privada de Tailscale.",
+      "ifFails": "La màquina desapareix de la xarxa Tailscale i s'atura l'accés remot a través seu. Comprova l'autenticació i l'accés a la xarxa abans de reiniciar."
+    },
+    "openvpn": {
+      "name": "OpenVPN",
+      "what": "Un servidor o client VPN que proporciona accés de xarxa xifrat.",
+      "ifFails": "Els clients VPN perden el túnel i els serveis remots poden quedar inaccessibles. Revisa la configuració i els registres; reiniciar-lo talla les connexions actives."
+    },
+    "bind9": {
+      "name": "Servidor DNS BIND",
+      "what": "Un servidor DNS autoritatiu i recursiu.",
+      "ifFails": "La resolució DNS pot fallar per a tot el que en depèn. Valida la configuració amb named-checkconf i revisa els registres abans de reiniciar."
+    },
+    "unbound": {
+      "name": "Resolutor DNS Unbound",
+      "what": "Un resolutor DNS recursiu i validador.",
+      "ifFails": "La resolució de noms pot fallar per als clients i serveis locals. Revisa la configuració i els registres; una configuració dolenta li impedeix arrencar."
+    },
+    "dnsmasq": {
+      "name": "Dnsmasq",
+      "what": "Un petit reenviador DNS i servidor DHCP per a xarxes locals.",
+      "ifFails": "El DNS o DHCP local pot aturar-se, i els clients poden perdre adreces o resolució de noms. Revisa la configuració i els registres abans de reiniciar."
+    },
+    "smartd": {
+      "name": "Monitoratge S.M.A.R.T.",
+      "what": "Avisa de discs que estan fallant amb les seves dades de salut S.M.A.R.T.",
+      "ifFails": "Els avisos de salut dels discs poden no enviar-se. És opcional, però revisa els registres i torna'l a iniciar si depens del monitoratge de discs."
+    },
+    "lvm2": {
+      "name": "LVM",
+      "what": "Gestiona volums lògics i instantànies sobre discs físics.",
+      "ifFails": "Els volums lògics poden no activar-se i els sistemes de fitxers poden quedar no disponibles. Revisa els registres de LVM i l'estat dels discs; no forcís canvis sense còpia de seguretat."
+    },
+    "mdmonitor": {
+      "name": "RAID per programari de Linux",
+      "what": "Monitoritza i gestiona matrius RAID md.",
+      "ifFails": "Els problemes de la matriu poden passar desapercebuts i les matrius degradades poden no reparar-se. Revisa /proc/mdstat i els registres abans de reiniciar."
+    },
+    "zfs": {
+      "name": "OpenZFS",
+      "what": "Gestiona pools, conjunts de dades, instantànies i escombrats de ZFS.",
+      "ifFails": "Els conjunts de dades ZFS poden quedar no disponibles i els problemes del pool poden passar desapercebuts. Revisa zpool status i els registres; no importis mai a la força un pool malmès."
+    },
+    "talaia-agent": {
+      "name": "Agent de Talaia",
+      "what": "Connecta aquest servidor amb Talaia i executa les accions demanades des del panell.",
+      "ifFails": "El servidor apareix sense connexió a Talaia i no es pot gestionar des del panell. Revisa els registres de l'agent i la connexió amb el core abans de reiniciar."
+    },
+    "talaia-hostd": {
+      "name": "Servei d'amfitrió de Talaia",
+      "what": "Executa operacions privilegiades de l'amfitrió demanades pel panell Talaia.",
+      "ifFails": "Els serveis de l'amfitrió, les actualitzacions i les terminals de Talaia poden fallar. Revisa els registres i la connexió de l'agent abans de reiniciar."
+    },
+    "talaia-core": {
+      "name": "Core de Talaia",
+      "what": "El servidor Talaia que desa dades, serveix el panell i coordina els agents.",
+      "ifFails": "El panell i les connexions dels agents deixen de funcionar. Revisa la base de dades i els registres del core abans de reiniciar, i desa una còpia de les dades."
+    },
+    "httpd": {
+      "name": "Imatge del servidor HTTP Apache",
+      "what": "Serveix llocs web i fitxers estàtics des d'un contenidor.",
+      "ifFails": "El servei web d'aquest contenidor deixa de respondre. Revisa els registres del contenidor i la configuració muntada abans de reiniciar."
+    },
+    "traefik": {
+      "name": "Traefik",
+      "what": "Un proxy invers i balancejador de càrrega que descobreix serveis de contenidors.",
+      "ifFails": "Les rutes cap als contenidors poden deixar de funcionar i els certificats poden no renovar-se. Revisa els registres, els proveïdors i les etiquetes d'encaminament abans de reiniciar."
+    },
+    "nginx-proxy-manager": {
+      "name": "Nginx Proxy Manager",
+      "what": "Una interfície web que gestiona proxys inversos de Nginx i certificats TLS.",
+      "ifFails": "Els llocs proxificats o la renovació de certificats poden aturar-se. Revisa els registres i la base de dades; desa una còpia de la configuració."
+    },
+    "portainer": {
+      "name": "Portainer",
+      "what": "Una interfície web per gestionar contenidors, imatges i stacks de Docker.",
+      "ifFails": "La interfície de gestió de Docker deixa d'estar disponible, però els contenidors en marxa continuen. Revisa el volum de dades i els registres abans de reiniciar."
+    },
+    "portainer-agent": {
+      "name": "Agent de Portainer",
+      "what": "Permet que un servidor Portainer gestioni l'amfitrió Docker on s'executa.",
+      "ifFails": "Portainer ja no pot gestionar aquest amfitrió Docker. Revisa la connexió i els registres; els contenidors en marxa no es veuen afectats."
+    },
+    "watchtower": {
+      "name": "Watchtower",
+      "what": "Actualitza periòdicament els contenidors en marxa quan canvien les seves imatges.",
+      "ifFails": "Els contenidors deixen d'actualitzar-se automàticament. Revisa els registres i la planificació; és opcional si actualitzes les imatges d'una altra manera."
+    },
+    "grafana": {
+      "name": "Grafana",
+      "what": "Crea quadres de comandament i gràfics a partir de mètriques, registres i altres fonts.",
+      "ifFails": "Els quadres i alertes de Grafana deixen de carregar-se. Revisa la base de dades i les connexions de les fonts abans de reiniciar."
+    },
+    "prometheus": {
+      "name": "Prometheus",
+      "what": "Recull i desa mètriques de sèries temporals i avalua regles d'alerta.",
+      "ifFails": "Les mètriques deixen de recollir-se i les alertes deixen de disparar-se. Comprova l'espai de disc, la configuració i els objectius; reinicia només després de revisar l'estat del WAL."
+    },
+    "node-exporter": {
+      "name": "Prometheus Node Exporter",
+      "what": "Exposa mètriques de CPU, memòria, disc i xarxa de l'amfitrió.",
+      "ifFails": "Les mètriques de l'amfitrió desapareixen dels quadres i alertes. Revisa els registres i el port; reiniciar-lo no afecta els serveis de l'amfitrió."
+    },
+    "cadvisor": {
+      "name": "cAdvisor",
+      "what": "Recull mètriques d'ús de recursos dels contenidors Docker.",
+      "ifFails": "Les mètriques dels contenidors desapareixen dels quadres i alertes. Revisa els registres i l'accés al socket de Docker abans de reiniciar."
+    },
+    "loki": {
+      "name": "Grafana Loki",
+      "what": "Desa i consulta registres en un magatzem compacte basat en etiquetes.",
+      "ifFails": "La cerca de registres i les alertes basades en registres deixen de funcionar; els registres nous es poden descartar. Comprova l'espai de disc i la configuració abans de reiniciar."
+    },
+    "promtail": {
+      "name": "Grafana Promtail",
+      "what": "Envia registres de l'amfitrió o dels contenidors a Grafana Loki.",
+      "ifFails": "Els registres nous deixen d'arribar a Loki, però les aplicacions continuen funcionant. Revisa la configuració i la connexió amb Loki abans de reiniciar."
+    },
+    "wordpress": {
+      "name": "WordPress",
+      "what": "Publica llocs i blocs i en desa el contingut en una base de dades.",
+      "ifFails": "El lloc dóna errors o deixa de carregar-se. Revisa els registres del contenidor, la connexió a la base de dades i l'espai de disc abans de reiniciar."
+    },
+    "nextcloud": {
+      "name": "Nextcloud",
+      "what": "Ofereix sincronització, compartició i col·laboració de fitxers privada.",
+      "ifFails": "Els usuaris no poden sincronitzar ni obrir fitxers. Revisa la base de dades, el volum de dades i els registres abans de reiniciar; no esborris el volum de dades."
+    },
+    "gitea": {
+      "name": "Gitea",
+      "what": "Un servei Git autoallotjat per a repositoris, incidències i sol·licituds d'incorporació.",
+      "ifFails": "L'accés Git i la interfície web deixen de funcionar. Revisa la base de dades, el volum de repositoris i els registres abans de reiniciar."
+    },
+    "vaultwarden": {
+      "name": "Vaultwarden",
+      "what": "Un servidor de gestor de contrasenyes lleuger compatible amb Bitwarden.",
+      "ifFails": "Els clients de contrasenyes no poden sincronitzar ni iniciar sessió. Revisa la base de dades i els registres abans de reiniciar; desa una còpia del volum de dades."
+    },
+    "minio": {
+      "name": "MinIO",
+      "what": "Un servidor d'emmagatzematge d'objectes compatible amb S3 per a fitxers i còpies.",
+      "ifFails": "Les aplicacions i còpies no poden llegir ni escriure objectes. Comprova l'espai de disc, els volums de dades i la salut del clúster abans de reiniciar."
+    },
+    "adminer": {
+      "name": "Adminer",
+      "what": "Una petita interfície web per gestionar bases de dades SQL.",
+      "ifFails": "La interfície web de bases de dades no està disponible, però les bases de dades continuen funcionant. Revisa els registres i l'accés a la xarxa abans de reiniciar."
+    },
+    "phpmyadmin": {
+      "name": "phpMyAdmin",
+      "what": "Una interfície web per gestionar bases de dades MySQL i MariaDB.",
+      "ifFails": "La interfície web de bases de dades no està disponible, però les bases de dades continuen funcionant. Revisa el servidor web, PHP i la connexió a la base de dades abans de reiniciar."
+    },
+    "pgadmin": {
+      "name": "pgAdmin",
+      "what": "Una interfície web per gestionar bases de dades PostgreSQL.",
+      "ifFails": "La interfície web de PostgreSQL no està disponible, però les bases de dades continuen funcionant. Revisa el volum de dades i la connexió a la base de dades abans de reiniciar."
+    },
+    "uptime-kuma": {
+      "name": "Uptime Kuma",
+      "what": "Monitoritza llocs i serveis i envia avisos quan estan caiguts.",
+      "ifFails": "El monitoratge i els avisos de caiguda s'aturen. Revisa el volum de dades i els registres; les comprovacions es reprenen quan torna a iniciar-se."
+    },
+    "pihole": {
+      "name": "Pi-hole",
+      "what": "Un forat DNS i servidor DNS local que bloqueja dominis de publicitat.",
+      "ifFails": "Els clients que l'usen perden DNS i poden perdre l'accés a internet. Revisa la configuració i el DNS superior; mantén un altre resolutor disponible si pots."
+    },
+    "adguard": {
+      "name": "AdGuard Home",
+      "what": "Un servidor DNS que filtra publicitat i seguiment a la xarxa local.",
+      "ifFails": "Els clients que l'usen perden DNS i poden perdre l'accés a internet. Revisa la configuració i el DNS superior; mantén un altre resolutor disponible si pots."
+    },
+    "certbot": {
+      "name": "Certbot",
+      "what": "Obté i renova certificats TLS de Let's Encrypt.",
+      "ifFails": "Els certificats poden caducar i els llocs HTTPS mostraran errors. Revisa els registres, el DNS i l'accés als ports 80/443; executa'l manualment només després d'arreglar la causa."
+    },
+    "registry": {
+      "name": "Registre Docker",
+      "what": "Desa i serveix imatges Docker per a descàrregues i pujades.",
+      "ifFails": "Les descàrregues i pujades d'imatges fallen, i els desplegaments que necessiten imatges noves s'aturen. Comprova l'espai de disc, l'autenticació i el backend d'emmagatzematge abans de reiniciar."
+    }
+  }
+}

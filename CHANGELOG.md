@@ -18,6 +18,12 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.6.12] - 2026-10-30
+
+### Added
+
+- Panel: "What is this?" information on services and containers — for the usual Debian services and Docker images it says what they do, how important they are and what to do if they fail; anything else shows where it comes from (stack, Compose service, image or the systemd description). Essential services are marked and their warning is repeated before stopping or restarting them.
+
 ## [0.6.11] - 2026-10-30
 
 ### Added
@@ -768,7 +774,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.6.11...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.6.12...HEAD
+[0.6.12]: https://github.com/catlinux/Talaia/releases/tag/v0.6.12
 [0.6.11]: https://github.com/catlinux/Talaia/releases/tag/v0.6.11
 [0.6.10]: https://github.com/catlinux/Talaia/releases/tag/v0.6.10
 [0.6.9]: https://github.com/catlinux/Talaia/releases/tag/v0.6.9

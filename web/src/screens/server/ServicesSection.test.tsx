@@ -139,6 +139,21 @@ describe('systemd services section', () => {
     expect(screen.getByRole('button', { name: 'Inactive (2)' })).toBeTruthy()
   })
 
+  it('marks essential units and repeats their warning before stopping them', async () => {
+    const { api } = fakeServices()
+    renderSection(api)
+    await screen.findByText('6 services')
+
+    const row = rowFor('docker.service')
+    expect(within(row).getByText('Essential')).toBeTruthy()
+    fireEvent.click(within(row).getByRole('button', { name: 'Stop' }))
+
+    const dialog = screen.getByRole('dialog')
+    expect(
+      within(dialog).getByText(/restarting Docker restarts its running containers/),
+    ).toBeTruthy()
+  })
+
   it('filters by state and searches name or description', async () => {
     const { api } = fakeServices()
     renderSection(api)

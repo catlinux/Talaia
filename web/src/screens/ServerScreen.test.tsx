@@ -484,12 +484,12 @@ describe('ServerScreen', () => {
       within(rows[0]!)
         .getAllByRole('button')
         .map((b) => b.textContent),
-    ).toEqual(['Logs', 'Terminal', 'Restart', 'Stop', 'Remove'])
+    ).toEqual(['i', 'Logs', 'Terminal', 'Restart', 'Stop', 'Remove'])
     expect(
       within(rows[1]!)
         .getAllByRole('button')
         .map((b) => b.textContent),
-    ).toEqual(['Logs', 'Start', 'Remove'])
+    ).toEqual(['i', 'Logs', 'Start', 'Remove'])
   })
 
   it('runs an action as a job, follows it and reloads the list', async () => {

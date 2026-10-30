@@ -13,6 +13,7 @@ import {
   ConfirmDialog,
   DataTable,
   FilterBar,
+  InfoTip,
   Menu,
   PageHeader,
   Select,
@@ -22,6 +23,7 @@ import {
   type MenuEntry,
   type Status,
 } from '../components/ui'
+import { WhatIsThis } from '../catalog/WhatIsThis'
 import { Link, useSetQuery, useRoute } from '../router'
 import { formatTime } from './fleet/format'
 import { stackPath } from './server/serverTabs'
@@ -374,9 +376,14 @@ export function Stacks({
       id: 'name',
       header: t('stacks.columns.name'),
       cell: (row) => (
-        <Link to={stackPath(row.serverId, row.stack)} className="fleetwide__strong">
-          {row.stack}
-        </Link>
+        <span className="fleetwide__name-line">
+          <Link to={stackPath(row.serverId, row.stack)} className="fleetwide__strong">
+            {row.stack}
+          </Link>
+          <InfoTip>
+            <WhatIsThis target={{ kind: 'stack', name: row.stack, containers: row.containers }} />
+          </InfoTip>
+        </span>
       ),
     },
     {
