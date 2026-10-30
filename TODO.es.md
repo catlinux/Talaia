@@ -132,7 +132,7 @@ tareas concretas de la fase actual y de la siguiente.
 
 - [x] Maqueta estática del diseño nuevo, aprobada por el mantenedor
 - [x] Tokens y estilos base sobrios (sin fondos con puntos, resplandores ni degradados)
-- [ ] Componentes comunes: cabecera de página, tabla de datos, insignia de estado, cajón, menú, aviso, confirmación
+- [x] Componentes comunes: cabecera de página, tabla de datos, insignia de estado, cajón, menú, aviso, confirmación
 - [ ] URLs reales, barra lateral agrupada y barra superior (migas, campana de alertas, menú de usuario)
 - [ ] Resumen con «Requiere atención» primero; servidores en tabla
 - [ ] Ficha de servidor con cabecera fija y pestañas como rutas

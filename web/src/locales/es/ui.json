@@ -1,0 +1,30 @@
+{
+  "status": {
+    "ok": "Correcto",
+    "warn": "Aviso",
+    "crit": "Crítico",
+    "offline": "Sin conexión",
+    "unknown": "Desconocido"
+  },
+  "severity": {
+    "critical": "Crítico",
+    "warning": "Aviso",
+    "info": "Información"
+  },
+  "retry": "Reintentar",
+  "close": "Cerrar",
+  "cancel": "Cancelar",
+  "confirm": "Confirmar",
+  "search": "Buscar",
+  "empty": "Aquí no hay nada todavía",
+  "loading": "Cargando",
+  "selected_one": "{{count}} seleccionado",
+  "selected_other": "{{count}} seleccionados",
+  "clearSelection": "Quitar selección",
+  "confirmText": "Escribe {{text}} para confirmar",
+  "sortAscending": "Ordenar de forma ascendente",
+  "sortDescending": "Ordenar de forma descendente",
+  "selectAll": "Seleccionar todo",
+  "selectRow": "Seleccionar fila",
+  "menu": "Acciones"
+}

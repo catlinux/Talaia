@@ -13,6 +13,12 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+## [0.6.6] - 2026-10-30
+
+### Añadido
+
+- Panel: bloques compartidos para las nuevas pantallas — cabecera de página, tabla de datos (orden, filtros, selección, agrupación, estados de carga/vacío/error, tarjetas en móvil), insignia de estado, cajón lateral, menú, avisos y diálogo de confirmación (bloque panel v2, aún sin uso en las pantallas).
+
 ## [0.6.5] - 2026-10-30
 
 ### Cambiado
@@ -732,7 +738,8 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
   `.gitattributes` y `.gitignore`.
 - Licencia WNCL-1.0 aplicada: archivo `LICENSE` y sección de créditos en los README.
 
-[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.6.5...HEAD
+[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.6.6...HEAD
+[0.6.6]: https://github.com/catlinux/Talaia/releases/tag/v0.6.6
 [0.6.5]: https://github.com/catlinux/Talaia/releases/tag/v0.6.5
 [0.6.4]: https://github.com/catlinux/Talaia/releases/tag/v0.6.4
 [0.6.3]: https://github.com/catlinux/Talaia/releases/tag/v0.6.3

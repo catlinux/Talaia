@@ -18,6 +18,12 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.6.6] - 2026-10-30
+
+### Added
+
+- Panel: shared building blocks for the new screens — page header, data table (sorting, filters, selection, grouping, loading/empty/error states, cards on mobile), status badge, side drawer, menu, toasts and confirmation dialog (panel v2 block, not used by the screens yet).
+
 ## [0.6.5] - 2026-10-30
 
 ### Changed
@@ -732,7 +738,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.6.5...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.6.6...HEAD
+[0.6.6]: https://github.com/catlinux/Talaia/releases/tag/v0.6.6
 [0.6.5]: https://github.com/catlinux/Talaia/releases/tag/v0.6.5
 [0.6.4]: https://github.com/catlinux/Talaia/releases/tag/v0.6.4
 [0.6.3]: https://github.com/catlinux/Talaia/releases/tag/v0.6.3

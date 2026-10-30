@@ -13,6 +13,7 @@ import caServer from '../locales/ca/server.json'
 import caAlerts from '../locales/ca/alerts.json'
 import caAlertsSettings from '../locales/ca/alertsSettings.json'
 import caSettings from '../locales/ca/settings.json'
+import caUI from '../locales/ca/ui.json'
 import caUsers from '../locales/ca/users.json'
 import caValidation from '../locales/ca/validation.json'
 import enAbout from '../locales/en/about.json'
@@ -26,6 +27,7 @@ import enServer from '../locales/en/server.json'
 import enAlerts from '../locales/en/alerts.json'
 import enAlertsSettings from '../locales/en/alertsSettings.json'
 import enSettings from '../locales/en/settings.json'
+import enUI from '../locales/en/ui.json'
 import enUsers from '../locales/en/users.json'
 import enValidation from '../locales/en/validation.json'
 import esAbout from '../locales/es/about.json'
@@ -39,6 +41,7 @@ import esServer from '../locales/es/server.json'
 import esAlerts from '../locales/es/alerts.json'
 import esAlertsSettings from '../locales/es/alertsSettings.json'
 import esSettings from '../locales/es/settings.json'
+import esUI from '../locales/es/ui.json'
 import esUsers from '../locales/es/users.json'
 import esValidation from '../locales/es/validation.json'
 
@@ -65,6 +68,7 @@ void i18n
         alerts: caAlerts,
         alertsSettings: caAlertsSettings,
         users: caUsers,
+        ui: caUI,
         auth: caAuth,
         errors: caErrors,
         validation: caValidation,
@@ -80,6 +84,7 @@ void i18n
         alerts: esAlerts,
         alertsSettings: esAlertsSettings,
         users: esUsers,
+        ui: esUI,
         auth: esAuth,
         errors: esErrors,
         validation: esValidation,
@@ -95,6 +100,7 @@ void i18n
         alerts: enAlerts,
         alertsSettings: enAlertsSettings,
         users: enUsers,
+        ui: enUI,
         auth: enAuth,
         errors: enErrors,
         validation: enValidation,
@@ -111,6 +117,7 @@ void i18n
       'server',
       'settings',
       'users',
+      'ui',
       'auth',
       'errors',
       'validation',

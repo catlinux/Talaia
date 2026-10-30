@@ -1,0 +1,30 @@
+{
+  "status": {
+    "ok": "Correct",
+    "warn": "Warning",
+    "crit": "Critical",
+    "offline": "Offline",
+    "unknown": "Unknown"
+  },
+  "severity": {
+    "critical": "Critical",
+    "warning": "Warning",
+    "info": "Info"
+  },
+  "retry": "Retry",
+  "close": "Close",
+  "cancel": "Cancel",
+  "confirm": "Confirm",
+  "search": "Search",
+  "empty": "Nothing here yet",
+  "loading": "Loading",
+  "selected_one": "{{count}} selected",
+  "selected_other": "{{count}} selected",
+  "clearSelection": "Clear selection",
+  "confirmText": "Type {{text}} to confirm",
+  "sortAscending": "Sort ascending",
+  "sortDescending": "Sort descending",
+  "selectAll": "Select all",
+  "selectRow": "Select row",
+  "menu": "Actions"
+}

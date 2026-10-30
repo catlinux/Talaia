@@ -1,0 +1,30 @@
+{
+  "status": {
+    "ok": "Correcte",
+    "warn": "Avís",
+    "crit": "Crític",
+    "offline": "Sense connexió",
+    "unknown": "Desconegut"
+  },
+  "severity": {
+    "critical": "Crític",
+    "warning": "Avís",
+    "info": "Informació"
+  },
+  "retry": "Reintenta",
+  "close": "Tanca",
+  "cancel": "Cancel·la",
+  "confirm": "Confirma",
+  "search": "Cerca",
+  "empty": "Encara no hi ha res",
+  "loading": "S'està carregant",
+  "selected_one": "{{count}} seleccionat",
+  "selected_other": "{{count}} seleccionats",
+  "clearSelection": "Treu la selecció",
+  "confirmText": "Escriu {{text}} per confirmar",
+  "sortAscending": "Ordena de forma ascendent",
+  "sortDescending": "Ordena de forma descendent",
+  "selectAll": "Selecciona-ho tot",
+  "selectRow": "Selecciona la fila",
+  "menu": "Accions"
+}
