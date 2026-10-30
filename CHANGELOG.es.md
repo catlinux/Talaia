@@ -13,6 +13,12 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+## [0.6.8] - 2026-10-30
+
+### Añadido
+
+- Panel: nueva página de inicio Resumen — una franja de estado, una lista «Requiere atención» priorizada en la que cada elemento tiene su acción (alertas críticas, servidores sin conexión, discos llenos, actualizaciones de seguridad, reinicios pendientes, actualizaciones del agente), una tabla compacta de servidores y la actividad reciente.
+
 ## [0.6.7] - 2026-10-30
 
 ### Cambiado
@@ -744,7 +750,8 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
   `.gitattributes` y `.gitignore`.
 - Licencia WNCL-1.0 aplicada: archivo `LICENSE` y sección de créditos en los README.
 
-[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.6.7...HEAD
+[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.6.8...HEAD
+[0.6.8]: https://github.com/catlinux/Talaia/releases/tag/v0.6.8
 [0.6.7]: https://github.com/catlinux/Talaia/releases/tag/v0.6.7
 [0.6.6]: https://github.com/catlinux/Talaia/releases/tag/v0.6.6
 [0.6.5]: https://github.com/catlinux/Talaia/releases/tag/v0.6.5

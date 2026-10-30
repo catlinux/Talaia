@@ -124,7 +124,7 @@ describe('panel authentication', () => {
     expect(next.disabled).toBe(false)
 
     fireEvent.click(next)
-    expect(await screen.findByText('vps-web-01')).toBeTruthy()
+    expect((await screen.findAllByText('vps-web-01')).length).toBeGreaterThan(0)
   })
 
   it('verifies the code of a returning user', async () => {
@@ -137,7 +137,7 @@ describe('panel authentication', () => {
     fireEvent.change(screen.getByLabelText('Six-digit code'), { target: { value: '123456' } })
     fireEvent.submit(screen.getByRole('form'))
 
-    expect(await screen.findByText('vps-web-01')).toBeTruthy()
+    expect((await screen.findAllByText('vps-web-01')).length).toBeGreaterThan(0)
     expect(verifyTotp).toHaveBeenCalledWith({ code: '123456' })
   })
 
@@ -180,13 +180,13 @@ describe('panel authentication', () => {
       fakeApi({ session: () => Promise.resolve({ username: 'admin', stage: 'full' }), logout }),
     )
 
-    expect(await screen.findByText('vps-web-01')).toBeTruthy()
+    expect((await screen.findAllByText('vps-web-01')).length).toBeGreaterThan(0)
     fireEvent.click(screen.getByRole('button', { name: 'admin' }))
     fireEvent.click(screen.getByRole('menuitem', { name: 'Sign out' }))
 
     expect(await screen.findByRole('heading', { name: 'Sign in' })).toBeTruthy()
     expect(logout).toHaveBeenCalledTimes(1)
-    expect(screen.queryByText('vps-web-01')).toBeNull()
+    expect(screen.queryAllByText('vps-web-01')).toHaveLength(0)
   })
 
   it('signs in with the PIN of a remembered device', async () => {
@@ -202,13 +202,13 @@ describe('panel authentication', () => {
     fireEvent.change(await screen.findByLabelText('PIN'), { target: { value: '123456' } })
     fireEvent.submit(screen.getByRole('form'))
 
-    expect(await screen.findByText('vps-web-01')).toBeTruthy()
+    expect((await screen.findAllByText('vps-web-01')).length).toBeGreaterThan(0)
     expect(pinLogin).toHaveBeenCalledWith('123456')
   })
 
   it('returns to the login when a later call finds no session', async () => {
     renderPanel(fakeApi({ session: () => Promise.resolve({ username: 'admin', stage: 'full' }) }))
-    expect(await screen.findByText('vps-web-01')).toBeTruthy()
+    expect((await screen.findAllByText('vps-web-01')).length).toBeGreaterThan(0)
 
     // Any call of the panel that answers "no session" sends the user back.
     const stale = createAuthApi(() =>
@@ -222,7 +222,7 @@ describe('panel authentication', () => {
     await stale.session().catch(() => undefined)
 
     expect(await screen.findByRole('heading', { name: 'Sign in' })).toBeTruthy()
-    expect(screen.queryByText('vps-web-01')).toBeNull()
+    expect(screen.queryAllByText('vps-web-01')).toHaveLength(0)
     expect((await screen.findByRole('status')).textContent).toBe(
       'The session has expired. Sign in again.',
     )
@@ -233,7 +233,7 @@ describe('panel authentication', () => {
     ['session_revoked', 'Your session has been revoked. Sign in again.'],
   ] as const)('shows the specific login message for %s', async (code, message) => {
     renderPanel(fakeApi({ session: () => Promise.resolve({ username: 'admin', stage: 'full' }) }))
-    expect(await screen.findByText('vps-web-01')).toBeTruthy()
+    expect((await screen.findAllByText('vps-web-01')).length).toBeGreaterThan(0)
     const stale = createAuthApi(() =>
       Promise.resolve(new Response(JSON.stringify({ error: { code } }), { status: 401 })),
     )

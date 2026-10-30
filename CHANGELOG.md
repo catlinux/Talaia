@@ -18,6 +18,12 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.6.8] - 2026-10-30
+
+### Added
+
+- Panel: new Overview home page — a status strip, a prioritised "Needs attention" list where every item has its action (critical alerts, offline servers, full disks, security updates, pending reboots, agent updates), a compact servers table and recent activity.
+
 ## [0.6.7] - 2026-10-30
 
 ### Changed
@@ -744,7 +750,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.6.7...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.6.8...HEAD
+[0.6.8]: https://github.com/catlinux/Talaia/releases/tag/v0.6.8
 [0.6.7]: https://github.com/catlinux/Talaia/releases/tag/v0.6.7
 [0.6.6]: https://github.com/catlinux/Talaia/releases/tag/v0.6.6
 [0.6.5]: https://github.com/catlinux/Talaia/releases/tag/v0.6.5

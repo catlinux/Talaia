@@ -1,0 +1,452 @@
+/* Overview: status strip, actionable attention list, server table and activity. */
+
+.overview {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.overview__cols {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 330px;
+  gap: 20px;
+  align-items: start;
+}
+
+.overview__main {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+}
+
+.overview .ui-page-header__actions:has(.addserver) {
+  flex-basis: 100%;
+  order: 3;
+}
+
+/* Status strip */
+
+.overview-strip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.overview-strip__cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  padding: 14px 16px;
+  border-right: 1px solid var(--line);
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.overview-strip__cell:last-child {
+  border-right: 0;
+}
+
+.overview-strip__cell:hover {
+  background: var(--sunken);
+  text-decoration: none;
+}
+
+.overview-strip__label {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.overview-strip__value {
+  overflow: hidden;
+  font-size: 22px;
+  font-weight: 600;
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.overview-strip__detail {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.overview-strip__crit {
+  color: var(--crit);
+}
+
+.overview-strip__muted {
+  color: var(--muted);
+}
+
+.overview-strip__ok {
+  color: var(--ok);
+  font-weight: 500;
+}
+
+.overview-strip__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.overview-strip__badge {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 7px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.overview-strip__badge--crit {
+  background: var(--crit-soft);
+  color: var(--crit);
+}
+
+.overview-strip__badge--warn {
+  background: var(--warn-soft);
+  color: var(--warn);
+}
+
+.overview-strip__cell--skeleton {
+  gap: 8px;
+}
+
+/* Shared panels */
+
+.overview-panel {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.overview-panel__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 10px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+.overview-panel__title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.overview-panel__count {
+  color: var(--muted);
+  font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
+}
+
+.overview-panel__link {
+  margin-left: auto;
+  font-size: 13px;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.overview-panel__link:hover {
+  text-decoration: underline;
+}
+
+/* Needs attention */
+
+.overview-attention__skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px 16px;
+}
+
+.overview-attention__empty {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 22px 16px;
+  color: var(--muted);
+}
+
+.overview-attention__empty p {
+  margin: 0;
+}
+
+.overview-attention__empty-mark {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--ok-soft);
+  color: var(--ok);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.overview-attention__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.overview-attention__item {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  padding: 11px 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+.overview-attention__item:last-child {
+  border-bottom: 0;
+}
+
+.overview-attention__mark {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.overview-attention__item--crit .overview-attention__mark {
+  background: var(--crit-soft);
+  color: var(--crit);
+}
+
+.overview-attention__item--warn .overview-attention__mark {
+  background: var(--warn-soft);
+  color: var(--warn);
+}
+
+.overview-attention__item--info .overview-attention__mark {
+  background: var(--sunken);
+  color: var(--ink-2);
+}
+
+.overview-attention__body {
+  min-width: 0;
+}
+
+.overview-attention__message {
+  margin: 0;
+  font-size: 13.5px;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+
+.overview-attention__context {
+  margin: 2px 0 0;
+  color: var(--muted);
+  font-size: 12.5px;
+  overflow-wrap: anywhere;
+}
+
+.overview-attention__action {
+  height: 28px;
+  padding: 0 10px;
+  font-size: 13px;
+  text-decoration: none;
+}
+
+.overview-attention__more {
+  width: 100%;
+  padding: 10px 16px;
+  border: 0;
+  border-top: 1px solid var(--line);
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+}
+
+.overview-attention__more:hover {
+  background: var(--sunken);
+}
+
+/* Compact server table */
+
+.overview-servers .ui-table-wrap {
+  border: 0;
+  border-radius: 0;
+}
+
+.overview-usage {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 102px;
+}
+
+.overview-usage__track {
+  width: 64px;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 3px;
+  background: var(--bar);
+}
+
+.overview-usage__fill {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: var(--ink-2);
+  opacity: 0.55;
+}
+
+.overview-usage--warn .overview-usage__fill {
+  background: var(--warn);
+  opacity: 1;
+}
+
+.overview-usage--crit .overview-usage__fill {
+  background: var(--crit);
+  opacity: 1;
+}
+
+.overview-usage__value {
+  width: 34px;
+  color: var(--muted);
+  font-family: var(--f-mono);
+  font-size: 12px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Loading, error and refresh notices */
+
+.overview-skeleton__line {
+  display: block;
+  width: 88%;
+  height: 12px;
+  border-radius: 3px;
+  background: var(--bar);
+}
+
+.overview-skeleton__line--short {
+  width: 42%;
+}
+
+.overview-skeleton__line--value {
+  width: 64%;
+  height: 24px;
+}
+
+.overview-skeleton-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px 16px;
+}
+
+.overview-error {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid color-mix(in srgb, var(--crit) 40%, var(--line));
+  border-radius: 8px;
+  background: var(--crit-soft);
+  color: var(--crit);
+}
+
+.overview-error p {
+  margin: 0;
+}
+
+.overview__notice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 10px 14px;
+  border: 1px solid color-mix(in srgb, var(--warn) 40%, transparent);
+  border-radius: 6px;
+  background: var(--warn-soft);
+  font-size: 13px;
+}
+
+.overview__notice-retry {
+  padding: 2px 8px;
+  border: 1px solid var(--line-strong);
+  border-radius: 4px;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 12.5px;
+  cursor: pointer;
+}
+
+.overview__notice-retry:hover {
+  background: var(--sunken);
+}
+
+@media (max-width: 1100px) {
+  .overview__cols {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 760px) {
+  .overview-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .overview-strip__cell {
+    border-bottom: 1px solid var(--line);
+  }
+
+  .overview-strip__cell:nth-child(2n) {
+    border-right: 0;
+  }
+
+  .overview-strip__cell:nth-child(n + 3) {
+    border-bottom: 0;
+  }
+
+  .overview-strip__value {
+    font-size: 19px;
+  }
+
+  .overview-servers .ui-table-wrap {
+    border: 0;
+  }
+}
+
+@media (max-width: 640px) {
+  .overview-attention__item {
+    grid-template-columns: 22px minmax(0, 1fr);
+  }
+
+  .overview-attention__action {
+    grid-column: 2;
+    justify-self: start;
+  }
+}

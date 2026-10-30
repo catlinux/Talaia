@@ -1,0 +1,58 @@
+{
+  "title": "Resumen",
+  "subtitle": "Actualizado a las {{time}}",
+  "loading": "Cargando el resumen…",
+  "error": "No se ha podido cargar el resumen.",
+  "retry": "Reintentar",
+  "refreshFailed": "No se ha podido actualizar el resumen: se muestran los últimos datos.",
+  "strip": {
+    "servers": "Servidores",
+    "serversValue": "{{online}} / {{total}}",
+    "offline_one": "{{count}} sin conexión",
+    "offline_other": "{{count}} sin conexión",
+    "alerts": "Alertas",
+    "alertsNone": "Ninguna",
+    "alertsUnavailable": "No disponible",
+    "critical_one": "{{count}} crítica",
+    "critical_other": "{{count}} críticas",
+    "warning_one": "{{count}} aviso",
+    "warning_other": "{{count}} avisos",
+    "security": "Actualizaciones de seguridad",
+    "securityServers_one": "en {{count}} servidor",
+    "securityServers_other": "en {{count}} servidores",
+    "reboots": "Reinicios pendientes"
+  },
+  "attention": {
+    "title": "Requiere atención",
+    "empty": "No hay nada que requiera tu atención",
+    "showAll": "Mostrar todo ({{count}})",
+    "showLess": "Mostrar menos",
+    "offline": "{{server}} está sin conexión",
+    "disk": "Disco al {{percent}} en {{server}}",
+    "security_one": "{{count}} actualización de seguridad en {{server}}",
+    "security_other": "{{count}} actualizaciones de seguridad en {{server}}",
+    "reboot": "{{server}} necesita reiniciarse",
+    "agent": "Hay una actualización del agente para {{server}}",
+    "agentManual": "El agente de {{server}} necesita una actualización manual",
+    "actions": {
+      "openAlert": "Abrir la alerta",
+      "openServer": "Abrir el servidor",
+      "viewUpdates": "Ver las actualizaciones",
+      "updateAgent": "Actualizar el agente"
+    }
+  },
+  "servers": {
+    "title": "Servidores",
+    "all": "Todos los servidores",
+    "empty": "Aún no hay servidores",
+    "status": "Estado",
+    "name": "Servidor",
+    "cpu": "CPU",
+    "ram": "RAM",
+    "disk": "Disco",
+    "containers": "Contenedores",
+    "alerts": "Alertas",
+    "unknown": "—",
+    "usage": "{{label}}: {{value}}"
+  }
+}

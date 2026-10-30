@@ -24,6 +24,7 @@ import { About } from './screens/About'
 import { Audit } from './screens/Audit'
 import { Alerts } from './screens/Alerts'
 import { Fleet } from './screens/Fleet'
+import { Overview } from './screens/Overview'
 import { ServerScreen } from './screens/ServerScreen'
 import { Settings } from './screens/Settings'
 import { Users } from './screens/Users'
@@ -164,7 +165,9 @@ function PanelShell({
   const isStacks = matchRoute('/stacks', path) !== null
 
   let page: ReactNode
-  if (path === '/' || isServers) {
+  if (path === '/') {
+    page = <Overview client={fleetClient} alertsApi={canAlerts ? alerts : undefined} />
+  } else if (isServers) {
     page = (
       <Fleet
         client={fleetClient}

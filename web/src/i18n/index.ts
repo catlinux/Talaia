@@ -9,6 +9,7 @@ import caCommon from '../locales/ca/common.json'
 import caErrors from '../locales/ca/errors.json'
 import caFleet from '../locales/ca/fleet.json'
 import caMetrics from '../locales/ca/metrics.json'
+import caOverview from '../locales/ca/overview.json'
 import caServer from '../locales/ca/server.json'
 import caAlerts from '../locales/ca/alerts.json'
 import caAlertsSettings from '../locales/ca/alertsSettings.json'
@@ -23,6 +24,7 @@ import enCommon from '../locales/en/common.json'
 import enErrors from '../locales/en/errors.json'
 import enFleet from '../locales/en/fleet.json'
 import enMetrics from '../locales/en/metrics.json'
+import enOverview from '../locales/en/overview.json'
 import enServer from '../locales/en/server.json'
 import enAlerts from '../locales/en/alerts.json'
 import enAlertsSettings from '../locales/en/alertsSettings.json'
@@ -37,6 +39,7 @@ import esCommon from '../locales/es/common.json'
 import esErrors from '../locales/es/errors.json'
 import esFleet from '../locales/es/fleet.json'
 import esMetrics from '../locales/es/metrics.json'
+import esOverview from '../locales/es/overview.json'
 import esServer from '../locales/es/server.json'
 import esAlerts from '../locales/es/alerts.json'
 import esAlertsSettings from '../locales/es/alertsSettings.json'
@@ -63,6 +66,7 @@ void i18n
         audit: caAudit,
         fleet: caFleet,
         metrics: caMetrics,
+        overview: caOverview,
         server: caServer,
         settings: caSettings,
         alerts: caAlerts,
@@ -79,6 +83,7 @@ void i18n
         audit: esAudit,
         fleet: esFleet,
         metrics: esMetrics,
+        overview: esOverview,
         server: esServer,
         settings: esSettings,
         alerts: esAlerts,
@@ -95,6 +100,7 @@ void i18n
         audit: enAudit,
         fleet: enFleet,
         metrics: enMetrics,
+        overview: enOverview,
         server: enServer,
         settings: enSettings,
         alerts: enAlerts,
@@ -114,6 +120,7 @@ void i18n
       'audit',
       'fleet',
       'metrics',
+      'overview',
       'server',
       'settings',
       'users',

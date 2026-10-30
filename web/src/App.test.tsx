@@ -21,6 +21,7 @@ import type { AdminUser, UsersApi } from './api/users'
 import i18n from './i18n'
 import { ATTRIBUTION } from './screens/About'
 
+const overviewTitles = { ca: 'Resum', es: 'Resumen', en: 'Overview' } as const
 const fleetTitles = { ca: 'Flota', es: 'Flota', en: 'Fleet' } as const
 const settingsTitles = { ca: 'Configuració', es: 'Ajustes', en: 'Settings' } as const
 const aboutTitles = { ca: 'Sobre Talaia', es: 'Acerca de Talaia', en: 'About Talaia' } as const
@@ -333,18 +334,18 @@ describe('App', () => {
     window.history.replaceState({}, '', '/')
   })
 
-  it('shows the Fleet screen by default', async () => {
+  it('shows the Overview screen by default', async () => {
     renderApp()
 
     expect(i18n.resolvedLanguage).toBe('en')
-    expect(await screen.findByText('vps-web-01')).toBeTruthy()
-    expect(currentTitle()).toBe(fleetTitles.en)
+    expect((await screen.findAllByText('vps-web-01')).length).toBeGreaterThan(0)
+    expect(currentTitle()).toBe(overviewTitles.en)
     expect(window.location.pathname).toBe('/')
   })
 
   it('updates the URL and the screen when a sidebar link is clicked', async () => {
     renderApp({ systemApi: systemApi() })
-    await screen.findByText('vps-web-01')
+    await screen.findAllByText('vps-web-01')
 
     await openSidebarLink(navSettings.en)
 
@@ -364,7 +365,7 @@ describe('App', () => {
       invitesApi: invitesApi(),
       serversApi: serversApi(),
     })
-    await screen.findByText('vps-web-01')
+    await screen.findAllByText('vps-web-01')
 
     await openSidebarLink(navServers.en)
     expect(window.location.pathname).toBe('/servers')
@@ -398,12 +399,12 @@ describe('App', () => {
 
     await openSidebarLink(navOverview.en)
     expect(window.location.pathname).toBe('/')
-    expect(await screen.findByRole('heading', { level: 1, name: fleetTitles.en })).toBeTruthy()
+    expect(await screen.findByRole('heading', { level: 1, name: overviewTitles.en })).toBeTruthy()
   })
 
   it('shows the grouped navigation in order', async () => {
     renderApp()
-    await screen.findByText('vps-web-01')
+    await screen.findAllByText('vps-web-01')
 
     const nav = mainNav()
     await within(nav).findByRole('link', { name: navUsers.en })
@@ -426,7 +427,7 @@ describe('App', () => {
 
   it('navigates to About and back to the overview', async () => {
     renderApp()
-    await screen.findByText('vps-web-01')
+    await screen.findAllByText('vps-web-01')
 
     fireEvent.click(screen.getByRole('button', { name: 'admin' }))
     fireEvent.click(screen.getByRole('menuitem', { name: navAbout.en }))
@@ -440,12 +441,12 @@ describe('App', () => {
 
     await openSidebarLink(navOverview.en)
     expect(window.location.pathname).toBe('/')
-    expect(currentTitle()).toBe(fleetTitles.en)
+    expect(currentTitle()).toBe(overviewTitles.en)
   })
 
   it('keeps the attribution text in every language', async () => {
     renderApp()
-    await screen.findByText('vps-web-01')
+    await screen.findAllByText('vps-web-01')
 
     for (const language of ['ca', 'es', 'en'] as const) {
       await i18n.changeLanguage(language)
@@ -456,13 +457,13 @@ describe('App', () => {
     }
   })
 
-  it('translates the navigation and the Fleet title with the language', async () => {
+  it('translates the navigation and the Overview title with the language', async () => {
     renderApp()
-    await screen.findByText('vps-web-01')
+    await screen.findAllByText('vps-web-01')
 
     await i18n.changeLanguage('ca')
 
-    expect(currentTitle()).toBe(fleetTitles.ca)
+    expect(currentTitle()).toBe(overviewTitles.ca)
     const nav = mainNav()
     expect(within(nav).getByRole('link', { name: navOverview.ca })).toBeTruthy()
     expect(within(nav).getByRole('link', { name: navServers.ca })).toBeTruthy()
@@ -473,13 +474,13 @@ describe('App', () => {
 
   it('changes language and theme from the user menu', async () => {
     renderApp()
-    await screen.findByText('vps-web-01')
+    await screen.findAllByText('vps-web-01')
 
     const account = screen.getByRole('button', { name: 'admin' })
     fireEvent.click(account)
     fireEvent.click(screen.getByRole('menuitem', { name: 'Català' }))
     await waitFor(() => expect(i18n.resolvedLanguage).toBe('ca'))
-    expect(currentTitle()).toBe(fleetTitles.ca)
+    expect(currentTitle()).toBe(overviewTitles.ca)
 
     fireEvent.click(account)
     fireEvent.click(screen.getByRole('menuitem', { name: 'Fosc' }))
@@ -489,6 +490,8 @@ describe('App', () => {
 
   it('opens the containers of a server and goes back to the fleet', async () => {
     renderApp(serverApis())
+    await screen.findAllByText('vps-web-01')
+    await openSidebarLink(navServers.en)
     sessionStorage.setItem('talaia.serverTab.vps-web-01', 'containers')
 
     fireEvent.click(await screen.findByRole('button', { name: 'vps-web-01' }))
@@ -533,12 +536,12 @@ describe('App', () => {
     fireEvent.click(screen.getByRole('link', { name: 'Back to overview' }))
 
     expect(window.location.pathname).toBe('/')
-    expect(await screen.findByRole('heading', { level: 1, name: fleetTitles.en })).toBeTruthy()
+    expect(await screen.findByRole('heading', { level: 1, name: overviewTitles.en })).toBeTruthy()
   })
 
   it('hides entries and guards routes the user cannot access', async () => {
     const view = renderApp({ me: viewerMe })
-    await screen.findByText('vps-web-01')
+    await screen.findAllByText('vps-web-01')
 
     const nav = mainNav()
     await within(nav).findByRole('link', { name: navServers.en })
@@ -561,7 +564,7 @@ describe('App', () => {
 
   it('opens and closes the mobile drawer with the hamburger and Escape', async () => {
     renderApp()
-    await screen.findByText('vps-web-01')
+    await screen.findAllByText('vps-web-01')
 
     const sidebar = screen.getByRole('complementary')
     fireEvent.click(screen.getByRole('button', { name: 'Open navigation' }))

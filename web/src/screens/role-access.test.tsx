@@ -307,7 +307,7 @@ describe('role-based panel controls', () => {
     admin.unmount()
 
     mount(viewerMe, <App client={client} />)
-    expect(await screen.findByText('vps-web-01')).toBeTruthy()
+    expect((await screen.findAllByText('vps-web-01')).length).toBeGreaterThan(0)
     await waitFor(() => expect(screen.queryByRole('link', { name: 'Audit' })).toBeNull())
   })
 })

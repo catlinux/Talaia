@@ -1,0 +1,58 @@
+{
+  "title": "Resum",
+  "subtitle": "Actualitzat a les {{time}}",
+  "loading": "S'està carregant el resum…",
+  "error": "No s'ha pogut carregar el resum.",
+  "retry": "Reintenta",
+  "refreshFailed": "No s'ha pogut actualitzar el resum: es mostren les últimes dades.",
+  "strip": {
+    "servers": "Servidors",
+    "serversValue": "{{online}} / {{total}}",
+    "offline_one": "{{count}} sense connexió",
+    "offline_other": "{{count}} sense connexió",
+    "alerts": "Alertes",
+    "alertsNone": "Cap",
+    "alertsUnavailable": "No disponible",
+    "critical_one": "{{count}} crítica",
+    "critical_other": "{{count}} crítiques",
+    "warning_one": "{{count}} avís",
+    "warning_other": "{{count}} avisos",
+    "security": "Actualitzacions de seguretat",
+    "securityServers_one": "en {{count}} servidor",
+    "securityServers_other": "en {{count}} servidors",
+    "reboots": "Reinicios pendents"
+  },
+  "attention": {
+    "title": "Requereix atenció",
+    "empty": "No hi ha res que requereixi la teva atenció",
+    "showAll": "Mostra-ho tot ({{count}})",
+    "showLess": "Mostra'n menys",
+    "offline": "{{server}} està sense connexió",
+    "disk": "Disc al {{percent}} a {{server}}",
+    "security_one": "{{count}} actualització de seguretat a {{server}}",
+    "security_other": "{{count}} actualitzacions de seguretat a {{server}}",
+    "reboot": "{{server}} necessita reiniciar-se",
+    "agent": "Hi ha una actualització de l'agent per a {{server}}",
+    "agentManual": "L'agent de {{server}} necessita una actualització manual",
+    "actions": {
+      "openAlert": "Obre l'alerta",
+      "openServer": "Obre el servidor",
+      "viewUpdates": "Mostra les actualitzacions",
+      "updateAgent": "Actualitza l'agent"
+    }
+  },
+  "servers": {
+    "title": "Servidors",
+    "all": "Tots els servidors",
+    "empty": "Encara no hi ha servidors",
+    "status": "Estat",
+    "name": "Servidor",
+    "cpu": "CPU",
+    "ram": "RAM",
+    "disk": "Disc",
+    "containers": "Contenidors",
+    "alerts": "Alertes",
+    "unknown": "—",
+    "usage": "{{label}}: {{value}}"
+  }
+}

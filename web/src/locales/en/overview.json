@@ -1,0 +1,58 @@
+{
+  "title": "Overview",
+  "subtitle": "Updated at {{time}}",
+  "loading": "Loading the overview…",
+  "error": "The overview could not be loaded.",
+  "retry": "Retry",
+  "refreshFailed": "The overview could not be refreshed: showing the last data.",
+  "strip": {
+    "servers": "Servers",
+    "serversValue": "{{online}} / {{total}}",
+    "offline_one": "{{count}} offline",
+    "offline_other": "{{count}} offline",
+    "alerts": "Alerts",
+    "alertsNone": "None",
+    "alertsUnavailable": "Unavailable",
+    "critical_one": "{{count}} critical",
+    "critical_other": "{{count}} critical",
+    "warning_one": "{{count}} warning",
+    "warning_other": "{{count}} warnings",
+    "security": "Security updates",
+    "securityServers_one": "in {{count}} server",
+    "securityServers_other": "in {{count}} servers",
+    "reboots": "Reboots pending"
+  },
+  "attention": {
+    "title": "Needs attention",
+    "empty": "Nothing needs your attention",
+    "showAll": "Show all ({{count}})",
+    "showLess": "Show less",
+    "offline": "{{server}} is offline",
+    "disk": "Disk at {{percent}} on {{server}}",
+    "security_one": "{{count}} security update on {{server}}",
+    "security_other": "{{count}} security updates on {{server}}",
+    "reboot": "{{server}} needs a reboot",
+    "agent": "An agent update is available for {{server}}",
+    "agentManual": "The agent of {{server}} needs a manual update",
+    "actions": {
+      "openAlert": "Open alert",
+      "openServer": "Open server",
+      "viewUpdates": "View updates",
+      "updateAgent": "Update agent"
+    }
+  },
+  "servers": {
+    "title": "Servers",
+    "all": "All servers",
+    "empty": "No servers yet",
+    "status": "Status",
+    "name": "Server",
+    "cpu": "CPU",
+    "ram": "RAM",
+    "disk": "Disk",
+    "containers": "Containers",
+    "alerts": "Alerts",
+    "unknown": "—",
+    "usage": "{{label}}: {{value}}"
+  }
+}
