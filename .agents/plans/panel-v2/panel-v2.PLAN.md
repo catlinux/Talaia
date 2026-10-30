@@ -1,6 +1,6 @@
 # Bloque «Panel v2»: panel profesional y alertas cómodas
 
-Estado: **plan escrito (2026-10-30, Opus).** Ningún paso empezado. Se intercala en la fase 6 entre el paso 4 y el 5
+Estado: **plan escrito (2026-10-30, Opus).** Paso 0 (maqueta) hecho, **pendiente de aprobación del mantenedor**. Se intercala en la fase 6 entre el paso 4 y el 5
 (decisión del mantenedor, 2026-10-30): el panel de Apps (pasos 11-13 de fase 6) se construirá ya sobre este diseño.
 
 Petición del mantenedor: *«nada de la típica aplicación hecha por IA con siempre el mismo estilo. Profesional, claro y
