@@ -29,10 +29,10 @@
 .history__chart h3 {
   margin: 0 0 8px;
   color: var(--muted);
-  font-size: 0.75rem;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: normal;
+  text-transform: none;
 }
 .history__chart-head {
   display: flex;

@@ -2,6 +2,16 @@
   "back": "Torna a la flota",
   "loading": "Carregant els contenidors…",
   "title": "Contenidors",
+  "header": {
+    "actions": "Accions del servidor",
+    "viewAlerts": "Mostra les alertes",
+    "copyId": "Copia l'ID del servidor",
+    "copied": "ID del servidor copiat",
+    "cpu": "CPU",
+    "ram": "RAM",
+    "disk": "Disc",
+    "metric": "{{label}}: {{value}}"
+  },
   "summary_one": "{{count}} contenidor · {{running}} en marxa",
   "summary_other": "{{count}} contenidors · {{running}} en marxa",
   "offline": "L'agent d'aquest servidor no està connectat: no es poden mostrar ni gestionar els seus contenidors.",

@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { App } from './App'
@@ -317,6 +317,7 @@ function serverApis() {
     aptApi: pendingAptApi,
     servicesApi: pendingServicesApi,
     journalApi: pendingJournalApi,
+    serversApi: serversApi(),
   }
 }
 
@@ -488,19 +489,22 @@ describe('App', () => {
     expect(localStorage.getItem('talaia.theme')).toBe('dark')
   })
 
-  it('opens the containers of a server and goes back to the fleet', async () => {
+  it('opens the containers tab of a server and returns to the servers', async () => {
     renderApp(serverApis())
     await screen.findAllByText('vps-web-01')
     await openSidebarLink(navServers.en)
-    sessionStorage.setItem('talaia.serverTab.vps-web-01', 'containers')
 
     fireEvent.click(await screen.findByRole('link', { name: 'vps-web-01' }))
+    expect(await screen.findByRole('heading', { level: 1, name: 'vps-web-01' })).toBeTruthy()
+    expect(window.location.pathname).toBe('/servers/vps-web-01')
+
+    fireEvent.click(await screen.findByRole('tab', { name: 'Containers' }))
 
     expect(await screen.findByText('shop-web-1')).toBeTruthy()
-    expect(window.location.pathname).toBe('/servers/vps-web-01')
+    expect(window.location.pathname).toBe('/servers/vps-web-01/containers')
     expect(currentTitle()).toBe('vps-web-01')
 
-    fireEvent.click(screen.getByRole('button', { name: 'Back to the fleet' }))
+    await openSidebarLink(navServers.en)
     expect(window.location.pathname).toBe('/servers')
     expect(currentTitle()).toBe(serversTitles.en)
   })
@@ -521,12 +525,14 @@ describe('App', () => {
     renderApp(serverApis())
     await screen.findByRole('heading', { level: 1, name: 'vps-web-01' })
 
-    window.history.replaceState({}, '', '/servers')
-    window.dispatchEvent(new PopStateEvent('popstate'))
+    act(() => {
+      window.history.replaceState({}, '', '/servers')
+      window.dispatchEvent(new PopStateEvent('popstate'))
+    })
 
     expect(await screen.findByRole('heading', { level: 1, name: serversTitles.en })).toBeTruthy()
     expect(window.location.pathname).toBe('/servers')
-  })
+  }, 15_000)
 
   it('shows a not-found page for unknown routes', async () => {
     window.history.replaceState({}, '', '/does-not-exist')

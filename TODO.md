@@ -135,7 +135,7 @@ of the current phase and the next one.
 - [x] Shared components: page header, data table, status badge, drawer, menu, toast, confirmation
 - [x] Real URLs, grouped sidebar and top bar (breadcrumbs, alert bell, user menu)
 - [x] Overview with "needs attention" first; servers as a table
-- [ ] Server page with a fixed header and tabs as routes
+- [x] Server page with a fixed header and tabs as routes
 - [ ] Fleet-wide containers and stacks with row and bulk actions
 - [ ] "What is this?" catalogue: description, importance and what to do if it fails for common Debian services and Docker images, as a tooltip in the tables
 - [ ] Alerts inbox: filters, grouping, new/seen/silenced, bulk actions, detail drawer with actions on the cause

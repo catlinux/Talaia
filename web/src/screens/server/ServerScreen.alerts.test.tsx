@@ -10,6 +10,7 @@ import type { ServiceUnit, ServicesApi } from '../../api/services'
 import type { ServersApi } from '../../api/servers'
 import { PermissionsProvider } from '../../auth/permissions'
 import i18n from '../../i18n'
+import { RouterProvider } from '../../router'
 import { ServerScreen } from '../ServerScreen'
 
 const server = { id: 'srv-1', name: 'vps-web-01', groupId: 'group-1' }
@@ -107,28 +108,29 @@ function me(permissions: string[]): MeApi {
 }
 
 function renderScreen(permissions: string[], tab: string) {
-  sessionStorage.setItem(`talaia.serverTab.${server.id}`, tab)
+  const suffix = tab === 'overview' ? '' : `/${tab}`
+  window.history.replaceState({}, '', `/servers/${server.id}${suffix}`)
   render(
-    <PermissionsProvider meApi={me(permissions)}>
-      <ServerScreen
-        server={server}
-        api={containersApi}
-        aptApi={aptApi}
-        servicesApi={servicesApi}
-        journalApi={journalApi}
-        serversApi={serversApi}
-        alertsApi={alertsApi}
-        onBack={() => undefined}
-        pollMs={1}
-      />
-    </PermissionsProvider>,
+    <RouterProvider>
+      <PermissionsProvider meApi={me(permissions)}>
+        <ServerScreen
+          server={server}
+          api={containersApi}
+          aptApi={aptApi}
+          servicesApi={servicesApi}
+          journalApi={journalApi}
+          serversApi={serversApi}
+          alertsApi={alertsApi}
+          pollMs={1}
+        />
+      </PermissionsProvider>
+    </RouterProvider>,
   )
 }
 
 describe('ServerScreen alerts tab', () => {
   beforeEach(async () => {
     await i18n.changeLanguage('en')
-    sessionStorage.clear()
   })
 
   afterEach(() => {
@@ -141,7 +143,15 @@ describe('ServerScreen alerts tab', () => {
     const tab = await screen.findByRole('tab', { name: 'Alerts' })
     expect(tab.getAttribute('aria-selected')).toBe('true')
     expect(await screen.findByText('No alert rules apply to this server.')).toBeTruthy()
-    expect(sessionStorage.getItem(`talaia.serverTab.${server.id}`)).toBe('alerts')
+    expect(window.location.pathname).toBe(`/servers/${server.id}/alerts`)
+  })
+
+  it('redirects a forbidden tab to the first permitted tab', async () => {
+    renderScreen(['server.view'], 'alerts')
+
+    expect(await screen.findByRole('tab', { name: 'Overview' })).toBeTruthy()
+    expect(await screen.findByRole('tabpanel', { name: 'Overview' })).toBeTruthy()
+    expect(window.location.pathname).toBe('/servers/srv-1')
   })
 
   it('hides the tab from users who cannot read alert rules', async () => {

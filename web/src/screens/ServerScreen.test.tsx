@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { AptApi } from '../api/apt'
@@ -8,6 +8,7 @@ import type { JournalApi } from '../api/journal'
 import type { ServiceUnit, ServicesApi } from '../api/services'
 import { AgentUpdateError, type ServerSummary, type ServersApi } from '../api/servers'
 import i18n from '../i18n'
+import { RouterProvider } from '../router'
 import { ServerScreen } from './ServerScreen'
 
 // xterm needs a real layout engine; opening the host confirmation loads the panel.
@@ -142,19 +143,28 @@ function renderScreen(
   journalApi: JournalApi = pendingJournalApi,
   tab = 'containers',
 ) {
-  sessionStorage.setItem(`talaia.serverTab.${server.id}`, tab)
+  const suffix = tab === 'overview' ? '' : `/${tab}`
+  window.history.replaceState({}, '', `/servers/${server.id}${suffix}`)
   render(
-    <ServerScreen
-      server={server}
-      api={api}
-      aptApi={aptApi}
-      servicesApi={servicesApi}
-      journalApi={journalApi}
-      serversApi={serversApi}
-      onBack={onBack}
-      pollMs={1}
-    />,
+    <RouterProvider>
+      <ServerScreen
+        server={server}
+        api={api}
+        aptApi={aptApi}
+        servicesApi={servicesApi}
+        journalApi={journalApi}
+        serversApi={serversApi}
+        onBack={onBack}
+        pollMs={1}
+      />
+    </RouterProvider>,
   )
+}
+
+/** requestAgentUpdate opens the header menu and its update action. */
+async function requestAgentUpdate() {
+  fireEvent.click(screen.getByRole('button', { name: 'Server actions' }))
+  fireEvent.click(await screen.findByRole('menuitem', { name: 'Update agent' }))
 }
 
 describe('ServerScreen', () => {
@@ -200,14 +210,15 @@ describe('ServerScreen', () => {
     overview.focus()
     fireEvent.keyDown(overview, { key: 'ArrowRight' })
 
-    const containers = screen.getByRole('tab', { name: 'Containers' })
+    const containers = await screen.findByRole('tab', { name: 'Containers' })
     expect(containers.getAttribute('aria-selected')).toBe('true')
+    await waitFor(() => expect(window.location.pathname).toBe('/servers/srv-1/containers'))
     expect(await screen.findByRole('tabpanel', { name: 'Containers' })).toBeTruthy()
     expect(screen.queryByRole('tabpanel', { name: 'Overview' })).toBeNull()
     expect(await screen.findByRole('list', { name: 'Containers' })).toBeTruthy()
   })
 
-  it('remembers the last tab of a server in sessionStorage', async () => {
+  it('opens a tab from the URL and updates it from the tab links', async () => {
     renderScreen(
       apiWith(listOf(container())),
       undefined,
@@ -219,7 +230,79 @@ describe('ServerScreen', () => {
     )
 
     expect(screen.getByRole('tab', { name: 'Services' }).getAttribute('aria-selected')).toBe('true')
-    expect(sessionStorage.getItem('talaia.serverTab.srv-1')).toBe('services')
+    expect(window.location.pathname).toBe('/servers/srv-1/services')
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Overview' }))
+    expect(await screen.findByRole('tabpanel', { name: 'Overview' })).toBeTruthy()
+    expect(window.location.pathname).toBe('/servers/srv-1')
+  })
+
+  it('returns to the previous tab with the browser back button', async () => {
+    renderScreen(
+      apiWith(listOf(container())),
+      undefined,
+      serversApiWith([serverSummary()]),
+      pendingAptApi,
+      pendingServicesApi,
+      pendingJournalApi,
+      'overview',
+    )
+
+    fireEvent.click(await screen.findByRole('tab', { name: 'Services' }))
+    expect(await screen.findByRole('tabpanel', { name: 'Services' })).toBeTruthy()
+    expect(window.location.pathname).toBe('/servers/srv-1/services')
+
+    await act(async () => {
+      window.history.back()
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+
+    expect(await screen.findByRole('tabpanel', { name: 'Overview' })).toBeTruthy()
+    expect(window.location.pathname).toBe('/servers/srv-1')
+  })
+
+  it('redirects an unknown tab to the first permitted tab', async () => {
+    renderScreen(
+      apiWith(listOf(container())),
+      undefined,
+      serversApiWith([serverSummary()]),
+      pendingAptApi,
+      pendingServicesApi,
+      pendingJournalApi,
+      'unknown',
+    )
+
+    expect(await screen.findByRole('tabpanel', { name: 'Overview' })).toBeTruthy()
+    await waitFor(() => expect(window.location.pathname).toBe('/servers/srv-1'))
+  })
+
+  it('opens a managed stack from a direct link with its flags', async () => {
+    const api = apiWith(listOf(container()))
+    api.stacks.mockResolvedValue({
+      connected: true,
+      stacks: ['shop'],
+      adopted: ['shop'],
+      broken: [],
+      adoptable: [],
+    })
+    window.history.replaceState({}, '', '/servers/srv-1/stacks/shop')
+    render(
+      <RouterProvider>
+        <ServerScreen
+          server={server}
+          api={api}
+          aptApi={pendingAptApi}
+          servicesApi={pendingServicesApi}
+          journalApi={pendingJournalApi}
+          serversApi={serversApiWith([serverSummary()])}
+          pollMs={1}
+        />
+      </RouterProvider>,
+    )
+
+    expect(await screen.findByRole('heading', { level: 1, name: /shop/ })).toBeTruthy()
+    expect(await screen.findByText('adopted')).toBeTruthy()
+    expect(window.location.pathname).toBe('/servers/srv-1/stacks/shop')
   })
 
   it('lists the containers of the server, stacks together and running first', async () => {
@@ -346,6 +429,21 @@ describe('ServerScreen', () => {
     const header = (await screen.findByRole('heading', { level: 1 })).closest('header')
     if (header === null) throw new Error('no server header')
     expect(within(header).queryByRole('button', { name: 'Terminal' })).toBeNull()
+  })
+
+  it('copies the server id and opens the alerts list from the header menu', async () => {
+    const writeText = vi.fn(() => Promise.resolve())
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true })
+    renderScreen(apiWith(listOf(container())))
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'vps-web-01' })).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Server actions' }))
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Copy server ID' }))
+    await waitFor(() => expect(writeText).toHaveBeenCalledWith('srv-1'))
+    expect(await screen.findByText('Server ID copied')).toBeTruthy()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Server actions' }))
+    expect(screen.getByRole('menuitem', { name: 'View alerts' })).toBeTruthy()
   })
 
   it('opens the host terminal confirmation from the header', async () => {
@@ -493,7 +591,7 @@ describe('ServerScreen', () => {
     renderScreen(apiWith(listOf(container())), undefined, serversApi)
 
     expect(await screen.findByText('Agent 0.2.0')).toBeTruthy()
-    fireEvent.click(screen.getByRole('button', { name: 'Update agent' }))
+    await requestAgentUpdate()
 
     const dialog = screen.getByRole('dialog')
     expect(within(dialog).getByText('Update the agent?')).toBeTruthy()
@@ -513,7 +611,8 @@ describe('ServerScreen', () => {
     )
 
     expect(await screen.findByText('Agent 0.2.0')).toBeTruthy()
-    expect(screen.queryByRole('button', { name: 'Update agent' })).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Server actions' }))
+    expect(screen.queryByRole('menuitem', { name: 'Update agent' })).toBeNull()
   })
 
   it('shows the manual upgrade explanation and copies the command', async () => {
@@ -529,7 +628,9 @@ describe('ServerScreen', () => {
 
     expect(await screen.findByText(/This agent is too old to update itself/)).toBeTruthy()
     expect(screen.getByText('sudo bash install.sh --upgrade')).toBeTruthy()
-    expect(screen.queryByRole('button', { name: 'Update agent' })).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Server actions' }))
+    expect(screen.queryByRole('menuitem', { name: 'Update agent' })).toBeNull()
+    fireEvent.keyDown(screen.getByRole('menu'), { key: 'Escape' })
 
     fireEvent.click(screen.getByRole('button', { name: 'Copy the command' }))
     await waitFor(() => expect(writeText).toHaveBeenCalledWith('sudo bash install.sh --upgrade'))
@@ -561,7 +662,7 @@ describe('ServerScreen', () => {
       )
       renderScreen(apiWith(listOf(container())), undefined, serversApi)
 
-      fireEvent.click(await screen.findByRole('button', { name: 'Update agent' }))
+      await requestAgentUpdate()
       fireEvent.click(
         within(screen.getByRole('dialog')).getByRole('button', { name: 'Update agent' }),
       )
@@ -578,7 +679,7 @@ describe('ServerScreen', () => {
     const serversApi = serversApiWith(listServers)
     renderScreen(apiWith(listOf(container())), undefined, serversApi)
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Update agent' }))
+    await requestAgentUpdate()
     fireEvent.click(
       within(screen.getByRole('dialog')).getByRole('button', { name: 'Update agent' }),
     )
@@ -587,16 +688,7 @@ describe('ServerScreen', () => {
     expect(screen.queryByText('Updating… the agent will reconnect.')).toBeNull()
   })
 
-  it('goes back to the fleet', async () => {
-    const onBack = vi.fn()
-    renderScreen(apiWith(listOf(container())), onBack)
-
-    fireEvent.click(await screen.findByRole('button', { name: 'Back to the fleet' }))
-
-    expect(onBack).toHaveBeenCalledTimes(1)
-  })
-
-  it('opens the screen of a managed stack and goes back to the server', async () => {
+  it('opens the screen of a managed stack and goes back to the containers tab', async () => {
     const api = apiWith(listOf(container()))
     api.stacks.mockResolvedValue({
       connected: true,
@@ -617,9 +709,11 @@ describe('ServerScreen', () => {
 
     expect(await screen.findByRole('heading', { level: 1, name: /shop/ })).toBeTruthy()
     expect(screen.getByText('Compose')).toBeTruthy()
+    expect(window.location.pathname).toBe('/servers/srv-1/stacks/shop')
 
     fireEvent.click(screen.getByRole('button', { name: 'Back to the server' }))
     expect(await screen.findByRole('heading', { level: 1, name: 'vps-web-01' })).toBeTruthy()
+    expect(window.location.pathname).toBe('/servers/srv-1/containers')
   })
 
   it('shows an error when the first load fails', async () => {

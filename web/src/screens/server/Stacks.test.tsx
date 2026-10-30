@@ -7,6 +7,7 @@ import type { JournalApi } from '../../api/journal'
 import type { ServersApi } from '../../api/servers'
 import type { ServiceUnit, ServicesApi } from '../../api/services'
 import i18n from '../../i18n'
+import { RouterProvider } from '../../router'
 import { ServerScreen } from '../ServerScreen'
 
 const server = { id: 'srv-1', name: 'vps-web-01' }
@@ -83,18 +84,19 @@ const serversApi: ServersApi = {
 }
 
 function renderScreen(api: ContainersApi) {
-  sessionStorage.setItem(`talaia.serverTab.${server.id}`, 'containers')
+  window.history.replaceState({}, '', `/servers/${server.id}/containers`)
   render(
-    <ServerScreen
-      server={server}
-      api={api}
-      aptApi={pendingAptApi}
-      servicesApi={pendingServicesApi}
-      journalApi={pendingJournalApi}
-      serversApi={serversApi}
-      onBack={() => undefined}
-      pollMs={1}
-    />,
+    <RouterProvider>
+      <ServerScreen
+        server={server}
+        api={api}
+        aptApi={pendingAptApi}
+        servicesApi={pendingServicesApi}
+        journalApi={pendingJournalApi}
+        serversApi={serversApi}
+        pollMs={1}
+      />
+    </RouterProvider>,
   )
 }
 

@@ -13,6 +13,7 @@ import type { Server } from '../api/types'
 import { PermissionsProvider } from '../auth/permissions'
 import { App } from '../App'
 import i18n from '../i18n'
+import { RouterProvider } from '../router'
 import { ServerScreen } from './ServerScreen'
 
 const allPermissions: Permission[] = [
@@ -174,17 +175,19 @@ const pendingApt: AptApi = {
 }
 
 function serverScreen(me: MeApi, limited = false) {
+  window.history.replaceState({}, '', '/servers/srv-1')
   return mount(
     me,
-    <ServerScreen
-      server={{ id: 'srv-1', name: 'vps-web-01', limited }}
-      onBack={() => undefined}
-      api={containersApi()}
-      serversApi={serversApi()}
-      servicesApi={pendingServices}
-      journalApi={pendingJournal}
-      aptApi={pendingApt}
-    />,
+    <RouterProvider>
+      <ServerScreen
+        server={{ id: 'srv-1', name: 'vps-web-01', limited }}
+        api={containersApi()}
+        serversApi={serversApi()}
+        servicesApi={pendingServices}
+        journalApi={pendingJournal}
+        aptApi={pendingApt}
+      />
+    </RouterProvider>,
   )
 }
 
@@ -204,7 +207,8 @@ describe('role-based panel controls', () => {
       expect(await screen.findByRole('tab', { name: tab })).toBeTruthy()
     }
     expect(screen.getAllByRole('button', { name: 'Terminal' }).length).toBeGreaterThan(0)
-    expect(screen.getByRole('button', { name: 'Update agent' })).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Server actions' }))
+    expect(await screen.findByRole('menuitem', { name: 'Update agent' })).toBeTruthy()
   })
 
   it('viewer on a server sees no change actions', async () => {
@@ -229,7 +233,8 @@ describe('role-based panel controls', () => {
     fireEvent.click(screen.getByRole('tab', { name: 'Containers' }))
     await screen.findByText('web-1')
     expect(screen.queryByRole('button', { name: 'Terminal' })).toBeNull()
-    expect(screen.queryByRole('button', { name: 'Update agent' })).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Server actions' }))
+    expect(screen.queryByRole('menuitem', { name: 'Update agent' })).toBeNull()
     for (const action of ['Start', 'Stop', 'Restart', 'Remove']) {
       expect(screen.queryByRole('button', { name: action })).toBeNull()
     }

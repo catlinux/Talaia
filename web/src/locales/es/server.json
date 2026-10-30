@@ -2,6 +2,16 @@
   "back": "Volver a la flota",
   "loading": "Cargando los contenedores…",
   "title": "Contenedores",
+  "header": {
+    "actions": "Acciones del servidor",
+    "viewAlerts": "Ver las alertas",
+    "copyId": "Copiar el ID del servidor",
+    "copied": "ID del servidor copiado",
+    "cpu": "CPU",
+    "ram": "RAM",
+    "disk": "Disco",
+    "metric": "{{label}}: {{value}}"
+  },
   "summary_one": "{{count}} contenedor · {{running}} en marcha",
   "summary_other": "{{count}} contenedores · {{running}} en marcha",
   "offline": "El agente de este servidor no está conectado: no se pueden mostrar ni gestionar sus contenedores.",

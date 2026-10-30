@@ -1,61 +1,27 @@
-import {
-  lazy,
-  Suspense,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type KeyboardEvent,
-  type ReactNode,
-} from 'react'
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { createAlertsAdminApi, type AlertsAdminApi } from '../api/alertsAdmin'
 import { createAptApi, type AptApi } from '../api/apt'
-import {
-  createContainersApi,
-  type Container,
-  type ContainerAction,
-  type ContainerList,
-  type ContainersApi,
-} from '../api/containers'
+import { createContainersApi, type ContainerList, type ContainersApi } from '../api/containers'
 import { isSignedOut } from '../api/http'
 import { createJournalApi, type JournalApi } from '../api/journal'
-import {
-  AgentUpdateError,
-  createServersApi,
-  type ServerSummary,
-  type ServersApi,
-} from '../api/servers'
+import { createServersApi, type ServerSummary, type ServersApi } from '../api/servers'
 import { createServicesApi, type ServiceUnit, type ServicesApi } from '../api/services'
 import { createMetricsApi, type MetricsApi } from '../api/metrics'
 import { createTerminalApi, type TerminalApi } from '../api/terminal'
-import type { AptSummary } from '../api/types'
+import type { AptSummary, ServerStatus } from '../api/types'
 import { errorMessage } from '../auth/AuthGate'
 import { usePermissions } from '../auth/permissions'
-import {
-  ArrowLeftIcon,
-  LogsIcon,
-  PlayIcon,
-  RestartIcon,
-  StopIcon,
-  TerminalIcon,
-  TrashIcon,
-} from '../components/icons'
-import { formatBytes, formatPercent } from './fleet/format'
-import { AlertsSection } from './server/AlertsSection'
-import { LogsPanel } from './server/LogsPanel'
-import { JournalSection } from './server/JournalSection'
-import { ManualUpgrade } from './server/ManualUpgrade'
-import { OverviewTab, type ServerTab } from './server/OverviewTab'
-import { ResourcesSection } from './server/ResourcesSection'
-import { ServicesSection } from './server/ServicesSection'
+import { useNavigate, useRoute } from '../router'
+import { agentUpdateErrorKey } from './server/agentUpdate'
+import { ContainersTab } from './server/ContainersTab'
+import type { ServerTab } from './server/OverviewTab'
+import { ServerHeader } from './server/ServerHeader'
+import { ServerPanels } from './server/ServerPanels'
+import { ServerTabs } from './server/ServerTabBar'
 import { StackScreen } from './server/StackScreen'
-import { StacksSection } from './server/StacksSection'
-import { UpdatesSection } from './server/UpdatesSection'
-import { TimedOut, waitForJob } from './server/waitForJob'
-import { UseGauge } from './server/UseGauge'
+import { firstAllowedTab, parseServerPath, stackPath, tabPath } from './server/serverTabs'
 
 /** refreshEvery is how often the list reloads while the screen is open. */
 export const refreshEvery = 10_000
@@ -65,34 +31,6 @@ const pollEvery = 800
 
 /** updateWindowMs is how long the "updating" line stays if no refresh confirms it. */
 const updateWindowMs = 3 * 60_000
-
-const serverTabs: ServerTab[] = ['overview', 'containers', 'services', 'logs', 'updates', 'alerts']
-
-/** tabStorageKey remembers the last tab of each server in this session. */
-function tabStorageKey(serverId: string): string {
-  return `talaia.serverTab.${serverId}`
-}
-
-/** readStoredTab returns the last tab of a server, or Overview. */
-function readStoredTab(serverId: string): ServerTab {
-  try {
-    const value = sessionStorage.getItem(tabStorageKey(serverId))
-    if (value !== null && serverTabs.includes(value as ServerTab)) {
-      return value as ServerTab
-    }
-  } catch {
-    // Storage can be unavailable (private mode, policy); Overview is enough.
-  }
-  return 'overview'
-}
-
-function storeTab(serverId: string, tab: ServerTab): void {
-  try {
-    sessionStorage.setItem(tabStorageKey(serverId), tab)
-  } catch {
-    // The tab still works for this render when storage is unavailable.
-  }
-}
 
 // xterm is a third of the panel: it is only fetched when a terminal is opened.
 const TerminalPanel = lazy(() =>
@@ -116,6 +54,7 @@ interface ServerScreenProps {
     groupId?: string
     limited?: boolean
     hostname?: string
+    status?: ServerStatus
     hostTerminal?: boolean
     agentUpdateManual?: boolean
     agentUpgradeCommand?: string
@@ -142,7 +81,8 @@ interface ServerScreenProps {
     agentUpdateAvailable?: boolean
     apt?: AptSummary
   }
-  onBack: () => void
+  /** Kept for callers that used the old back button. */
+  onBack?: () => void
   /** Tests inject their own API; the panel uses the real one. */
   api?: ContainersApi
   terminalApi?: TerminalApi
@@ -161,68 +101,14 @@ interface ServerScreenProps {
   pollMs?: number
 }
 
-/** agentUpdateErrorKey returns the translation key of a refused update. */
-function agentUpdateErrorKey(error: unknown): string {
-  if (!(error instanceof AgentUpdateError)) {
-    return ''
-  }
-  switch (error.code) {
-    case 'agent_offline':
-      return 'agentUpdate.errors.agent_offline'
-    case 'no_update':
-      return 'agentUpdate.errors.no_update'
-    case 'update_in_progress':
-      return 'agentUpdate.errors.update_in_progress'
-    case 'session_required':
-      return 'agentUpdate.errors.session_required'
-    case 'not_found':
-      return 'agentUpdate.errors.not_found'
-    default:
-      return 'agentUpdate.errors.generic'
-  }
-}
-
-/** Outcome is what the screen tells about the last action of a container. */
-type Outcome =
-  | { kind: 'working'; action: ContainerAction }
-  | { kind: 'done'; action: ContainerAction }
-  | { kind: 'failed'; message: string }
-
 type ListState =
   | { status: 'loading' }
   | { status: 'ready'; list: ContainerList }
   | { status: 'error'; message: string }
 
-const stateOrder = ['running', 'restarting', 'paused', 'created', 'exited', 'dead']
-
-/** sortContainers puts the stacks together, running containers first. */
-function sortContainers(containers: Container[]): Container[] {
-  return [...containers].sort((a, b) => {
-    if (a.composeProject !== b.composeProject) {
-      if (a.composeProject === '') return 1
-      if (b.composeProject === '') return -1
-      return a.composeProject.localeCompare(b.composeProject)
-    }
-    const byState = stateOrder.indexOf(a.state) - stateOrder.indexOf(b.state)
-    return byState !== 0 ? byState : a.name.localeCompare(b.name)
-  })
-}
-
-const actionIcons = {
-  start: PlayIcon,
-  stop: StopIcon,
-  restart: RestartIcon,
-  remove: TrashIcon,
-} as const
-
-/**
- * ServerScreen lists the containers of one server and runs actions on them.
- * Every action is a job: the screen sends it, follows its progress and reloads
- * the list when it ends. Removing asks for a confirmation first.
- */
+/** ServerScreen is the server page: header, URL tabs and tab panels. */
 export function ServerScreen({
   server,
-  onBack,
   api = defaultApi,
   terminalApi = defaultTerminalApi,
   serversApi = defaultServersApi,
@@ -234,6 +120,8 @@ export function ServerScreen({
   pollMs = pollEvery,
 }: ServerScreenProps) {
   const { t } = useTranslation(['server', 'errors'])
+  const navigate = useNavigate()
+  const { path } = useRoute()
   const permissions = usePermissions()
   const permissionsLoading = permissions.loading
   const serverScope = { serverId: server.id }
@@ -248,32 +136,17 @@ export function ServerScreen({
   const canHostTerminal = !permissionsLoading && permissions.can('host.terminal', serverScope)
   const canAgentUpdate = !permissionsLoading && permissions.can('server.agent_update', serverScope)
   const canResources = !permissionsLoading && permissions.can('resources.manage', serverScope)
+
   const [state, setState] = useState<ListState>({ status: 'loading' })
   const [serverInfo, setServerInfo] = useState<ServerSummary | null>(null)
   const [refreshFailed, setRefreshFailed] = useState(false)
-  const [outcomes, setOutcomes] = useState<Record<string, Outcome>>({})
-  // The container action that is waiting for confirmation, if any.
-  const [confirming, setConfirming] = useState<{
-    id: string
-    action: 'stop' | 'remove'
-  } | null>(null)
   const [confirmingAgentUpdate, setConfirmingAgentUpdate] = useState(false)
   const [updatingAgent, setUpdatingAgent] = useState(false)
   const [updateError, setUpdateError] = useState<string | null>(null)
-  // The container whose logs are open, if any.
-  const [logsFor, setLogsFor] = useState<string | null>(null)
-  // The container whose terminal is open, if any.
-  const [terminalFor, setTerminalFor] = useState<string | null>(null)
-  // Whether the root terminal on the server itself is open.
   const [hostTerminalOpen, setHostTerminalOpen] = useState(false)
-  // The tab is remembered per server for this browser session.
-  const [activeTab, setActiveTab] = useState<ServerTab>(() => readStoredTab(server.id))
-  // The services list is only read in its tab; keeping the last result lets the
-  // tab badge and the overview keep working after switching away.
   const [liveApt, setLiveApt] = useState<AptSummary | null>(null)
   const [knownServices, setKnownServices] = useState<ServiceUnit[] | null>(null)
-  // The managed stack whose screen is open, if any.
-  const [openStack, setOpenStack] = useState<{
+  const [stackFlags, setStackFlags] = useState<{
     name: string
     adopted: boolean
     broken: boolean
@@ -281,6 +154,27 @@ export function ServerScreen({
   const mounted = useRef(true)
   const updatingRef = useRef(false)
   const updateStartedVersionRef = useRef('')
+
+  const parsed = parseServerPath(path, server.id)
+  const stackName = parsed.stackName
+
+  const availableTabs = useMemo<ServerTab[]>(() => {
+    const tabs: ServerTab[] = []
+    if (canOverview) tabs.push('overview')
+    if (canContainers) tabs.push('containers')
+    if (canServices) tabs.push('services')
+    if (canLogs) tabs.push('logs')
+    if (canUpdates) tabs.push('updates')
+    if (canAlerts) tabs.push('alerts')
+    return tabs
+  }, [canAlerts, canContainers, canLogs, canOverview, canServices, canUpdates])
+  const availableTabKey = availableTabs.join(',')
+  const fallbackTab = firstAllowedTab(availableTabs, server.limited)
+  const parsedAllowed = parsed.tab !== null && availableTabs.includes(parsed.tab)
+  const stackAllowed = stackName === null || (parsed.tab === 'containers' && canStacks)
+  const activeTab: ServerTab =
+    parsedAllowed && parsed.tab !== null && stackAllowed ? parsed.tab : fallbackTab
+  const showStack = stackName !== null && parsed.tab === 'containers' && canStacks
 
   const load = useCallback(async () => {
     try {
@@ -303,7 +197,6 @@ export function ServerScreen({
       if (!mounted.current) return
       const info = list.find((candidate) => candidate.id === server.id) ?? null
       setServerInfo(info)
-      // A refresh with the new version clears the "updating" line.
       if (
         updatingRef.current &&
         info !== null &&
@@ -318,57 +211,6 @@ export function ServerScreen({
       if (!mounted.current || isSignedOut(error)) return
     }
   }, [server.id, serversApi])
-
-  const selectTab = useCallback(
-    (tab: ServerTab, focus = false) => {
-      setActiveTab(tab)
-      storeTab(server.id, tab)
-      if (focus) {
-        requestAnimationFrame(() => {
-          document.getElementById(`server-tab-${tab}`)?.focus()
-        })
-      }
-    },
-    [server.id],
-  )
-
-  const availableTabs = useMemo<ServerTab[]>(() => {
-    const tabs: ServerTab[] = []
-    if (canOverview) tabs.push('overview')
-    if (canContainers) tabs.push('containers')
-    if (canServices) tabs.push('services')
-    if (canLogs) tabs.push('logs')
-    if (canUpdates) tabs.push('updates')
-    if (canAlerts) tabs.push('alerts')
-    return tabs
-  }, [canAlerts, canContainers, canLogs, canOverview, canServices, canUpdates])
-  const availableTabKey = availableTabs.join(',')
-
-  const handleServicesLoaded = useCallback((services: ServiceUnit[]) => {
-    setKnownServices(services)
-  }, [])
-
-  useEffect(() => {
-    setActiveTab(readStoredTab(server.id))
-    setKnownServices(null)
-  }, [server.id])
-
-  useEffect(() => {
-    if (permissionsLoading) return
-    if (availableTabs.includes(activeTab)) return
-    const fallback =
-      server.limited && canContainers ? 'containers' : (availableTabs[0] ?? 'containers')
-    setActiveTab(fallback)
-    storeTab(server.id, fallback)
-  }, [
-    activeTab,
-    availableTabs,
-    availableTabKey,
-    canContainers,
-    permissionsLoading,
-    server.id,
-    server.limited,
-  ])
 
   useEffect(() => {
     mounted.current = true
@@ -389,49 +231,52 @@ export function ServerScreen({
   }, [canContainers, load, loadServer, permissionsLoading])
 
   useEffect(() => {
-    if (!updatingAgent) {
-      return
+    setKnownServices(null)
+  }, [server.id])
+
+  useEffect(() => {
+    if (permissionsLoading || availableTabKey === '') return
+    if (parsedAllowed && stackAllowed) return
+    navigate(tabPath(server.id, fallbackTab), { replace: true })
+  }, [
+    availableTabKey,
+    fallbackTab,
+    navigate,
+    parsedAllowed,
+    permissionsLoading,
+    server.id,
+    stackAllowed,
+  ])
+
+  useEffect(() => {
+    if (stackName === null) return
+    let active = true
+    api.stacks(server.id).then(
+      (list) => {
+        if (!active) return
+        setStackFlags({
+          name: stackName,
+          adopted: list.adopted.includes(stackName),
+          broken: list.broken.includes(stackName),
+        })
+      },
+      () => {
+        if (active) setStackFlags(null)
+      },
+    )
+    return () => {
+      active = false
     }
+  }, [api, server.id, stackName])
+
+  useEffect(() => {
+    if (!updatingAgent) return
     const timer = setTimeout(() => {
       updatingRef.current = false
       setUpdatingAgent(false)
     }, updateWindowMs)
     return () => clearTimeout(timer)
   }, [updatingAgent])
-
-  const setOutcome = useCallback((id: string, outcome: Outcome | null) => {
-    setOutcomes((current) => {
-      const next = { ...current }
-      if (outcome === null) delete next[id]
-      else next[id] = outcome
-      return next
-    })
-  }, [])
-
-  const run = useCallback(
-    async (container: Container, action: ContainerAction) => {
-      setConfirming(null)
-      setOutcome(container.id, { kind: 'working', action })
-      try {
-        const jobId = await api.run(server.id, container.name, action, action === 'remove')
-        const job = await waitForJob(api, jobId, pollMs, () => mounted.current)
-        if (job === null) return
-        setOutcome(
-          container.id,
-          job.state === 'succeeded'
-            ? { kind: 'done', action }
-            : { kind: 'failed', message: job.message },
-        )
-      } catch (error) {
-        if (!mounted.current || isSignedOut(error)) return
-        const message =
-          error instanceof TimedOut ? t('server:progress.timeout') : errorMessage(t, error)
-        setOutcome(container.id, { kind: 'failed', message })
-      }
-      await load()
-    },
-    [api, load, pollMs, server.id, setOutcome, t],
-  )
 
   const startAgentUpdate = useCallback(() => {
     setConfirmingAgentUpdate(false)
@@ -453,14 +298,17 @@ export function ServerScreen({
     )
   }, [loadServer, server.id, serverInfo?.agentVersion, serversApi, t])
 
+  const handleServicesLoaded = useCallback((services: ServiceUnit[]) => {
+    setKnownServices(services)
+  }, [])
+
   const list = state.status === 'ready' ? state.list : null
-  const containers = list ? sortContainers(list.containers) : []
+  const containers = list?.containers ?? []
   const running = containers.filter((container) => container.state === 'running').length
   const agentVersion = serverInfo?.agentVersion || server.agentVersion || ''
   const agentUpdateAvailable =
     serverInfo?.agentUpdateAvailable ?? server.agentUpdateAvailable ?? false
   const agentUpdateManual = server.agentUpdateManual || serverInfo?.agentUpdateManual || false
-  const agentUpgradeCommand = server.agentUpgradeCommand || serverInfo?.agentUpgradeCommand || ''
   const hostTerminal = serverInfo?.hostTerminal ?? server.hostTerminal ?? false
   const hostTerminalConnected = serverInfo?.connected ?? list?.connected ?? false
   const canUpdateAgent =
@@ -474,52 +322,32 @@ export function ServerScreen({
     knownServices === null
       ? null
       : knownServices.filter((service) => service.activeState === 'failed').length
+  const containerTotal = list !== null ? containers.length : (server.containers ?? 0)
+  const containerRunning = list !== null ? running : (server.runningContainers ?? 0)
   const overviewServer = {
     ...server,
     cpuPercent: server.cpuPercent ?? null,
     memPercent: server.memPercent ?? null,
     diskPercent: server.diskPercent ?? null,
-    containers: server.containers ?? containers.length,
-    runningContainers: server.runningContainers ?? running,
+    containers: containerTotal,
+    runningContainers: containerRunning,
     services: server.services ?? 0,
   }
 
-  const moveTab = (event: KeyboardEvent<HTMLButtonElement>, index: number) => {
-    let next: number
-    switch (event.key) {
-      case 'ArrowLeft':
-        next = (index - 1 + availableTabs.length) % availableTabs.length
-        break
-      case 'ArrowRight':
-        next = (index + 1) % availableTabs.length
-        break
-      case 'Home':
-        next = 0
-        break
-      case 'End':
-        next = availableTabs.length - 1
-        break
-      default:
-        return
-    }
-    event.preventDefault()
-    selectTab(availableTabs[next]!, true)
-  }
-
-  if (openStack !== null) {
+  if (showStack && stackName !== null) {
     return (
       <StackScreen
         api={api}
         metricsApi={metricsApi}
         server={server}
-        name={openStack.name}
-        adopted={openStack.adopted}
-        broken={openStack.broken}
-        containers={list?.containers ?? []}
+        name={stackName}
+        adopted={stackFlags?.name === stackName ? stackFlags.adopted : false}
+        broken={stackFlags?.name === stackName ? stackFlags.broken : false}
+        containers={containers}
         connected={list?.connected ?? false}
         dockerAvailable={list?.dockerAvailable ?? false}
         pollMs={pollMs}
-        onBack={() => setOpenStack(null)}
+        onBack={() => navigate(tabPath(server.id, 'containers'))}
         onChanged={() => void load()}
       />
     )
@@ -527,57 +355,34 @@ export function ServerScreen({
 
   return (
     <section className="serverscreen" aria-labelledby="server-title">
-      <button type="button" className="serverscreen__back" onClick={onBack}>
-        <ArrowLeftIcon />
-        {t('server:back')}
-      </button>
+      <div className="serverscreen__sticky">
+        <ServerHeader
+          server={server}
+          serverInfo={serverInfo}
+          agentVersion={agentVersion}
+          containers={overviewServer.containers ?? 0}
+          runningContainers={overviewServer.runningContainers ?? 0}
+          canHostTerminal={canHostTerminal}
+          hostTerminal={hostTerminal}
+          hostTerminalConnected={hostTerminalConnected}
+          canUpdateAgent={canUpdateAgent}
+          canAgentUpdate={canAgentUpdate}
+          canAlerts={canAlerts}
+          onOpenHostTerminal={() => setHostTerminalOpen(true)}
+          onRequestAgentUpdate={() => {
+            setUpdateError(null)
+            setConfirmingAgentUpdate(true)
+          }}
+        />
 
-      <header className="serverscreen__head">
-        <h1 className="serverscreen__title" id="server-title">
-          {server.name}
-        </h1>
-        {list !== null && list.connected && list.dockerAvailable ? (
-          <p className="serverscreen__summary">
-            {t('server:summary', { count: containers.length, running })}
-          </p>
-        ) : null}
-        {agentVersion !== '' || canUpdateAgent ? (
-          <div className="serverscreen__meta">
-            {agentVersion !== '' ? (
-              <span className="serverscreen__agent">
-                {t('server:agentVersion', { version: agentVersion })}
-              </span>
-            ) : null}
-            {canUpdateAgent ? (
-              <button
-                type="button"
-                className="serverscreen__update"
-                onClick={() => {
-                  setUpdateError(null)
-                  setConfirmingAgentUpdate(true)
-                }}
-              >
-                {t('server:agentUpdate.button')}
-              </button>
-            ) : null}
-          </div>
-        ) : null}
-        {canHostTerminal && hostTerminalConnected ? (
-          <button
-            type="button"
-            className="cbtn serverscreen__terminal"
-            disabled={!hostTerminal}
-            title={hostTerminal ? undefined : t('server:terminal.hostUnavailable')}
-            onClick={() => setHostTerminalOpen(true)}
-          >
-            <TerminalIcon />
-            {t('server:terminal.hostButton')}
-          </button>
-        ) : null}
-        {canAgentUpdate && agentUpdateManual ? (
-          <ManualUpgrade command={agentUpgradeCommand} />
-        ) : null}
-      </header>
+        <ServerTabs
+          serverId={server.id}
+          tabs={availableTabs}
+          activeTab={activeTab}
+          apt={apt}
+          failedServices={failedServices}
+        />
+      </div>
 
       {hostTerminalOpen && hostTerminalConnected ? (
         <Suspense
@@ -596,49 +401,6 @@ export function ServerScreen({
           />
         </Suspense>
       ) : null}
-
-      <div className="server-tabs" role="tablist" aria-label={t('server:tabs.label')}>
-        {availableTabs.map((tab, index) => {
-          const selected = activeTab === tab
-          const label = t(`server:tabs.${tab}`)
-          const updatesBadge = tab === 'updates' && apt ? `${apt.security}/${apt.upgradable}` : ''
-          const failedBadge =
-            tab === 'services' && failedServices !== null && failedServices > 0
-              ? t('server:tabs.failedBadge', { count: failedServices })
-              : ''
-          const badge = updatesBadge || failedBadge
-          const alert = tab === 'updates' && (apt?.security ?? 0) > 0
-          const badgeID = badge === '' ? undefined : `server-tab-${tab}-badge`
-          return (
-            <button
-              key={tab}
-              id={`server-tab-${tab}`}
-              type="button"
-              role="tab"
-              className={selected ? 'server-tabs__tab server-tabs__tab--on' : 'server-tabs__tab'}
-              aria-label={label}
-              aria-selected={selected}
-              aria-controls={`server-panel-${tab}`}
-              aria-describedby={badgeID}
-              tabIndex={selected ? 0 : -1}
-              onClick={() => selectTab(tab)}
-              onKeyDown={(event) => moveTab(event, index)}
-            >
-              <span>{label}</span>
-              {badge !== '' ? (
-                <span
-                  id={badgeID}
-                  className={
-                    alert ? 'server-tabs__badge server-tabs__badge--alert' : 'server-tabs__badge'
-                  }
-                >
-                  {badge}
-                </span>
-              ) : null}
-            </button>
-          )
-        })}
-      </div>
 
       {state.status === 'loading' ? (
         <p className="serverscreen__message" role="status">
@@ -670,28 +432,6 @@ export function ServerScreen({
         </p>
       ) : null}
 
-      {canOverview && activeTab === 'overview' ? (
-        <div
-          className="server-tabpanel"
-          role="tabpanel"
-          id="server-panel-overview"
-          aria-labelledby="server-tab-overview"
-          tabIndex={0}
-        >
-          <OverviewTab
-            server={overviewServer}
-            serverId={server.id}
-            metricsApi={metricsApi}
-            agentVersion={agentVersion}
-            agentUpdateAvailable={agentUpdateAvailable}
-            agentUpdateManual={agentUpdateManual}
-            failedServices={failedServices}
-            tabs={availableTabs}
-            onGoToTab={selectTab}
-          />
-        </div>
-      ) : null}
-
       {canContainers && activeTab === 'containers' ? (
         <div
           className="server-tabpanel"
@@ -700,181 +440,44 @@ export function ServerScreen({
           aria-labelledby="server-tab-containers"
           tabIndex={0}
         >
-          {list !== null && !list.connected ? (
-            <p className="serverscreen__message">{t('server:offline')}</p>
-          ) : null}
-          {list !== null && list.connected && !list.dockerAvailable ? (
-            <p className="serverscreen__message">{t('server:noDocker')}</p>
-          ) : null}
-          {list !== null && list.connected && list.dockerAvailable && containers.length === 0 ? (
-            <p className="serverscreen__message">{t('server:empty')}</p>
-          ) : null}
-
-          {canStacks && list !== null && list.connected && list.dockerAvailable ? (
-            <StacksSection
-              api={api}
-              serverId={server.id}
-              containers={list.containers}
-              pollMs={pollMs}
-              onChanged={() => void load()}
-              onOpenStack={(name, adopted, broken) => setOpenStack({ name, adopted, broken })}
-            />
-          ) : null}
-
-          {containers.length > 0 ? (
-            <ul className="containers" aria-label={t('server:title')}>
-              {containers.map((container) => (
-                <ContainerRow
-                  key={container.id}
-                  serverId={server.id}
-                  container={container}
-                  outcome={outcomes[container.id]}
-                  confirming={
-                    confirming !== null && confirming.id === container.id ? confirming.action : null
-                  }
-                  onAction={(action) => {
-                    if (action === 'stop' || action === 'remove') {
-                      setConfirming({ id: container.id, action })
-                    } else {
-                      void run(container, action)
-                    }
-                  }}
-                  onConfirm={() => {
-                    if (confirming !== null) {
-                      void run(container, confirming.action)
-                    }
-                  }}
-                  onCancel={() => setConfirming(null)}
-                  onToggleLogs={() =>
-                    setLogsFor((current) => (current === container.id ? null : container.id))
-                  }
-                  onToggleTerminal={() =>
-                    setTerminalFor((current) => (current === container.id ? null : container.id))
-                  }
-                  terminal={
-                    terminalFor === container.id ? (
-                      <Suspense
-                        fallback={
-                          <p className="terminal__message" role="status">
-                            {t('server:terminal.opening')}
-                          </p>
-                        }
-                      >
-                        <TerminalPanel
-                          api={terminalApi}
-                          serverId={server.id}
-                          serverName={server.name}
-                          target={{ kind: 'container', container: container.name }}
-                          onClose={() => setTerminalFor(null)}
-                        />
-                      </Suspense>
-                    ) : null
-                  }
-                  logs={
-                    logsFor === container.id ? (
-                      <LogsPanel
-                        api={api}
-                        serverId={server.id}
-                        container={container.name}
-                        pollMs={pollMs}
-                        onClose={() => setLogsFor(null)}
-                      />
-                    ) : null
-                  }
-                />
-              ))}
-            </ul>
-          ) : null}
-
-          {canResources && list !== null && list.connected && list.dockerAvailable ? (
-            <ResourcesSection api={api} serverId={server.id} pollMs={pollMs} />
-          ) : null}
-        </div>
-      ) : null}
-
-      {canServices && activeTab === 'services' ? (
-        <div
-          className="server-tabpanel"
-          role="tabpanel"
-          id="server-panel-services"
-          aria-labelledby="server-tab-services"
-          tabIndex={0}
-        >
-          {list !== null && !list.connected ? (
-            <p className="serverscreen__message">{t('server:offline')}</p>
-          ) : null}
-          {list !== null && list.connected ? (
-            <ServicesSection
-              api={servicesApi}
-              serverId={server.id}
-              pollMs={pollMs}
-              onLoaded={handleServicesLoaded}
-            />
-          ) : null}
-        </div>
-      ) : null}
-
-      {canLogs && activeTab === 'logs' ? (
-        <div
-          className="server-tabpanel"
-          role="tabpanel"
-          id="server-panel-logs"
-          aria-labelledby="server-tab-logs"
-          tabIndex={0}
-        >
-          {list !== null && !list.connected ? (
-            <p className="serverscreen__message">{t('server:offline')}</p>
-          ) : null}
-          {list !== null && list.connected ? (
-            <JournalSection
-              api={journalApi}
-              servicesApi={servicesApi}
-              serverId={server.id}
-              pollMs={pollMs}
-            />
-          ) : null}
-        </div>
-      ) : null}
-
-      {canUpdates && activeTab === 'updates' ? (
-        <div
-          className="server-tabpanel"
-          role="tabpanel"
-          id="server-panel-updates"
-          aria-labelledby="server-tab-updates"
-          tabIndex={0}
-        >
-          {list !== null && !list.connected ? (
-            <p className="serverscreen__message">{t('server:offline')}</p>
-          ) : null}
-          {list !== null && list.connected ? (
-            <UpdatesSection
-              aptApi={aptApi}
-              serverId={server.id}
-              hostname={server.hostname ?? ''}
-              pollMs={pollMs}
-              onSummary={setLiveApt}
-            />
-          ) : null}
-        </div>
-      ) : null}
-
-      {canAlerts && activeTab === 'alerts' ? (
-        <div
-          className="server-tabpanel"
-          role="tabpanel"
-          id="server-panel-alerts"
-          aria-labelledby="server-tab-alerts"
-          tabIndex={0}
-        >
-          <AlertsSection
-            api={alertsApi}
-            serverId={server.id}
-            serverName={server.name}
-            groupId={server.groupId}
+          <ContainersTab
+            api={api}
+            terminalApi={terminalApi}
+            server={server}
+            list={list}
+            pollMs={pollMs}
+            canStacks={canStacks}
+            canResources={canResources}
+            onReload={load}
+            onOpenStack={(name) => navigate(stackPath(server.id, name))}
           />
         </div>
       ) : null}
+
+      <ServerPanels
+        activeTab={activeTab}
+        tabs={availableTabs}
+        server={overviewServer}
+        list={list}
+        pollMs={pollMs}
+        metricsApi={metricsApi}
+        agentVersion={agentVersion}
+        agentUpdateAvailable={agentUpdateAvailable}
+        agentUpdateManual={agentUpdateManual}
+        failedServices={failedServices}
+        canOverview={canOverview}
+        canServices={canServices}
+        canLogs={canLogs}
+        canUpdates={canUpdates}
+        canAlerts={canAlerts}
+        servicesApi={servicesApi}
+        journalApi={journalApi}
+        aptApi={aptApi}
+        alertsApi={alertsApi}
+        onGoToTab={(tab) => navigate(tabPath(server.id, tab))}
+        onServicesLoaded={handleServicesLoaded}
+        onAptSummary={setLiveApt}
+      />
 
       {confirmingAgentUpdate ? (
         <div className="settings__overlay">
@@ -908,189 +511,5 @@ export function ServerScreen({
         </div>
       ) : null}
     </section>
-  )
-}
-
-interface ContainerRowProps {
-  serverId: string
-  container: Container
-  outcome: Outcome | undefined
-  /** confirming is the action waiting for confirmation, or null. */
-  confirming: 'stop' | 'remove' | null
-  onAction: (action: ContainerAction) => void
-  onConfirm: () => void
-  onCancel: () => void
-  onToggleLogs: () => void
-  onToggleTerminal: () => void
-  /** logs is the open log viewer of this container, if any. */
-  logs: ReactNode
-  /** terminal is the open terminal of this container, if any. */
-  terminal: ReactNode
-}
-
-function ContainerRow({
-  serverId,
-  container,
-  outcome,
-  confirming,
-  onAction,
-  onConfirm,
-  onCancel,
-  onToggleLogs,
-  onToggleTerminal,
-  logs,
-  terminal,
-}: ContainerRowProps) {
-  const { t } = useTranslation('server')
-  const { can } = usePermissions()
-  const busy = outcome?.kind === 'working'
-  const isRunning = container.state === 'running'
-  const scope = {
-    serverId,
-    stack: container.composeProject || undefined,
-    container: container.name,
-  }
-  const canControl = can('container.control', scope)
-  const canRemove = can('container.remove', scope)
-  const canLogs = can('container.logs', scope)
-  const canTerminal = can('container.terminal', scope)
-  const actions: ContainerAction[] = (isRunning ? ['restart', 'stop'] : ['start']).filter(
-    () => canControl,
-  ) as ContainerAction[]
-  if (canRemove) actions.push('remove')
-  const hasActions = canLogs || (canTerminal && isRunning) || actions.length > 0
-
-  return (
-    <li className={`container container--${container.state}`}>
-      <div className="container__main">
-        <div className="container__head">
-          <h3 className="container__name">{container.name}</h3>
-          <span className={`status status--${isRunning ? 'online' : 'offline'}`}>
-            {t(`state.${container.state}`, { defaultValue: container.state })}
-          </span>
-          {container.composeProject !== '' ? (
-            <span className="tag">{t('project', { name: container.composeProject })}</span>
-          ) : null}
-        </div>
-        <p className="container__meta">
-          <span className="container__image">{container.image}</span>
-          <span className="container__status">{container.status}</span>
-        </p>
-        {isRunning && container.use ? <ContainerUseGauges container={container} /> : null}
-        {outcome?.kind === 'working' ? (
-          <p className="container__outcome" role="status">
-            {t('progress.working')}
-          </p>
-        ) : null}
-        {outcome?.kind === 'done' ? (
-          <p className="container__outcome container__outcome--ok" role="status">
-            {t('progress.done')}
-          </p>
-        ) : null}
-        {outcome?.kind === 'failed' ? (
-          <p className="container__outcome container__outcome--error" role="alert">
-            {t('progress.failed', { message: outcome.message })}
-          </p>
-        ) : null}
-      </div>
-
-      {confirming ? (
-        <div
-          className="container__confirm"
-          role="group"
-          aria-label={t(confirming === 'remove' ? 'confirm.removeTitle' : 'confirm.stopTitle', {
-            name: container.name,
-          })}
-        >
-          <p className="container__confirm-title">
-            {t(confirming === 'remove' ? 'confirm.removeTitle' : 'confirm.stopTitle', {
-              name: container.name,
-            })}
-          </p>
-          <p className="container__confirm-body">
-            {t(confirming === 'remove' ? 'confirm.removeBody' : 'confirm.stopBody')}
-          </p>
-          <div className="container__actions">
-            <button
-              type="button"
-              className={confirming === 'remove' ? 'cbtn cbtn--danger' : 'cbtn'}
-              onClick={onConfirm}
-            >
-              {t(confirming === 'remove' ? 'confirm.yes' : 'confirm.stopYes')}
-            </button>
-            <button type="button" className="cbtn" onClick={onCancel}>
-              {t('confirm.no')}
-            </button>
-          </div>
-        </div>
-      ) : hasActions ? (
-        <div className="container__actions">
-          {canLogs ? (
-            <button
-              type="button"
-              className="cbtn"
-              aria-expanded={logs !== null}
-              onClick={onToggleLogs}
-            >
-              <LogsIcon />
-              {t('action.logs')}
-            </button>
-          ) : null}
-          {canTerminal && isRunning ? (
-            <button
-              type="button"
-              className="cbtn"
-              aria-expanded={terminal !== null}
-              onClick={onToggleTerminal}
-            >
-              <TerminalIcon />
-              {t('action.terminal')}
-            </button>
-          ) : null}
-          {actions.map((action) => {
-            const ActionIcon = actionIcons[action]
-            return (
-              <button
-                key={action}
-                type="button"
-                className={action === 'remove' ? 'cbtn cbtn--danger' : 'cbtn'}
-                disabled={busy}
-                onClick={() => onAction(action)}
-              >
-                <ActionIcon />
-                {t(`action.${action}`)}
-              </button>
-            )
-          })}
-        </div>
-      ) : null}
-      {logs}
-      {terminal}
-    </li>
-  )
-}
-
-/** ContainerUseGauges shows the CPU and the memory of a running container. */
-function ContainerUseGauges({ container }: { container: Container }) {
-  const { t, i18n } = useTranslation(['server', 'fleet'])
-  const language = i18n.resolvedLanguage ?? i18n.language
-  const use = container.use
-  if (!use) return null
-
-  const memoryPercent = use.memLimitBytes > 0 ? (use.memUsedBytes / use.memLimitBytes) * 100 : 0
-  const memoryText =
-    use.memLimitBytes > 0
-      ? `${formatBytes(use.memUsedBytes, language)} / ${formatBytes(use.memLimitBytes, language)}`
-      : formatBytes(use.memUsedBytes, language)
-
-  return (
-    <div className="container__use" aria-label={t('server:use.title')}>
-      <UseGauge
-        label={t('fleet:metric.cpu')}
-        percent={use.cpuPercent}
-        value={formatPercent(use.cpuPercent, language)}
-      />
-      <UseGauge label={t('fleet:metric.ram')} percent={memoryPercent} value={memoryText} />
-    </div>
   )
 }

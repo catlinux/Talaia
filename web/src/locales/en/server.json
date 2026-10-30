@@ -2,6 +2,16 @@
   "back": "Back to the fleet",
   "loading": "Loading the containers…",
   "title": "Containers",
+  "header": {
+    "actions": "Server actions",
+    "viewAlerts": "View alerts",
+    "copyId": "Copy server ID",
+    "copied": "Server ID copied",
+    "cpu": "CPU",
+    "ram": "RAM",
+    "disk": "Disk",
+    "metric": "{{label}}: {{value}}"
+  },
   "summary_one": "{{count}} container · {{running}} running",
   "summary_other": "{{count}} containers · {{running}} running",
   "offline": "The agent of this server is not connected, so its containers cannot be shown or managed.",

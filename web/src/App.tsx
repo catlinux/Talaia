@@ -14,6 +14,7 @@ import type { InvitesApi } from './api/invites'
 import type { ServersApi } from './api/servers'
 import type { ServicesApi } from './api/services'
 import type { SystemApi } from './api/system'
+import type { Server } from './api/types'
 import { usePermissions } from './auth/permissions'
 import { Sidebar } from './components/shell/Sidebar'
 import { Topbar } from './components/shell/Topbar'
@@ -118,12 +119,14 @@ function PanelShell({
 
   const [mobileOpen, setMobileOpen] = useState(false)
   const [serverNames, setServerNames] = useState<Record<string, string>>({})
+  const [serverDetails, setServerDetails] = useState<Record<string, Server>>({})
   const serverMatch = matchRoute('/servers/:id/*', path)
   const serverID = serverMatch?.params.id ?? ''
   const serverName = serverID === '' ? undefined : serverNames[serverID]
+  const serverDetail = serverID === '' ? undefined : serverDetails[serverID]
 
   useEffect(() => {
-    if (serverID === '' || serverName !== undefined) return
+    if (serverID === '' || serverDetail !== undefined) return
     let active = true
     fleetClient.listServers().then(
       (servers) => {
@@ -133,13 +136,16 @@ function PanelShell({
         setServerNames((current) =>
           current[serverID] === undefined ? { ...current, [serverID]: found.name } : current,
         )
+        setServerDetails((current) =>
+          current[serverID] === undefined ? { ...current, [serverID]: found } : current,
+        )
       },
       () => undefined,
     )
     return () => {
       active = false
     }
-  }, [fleetClient, serverID, serverName])
+  }, [fleetClient, serverDetail, serverID])
 
   const openServer = useCallback(
     (id: string, name: string) => {
@@ -158,6 +164,9 @@ function PanelShell({
   const isContainers = matchRoute('/containers', path) !== null
   const isStacks = matchRoute('/stacks', path) !== null
 
+  // Tabs and stacks of one server share the screen state; the URL only changes the panel.
+  const pageKey = serverID === '' ? path : `server:${serverID}`
+
   let page: ReactNode
   if (path === '/') {
     page = <Overview client={fleetClient} alertsApi={canAlerts ? alerts : undefined} />
@@ -166,12 +175,16 @@ function PanelShell({
   } else if (serverMatch !== null) {
     page = (
       <ServerScreen
-        server={{ id: serverID, name: serverName ?? serverID }}
+        server={
+          serverDetail
+            ? { ...serverDetail, name: serverName ?? serverDetail.name }
+            : { id: serverID, name: serverName ?? serverID }
+        }
         api={containersApi}
         aptApi={aptApi}
         servicesApi={servicesApi}
         journalApi={journalApi}
-        onBack={() => navigate('/servers')}
+        serversApi={serversApi}
       />
     )
   } else if (isAlerts) {
@@ -234,11 +247,11 @@ function PanelShell({
       <div className="shell__content">
         <Topbar
           alertSummary={alertSummary}
-          serverName={serverID === '' ? undefined : (serverName ?? serverID)}
+          serverName={serverID === '' ? undefined : (serverName ?? serverDetail?.name ?? serverID)}
           onOpenMenu={() => setMobileOpen(true)}
         />
         <main className="shell__main">
-          <div className="shell__page" key={path}>
+          <div className="shell__page" key={pageKey}>
             {page}
           </div>
         </main>
