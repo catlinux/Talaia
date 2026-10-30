@@ -51,5 +51,39 @@
     "backHome": "Volver al resumen",
     "noAccess": "No tienes acceso a esta página.",
     "comingSoon": "Llega en la próxima actualización"
+  },
+  "palette": {
+    "title": "Paleta de comandos",
+    "open": "Abrir búsqueda",
+    "search": "Buscar…",
+    "searchLabel": "Busca servidores, contenedores, stacks y acciones",
+    "placeholder": "Busca servidores, contenedores, stacks o acciones…",
+    "results": "Resultados de la búsqueda",
+    "empty": "Sin resultados.",
+    "loadingContainers": "Cargando contenedores…",
+    "ctrlK": "Ctrl K",
+    "cmdK": "⌘K",
+    "sections": {
+      "screens": "Pantallas",
+      "servers": "Servidores",
+      "containers": "Contenedores",
+      "stacks": "Stacks",
+      "actions": "Acciones",
+      "recent": "Recientes"
+    },
+    "status": {
+      "online": "En línea",
+      "offline": "Sin conexión",
+      "warning": "Aviso",
+      "critical": "Crítico"
+    },
+    "containerDetail": "{{server}} · {{image}}",
+    "stackDetail": "{{server}}",
+    "actions": {
+      "addServer": "Añadir servidor",
+      "switchTheme": "Cambiar tema",
+      "changeLanguage": "Cambiar idioma",
+      "signOut": "Cerrar sesión"
+    }
   }
 }

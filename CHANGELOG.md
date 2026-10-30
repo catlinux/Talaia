@@ -18,6 +18,12 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.6.16] - 2026-10-31
+
+### Added
+
+- Panel: command palette (Ctrl+K or the search box in the top bar) to jump to any server, container, stack or page and run frequent actions.
+
 ## [0.6.15] - 2026-10-30
 
 ### Changed
@@ -792,7 +798,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.6.15...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.6.16...HEAD
+[0.6.16]: https://github.com/catlinux/Talaia/releases/tag/v0.6.16
 [0.6.15]: https://github.com/catlinux/Talaia/releases/tag/v0.6.15
 [0.6.14]: https://github.com/catlinux/Talaia/releases/tag/v0.6.14
 [0.6.13]: https://github.com/catlinux/Talaia/releases/tag/v0.6.13

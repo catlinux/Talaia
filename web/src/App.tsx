@@ -266,6 +266,8 @@ function PanelShell({
         <Topbar
           alertSummary={alertSummary}
           alertsApi={alerts}
+          client={fleetClient}
+          containersApi={containers}
           serverName={serverID === '' ? undefined : (serverName ?? serverDetail?.name ?? serverID)}
           onOpenMenu={() => setMobileOpen(true)}
         />

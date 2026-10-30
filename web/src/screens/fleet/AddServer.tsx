@@ -1,4 +1,4 @@
-import { useRef, useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import type { EnrollmentToken } from '../../api/types'
@@ -7,6 +7,8 @@ import { CheckIcon, CopyIcon, PlusIcon } from '../../components/icons'
 
 export interface AddServerProps {
   create: (name: string) => Promise<EnrollmentToken>
+  /** initialOpen opens the form directly, for /servers?add=1. */
+  initialOpen?: boolean
 }
 
 /** namePattern is what the core accepts as the name of a server. */
@@ -17,15 +19,23 @@ const namePattern = String.raw`[A-Za-z0-9][A-Za-z0-9._\u002D]{0,62}`
  * AddServer is the "Add server" button of the fleet screen: it asks for a name,
  * creates a one-time token and shows the command to run on the new server.
  */
-export function AddServer({ create }: AddServerProps) {
+export function AddServer({ create, initialOpen = false }: AddServerProps) {
   const { t } = useTranslation(['fleet', 'errors'])
-  const [open, setOpen] = useState(false)
+  const [open, setOpen] = useState(initialOpen)
   const [name, setName] = useState('')
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [created, setCreated] = useState<EnrollmentToken | null>(null)
   const [copied, setCopied] = useState(false)
   const nameField = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (!initialOpen) return
+    queueMicrotask(() => {
+      setOpen(true)
+      nameField.current?.focus()
+    })
+  }, [initialOpen])
 
   function close() {
     setOpen(false)

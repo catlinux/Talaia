@@ -302,6 +302,13 @@ describe('Servers', () => {
     expect(screen.getByRole('button', { name: 'Add server' })).toBeTruthy()
   })
 
+  it('opens the Add server form from the palette address', async () => {
+    window.history.replaceState({}, '', '/servers?add=1')
+    renderServers(mockClient)
+
+    expect(await screen.findByLabelText('Server name')).toBeTruthy()
+  })
+
   it('hides Add server without server.enroll', async () => {
     renderServers(mockClient, undefined, meApi({ organization: ['server.view'] }))
 

@@ -310,7 +310,9 @@ export function Servers({ client = defaultClient, alertsApi }: ServersProps) {
           {t('servers.view.cards')}
         </button>
       </div>
-      {canEnroll ? <AddServer create={client.createEnrollment} /> : null}
+      {canEnroll ? (
+        <AddServer create={client.createEnrollment} initialOpen={query.get('add') === '1'} />
+      ) : null}
     </>
   )
 

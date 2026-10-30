@@ -51,5 +51,39 @@
     "backHome": "Torna al resum",
     "noAccess": "No tens accés a aquesta pàgina.",
     "comingSoon": "Arriba en la propera actualització"
+  },
+  "palette": {
+    "title": "Paleta de comandes",
+    "open": "Obre la cerca",
+    "search": "Cerca…",
+    "searchLabel": "Cerca servidors, contenidors, stacks i accions",
+    "placeholder": "Cerca servidors, contenidors, stacks o accions…",
+    "results": "Resultats de la cerca",
+    "empty": "Cap resultat.",
+    "loadingContainers": "S'estan carregant els contenidors…",
+    "ctrlK": "Ctrl K",
+    "cmdK": "⌘K",
+    "sections": {
+      "screens": "Pantalles",
+      "servers": "Servidors",
+      "containers": "Contenidors",
+      "stacks": "Stacks",
+      "actions": "Accions",
+      "recent": "Recents"
+    },
+    "status": {
+      "online": "En línia",
+      "offline": "Sense connexió",
+      "warning": "Avís",
+      "critical": "Crític"
+    },
+    "containerDetail": "{{server}} · {{image}}",
+    "stackDetail": "{{server}}",
+    "actions": {
+      "addServer": "Afegeix un servidor",
+      "switchTheme": "Canvia el tema",
+      "changeLanguage": "Canvia l'idioma",
+      "signOut": "Tanca la sessió"
+    }
   }
 }
