@@ -6,57 +6,12 @@
   gap: 18px;
 }
 
-.audit__head {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+.audit__tab {
+  text-decoration: none;
+  white-space: nowrap;
 }
 
-.audit__title {
-  margin: 0;
-  font-size: 1.25rem;
-  font-weight: 600;
-  letter-spacing: normal;
-}
-
-.audit__subtitle {
-  margin: 0;
-  color: var(--muted);
-}
-
-.audit__filters {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  gap: 12px 18px;
-  padding: 14px 16px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: var(--surface);
-}
-
-.audit__field {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  min-width: 180px;
-  color: var(--muted);
-  font-size: 0.75rem;
-}
-
-.audit__field select,
-.audit__field input {
-  min-width: 0;
-  padding: 7px 10px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
-  background: var(--surface-2);
-  color: var(--ink);
-  font: inherit;
-  font-size: 0.875rem;
-}
-
-.audit__actor-form {
+.audit__actor {
   display: flex;
   flex-wrap: wrap;
   align-items: flex-end;
@@ -68,53 +23,6 @@
   color: var(--muted);
 }
 
-.audit__message--error {
-  color: var(--crit);
-}
-
-.audit__table-wrap {
-  overflow-x: auto;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: var(--surface);
-}
-
-.audit__table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.875rem;
-}
-
-.audit__table th {
-  padding: 10px 12px;
-  border-bottom: 1px solid var(--line);
-  color: var(--muted);
-  font-size: 0.8125rem;
-  font-weight: 500;
-  text-align: left;
-  white-space: nowrap;
-}
-
-.audit__table td {
-  padding: 10px 12px;
-  border-bottom: 1px solid var(--line);
-  vertical-align: top;
-}
-
-.audit__row:hover {
-  background: color-mix(in srgb, var(--accent) 4%, transparent);
-}
-
-.audit__table tbody tr:last-child td {
-  border-bottom: 0;
-}
-
-.audit__table time {
-  display: block;
-  font-family: var(--f-mono);
-  font-size: 0.75rem;
-}
-
 .audit__relative {
   display: block;
   margin-top: 2px;
@@ -122,59 +30,9 @@
   font-size: 0.6875rem;
 }
 
-.audit__result {
-  display: inline-block;
-  padding: 1px 8px;
-  border-radius: 999px;
-  font-size: 0.75rem;
-  font-weight: 500;
-  white-space: nowrap;
-}
-
-.audit__result--success {
-  background: var(--ok-soft);
-  color: var(--ok);
-}
-
-.audit__result--failure,
-.audit__result--denied {
-  background: var(--crit-soft);
-  color: var(--crit);
-}
-
-.audit__result--requested {
-  background: var(--warn-soft);
-  color: var(--warn);
-}
-
-.audit__result--unknown {
-  background: var(--surface-2);
-  color: var(--muted);
-}
-
-.audit__details-toggle {
-  padding: 2px 0;
-  border: 0;
-  border-bottom: 1px solid var(--line);
-  background: none;
-  color: var(--accent);
-  font: inherit;
-  font-size: 0.75rem;
-  cursor: pointer;
-}
-
-.audit__details-toggle:hover {
-  border-bottom-color: var(--accent);
-}
-
 .audit__muted {
   color: var(--muted);
   font-size: 0.75rem;
-}
-
-.audit__details-row td {
-  padding: 0 12px 12px;
-  background: color-mix(in srgb, var(--surface-2) 55%, transparent);
 }
 
 .audit__details {
@@ -212,81 +70,9 @@
 }
 
 @media (max-width: 760px) {
-  .audit__filters {
+  .audit__actor {
     align-items: stretch;
     flex-direction: column;
-  }
-
-  .audit__field {
-    min-width: 0;
-    width: 100%;
-  }
-
-  .audit__actor-form {
-    align-items: stretch;
-    flex-direction: column;
-  }
-
-  .audit__actor-form .cbtn {
-    align-self: flex-start;
-  }
-
-  .audit__table-wrap {
-    overflow: visible;
-    border: 0;
-    background: none;
-    box-shadow: none;
-  }
-
-  .audit__table,
-  .audit__table tbody,
-  .audit__table tr,
-  .audit__table td {
-    display: block;
-    width: 100%;
-  }
-
-  .audit__table thead {
-    display: none;
-  }
-
-  .audit__row {
-    margin-bottom: 10px;
-    padding: 12px 14px;
-    border: 1px solid var(--line);
-    border-radius: var(--radius);
-    background: var(--surface);
-  }
-
-  .audit__table td {
-    display: flex;
-    justify-content: space-between;
-    gap: 14px;
-    padding: 4px 0;
-    border: 0;
-    text-align: right;
-  }
-
-  .audit__table td::before {
-    content: attr(data-label);
-    color: var(--muted);
-    font-size: 0.8125rem;
-    font-weight: 500;
-    text-align: left;
-  }
-
-  .audit__details-row {
-    margin: -4px 0 10px;
-  }
-
-  .audit__details-row td {
-    display: block;
-    padding: 0;
-    text-align: left;
-  }
-
-  .audit__details-row td::before {
-    content: none;
   }
 
   .audit__details {

@@ -1,9 +1,11 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import type { ReactNode } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { AuditApi } from '../api/audit'
 import type { Recording, RecordingsApi } from '../api/recordings'
 import i18n from '../i18n'
+import { RouterProvider } from '../router'
 import { Audit } from './Audit'
 
 const recordings: Recording[] = [
@@ -48,6 +50,11 @@ function fakeRecordings(): RecordingsApi {
   }
 }
 
+function renderAudit(ui: ReactNode, path = '/audit') {
+  window.history.replaceState({}, '', path)
+  return render(<RouterProvider>{ui}</RouterProvider>)
+}
+
 describe('Audit recordings', () => {
   beforeEach(async () => {
     await i18n.changeLanguage('en')
@@ -57,7 +64,7 @@ describe('Audit recordings', () => {
 
   it('lists recordings newest first, marks privileged sessions and links finished ones', async () => {
     const api = fakeRecordings()
-    render(<Audit api={auditApi} recordingsApi={api} />)
+    renderAudit(<Audit api={auditApi} recordingsApi={api} />)
 
     fireEvent.click(await screen.findByRole('tab', { name: 'Recordings' }))
 
@@ -75,12 +82,21 @@ describe('Audit recordings', () => {
     expect(api.list).toHaveBeenCalled()
   })
 
+  it('opens recordings directly from its route', async () => {
+    renderAudit(<Audit api={auditApi} recordingsApi={fakeRecordings()} />, '/audit/recordings')
+
+    expect(
+      (await screen.findByRole('tab', { name: 'Recordings' })).getAttribute('aria-selected'),
+    ).toBe('true')
+    expect(await screen.findAllByText('vps-web-01')).toHaveLength(2)
+  })
+
   it('shows the recordings error without hiding the audit sections', async () => {
     const api: RecordingsApi = {
       list: () => Promise.reject(new Error('unavailable')),
       downloadUrl: (id) => `/api/v1/recordings/${id}/download`,
     }
-    render(<Audit api={auditApi} recordingsApi={api} />)
+    renderAudit(<Audit api={auditApi} recordingsApi={api} />)
 
     fireEvent.click(await screen.findByRole('tab', { name: 'Recordings' }))
     await waitFor(() => expect(screen.getByRole('alert')).toBeTruthy())

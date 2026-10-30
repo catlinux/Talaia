@@ -1,14 +1,21 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import type { ReactNode } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { AuditApi, AuditPage, AuditQuery } from '../api/audit'
 import i18n from '../i18n'
+import { RouterProvider } from '../router'
 import { Audit } from './Audit'
 
 const at = '2026-10-22T10:00:00Z'
 
 function page(overrides: Partial<AuditPage> = {}): AuditPage {
   return { entries: [], next: '', ...overrides }
+}
+
+function renderAudit(ui: ReactNode, path = '/audit') {
+  window.history.replaceState({}, '', path)
+  return render(<RouterProvider>{ui}</RouterProvider>)
 }
 
 /** fakeApi answers from a queue of pages and records the queries. */
@@ -79,7 +86,7 @@ describe('Audit', () => {
       }),
     ])
 
-    render(<Audit api={api} limit={2} serverNames={{ 'srv-1': 'vps-web-01' }} />)
+    renderAudit(<Audit api={api} limit={2} serverNames={{ 'srv-1': 'vps-web-01' }} />)
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Audit' })).toBeTruthy()
     expect(await screen.findByText('Terminal opened')).toBeTruthy()
@@ -97,16 +104,54 @@ describe('Audit', () => {
 
   it('filters by action group and actor and resets the list', async () => {
     const { api, calls } = fakeApi([page()])
-    render(<Audit api={api} />)
+    renderAudit(<Audit api={api} />)
     await waitFor(() => expect(calls).toHaveLength(1))
 
     fireEvent.change(screen.getByLabelText('Action'), { target: { value: 'terminal_*' } })
     await waitFor(() => expect(calls.at(-1)?.action).toBe('terminal_*'))
+    expect(new URLSearchParams(window.location.search).get('action')).toBe('terminal_*')
 
     fireEvent.change(screen.getByLabelText('Actor'), { target: { value: ' admin ' } })
     fireEvent.click(screen.getByRole('button', { name: 'Filter' }))
     await waitFor(() => expect(calls.at(-1)?.actor).toBe('admin'))
     expect(calls.at(-1)?.action).toBe('terminal_*')
+    expect(new URLSearchParams(window.location.search).get('user')).toBe('admin')
+  })
+
+  it('searches the loaded events and keeps the text filter in the URL', async () => {
+    const { api, calls } = fakeApi([
+      page({
+        entries: [
+          {
+            id: 'event-1',
+            at,
+            actor: 'admin',
+            action: 'terminal_open',
+            ip: '',
+            result: 'success',
+            details: null,
+          },
+          {
+            id: 'event-2',
+            at,
+            actor: 'cli',
+            action: 'login_success',
+            ip: '',
+            result: 'success',
+            details: null,
+          },
+        ],
+      }),
+    ])
+    renderAudit(<Audit api={api} />)
+    expect(await screen.findByText('Terminal opened')).toBeTruthy()
+    const before = calls.length
+
+    fireEvent.change(screen.getByLabelText('Search'), { target: { value: 'cli' } })
+    expect(new URLSearchParams(window.location.search).get('q')).toBe('cli')
+    expect(screen.queryByText('Terminal opened')).toBeNull()
+    expect(screen.getByText('Sign-in succeeded')).toBeTruthy()
+    expect(calls).toHaveLength(before)
   })
 
   it('loads the next page with the cursor and appends it', async () => {
@@ -140,7 +185,7 @@ describe('Audit', () => {
       }),
     ])
 
-    render(<Audit api={api} />)
+    renderAudit(<Audit api={api} />)
 
     expect(await screen.findByText('Terminal opened')).toBeTruthy()
     fireEvent.click(screen.getByRole('button', { name: 'Load more' }))
@@ -152,14 +197,14 @@ describe('Audit', () => {
 
   it('shows the empty state and the read error', async () => {
     const empty = fakeApi([page()])
-    render(<Audit api={empty.api} />)
+    renderAudit(<Audit api={empty.api} />)
     expect(await screen.findByText('There are no events for these filters.')).toBeTruthy()
     cleanup()
 
     const failing: AuditApi = {
       list: () => Promise.reject(new Error('database unavailable')),
     }
-    render(<Audit api={failing} />)
+    renderAudit(<Audit api={failing} />)
     expect(await screen.findByRole('alert')).toBeTruthy()
   })
 })

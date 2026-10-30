@@ -17,7 +17,11 @@
     "actor": "Actor",
     "actorPlaceholder": "Nombre de usuario exacto",
     "apply": "Filtrar",
-    "host": "Host"
+    "host": "Host",
+    "search": "Busca por usuario, acción, destino, servidor o resultado",
+    "server": "Servidor",
+    "allServers": "Todos los servidores",
+    "serverOption": "Servidor: {{name}}"
   },
   "table": {
     "time": "Hora",
@@ -25,7 +29,9 @@
     "action": "Acción",
     "result": "Resultado",
     "server": "Servidor",
-    "details": "Detalles"
+    "details": "Detalles",
+    "target": "Destino",
+    "targetValue": "Destino: {{value}}"
   },
   "result": {
     "success": "Correcto",
@@ -37,7 +43,8 @@
   "details": {
     "show": "Detalles",
     "hide": "Ocultar detalles",
-    "empty": "Sin detalles"
+    "empty": "Sin detalles",
+    "title": "Detalle del evento"
   },
   "actions": {
     "login_success": "Inicio de sesión correcto",

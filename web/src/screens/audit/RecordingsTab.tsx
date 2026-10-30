@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { isSignedOut } from '../../api/http'
 import type { Recording, RecordingsApi } from '../../api/recordings'
 import { errorMessage } from '../../auth/AuthGate'
+import { DataTable, type DataTableColumn } from '../../components/ui'
 
 interface RecordingsTabProps {
   api: RecordingsApi
@@ -75,6 +76,83 @@ export function RecordingsTab({ api }: RecordingsTabProps) {
     }
   }, [api, t])
 
+  const columns: DataTableColumn<Recording>[] = [
+    {
+      id: 'when',
+      header: t('audit:recordings.table.when'),
+      sortValue: (recording) => new Date(recording.startedAt).getTime(),
+      cell: (recording) => {
+        const started = new Date(recording.startedAt)
+        const known = !Number.isNaN(started.getTime())
+        const when = known
+          ? new Intl.DateTimeFormat(language, {
+              dateStyle: 'medium',
+              timeStyle: 'medium',
+            }).format(started)
+          : recording.startedAt
+        return <time dateTime={recording.startedAt}>{when}</time>
+      },
+    },
+    {
+      id: 'who',
+      header: t('audit:recordings.table.who'),
+      sortValue: (recording) => recording.user,
+      cell: (recording) => recording.user || '—',
+    },
+    {
+      id: 'server',
+      header: t('audit:recordings.table.server'),
+      sortValue: (recording) => recording.serverName || recording.serverId,
+      cell: (recording) => recording.serverName || recording.serverId,
+    },
+    {
+      id: 'where',
+      header: t('audit:recordings.table.where'),
+      cell: (recording) =>
+        recording.kind === 'host' ? t('audit:recordings.host') : <code>{recording.container}</code>,
+    },
+    {
+      id: 'duration',
+      header: t('audit:recordings.table.duration'),
+      sortValue: (recording) => recording.durationSeconds,
+      cell: (recording) => formatDuration(recording.durationSeconds, language),
+    },
+    {
+      id: 'reason',
+      header: t('audit:recordings.table.reason'),
+      cell: (recording) => {
+        const reasonKey = closeReasonKey(recording.closeReason)
+        return recording.closeReason === ''
+          ? t('audit:recordings.noReason')
+          : reasonKey === ''
+            ? recording.closeReason
+            : t(`audit:recordings.reasons.${reasonKey}`)
+      },
+    },
+    {
+      id: 'privileged',
+      header: t('audit:recordings.table.privileged'),
+      cell: (recording) =>
+        recording.privileged ? (
+          <span className="chip chip--warn">{t('audit:recordings.privileged')}</span>
+        ) : (
+          <span className="audit__muted">{t('audit:recordings.unprivileged')}</span>
+        ),
+    },
+    {
+      id: 'download',
+      header: t('audit:recordings.table.download'),
+      cell: (recording) =>
+        recording.endedAt !== null ? (
+          <a className="recordings__download" href={api.downloadUrl(recording.id)}>
+            {t('audit:recordings.download')}
+          </a>
+        ) : (
+          <span className="audit__muted">{t('audit:recordings.open')}</span>
+        ),
+    },
+  ]
+
   return (
     <div className="recordings">
       <div className="recordings__intro">
@@ -84,93 +162,14 @@ export function RecordingsTab({ api }: RecordingsTabProps) {
         </p>
       </div>
 
-      {error !== null ? (
-        <p className="audit__message audit__message--error" role="alert">
-          {error}
-        </p>
-      ) : null}
-
-      {recordings === null ? (
-        <p className="audit__message" role="status">
-          {t('audit:recordings.loading')}
-        </p>
-      ) : recordings.length === 0 ? (
-        <p className="audit__message">{t('audit:recordings.empty')}</p>
-      ) : (
-        <div className="audit__table-wrap">
-          <table className="audit__table recordings__table">
-            <thead>
-              <tr>
-                <th scope="col">{t('audit:recordings.table.when')}</th>
-                <th scope="col">{t('audit:recordings.table.who')}</th>
-                <th scope="col">{t('audit:recordings.table.server')}</th>
-                <th scope="col">{t('audit:recordings.table.where')}</th>
-                <th scope="col">{t('audit:recordings.table.duration')}</th>
-                <th scope="col">{t('audit:recordings.table.reason')}</th>
-                <th scope="col">{t('audit:recordings.table.privileged')}</th>
-                <th scope="col">{t('audit:recordings.table.download')}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {recordings.map((recording) => {
-                const started = new Date(recording.startedAt)
-                const known = !Number.isNaN(started.getTime())
-                const when = known
-                  ? new Intl.DateTimeFormat(language, {
-                      dateStyle: 'medium',
-                      timeStyle: 'medium',
-                    }).format(started)
-                  : recording.startedAt
-                const reasonKey = closeReasonKey(recording.closeReason)
-                const reason =
-                  recording.closeReason === ''
-                    ? t('audit:recordings.noReason')
-                    : reasonKey === ''
-                      ? recording.closeReason
-                      : t(`audit:recordings.reasons.${reasonKey}`)
-                return (
-                  <tr className="audit__row" key={recording.id}>
-                    <td data-label={t('audit:recordings.table.when')}>
-                      <time dateTime={recording.startedAt}>{when}</time>
-                    </td>
-                    <td data-label={t('audit:recordings.table.who')}>{recording.user || '—'}</td>
-                    <td data-label={t('audit:recordings.table.server')}>
-                      {recording.serverName || recording.serverId}
-                    </td>
-                    <td data-label={t('audit:recordings.table.where')}>
-                      {recording.kind === 'host' ? (
-                        t('audit:recordings.host')
-                      ) : (
-                        <code>{recording.container}</code>
-                      )}
-                    </td>
-                    <td data-label={t('audit:recordings.table.duration')}>
-                      {formatDuration(recording.durationSeconds, language)}
-                    </td>
-                    <td data-label={t('audit:recordings.table.reason')}>{reason}</td>
-                    <td data-label={t('audit:recordings.table.privileged')}>
-                      {recording.privileged ? (
-                        <span className="chip chip--warn">{t('audit:recordings.privileged')}</span>
-                      ) : (
-                        <span className="audit__muted">{t('audit:recordings.unprivileged')}</span>
-                      )}
-                    </td>
-                    <td data-label={t('audit:recordings.table.download')}>
-                      {recording.endedAt !== null ? (
-                        <a className="recordings__download" href={api.downloadUrl(recording.id)}>
-                          {t('audit:recordings.download')}
-                        </a>
-                      ) : (
-                        <span className="audit__muted">{t('audit:recordings.open')}</span>
-                      )}
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
+      <DataTable
+        columns={columns}
+        rows={recordings ?? []}
+        rowKey={(recording) => recording.id}
+        loading={recordings === null && error === null}
+        error={error ?? undefined}
+        empty={<p className="audit__message">{t('audit:recordings.empty')}</p>}
+      />
     </div>
   )
 }

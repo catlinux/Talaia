@@ -33,7 +33,7 @@ export function Breadcrumbs({ serverName }: BreadcrumbsProps) {
     crumbs = [{ label: t('nav.group.infrastructure') }, { label: t('nav.stacks') }]
   } else if (routePath === '/alerts' || routePath.startsWith('/alerts/')) {
     crumbs = [{ label: t('nav.group.monitoring') }, { label: t('nav.alerts') }]
-  } else if (routePath === '/audit') {
+  } else if (routePath === '/audit' || routePath.startsWith('/audit/')) {
     crumbs = [{ label: t('nav.group.monitoring') }, { label: t('nav.audit') }]
   } else if (routePath === '/users' || routePath.startsWith('/users/')) {
     crumbs = [{ label: t('nav.group.administration') }, { label: t('nav.users') }]
