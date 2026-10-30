@@ -14,11 +14,36 @@
   },
   "nav": {
     "label": "Main navigation",
+    "overview": "Overview",
     "fleet": "Fleet",
+    "servers": "Servers",
+    "containers": "Containers",
+    "stacks": "Stacks",
     "settings": "Settings",
     "audit": "Audit",
     "about": "About",
     "users": "Users",
-    "alerts": "Alerts"
+    "alerts": "Alerts",
+    "group": {
+      "infrastructure": "Infrastructure",
+      "monitoring": "Monitoring",
+      "administration": "Administration"
+    }
+  },
+  "shell": {
+    "openMenu": "Open navigation",
+    "closeMenu": "Close navigation",
+    "collapse": "Collapse sidebar",
+    "expand": "Expand sidebar",
+    "version": "Talaia {{version}}",
+    "breadcrumbs": "Breadcrumb",
+    "userMenu": "User menu",
+    "alertsCount_one": "{{count}} open alert",
+    "alertsCount_other": "{{count}} open alerts",
+    "notFound": "Page not found",
+    "notFoundBody": "The page you are looking for does not exist.",
+    "backHome": "Back to overview",
+    "noAccess": "You do not have access to this page.",
+    "comingSoon": "Coming in the next update"
   }
 }

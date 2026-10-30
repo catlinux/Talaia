@@ -133,7 +133,7 @@ of the current phase and the next one.
 - [x] Static mockup of the new design, approved by the maintainer
 - [x] Sober design tokens and base styles (no dotted backgrounds, glows or gradients)
 - [x] Shared components: page header, data table, status badge, drawer, menu, toast, confirmation
-- [ ] Real URLs, grouped sidebar and top bar (breadcrumbs, alert bell, user menu)
+- [x] Real URLs, grouped sidebar and top bar (breadcrumbs, alert bell, user menu)
 - [ ] Overview with "needs attention" first; servers as a table
 - [ ] Server page with a fixed header and tabs as routes
 - [ ] Fleet-wide containers and stacks with row and bulk actions

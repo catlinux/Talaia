@@ -13,6 +13,12 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+## [0.6.7] - 2026-10-30
+
+### Cambiado
+
+- Panel: cada pantalla tiene su propia dirección, así que Atrás, recargar y los enlaces compartidos funcionan; nuevo diseño con un menú lateral agrupado y plegable (un cajón en móviles) y una barra superior con migas de pan, la campana de alertas y un menú de usuario para idioma, tema, Acerca de y cerrar sesión.
+
 ## [0.6.6] - 2026-10-30
 
 ### Añadido
@@ -738,7 +744,8 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
   `.gitattributes` y `.gitignore`.
 - Licencia WNCL-1.0 aplicada: archivo `LICENSE` y sección de créditos en los README.
 
-[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.6.6...HEAD
+[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.6.7...HEAD
+[0.6.7]: https://github.com/catlinux/Talaia/releases/tag/v0.6.7
 [0.6.6]: https://github.com/catlinux/Talaia/releases/tag/v0.6.6
 [0.6.5]: https://github.com/catlinux/Talaia/releases/tag/v0.6.5
 [0.6.4]: https://github.com/catlinux/Talaia/releases/tag/v0.6.4

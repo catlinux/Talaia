@@ -1,10 +1,10 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import type { AptApi } from './api/apt'
 import type { AuditApi } from './api/audit'
 import { createAlertsApi, type AlertsApi, type AlertSummary } from './api/alerts'
-import type { FleetClient } from './api/client'
+import { createApiFleetClient, type FleetClient } from './api/client'
 import type { ContainersApi } from './api/containers'
 import type { JournalApi } from './api/journal'
 import type { UsersApi } from './api/users'
@@ -15,30 +15,18 @@ import type { ServersApi } from './api/servers'
 import type { ServicesApi } from './api/services'
 import type { SystemApi } from './api/system'
 import type { Server } from './api/types'
+import { usePermissions } from './auth/permissions'
+import { Sidebar } from './components/shell/Sidebar'
+import { Topbar } from './components/shell/Topbar'
+import { ToastProvider } from './components/ui'
+import { Link, matchRoute, RouterProvider, useNavigate, useRoute } from './router'
 import { About } from './screens/About'
 import { Audit } from './screens/Audit'
-import { Alerts, AlertsBadge } from './screens/Alerts'
+import { Alerts } from './screens/Alerts'
 import { Fleet } from './screens/Fleet'
 import { ServerScreen } from './screens/ServerScreen'
 import { Settings } from './screens/Settings'
 import { Users } from './screens/Users'
-import { useAuth } from './auth/AuthGate'
-import { usePermissions } from './auth/permissions'
-import {
-  AuditIcon,
-  AlertIcon,
-  FleetIcon,
-  GearIcon,
-  InfoIcon,
-  SignOutIcon,
-  UsersIcon,
-} from './components/icons'
-import { LanguageSelector } from './components/LanguageSelector'
-import { Logo } from './components/Logo'
-import { ThemeToggle } from './theme/ThemeToggle'
-
-type Screen = 'fleet' | 'users' | 'settings' | 'audit' | 'alerts' | 'about'
-type OpenServer = Pick<Server, 'id' | 'name'>
 
 interface AppProps {
   /** Data source of the fleet screen. Tests inject their own client. */
@@ -63,12 +51,18 @@ interface AppProps {
   serversApi?: ServersApi
 }
 
-/** initials returns up to two letters to draw the avatar of the signed-in user. */
-function initials(username: string): string {
-  return username.trim().slice(0, 2).toUpperCase()
+/** App mounts the router, the toast stack and the panel shell. */
+export function App(props: AppProps) {
+  return (
+    <ToastProvider>
+      <RouterProvider>
+        <PanelShell {...props} />
+      </RouterProvider>
+    </ToastProvider>
+  )
 }
 
-export function App({
+function PanelShell({
   client,
   containersApi,
   aptApi,
@@ -83,12 +77,18 @@ export function App({
   invitesApi,
   serversApi,
 }: AppProps) {
-  const { t } = useTranslation(['common', 'auth'])
-  const auth = useAuth()
+  const { t } = useTranslation('common')
   const { can, canAnywhere } = usePermissions()
+  const navigate = useNavigate()
+  const { path } = useRoute()
+  const fleetClient = useMemo(() => client ?? createApiFleetClient(), [client])
+
   const canAudit = can('audit.view') || can('recordings.view')
   const canUsers = can('users.manage')
-  const canAlerts = canAnywhere('alerts.view' as never)
+  const canAlerts = canAnywhere('alerts.view')
+  const canContainers = canAnywhere('container.view')
+  const canStacks = canAnywhere('stack.view')
+
   const alerts = alertsApi ?? defaultAlertsApi
   const [alertSummary, setAlertSummary] = useState<AlertSummary | null>(null)
   const refreshAlertSummary = useCallback(() => {
@@ -115,167 +115,162 @@ export function App({
       window.clearInterval(timer)
     }
   }, [alerts, canAlerts])
-  const [screen, setScreen] = useState<Screen>('fleet')
-  // The server whose containers are open, if any; it replaces the fleet screen.
-  const [openServer, setOpenServer] = useState<OpenServer | null>(null)
+
+  const [mobileOpen, setMobileOpen] = useState(false)
+  const [serverNames, setServerNames] = useState<Record<string, string>>({})
+  const serverMatch = matchRoute('/servers/:id/*', path)
+  const serverID = serverMatch?.params.id ?? ''
+  const serverName = serverID === '' ? undefined : serverNames[serverID]
+
+  useEffect(() => {
+    if (serverID === '' || serverName !== undefined) return
+    let active = true
+    fleetClient.listServers().then(
+      (servers) => {
+        if (!active) return
+        const found = servers.find((server) => server.id === serverID)
+        if (found === undefined) return
+        setServerNames((current) =>
+          current[serverID] === undefined ? { ...current, [serverID]: found.name } : current,
+        )
+      },
+      () => undefined,
+    )
+    return () => {
+      active = false
+    }
+  }, [fleetClient, serverID, serverName])
+
+  const openServer = useCallback(
+    (id: string, name: string) => {
+      setServerNames((current) => ({ ...current, [id]: name }))
+      navigate(`/servers/${encodeURIComponent(id)}`)
+    },
+    [navigate],
+  )
+
+  const fleetOpenServer = useCallback(
+    (server: Server) => openServer(server.id, server.name),
+    [openServer],
+  )
+
+  const isServers = matchRoute('/servers', path) !== null
+  const isAlerts = matchRoute('/alerts/*', path) !== null
+  const isAudit = matchRoute('/audit', path) !== null
+  const isUsers = matchRoute('/users', path) !== null
+  const isSettings = matchRoute('/settings/*', path) !== null
+  const isAbout = matchRoute('/about', path) !== null
+  const isContainers = matchRoute('/containers', path) !== null
+  const isStacks = matchRoute('/stacks', path) !== null
+
+  let page: ReactNode
+  if (path === '/' || isServers) {
+    page = (
+      <Fleet
+        client={fleetClient}
+        onOpenServer={fleetOpenServer}
+        alertsApi={canAlerts ? alerts : undefined}
+      />
+    )
+  } else if (serverMatch !== null) {
+    page = (
+      <ServerScreen
+        server={{ id: serverID, name: serverName ?? serverID }}
+        api={containersApi}
+        aptApi={aptApi}
+        servicesApi={servicesApi}
+        journalApi={journalApi}
+        onBack={() => navigate('/servers')}
+      />
+    )
+  } else if (isAlerts) {
+    page = canAlerts ? (
+      <Alerts
+        api={alerts}
+        onRefresh={refreshAlertSummary}
+        onOpenServer={(id, name) => openServer(id, name)}
+      />
+    ) : (
+      <PanelMessage title={t('shell.noAccess')} />
+    )
+  } else if (isAudit) {
+    page = canAudit ? <Audit api={auditApi} /> : <PanelMessage title={t('shell.noAccess')} />
+  } else if (isUsers) {
+    page = canUsers ? (
+      <Users
+        usersApi={usersApi}
+        teamsApi={teamsApi}
+        groupsApi={groupsApi}
+        invitesApi={invitesApi}
+        serversApi={serversApi}
+      />
+    ) : (
+      <PanelMessage title={t('shell.noAccess')} />
+    )
+  } else if (isSettings) {
+    page = <Settings api={systemApi} />
+  } else if (isAbout) {
+    page = <About />
+  } else if (isContainers) {
+    page = canContainers ? (
+      <PanelMessage title={t('nav.containers')} body={t('shell.comingSoon')} />
+    ) : (
+      <PanelMessage title={t('shell.noAccess')} />
+    )
+  } else if (isStacks) {
+    page = canStacks ? (
+      <PanelMessage title={t('nav.stacks')} body={t('shell.comingSoon')} />
+    ) : (
+      <PanelMessage title={t('shell.noAccess')} />
+    )
+  } else {
+    page = (
+      <PanelMessage
+        title={t('shell.notFound')}
+        body={t('shell.notFoundBody')}
+        action={<Link to="/">{t('shell.backHome')}</Link>}
+      />
+    )
+  }
 
   return (
     <div className="shell">
-      <aside className="side">
-        <div className="side__brand">
-          <Logo className="side__logo" />
-          <span className="side__name">{t('appName')}</span>
-        </div>
-
-        <nav className="side__nav" aria-label={t('nav.label')}>
-          <button
-            type="button"
-            className={screen === 'fleet' ? 'side__link side__link--active' : 'side__link'}
-            aria-current={screen === 'fleet' ? 'page' : undefined}
-            onClick={() => {
-              setScreen('fleet')
-              setOpenServer(null)
-            }}
-          >
-            <FleetIcon />
-            {t('nav.fleet')}
-          </button>
-          {canUsers ? (
-            <button
-              type="button"
-              className={screen === 'users' ? 'side__link side__link--active' : 'side__link'}
-              aria-current={screen === 'users' ? 'page' : undefined}
-              onClick={() => {
-                setScreen('users')
-                setOpenServer(null)
-              }}
-            >
-              <UsersIcon />
-              {t('nav.users')}
-            </button>
-          ) : null}
-          {canAlerts ? (
-            <button
-              type="button"
-              className={screen === 'alerts' ? 'side__link side__link--active' : 'side__link'}
-              aria-current={screen === 'alerts' ? 'page' : undefined}
-              onClick={() => {
-                setScreen('alerts')
-                setOpenServer(null)
-              }}
-            >
-              <AlertIcon />
-              {t('nav.alerts')}
-              <AlertsBadge summary={alertSummary} />
-            </button>
-          ) : null}
-          <button
-            type="button"
-            className={screen === 'settings' ? 'side__link side__link--active' : 'side__link'}
-            aria-current={screen === 'settings' ? 'page' : undefined}
-            onClick={() => {
-              setScreen('settings')
-              setOpenServer(null)
-            }}
-          >
-            <GearIcon />
-            {t('nav.settings')}
-          </button>
-          {canAudit ? (
-            <button
-              type="button"
-              className={screen === 'audit' ? 'side__link side__link--active' : 'side__link'}
-              aria-current={screen === 'audit' ? 'page' : undefined}
-              onClick={() => {
-                setScreen('audit')
-                setOpenServer(null)
-              }}
-            >
-              <AuditIcon />
-              {t('nav.audit')}
-            </button>
-          ) : null}
-          <button
-            type="button"
-            className={screen === 'about' ? 'side__link side__link--active' : 'side__link'}
-            aria-current={screen === 'about' ? 'page' : undefined}
-            onClick={() => setScreen('about')}
-          >
-            <InfoIcon />
-            {t('nav.about')}
-          </button>
-        </nav>
-
-        <div className="side__foot">
-          <div className="side__prefs">
-            <LanguageSelector />
-            <ThemeToggle />
+      <Sidebar
+        alertSummary={alertSummary}
+        mobileOpen={mobileOpen}
+        onClose={() => setMobileOpen(false)}
+      />
+      <div className="shell__content">
+        <Topbar
+          alertSummary={alertSummary}
+          serverName={serverID === '' ? undefined : (serverName ?? serverID)}
+          onOpenMenu={() => setMobileOpen(true)}
+        />
+        <main className="shell__main">
+          <div className="shell__page" key={path}>
+            {page}
           </div>
-          {auth !== null && (
-            <div className="side__user">
-              <span className="side__avatar" aria-hidden="true">
-                {initials(auth.username)}
-              </span>
-              <span className="side__username">{auth.username}</span>
-              <button
-                type="button"
-                className="side__signout"
-                onClick={() => {
-                  void auth.signOut()
-                }}
-              >
-                <SignOutIcon />
-                <span className="side__signout-text">{t('auth:signOut')}</span>
-              </button>
-            </div>
-          )}
-        </div>
-      </aside>
-
-      <main className="shell__main">
-        <div className="shell__page" key={`${screen}-${openServer?.id ?? ''}`}>
-          {screen === 'about' ? (
-            <About />
-          ) : screen === 'users' ? (
-            <Users
-              usersApi={usersApi}
-              teamsApi={teamsApi}
-              groupsApi={groupsApi}
-              invitesApi={invitesApi}
-              serversApi={serversApi}
-            />
-          ) : screen === 'settings' ? (
-            <Settings api={systemApi} />
-          ) : screen === 'audit' ? (
-            <Audit api={auditApi} />
-          ) : screen === 'alerts' ? (
-            <Alerts
-              api={alerts}
-              onRefresh={refreshAlertSummary}
-              onOpenServer={(id, name) => {
-                setScreen('fleet')
-                setOpenServer({ id, name })
-              }}
-            />
-          ) : openServer !== null ? (
-            <ServerScreen
-              server={openServer}
-              api={containersApi}
-              aptApi={aptApi}
-              servicesApi={servicesApi}
-              journalApi={journalApi}
-              onBack={() => setOpenServer(null)}
-            />
-          ) : (
-            <Fleet
-              client={client}
-              onOpenServer={setOpenServer}
-              alertsApi={canAlerts ? alerts : undefined}
-            />
-          )}
-        </div>
-      </main>
+        </main>
+      </div>
     </div>
+  )
+}
+
+function PanelMessage({
+  title,
+  body,
+  action,
+}: {
+  title: string
+  body?: string
+  action?: ReactNode
+}) {
+  return (
+    <section className="shell__message">
+      <h1 className="shell__message-title">{title}</h1>
+      {body !== undefined ? <p className="shell__message-body">{body}</p> : null}
+      {action}
+    </section>
   )
 }
 

@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { App } from './App'
@@ -7,26 +7,35 @@ import type { AptApi } from './api/apt'
 import type { AlertsApi } from './api/alerts'
 import type { AuditApi } from './api/audit'
 import type { AuthApi } from './api/auth'
-import { createMockFleetClient } from './api/client'
-import type { MeApi, Permission } from './api/me'
+import { createMockFleetClient, type FleetClient } from './api/client'
 import type { ContainersApi } from './api/containers'
+import type { Group, GroupsApi } from './api/groups'
+import type { Invite, InvitesApi } from './api/invites'
 import type { JournalApi } from './api/journal'
+import type { MeApi, Permission } from './api/me'
+import type { ServersApi } from './api/servers'
 import type { ServiceUnit, ServicesApi } from './api/services'
 import type { SystemApi } from './api/system'
+import type { Team, TeamsApi } from './api/teams'
+import type { AdminUser, UsersApi } from './api/users'
 import i18n from './i18n'
 import { ATTRIBUTION } from './screens/About'
 
 const fleetTitles = { ca: 'Flota', es: 'Flota', en: 'Fleet' } as const
 const settingsTitles = { ca: 'Configuració', es: 'Ajustes', en: 'Settings' } as const
 const aboutTitles = { ca: 'Sobre Talaia', es: 'Acerca de Talaia', en: 'About Talaia' } as const
-const navFleet = { ca: 'Flota', es: 'Flota', en: 'Fleet' } as const
+const navOverview = { ca: 'Resum', es: 'Resumen', en: 'Overview' } as const
+const navServers = { ca: 'Servidors', es: 'Servidores', en: 'Servers' } as const
+const navContainers = { ca: 'Contenidors', es: 'Contenedores', en: 'Containers' } as const
+const navStacks = { ca: 'Stacks', es: 'Stacks', en: 'Stacks' } as const
 const navSettings = { ca: 'Configuració', es: 'Ajustes', en: 'Settings' } as const
 const navAudit = { ca: 'Auditoria', es: 'Auditoría', en: 'Audit' } as const
 const navAbout = { ca: 'Sobre', es: 'Acerca de', en: 'About' } as const
 const navUsers = { ca: 'Usuaris', es: 'Usuarios', en: 'Users' } as const
 const navAlerts = { ca: 'Alertes', es: 'Alertas', en: 'Alerts' } as const
+const usersHeading = 'Users and permissions'
 
-const adminPermissions: string[] = [
+const adminPermissions: Permission[] = [
   'container.view',
   'container.logs',
   'container.control',
@@ -73,8 +82,22 @@ const adminMe: MeApi = {
       user: { id: 'admin', username: 'admin', display_name: 'Admin', email: '' },
       bindings: { bindings: [] },
       permissions: {
-        organization: adminPermissions as Permission[],
+        organization: adminPermissions,
         servers: {},
+        stacks: {},
+        containers: {},
+      },
+    }),
+}
+
+const viewerMe: MeApi = {
+  get: () =>
+    Promise.resolve({
+      user: { id: 'u1', username: 'alice', display_name: 'Alice', email: '' },
+      bindings: { bindings: [] },
+      permissions: {
+        organization: [],
+        servers: { 'vps-web-01': ['server.view'] },
         stacks: {},
         containers: {},
       },
@@ -109,15 +132,165 @@ const pendingJournalApi: JournalApi = {
   job: () => Promise.reject(new Error('unexpected journal job')),
 }
 
+function systemApi(): SystemApi {
+  const version = {
+    version: '1.2.3',
+    commit: 'a'.repeat(40),
+    update: {
+      current: 'a'.repeat(40),
+      latest: 'a'.repeat(40),
+      pending: [],
+      notes: { en: [], es: [] },
+      ci: 'green' as const,
+      checkedAt: '2026-10-21T08:00:00Z',
+      error: '',
+      updateAvailable: false,
+    },
+    status: {
+      state: 'idle' as const,
+      from: '',
+      to: '',
+      startedAt: '',
+      finishedAt: '',
+      log: [],
+    },
+  }
+  return {
+    version: () => Promise.resolve(version),
+    check: () => Promise.resolve(version),
+    update: () => Promise.reject(new Error('unexpected update')),
+  }
+}
+
+function usersApi(): UsersApi {
+  const unexpected = () => Promise.reject(new Error('unexpected users call'))
+  return {
+    list: () => Promise.resolve([] as AdminUser[]),
+    update: unexpected,
+    disable: unexpected,
+    enable: unexpected,
+    delete: unexpected,
+    listBindings: () => Promise.resolve([]),
+    addBinding: unexpected,
+    updateBinding: unexpected,
+    removeBinding: unexpected,
+  }
+}
+
+function teamsApi(): TeamsApi {
+  const unexpected = () => Promise.reject(new Error('unexpected team call'))
+  return {
+    list: () => Promise.resolve([] as Team[]),
+    create: unexpected,
+    get: unexpected,
+    rename: unexpected,
+    remove: unexpected,
+    addMember: unexpected,
+    removeMember: unexpected,
+    listBindings: () => Promise.resolve([]),
+    addBinding: unexpected,
+  }
+}
+
+function groupsApi(): GroupsApi {
+  const unexpected = () => Promise.reject(new Error('unexpected group call'))
+  return {
+    list: () => Promise.resolve([] as Group[]),
+    create: unexpected,
+    rename: unexpected,
+    remove: unexpected,
+    setServerGroup: unexpected,
+  }
+}
+
+function invitesApi(): InvitesApi {
+  const unexpected = () => Promise.reject(new Error('unexpected invite call'))
+  return {
+    list: () => Promise.resolve([] as Invite[]),
+    create: unexpected,
+    revoke: unexpected,
+    info: unexpected,
+    accept: unexpected,
+  }
+}
+
+function serversApi(): ServersApi {
+  const unexpected = () => Promise.reject(new Error('unexpected server call'))
+  return {
+    listServers: () => Promise.resolve([]),
+    removeServer: unexpected,
+    updateAgent: unexpected,
+    updateAllAgents: unexpected,
+  }
+}
+
+function containersApi(): ContainersApi {
+  return {
+    list: () =>
+      Promise.resolve({
+        connected: true,
+        dockerAvailable: true,
+        containers: [
+          {
+            id: 'aaaaaaaaaaaa',
+            name: 'shop-web-1',
+            image: 'nginx',
+            state: 'running',
+            status: 'Up',
+            composeProject: 'shop',
+            composeService: 'web',
+          },
+        ],
+      }),
+    run: () => Promise.reject(new Error('unexpected')),
+    logs: () => Promise.reject(new Error('unexpected')),
+    stacks: () =>
+      Promise.resolve({ connected: true, stacks: [], adopted: [], broken: [], adoptable: [] }),
+    adoptStack: () => Promise.reject(new Error('unexpected')),
+    listResources: () => Promise.reject(new Error('unexpected')),
+    removeResources: () => Promise.reject(new Error('unexpected')),
+    writeStack: () => Promise.reject(new Error('unexpected')),
+    readStack: () => Promise.reject(new Error('unexpected')),
+    runStack: () => Promise.reject(new Error('unexpected')),
+    job: () => Promise.reject(new Error('unexpected')),
+  }
+}
+
+interface RenderOptions {
+  me?: MeApi
+  client?: FleetClient
+  containersApi?: ContainersApi
+  aptApi?: AptApi
+  servicesApi?: ServicesApi
+  journalApi?: JournalApi
+  systemApi?: SystemApi
+  auditApi?: AuditApi
+  alertsApi?: AlertsApi
+  usersApi?: UsersApi
+  teamsApi?: TeamsApi
+  groupsApi?: GroupsApi
+  invitesApi?: InvitesApi
+  serversApi?: ServersApi
+}
+
 /** renderApp mounts the panel behind an authenticated gate. */
-function renderApp(systemApi?: SystemApi, auditApi?: AuditApi) {
-  render(
-    <AuthGate api={signedInApi} meApi={adminMe}>
+function renderApp(options: RenderOptions = {}) {
+  return render(
+    <AuthGate api={signedInApi} meApi={options.me ?? adminMe}>
       <App
-        client={createMockFleetClient()}
-        systemApi={systemApi}
-        auditApi={auditApi}
-        alertsApi={adminAlertsApi}
+        client={options.client ?? createMockFleetClient()}
+        containersApi={options.containersApi}
+        aptApi={options.aptApi}
+        servicesApi={options.servicesApi}
+        journalApi={options.journalApi}
+        systemApi={options.systemApi}
+        auditApi={options.auditApi}
+        alertsApi={options.alertsApi ?? adminAlertsApi}
+        usersApi={options.usersApi}
+        teamsApi={options.teamsApi}
+        groupsApi={options.groupsApi}
+        invitesApi={options.invitesApi}
+        serversApi={options.serversApi}
       />
     </AuthGate>,
   )
@@ -127,15 +300,37 @@ function currentTitle(): string {
   return screen.getByRole('heading', { level: 1 }).textContent ?? ''
 }
 
+function mainNav(): HTMLElement {
+  return screen.getByRole('navigation', { name: i18n.t('nav.label') })
+}
+
+async function openSidebarLink(name: string) {
+  const nav = mainNav()
+  await within(nav).findByRole('link', { name })
+  fireEvent.click(within(nav).getByRole('link', { name }))
+}
+
+function serverApis() {
+  return {
+    containersApi: containersApi(),
+    aptApi: pendingAptApi,
+    servicesApi: pendingServicesApi,
+    journalApi: pendingJournalApi,
+  }
+}
+
 describe('App', () => {
   beforeEach(async () => {
     localStorage.clear()
     sessionStorage.clear()
+    document.documentElement.removeAttribute('data-theme')
+    window.history.replaceState({}, '', '/')
     await i18n.changeLanguage('en')
   })
 
   afterEach(() => {
     cleanup()
+    window.history.replaceState({}, '', '/')
   })
 
   it('shows the Fleet screen by default', async () => {
@@ -144,102 +339,108 @@ describe('App', () => {
     expect(i18n.resolvedLanguage).toBe('en')
     expect(await screen.findByText('vps-web-01')).toBeTruthy()
     expect(currentTitle()).toBe(fleetTitles.en)
+    expect(window.location.pathname).toBe('/')
   })
 
-  it('navigates to About and back to the Fleet screen', async () => {
+  it('updates the URL and the screen when a sidebar link is clicked', async () => {
+    renderApp({ systemApi: systemApi() })
+    await screen.findByText('vps-web-01')
+
+    await openSidebarLink(navSettings.en)
+
+    expect(window.location.pathname).toBe('/settings')
+    expect(currentTitle()).toBe(settingsTitles.en)
+    expect(await screen.findByText('1.2.3')).toBeTruthy()
+  })
+
+  it('opens every screen from the sidebar', async () => {
+    const auditApi: AuditApi = { list: vi.fn(() => Promise.resolve({ entries: [], next: '' })) }
+    renderApp({
+      systemApi: systemApi(),
+      auditApi,
+      usersApi: usersApi(),
+      teamsApi: teamsApi(),
+      groupsApi: groupsApi(),
+      invitesApi: invitesApi(),
+      serversApi: serversApi(),
+    })
+    await screen.findByText('vps-web-01')
+
+    await openSidebarLink(navServers.en)
+    expect(window.location.pathname).toBe('/servers')
+    expect(await screen.findByRole('heading', { level: 1, name: fleetTitles.en })).toBeTruthy()
+
+    await openSidebarLink(navContainers.en)
+    expect(window.location.pathname).toBe('/containers')
+    expect(currentTitle()).toBe(navContainers.en)
+    expect(screen.getByText('Coming in the next update')).toBeTruthy()
+
+    await openSidebarLink(navStacks.en)
+    expect(window.location.pathname).toBe('/stacks')
+    expect(currentTitle()).toBe(navStacks.en)
+
+    await openSidebarLink(navAlerts.en)
+    expect(window.location.pathname).toBe('/alerts')
+    expect(currentTitle()).toBe(navAlerts.en)
+
+    await openSidebarLink(navAudit.en)
+    expect(window.location.pathname).toBe('/audit')
+    expect(await screen.findByRole('heading', { level: 1, name: navAudit.en })).toBeTruthy()
+    expect(auditApi.list).toHaveBeenCalled()
+
+    await openSidebarLink(navUsers.en)
+    expect(window.location.pathname).toBe('/users')
+    expect(await screen.findByRole('heading', { level: 1, name: usersHeading })).toBeTruthy()
+
+    await openSidebarLink(navSettings.en)
+    expect(window.location.pathname).toBe('/settings')
+    expect(await screen.findByText('1.2.3')).toBeTruthy()
+
+    await openSidebarLink(navOverview.en)
+    expect(window.location.pathname).toBe('/')
+    expect(await screen.findByRole('heading', { level: 1, name: fleetTitles.en })).toBeTruthy()
+  })
+
+  it('shows the grouped navigation in order', async () => {
     renderApp()
     await screen.findByText('vps-web-01')
 
-    fireEvent.click(screen.getByRole('button', { name: navAbout.en }))
+    const nav = mainNav()
+    await within(nav).findByRole('link', { name: navUsers.en })
 
+    expect(
+      within(nav)
+        .getAllByRole('link')
+        .map((link) => link.textContent),
+    ).toEqual([
+      navOverview.en,
+      navServers.en,
+      navContainers.en,
+      navStacks.en,
+      navAlerts.en,
+      navAudit.en,
+      navUsers.en,
+      navSettings.en,
+    ])
+  })
+
+  it('navigates to About and back to the overview', async () => {
+    renderApp()
+    await screen.findByText('vps-web-01')
+
+    fireEvent.click(screen.getByRole('button', { name: 'admin' }))
+    fireEvent.click(screen.getByRole('menuitem', { name: navAbout.en }))
+
+    expect(window.location.pathname).toBe('/about')
     expect(currentTitle()).toBe(aboutTitles.en)
     expect(screen.getByText(ATTRIBUTION)).toBeTruthy()
     expect(screen.getByRole('link', { name: 'WNCL-TP-1.0' }).getAttribute('href')).toBe(
       'https://github.com/catlinux/Talaia',
     )
 
-    fireEvent.click(screen.getByRole('button', { name: navFleet.en }))
+    await openSidebarLink(navOverview.en)
+    expect(window.location.pathname).toBe('/')
     expect(currentTitle()).toBe(fleetTitles.en)
-  })
-
-  it('shows Settings between Fleet and About and renders the version', async () => {
-    const systemApi: SystemApi = {
-      version: () =>
-        Promise.resolve({
-          version: '1.2.3',
-          commit: 'a'.repeat(40),
-          update: {
-            current: 'a'.repeat(40),
-            latest: 'a'.repeat(40),
-            pending: [],
-            notes: { en: [], es: [] },
-            ci: 'green',
-            checkedAt: '2026-10-21T08:00:00Z',
-            error: '',
-            updateAvailable: false,
-          },
-          status: {
-            state: 'idle',
-            from: '',
-            to: '',
-            startedAt: '',
-            finishedAt: '',
-            log: [],
-          },
-        }),
-      check: () =>
-        Promise.resolve({
-          version: '1.2.3',
-          commit: 'a'.repeat(40),
-          update: {
-            current: 'a'.repeat(40),
-            latest: 'a'.repeat(40),
-            pending: [],
-            notes: { en: [], es: [] },
-            ci: 'green',
-            checkedAt: '2026-10-21T08:00:00Z',
-            error: '',
-            updateAvailable: false,
-          },
-          status: {
-            state: 'idle',
-            from: '',
-            to: '',
-            startedAt: '',
-            finishedAt: '',
-            log: [],
-          },
-        }),
-      update: () => Promise.reject(new Error('unexpected update')),
-    }
-    renderApp(systemApi)
-    await screen.findByText('vps-web-01')
-
-    const nav = screen.getByRole('navigation', { name: 'Main navigation' })
-    expect(
-      within(nav)
-        .getAllByRole('button')
-        .map((button) => button.textContent),
-    ).toEqual([navFleet.en, navUsers.en, navAlerts.en, navSettings.en, navAudit.en, navAbout.en])
-
-    fireEvent.click(screen.getByRole('button', { name: navSettings.en }))
-
-    expect(currentTitle()).toBe(settingsTitles.en)
-    expect(await screen.findByText('1.2.3')).toBeTruthy()
-  })
-
-  it('navigates to the Audit screen', async () => {
-    const auditApi: AuditApi = {
-      list: vi.fn(() => Promise.resolve({ entries: [], next: '' })),
-    }
-    renderApp(undefined, auditApi)
-    await screen.findByText('vps-web-01')
-
-    fireEvent.click(screen.getByRole('button', { name: navAudit.en }))
-
-    expect(currentTitle()).toBe(navAudit.en)
-    expect(await screen.findByText('There are no events for these filters.')).toBeTruthy()
-    expect(auditApi.list).toHaveBeenCalled()
   })
 
   it('keeps the attribution text in every language', async () => {
@@ -248,7 +449,8 @@ describe('App', () => {
 
     for (const language of ['ca', 'es', 'en'] as const) {
       await i18n.changeLanguage(language)
-      fireEvent.click(screen.getByRole('button', { name: navAbout[language] }))
+      fireEvent.click(screen.getByRole('button', { name: 'admin' }))
+      fireEvent.click(screen.getByRole('menuitem', { name: navAbout[language] }))
       expect(currentTitle()).toBe(aboutTitles[language])
       expect(screen.getByText(ATTRIBUTION)).toBeTruthy()
     }
@@ -261,59 +463,115 @@ describe('App', () => {
     await i18n.changeLanguage('ca')
 
     expect(currentTitle()).toBe(fleetTitles.ca)
-    expect(screen.getByRole('button', { name: navFleet.ca })).toBeTruthy()
-    expect(screen.getByRole('button', { name: navAbout.ca })).toBeTruthy()
+    const nav = mainNav()
+    expect(within(nav).getByRole('link', { name: navOverview.ca })).toBeTruthy()
+    expect(within(nav).getByRole('link', { name: navServers.ca })).toBeTruthy()
+
+    fireEvent.click(screen.getByRole('button', { name: 'admin' }))
+    expect(screen.getByRole('menuitem', { name: navAbout.ca })).toBeTruthy()
+  })
+
+  it('changes language and theme from the user menu', async () => {
+    renderApp()
+    await screen.findByText('vps-web-01')
+
+    const account = screen.getByRole('button', { name: 'admin' })
+    fireEvent.click(account)
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Català' }))
+    await waitFor(() => expect(i18n.resolvedLanguage).toBe('ca'))
+    expect(currentTitle()).toBe(fleetTitles.ca)
+
+    fireEvent.click(account)
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Fosc' }))
+    expect(document.documentElement.getAttribute('data-theme')).toBe('dark')
+    expect(localStorage.getItem('talaia.theme')).toBe('dark')
   })
 
   it('opens the containers of a server and goes back to the fleet', async () => {
-    const containersApi: ContainersApi = {
-      list: () =>
-        Promise.resolve({
-          connected: true,
-          dockerAvailable: true,
-          containers: [
-            {
-              id: 'aaaaaaaaaaaa',
-              name: 'shop-web-1',
-              image: 'nginx',
-              state: 'running',
-              status: 'Up',
-              composeProject: 'shop',
-              composeService: 'web',
-            },
-          ],
-        }),
-      run: () => Promise.reject(new Error('unexpected')),
-      logs: () => Promise.reject(new Error('unexpected')),
-      stacks: () =>
-        Promise.resolve({ connected: true, stacks: [], adopted: [], broken: [], adoptable: [] }),
-      adoptStack: () => Promise.reject(new Error('unexpected')),
-      listResources: () => Promise.reject(new Error('unexpected')),
-      removeResources: () => Promise.reject(new Error('unexpected')),
-      writeStack: () => Promise.reject(new Error('unexpected')),
-      readStack: () => Promise.reject(new Error('unexpected')),
-      runStack: () => Promise.reject(new Error('unexpected')),
-      job: () => Promise.reject(new Error('unexpected')),
-    }
-    render(
-      <AuthGate api={signedInApi} meApi={adminMe}>
-        <App
-          client={createMockFleetClient()}
-          containersApi={containersApi}
-          aptApi={pendingAptApi}
-          servicesApi={pendingServicesApi}
-          journalApi={pendingJournalApi}
-        />
-      </AuthGate>,
-    )
-
+    renderApp(serverApis())
     sessionStorage.setItem('talaia.serverTab.vps-web-01', 'containers')
+
     fireEvent.click(await screen.findByRole('button', { name: 'vps-web-01' }))
 
     expect(await screen.findByText('shop-web-1')).toBeTruthy()
+    expect(window.location.pathname).toBe('/servers/vps-web-01')
     expect(currentTitle()).toBe('vps-web-01')
 
     fireEvent.click(screen.getByRole('button', { name: 'Back to the fleet' }))
+    expect(window.location.pathname).toBe('/servers')
     expect(currentTitle()).toBe(fleetTitles.en)
+  })
+
+  it('loads a server from a deep link', async () => {
+    window.history.replaceState({}, '', '/servers/abc')
+    renderApp(serverApis())
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'abc' })).toBeTruthy()
+    expect(window.location.pathname).toBe('/servers/abc')
+
+    const crumbs = screen.getByRole('navigation', { name: 'Breadcrumb' })
+    expect(within(crumbs).getByText('abc')).toBeTruthy()
+  })
+
+  it('returns to the fleet on popstate', async () => {
+    window.history.replaceState({}, '', '/servers/vps-web-01')
+    renderApp(serverApis())
+    await screen.findByRole('heading', { level: 1, name: 'vps-web-01' })
+
+    window.history.replaceState({}, '', '/servers')
+    window.dispatchEvent(new PopStateEvent('popstate'))
+
+    expect(await screen.findByRole('heading', { level: 1, name: fleetTitles.en })).toBeTruthy()
+    expect(window.location.pathname).toBe('/servers')
+  })
+
+  it('shows a not-found page for unknown routes', async () => {
+    window.history.replaceState({}, '', '/does-not-exist')
+    renderApp()
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'Page not found' })).toBeTruthy()
+    fireEvent.click(screen.getByRole('link', { name: 'Back to overview' }))
+
+    expect(window.location.pathname).toBe('/')
+    expect(await screen.findByRole('heading', { level: 1, name: fleetTitles.en })).toBeTruthy()
+  })
+
+  it('hides entries and guards routes the user cannot access', async () => {
+    const view = renderApp({ me: viewerMe })
+    await screen.findByText('vps-web-01')
+
+    const nav = mainNav()
+    await within(nav).findByRole('link', { name: navServers.en })
+    for (const name of [navUsers.en, navAudit.en, navAlerts.en]) {
+      expect(within(nav).queryByRole('link', { name })).toBeNull()
+    }
+
+    view.unmount()
+    window.history.replaceState({}, '', '/users')
+    renderApp({ me: viewerMe })
+
+    expect(
+      await screen.findByRole('heading', {
+        level: 1,
+        name: 'You do not have access to this page.',
+      }),
+    ).toBeTruthy()
+    expect(window.location.pathname).toBe('/users')
+  })
+
+  it('opens and closes the mobile drawer with the hamburger and Escape', async () => {
+    renderApp()
+    await screen.findByText('vps-web-01')
+
+    const sidebar = screen.getByRole('complementary')
+    fireEvent.click(screen.getByRole('button', { name: 'Open navigation' }))
+    expect(sidebar.classList.contains('side--open')).toBe(true)
+
+    fireEvent.keyDown(document, { key: 'Escape' })
+    expect(sidebar.classList.contains('side--open')).toBe(false)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Open navigation' }))
+    await openSidebarLink(navOverview.en)
+    expect(sidebar.classList.contains('side--open')).toBe(false)
   })
 })

@@ -181,7 +181,8 @@ describe('panel authentication', () => {
     )
 
     expect(await screen.findByText('vps-web-01')).toBeTruthy()
-    fireEvent.click(screen.getByRole('button', { name: 'Sign out' }))
+    fireEvent.click(screen.getByRole('button', { name: 'admin' }))
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Sign out' }))
 
     expect(await screen.findByRole('heading', { name: 'Sign in' })).toBeTruthy()
     expect(logout).toHaveBeenCalledTimes(1)

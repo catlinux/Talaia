@@ -14,11 +14,36 @@
   },
   "nav": {
     "label": "Navegación principal",
+    "overview": "Resumen",
     "fleet": "Flota",
+    "servers": "Servidores",
+    "containers": "Contenedores",
+    "stacks": "Stacks",
     "settings": "Ajustes",
     "audit": "Auditoría",
     "about": "Acerca de",
     "users": "Usuarios",
-    "alerts": "Alertas"
+    "alerts": "Alertas",
+    "group": {
+      "infrastructure": "Infraestructura",
+      "monitoring": "Supervisión",
+      "administration": "Administración"
+    }
+  },
+  "shell": {
+    "openMenu": "Abrir la navegación",
+    "closeMenu": "Cerrar la navegación",
+    "collapse": "Contraer la barra lateral",
+    "expand": "Expandir la barra lateral",
+    "version": "Talaia {{version}}",
+    "breadcrumbs": "Ruta de navegación",
+    "userMenu": "Menú de usuario",
+    "alertsCount_one": "{{count}} alerta abierta",
+    "alertsCount_other": "{{count}} alertas abiertas",
+    "notFound": "Página no encontrada",
+    "notFoundBody": "La página que buscas no existe.",
+    "backHome": "Volver al resumen",
+    "noAccess": "No tienes acceso a esta página.",
+    "comingSoon": "Llega en la próxima actualización"
   }
 }

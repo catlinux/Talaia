@@ -192,6 +192,7 @@ function serverScreen(me: MeApi, limited = false) {
 describe('role-based panel controls', () => {
   beforeEach(async () => {
     sessionStorage.clear()
+    window.history.replaceState({}, '', '/')
     await i18n.changeLanguage('en')
   })
 
@@ -302,11 +303,11 @@ describe('role-based panel controls', () => {
     const client = fleetClient(fleetServer())
 
     const admin = mount(adminMe, <App client={client} />)
-    expect(await screen.findByRole('button', { name: 'Audit' })).toBeTruthy()
+    expect(await screen.findByRole('link', { name: 'Audit' })).toBeTruthy()
     admin.unmount()
 
     mount(viewerMe, <App client={client} />)
     expect(await screen.findByText('vps-web-01')).toBeTruthy()
-    await waitFor(() => expect(screen.queryByRole('button', { name: 'Audit' })).toBeNull())
+    await waitFor(() => expect(screen.queryByRole('link', { name: 'Audit' })).toBeNull())
   })
 })

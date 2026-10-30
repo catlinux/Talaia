@@ -24,7 +24,11 @@ export interface MenuSeparator {
   separator: true
 }
 
-export type MenuEntry = MenuItem | MenuSeparator
+export interface MenuHeading {
+  heading: string
+}
+
+export type MenuEntry = MenuItem | MenuSeparator | MenuHeading
 
 export interface MenuTriggerProps {
   ref: Ref<HTMLButtonElement>
@@ -165,6 +169,10 @@ export function Menu({ trigger, items, align = 'start' }: MenuProps) {
           {items.map((item, index) =>
             'separator' in item ? (
               <div key={`separator-${index}`} className="ui-menu__separator" role="separator" />
+            ) : 'heading' in item ? (
+              <div key={`heading-${index}`} className="ui-menu__heading" role="presentation">
+                {item.heading}
+              </div>
             ) : (
               <button
                 key={item.id}

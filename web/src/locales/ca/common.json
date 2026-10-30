@@ -14,11 +14,36 @@
   },
   "nav": {
     "label": "Navegació principal",
+    "overview": "Resum",
     "fleet": "Flota",
+    "servers": "Servidors",
+    "containers": "Contenidors",
+    "stacks": "Stacks",
     "settings": "Configuració",
-    "about": "Sobre",
     "audit": "Auditoria",
+    "about": "Sobre",
     "users": "Usuaris",
-    "alerts": "Alertes"
+    "alerts": "Alertes",
+    "group": {
+      "infrastructure": "Infraestructura",
+      "monitoring": "Supervisió",
+      "administration": "Administració"
+    }
+  },
+  "shell": {
+    "openMenu": "Obre la navegació",
+    "closeMenu": "Tanca la navegació",
+    "collapse": "Replega la barra lateral",
+    "expand": "Desplega la barra lateral",
+    "version": "Talaia {{version}}",
+    "breadcrumbs": "Ruta de navegació",
+    "userMenu": "Menú d'usuari",
+    "alertsCount_one": "{{count}} alerta oberta",
+    "alertsCount_other": "{{count}} alertes obertes",
+    "notFound": "No s'ha trobat la pàgina",
+    "notFoundBody": "La pàgina que cerques no existeix.",
+    "backHome": "Torna al resum",
+    "noAccess": "No tens accés a aquesta pàgina.",
+    "comingSoon": "Arriba en la propera actualització"
   }
 }

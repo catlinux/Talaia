@@ -18,6 +18,12 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.6.7] - 2026-10-30
+
+### Changed
+
+- Panel: every screen has its own address, so Back, reload and shared links work; new layout with a grouped, collapsible side menu (a drawer on phones) and a top bar with breadcrumbs, the alert bell and a user menu for language, theme, About and sign out.
+
 ## [0.6.6] - 2026-10-30
 
 ### Added
@@ -738,7 +744,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.6.6...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.6.7...HEAD
+[0.6.7]: https://github.com/catlinux/Talaia/releases/tag/v0.6.7
 [0.6.6]: https://github.com/catlinux/Talaia/releases/tag/v0.6.6
 [0.6.5]: https://github.com/catlinux/Talaia/releases/tag/v0.6.5
 [0.6.4]: https://github.com/catlinux/Talaia/releases/tag/v0.6.4
