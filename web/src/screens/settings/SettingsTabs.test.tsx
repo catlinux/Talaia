@@ -1,8 +1,6 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { useState } from 'react'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
-import type { AlertsAdminApi } from '../../api/alertsAdmin'
 import type { APIKeysApi } from '../../api/apikeys'
 import type { AccessApi } from '../../api/auth'
 import type { MeApi, MePermissions, MeResponse } from '../../api/me'
@@ -10,8 +8,14 @@ import type { OIDCApi } from '../../api/oidc'
 import type { SystemVersion } from '../../api/system'
 import { PermissionsProvider } from '../../auth/permissions'
 import i18n from '../../i18n'
+import { RouterProvider, useRoute } from '../../router'
 import { Settings, type SettingsApi } from '../Settings'
-import { SettingsTabs, readSettingsTab, storeSettingsTab, type SettingsTab } from './SettingsTabs'
+import {
+  SettingsTabs,
+  settingsTabFromPath,
+  settingsTabPath,
+  type SettingsTab,
+} from './SettingsTabs'
 
 const unexpected = () => Promise.reject(new Error('unexpected call'))
 
@@ -88,28 +92,6 @@ function oidcApi(): OIDCApi {
   }
 }
 
-function alertsApi(): AlertsAdminApi {
-  const settings = { allowPrivateTargets: false }
-  return {
-    listRules: () => Promise.resolve([]),
-    createRule: unexpected,
-    updateRule: unexpected,
-    deleteRule: unexpected,
-    listChecks: () => Promise.resolve([]),
-    createCheck: unexpected,
-    updateCheck: unexpected,
-    deleteCheck: unexpected,
-    runCheck: unexpected,
-    listChannels: () => Promise.resolve([]),
-    createChannel: unexpected,
-    updateChannel: unexpected,
-    deleteChannel: unexpected,
-    testChannel: unexpected,
-    getSettings: () => Promise.resolve(settings),
-    updateSettings: () => Promise.resolve(settings),
-  }
-}
-
 function settingsApi(withServers = false, data: SystemVersion = system): SettingsApi {
   return {
     version: () => Promise.resolve(data),
@@ -126,30 +108,45 @@ function settingsApi(withServers = false, data: SystemVersion = system): Setting
   }
 }
 
-function mountSettings(permissions: Partial<MePermissions>, props: Parameters<typeof Settings>[0]) {
+function mountSettings(
+  permissions: Partial<MePermissions>,
+  props: Parameters<typeof Settings>[0],
+  path = '/settings',
+) {
+  window.history.replaceState({}, '', path)
   return render(
-    <PermissionsProvider meApi={meApi(permissions)}>
-      <Settings {...props} />
-    </PermissionsProvider>,
+    <RouterProvider>
+      <PermissionsProvider meApi={meApi(permissions)}>
+        <Settings {...props} />
+      </PermissionsProvider>
+    </RouterProvider>,
   )
 }
 
-function Harness({ initial = 'account' }: { initial?: SettingsTab }) {
-  const [active, setActive] = useState<SettingsTab>(initial)
+function Harness() {
+  const { path } = useRoute()
+  const active = settingsTabFromPath(path) ?? 'account'
   const tabs: SettingsTab[] = ['account', 'servers', 'system']
-  return <SettingsTabs tabs={tabs} active={active} onChange={setActive} />
+  return <SettingsTabs tabs={tabs} active={active} />
 }
 
 describe('SettingsTabs', () => {
   beforeEach(async () => {
-    sessionStorage.clear()
+    window.history.replaceState({}, '', '/settings')
     await i18n.changeLanguage('en')
   })
 
-  afterEach(() => cleanup())
+  afterEach(() => {
+    cleanup()
+    window.history.replaceState({}, '', '/')
+  })
 
   it('renders an accessible tablist and moves with the keyboard', async () => {
-    render(<Harness />)
+    render(
+      <RouterProvider>
+        <Harness />
+      </RouterProvider>,
+    )
 
     const account = screen.getByRole('tab', { name: 'Account' })
     expect(account.getAttribute('aria-selected')).toBe('true')
@@ -162,6 +159,7 @@ describe('SettingsTabs', () => {
         'true',
       )
     })
+    expect(window.location.pathname).toBe('/settings/servers')
 
     fireEvent.keyDown(screen.getByRole('tab', { name: 'Servers' }), { key: 'End' })
     await waitFor(() => {
@@ -174,14 +172,15 @@ describe('SettingsTabs', () => {
         'true',
       )
     })
+    expect(window.location.pathname).toBe('/settings')
   })
 
-  it('remembers the selected tab for the browser session', () => {
-    storeSettingsTab('system')
-    expect(readSettingsTab()).toBe('system')
-
-    sessionStorage.setItem('talaia.settingsTab', 'unknown')
-    expect(readSettingsTab()).toBeNull()
+  it('maps every settings tab to its own address', () => {
+    expect(settingsTabPath('account')).toBe('/settings')
+    expect(settingsTabPath('system')).toBe('/settings/system')
+    expect(settingsTabFromPath('/settings')).toBe('account')
+    expect(settingsTabFromPath('/settings/integrations')).toBe('integrations')
+    expect(settingsTabFromPath('/settings/alerts')).toBeNull()
   })
 
   it('shows only the account tab to a user without management permissions', async () => {
@@ -191,20 +190,15 @@ describe('SettingsTabs', () => {
     expect(screen.getAllByRole('tab').map((tab) => tab.textContent)).toEqual(['Account'])
   })
 
-  it('shows the account and alerts tabs to an alerts manager', async () => {
+  it('sends the old /settings/alerts address to the alerts rules tab', async () => {
     mountSettings(
-      { organization: ['alerts.manage'] },
-      { api: settingsApi(), accessApi: accessApi(), alertsApi: alertsApi() },
+      { organization: ['settings.manage', 'alerts.manage'] },
+      { api: settingsApi(), accessApi: accessApi() },
+      '/settings/alerts',
     )
 
-    await waitFor(() => {
-      expect(screen.getAllByRole('tab').map((tab) => tab.textContent)).toEqual([
-        'Account',
-        'Alerts',
-      ])
-    })
-    fireEvent.click(screen.getByRole('tab', { name: 'Alerts' }))
-    expect(await screen.findByRole('heading', { name: 'Alerts' })).toBeTruthy()
+    await waitFor(() => expect(window.location.pathname).toBe('/alerts/rules'))
+    expect(screen.queryByRole('tab', { name: 'Alerts' })).toBeNull()
   })
 
   it('keeps the update progress above the tabs whatever tab is selected', async () => {
@@ -231,33 +225,25 @@ describe('SettingsTabs', () => {
     expect(screen.getByRole('heading', { name: 'Update progress' })).toBeTruthy()
   })
 
-  it('restores the stored tab once permissions and the system data are ready', async () => {
-    storeSettingsTab('system')
+  it('opens the system tab directly from its address once the data is ready', async () => {
     mountSettings(
       {
-        organization: [
-          'settings.manage',
-          'users.manage',
-          'alerts.manage',
-          'server.agent_update',
-          'server.remove',
-        ],
+        organization: ['settings.manage', 'users.manage', 'server.agent_update', 'server.remove'],
       },
       {
         api: settingsApi(true),
         accessApi: accessApi(),
         keysApi: keysApi(),
         oidcApi: oidcApi(),
-        alertsApi: alertsApi(),
       },
+      '/settings/system',
     )
 
     expect(await screen.findByRole('heading', { name: 'Version' })).toBeTruthy()
     expect(screen.getByRole('tab', { name: 'System' }).getAttribute('aria-selected')).toBe('true')
-    expect(readSettingsTab()).toBe('system')
   })
 
-  it('lets an administrator open each of the five cards', async () => {
+  it('lets an administrator open each of the four cards', async () => {
     mountSettings(
       {
         organization: [
@@ -273,7 +259,6 @@ describe('SettingsTabs', () => {
         accessApi: accessApi(),
         keysApi: keysApi(),
         oidcApi: oidcApi(),
-        alertsApi: alertsApi(),
       },
     )
 
@@ -281,7 +266,6 @@ describe('SettingsTabs', () => {
       expect(screen.getAllByRole('tab').map((tab) => tab.textContent)).toEqual([
         'Account',
         'Servers',
-        'Alerts',
         'Integrations',
         'System',
       ])
@@ -290,9 +274,7 @@ describe('SettingsTabs', () => {
 
     fireEvent.click(screen.getByRole('tab', { name: 'Servers' }))
     expect(await screen.findByRole('heading', { name: 'Servers' })).toBeTruthy()
-
-    fireEvent.click(screen.getByRole('tab', { name: 'Alerts' }))
-    expect(await screen.findByRole('heading', { name: 'Alerts' })).toBeTruthy()
+    expect(window.location.pathname).toBe('/settings/servers')
 
     fireEvent.click(screen.getByRole('tab', { name: 'Integrations' }))
     expect(await screen.findByRole('heading', { name: 'API keys' })).toBeTruthy()
@@ -300,5 +282,6 @@ describe('SettingsTabs', () => {
 
     fireEvent.click(screen.getByRole('tab', { name: 'System' }))
     expect(await screen.findByRole('heading', { name: 'Version' })).toBeTruthy()
+    expect(window.location.pathname).toBe('/settings/system')
   })
 })

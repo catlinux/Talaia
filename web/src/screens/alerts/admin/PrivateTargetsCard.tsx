@@ -1,20 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
-import type { AlertAdminSettings, AlertsAdminApi } from '../../api/alertsAdmin'
-import type { Group } from '../../api/groups'
-import type { ServerSummary } from '../../api/servers'
-import { errorMessage } from '../../auth/AuthGate'
-import { usePermissions } from '../../auth/permissions'
-import { ChannelsCard } from './ChannelsCard'
-import { ChecksCard } from './ChecksCard'
-import { RulesCard } from './RulesCard'
-
-interface AlertsSettingsProps {
-  api: AlertsAdminApi
-  servers: ServerSummary[]
-  groups: Group[]
-}
+import type { AlertAdminSettings, AlertsAdminApi } from '../../../api/alertsAdmin'
+import { errorMessage } from '../../../auth/AuthGate'
 
 /** PrivateTargetsCard edits the private-network policy of checks and channels. */
 export function PrivateTargetsCard({ api }: { api: AlertsAdminApi }) {
@@ -99,28 +87,6 @@ export function PrivateTargetsCard({ api }: { api: AlertsAdminApi }) {
           {error}
         </p>
       ) : null}
-    </section>
-  )
-}
-
-/** AlertsSettings groups the alert rules, checks, channels and private-target policy. */
-export function AlertsSettings({ api, servers, groups }: AlertsSettingsProps) {
-  const { t } = useTranslation('alertsSettings')
-  const { can, loading } = usePermissions()
-  if (loading || !can('alerts.manage' as never)) return null
-  return (
-    <section className="alerts-settings" aria-labelledby="settings-alerts-title">
-      <header className="alerts-settings__head">
-        <p className="alerts-settings__eyebrow">{t('eyebrow')}</p>
-        <h2 className="alerts-settings__title" id="settings-alerts-title">
-          {t('title')}
-        </h2>
-        <p className="settings__hint">{t('intro')}</p>
-      </header>
-      <RulesCard api={api} servers={servers} groups={groups} />
-      <ChecksCard api={api} servers={servers} />
-      <ChannelsCard api={api} />
-      <PrivateTargetsCard api={api} />
     </section>
   )
 }

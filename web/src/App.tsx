@@ -11,9 +11,9 @@ import { createMetricsApi, type MetricsApi } from './api/metrics'
 import type { JournalApi } from './api/journal'
 import type { UsersApi } from './api/users'
 import type { TeamsApi } from './api/teams'
-import type { GroupsApi } from './api/groups'
+import { createGroupsApi, type GroupsApi } from './api/groups'
 import type { InvitesApi } from './api/invites'
-import type { ServersApi } from './api/servers'
+import { createServersApi, type ServersApi } from './api/servers'
 import type { ServicesApi } from './api/services'
 import type { SystemApi } from './api/system'
 import type { Server } from './api/types'
@@ -102,6 +102,8 @@ function PanelShell({
   const alertsAdmin = alertsAdminApi ?? defaultAlertsAdminApi
   const metrics = metricsApi ?? defaultMetricsApi
   const containers = containersApi ?? defaultContainersApi
+  const groups = groupsApi ?? defaultGroupsApi
+  const servers = serversApi ?? defaultServersApi
   const [alertSummary, setAlertSummary] = useState<AlertSummary | null>(null)
   const refreshAlertSummary = useCallback(() => {
     if (!canAlerts) return
@@ -207,6 +209,8 @@ function PanelShell({
         alertsAdminApi={alertsAdmin}
         metricsApi={metrics}
         containersApi={containers}
+        serversApi={servers}
+        groupsApi={groups}
       />
     ) : (
       <PanelMessage title={t('shell.noAccess')} />
@@ -297,3 +301,5 @@ const defaultAlertsApi = createAlertsApi()
 const defaultAlertsAdminApi = createAlertsAdminApi()
 const defaultMetricsApi = createMetricsApi()
 const defaultContainersApi = createContainersApi()
+const defaultGroupsApi = createGroupsApi()
+const defaultServersApi = createServersApi()

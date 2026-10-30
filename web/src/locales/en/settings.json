@@ -1,11 +1,10 @@
 {
   "title": "Settings",
-  "subtitle": "Account, servers, alerts and system",
+  "subtitle": "Account, servers, integrations and system",
   "tabs": {
     "label": "Settings sections",
     "account": "Account",
     "servers": "Servers",
-    "alerts": "Alerts",
     "integrations": "Integrations",
     "system": "System"
   },

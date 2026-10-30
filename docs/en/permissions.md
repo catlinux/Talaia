@@ -74,7 +74,7 @@ with root on that server. The app operator role deliberately does not have it.
 - `alerts.silence` needs at least a stack. It allows acknowledging an alert, creating and deleting
   silences, and stopping the watch of a container alert.
 - `alerts.manage` needs the organization. It covers rules, checks, channels, test sends and the
-  private-target setting. Only `admin` has it. The **Settings > Alerts** section is hidden from everyone
+  private-target setting. Only `admin` has it. The Alerts management tabs are hidden from everyone
   else.
 
 A user with `alerts.view` but without `alerts.silence` sees the alert list read-only: the panel does not

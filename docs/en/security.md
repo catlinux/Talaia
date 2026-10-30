@@ -246,7 +246,7 @@ input, so Talaia applies an outbound guard at connection time:
 - By default the guard blocks loopback, RFC 1918 private addresses, carrier-grade NAT, link-local,
   IPv6 unique-local, benchmark, documentation and reserved ranges, multicast, unspecified and broadcast
   addresses.
-- The **Allow checks and notifications to reach private networks** switch in **Settings > Alerts** relaxes
+- The **Allow checks and notifications to reach private networks** switch in **Alerts** relaxes
   private, loopback and CGNAT destinations. Link-local addresses, the reserved documentation ranges,
   multicast/broadcast and metadata remain blocked.
 - Cloud metadata endpoints `169.254.169.254` and `fd00:ec2::254` are **always** blocked because they can

@@ -13,6 +13,12 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+## [0.6.15] - 2026-10-30
+
+### Cambiado
+
+- Panel: las reglas, comprobaciones y canales de notificación de alertas pasan de Ajustes a la página Alertas, para que todo lo relacionado con las alertas esté en un solo sitio; cada pestaña de Ajustes y Alertas tiene su propia dirección.
+
 ## [0.6.14] - 2026-10-30
 
 ### Añadido
@@ -786,7 +792,8 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
   `.gitattributes` y `.gitignore`.
 - Licencia WNCL-1.0 aplicada: archivo `LICENSE` y sección de créditos en los README.
 
-[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.6.14...HEAD
+[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.6.15...HEAD
+[0.6.15]: https://github.com/catlinux/Talaia/releases/tag/v0.6.15
 [0.6.14]: https://github.com/catlinux/Talaia/releases/tag/v0.6.14
 [0.6.13]: https://github.com/catlinux/Talaia/releases/tag/v0.6.13
 [0.6.12]: https://github.com/catlinux/Talaia/releases/tag/v0.6.12

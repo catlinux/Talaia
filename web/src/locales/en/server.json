@@ -491,7 +491,7 @@
     "editTitle": "Edit {{type}} for this server",
     "dialogIntro": "These values apply only to this server; the inherited rule and the rest of the servers keep their settings.",
     "otherTitle": "Other rules for this server",
-    "otherHint": "Container- and stack-scoped rules and server-only rules are managed in {{settings}} > {{alerts}}.",
+    "otherHint": "Container- and stack-scoped rules and server-only rules are managed in {{alerts}} > {{rules}}.",
     "actions": {
       "customise": "Customise",
       "turnOff": "Turn off for this server",

@@ -6,6 +6,7 @@ import { ApiError } from '../api/http'
 import { AgentUpdateError, type ServerSummary, type ServersApi } from '../api/servers'
 import type { SystemVersion, UpdateInfo, UpdateStatus } from '../api/system'
 import i18n from '../i18n'
+import { RouterProvider } from '../router'
 import { Settings, pollEvery, type SettingsApi } from './Settings'
 
 const current = 'a'.repeat(40)
@@ -65,7 +66,11 @@ function apiWith(
 }
 
 function renderSettings(api: SettingsApi, access?: AccessApi) {
-  render(<Settings api={api} accessApi={access} />)
+  render(
+    <RouterProvider>
+      <Settings api={api} accessApi={access} />
+    </RouterProvider>,
+  )
 }
 
 /** fakeAccess answers the access lists; the unused calls reject. */
@@ -98,6 +103,7 @@ describe('Settings', () => {
   beforeEach(async () => {
     localStorage.clear()
     sessionStorage.clear()
+    window.history.replaceState({}, '', '/settings')
     await i18n.changeLanguage('en')
   })
 
@@ -448,17 +454,19 @@ describe('Settings', () => {
 
   it('renders code spans in notes without HTML', async () => {
     const { container } = render(
-      <Settings
-        api={apiWith(() =>
-          Promise.resolve(
-            makeSystem({
-              update: {
-                notes: { en: ['Use `talaia-core` and <b>not HTML</b>'], es: [] },
-              },
-            }),
-          ),
-        )}
-      />,
+      <RouterProvider>
+        <Settings
+          api={apiWith(() =>
+            Promise.resolve(
+              makeSystem({
+                update: {
+                  notes: { en: ['Use `talaia-core` and <b>not HTML</b>'], es: [] },
+                },
+              }),
+            ),
+          )}
+        />
+      </RouterProvider>,
     )
 
     expect(await screen.findByText('talaia-core')).toBeTruthy()
@@ -846,7 +854,11 @@ describe('Settings', () => {
     const version = vi
       .fn<() => Promise<SystemVersion>>()
       .mockResolvedValue(makeSystem({ status: { state: 'running' } }))
-    const { unmount } = render(<Settings api={apiWith(version)} />)
+    const { unmount } = render(
+      <RouterProvider>
+        <Settings api={apiWith(version)} />
+      </RouterProvider>,
+    )
 
     await act(async () => {})
     expect(version).toHaveBeenCalledTimes(1)

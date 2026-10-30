@@ -17,7 +17,7 @@ import {
   ruleParamNumbers,
   ruleParamValues,
   ruleParamsValid,
-} from '../settings/RuleForm'
+} from '../alerts/admin/RuleForm'
 
 interface AlertsSectionProps {
   api: AlertsAdminApi
@@ -327,8 +327,8 @@ export function AlertsSection({ api, serverId, serverName, groupId }: AlertsSect
             </h3>
             <p className="services__description">
               {t('alerts.otherHint', {
-                settings: t('common:nav.settings'),
                 alerts: t('common:nav.alerts'),
+                rules: t('alertsSettings:rules.title'),
               })}
             </p>
             <ul className="servicelist">

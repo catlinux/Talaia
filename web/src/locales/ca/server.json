@@ -491,7 +491,7 @@
     "editTitle": "Edita {{type}} per a aquest servidor",
     "dialogIntro": "Aquests valors nom?s s'apliquen a aquest servidor; la regla heretada i la resta de servidors conserven la seva configuraci?.",
     "otherTitle": "Altres regles d'aquest servidor",
-    "otherHint": "Les regles d'?mbit de stack o contenidor i les regles exclusives del servidor es gestionen a {{settings}} > {{alerts}}.",
+    "otherHint": "Les regles d'?mbit de stack o contenidor i les regles exclusives del servidor es gestionen a {{alerts}} > {{rules}}.",
     "actions": {
       "customise": "Personalitza",
       "turnOff": "Desactiva per a aquest servidor",

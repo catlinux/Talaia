@@ -6,11 +6,11 @@ import type {
   AlertCheckInput,
   AlertsAdminApi,
   CheckResult,
-} from '../../api/alertsAdmin'
-import type { ServerSummary } from '../../api/servers'
-import { errorMessage } from '../../auth/AuthGate'
-import { PlusIcon, TrashIcon } from '../../components/icons'
-import { Dialog } from '../users/Dialog'
+} from '../../../api/alertsAdmin'
+import type { ServerSummary } from '../../../api/servers'
+import { errorMessage } from '../../../auth/AuthGate'
+import { PlusIcon, TrashIcon } from '../../../components/icons'
+import { Dialog } from '../../users/Dialog'
 import { CheckForm } from './CheckForm'
 
 // One clock for the card: certificate days do not need to tick per render.

@@ -6,10 +6,10 @@ import type {
   AlertChannelInput,
   ChannelLanguage,
   ChannelType,
-} from '../../api/alertsAdmin'
-import { errorMessage } from '../../auth/AuthGate'
-import { CheckIcon } from '../../components/icons'
-import { Dialog } from '../users/Dialog'
+} from '../../../api/alertsAdmin'
+import { errorMessage } from '../../../auth/AuthGate'
+import { CheckIcon } from '../../../components/icons'
+import { Dialog } from '../../users/Dialog'
 
 interface ChannelFormProps {
   channel: AlertChannel | null

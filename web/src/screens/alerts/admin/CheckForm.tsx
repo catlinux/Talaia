@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
-import type { AlertCheck, AlertCheckInput, CheckKind } from '../../api/alertsAdmin'
-import type { ServerSummary } from '../../api/servers'
-import { errorMessage } from '../../auth/AuthGate'
-import { Dialog } from '../users/Dialog'
+import type { AlertCheck, AlertCheckInput, CheckKind } from '../../../api/alertsAdmin'
+import type { ServerSummary } from '../../../api/servers'
+import { errorMessage } from '../../../auth/AuthGate'
+import { Dialog } from '../../users/Dialog'
 
 interface CheckFormProps {
   check: AlertCheck | null

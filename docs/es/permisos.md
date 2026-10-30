@@ -75,8 +75,8 @@ confiarías root en ese servidor. El rol de operador de app carece de él a prop
 - `alerts.silence` necesita al menos un stack. Permite confirmar una alerta, crear y borrar silencios y
   dejar de vigilar una alerta de contenedor.
 - `alerts.manage` necesita la organización. Cubre reglas, comprobaciones, canales, envíos de prueba y el
-  ajuste de redes privadas. Solo lo tiene `admin`. La sección **Ajustes > Alertas** se oculta a todos los
-  demás.
+  ajuste de redes privadas. Solo lo tiene `admin`. Las pestañas de gestión de Alertas se ocultan a
+  todos los demás.
 
 Quien tiene `alerts.view` pero no `alerts.silence` ve la lista de alertas en solo lectura: el panel no
 muestra los botones de confirmar, silenciar ni dejar de vigilar. El núcleo comprueba igualmente cada

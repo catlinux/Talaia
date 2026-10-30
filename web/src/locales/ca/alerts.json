@@ -10,7 +10,13 @@
     "label": "Seccions d'alertes",
     "active": "Actives",
     "history": "Historial",
-    "silences": "Silencis"
+    "silences": "Silencis",
+    "rules": "Regles",
+    "checks": "Comprovacions",
+    "channels": "Canals"
+  },
+  "management": {
+    "loading": "Carregant la configuració de les alertes…"
   },
   "empty": {
     "title": "No hi ha alertes actives",

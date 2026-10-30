@@ -2101,6 +2101,7 @@
   font-size: 0.9375rem;
   font-weight: 500;
   white-space: nowrap;
+  text-decoration: none;
   cursor: pointer;
 }
 

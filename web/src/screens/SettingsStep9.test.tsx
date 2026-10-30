@@ -1,4 +1,5 @@
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import type { ReactNode } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { APIKey, APIKeysApi } from '../api/apikeys'
@@ -7,6 +8,7 @@ import { ApiError } from '../api/http'
 import type { OIDCApi, OIDCSettings } from '../api/oidc'
 import type { SystemVersion } from '../api/system'
 import i18n from '../i18n'
+import { RouterProvider } from '../router'
 import { Settings, type SettingsApi } from './Settings'
 
 const system: SystemVersion = {
@@ -36,6 +38,10 @@ const systemApi: SettingsApi = {
   version: () => Promise.resolve(system),
   check: () => Promise.reject(new Error('unexpected check')),
   update: () => Promise.reject(new Error('unexpected update')),
+}
+
+function renderSettings(ui: ReactNode) {
+  return render(<RouterProvider>{ui}</RouterProvider>)
 }
 
 function fakeGroups(): GroupsApi {
@@ -85,6 +91,7 @@ function fakeOIDC(overrides: Partial<OIDCApi> = {}): OIDCApi {
 
 describe('Settings API keys and single sign-on', () => {
   beforeEach(async () => {
+    window.history.replaceState({}, '', '/settings')
     await i18n.changeLanguage('en')
   })
 
@@ -93,7 +100,7 @@ describe('Settings API keys and single sign-on', () => {
   it('shows a new API key once and forgets it when the dialog closes', async () => {
     const keys = fakeKeys()
     const create = vi.spyOn(keys, 'create')
-    render(<Settings api={systemApi} keysApi={keys} groupsApi={fakeGroups()} />)
+    renderSettings(<Settings api={systemApi} keysApi={keys} groupsApi={fakeGroups()} />)
 
     expect(await screen.findByRole('heading', { name: 'API keys' })).toBeTruthy()
     fireEvent.click(screen.getByRole('button', { name: 'Create key' }))
@@ -139,7 +146,7 @@ describe('Settings API keys and single sign-on', () => {
   it('never prefills the OIDC secret and shows the discovery error', async () => {
     const update = vi.fn(() => Promise.reject(new ApiError('oidc_discovery_failed', 422)))
     const oidc = fakeOIDC({ update })
-    render(<Settings api={systemApi} oidcApi={oidc} />)
+    renderSettings(<Settings api={systemApi} oidcApi={oidc} />)
 
     expect(await screen.findByRole('heading', { name: 'Single sign-on' })).toBeTruthy()
     const secret = (await screen.findByLabelText(/Client secret/)) as HTMLInputElement

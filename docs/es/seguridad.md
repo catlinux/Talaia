@@ -264,7 +264,7 @@ entrada no confiable, así que Talaia aplica una protección en el momento de co
   únicas locales de IPv6, rangos de pruebas, documentación y reservados, multicast, no especificadas y de
   difusión.
 - El interruptor **Permitir que las comprobaciones y las notificaciones lleguen a redes privadas** de
-  **Ajustes > Alertas** relaja los destinos privados, de bucle local y NAT de operador. Las direcciones
+  **Alertas** relaja los destinos privados, de bucle local y NAT de operador. Las direcciones
   link-local, los rangos reservados de documentación, multicast/difusión y los metadatos siguen bloqueados.
 - Los endpoints de metadatos de nube `169.254.169.254` y `fd00:ec2::254` están **siempre** bloqueados porque
   pueden exponer credenciales de instancia; el interruptor nunca los permite.

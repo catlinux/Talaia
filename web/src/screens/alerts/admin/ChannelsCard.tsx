@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
-import type { AlertChannel, AlertChannelInput, AlertsAdminApi } from '../../api/alertsAdmin'
-import { errorMessage } from '../../auth/AuthGate'
-import { PlusIcon, TrashIcon } from '../../components/icons'
-import { Dialog } from '../users/Dialog'
+import type { AlertChannel, AlertChannelInput, AlertsAdminApi } from '../../../api/alertsAdmin'
+import { errorMessage } from '../../../auth/AuthGate'
+import { PlusIcon, TrashIcon } from '../../../components/icons'
+import { Dialog } from '../../users/Dialog'
 import { ChannelForm } from './ChannelForm'
 
 interface ChannelsCardProps {

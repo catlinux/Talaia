@@ -1,18 +1,25 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
-import type { AlertChannel, AlertRule, AlertRuleInput, AlertsAdminApi } from '../../api/alertsAdmin'
-import type { Group } from '../../api/groups'
-import type { ServerSummary } from '../../api/servers'
-import { errorMessage } from '../../auth/AuthGate'
-import { PlusIcon, TrashIcon } from '../../components/icons'
-import { Dialog } from '../users/Dialog'
+import type {
+  AlertChannel,
+  AlertRule,
+  AlertRuleInput,
+  AlertsAdminApi,
+} from '../../../api/alertsAdmin'
+import type { Group } from '../../../api/groups'
+import type { ServerSummary } from '../../../api/servers'
+import { errorMessage } from '../../../auth/AuthGate'
+import { PlusIcon, TrashIcon } from '../../../components/icons'
+import { Dialog } from '../../users/Dialog'
 import { RuleForm } from './RuleForm'
 
 interface RulesCardProps {
   api: AlertsAdminApi
   servers: ServerSummary[]
   groups: Group[]
+  /** initialRuleId opens that rule for editing when the card loads. */
+  initialRuleId?: string | null
 }
 
 function inputOf(rule: AlertRule, enabled = rule.enabled): AlertRuleInput {
@@ -60,7 +67,7 @@ function scopeLabel(
 }
 
 /** RulesCard manages the alert rules of the organization. */
-export function RulesCard({ api, servers, groups }: RulesCardProps) {
+export function RulesCard({ api, servers, groups, initialRuleId = null }: RulesCardProps) {
   const { t } = useTranslation(['alertsSettings', 'errors'])
   const [rules, setRules] = useState<AlertRule[] | null>(null)
   const [channels, setChannels] = useState<AlertChannel[]>([])
@@ -71,6 +78,7 @@ export function RulesCard({ api, servers, groups }: RulesCardProps) {
   const [deleteBusy, setDeleteBusy] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
   const [toggling, setToggling] = useState<string | null>(null)
+  const [openedRuleId, setOpenedRuleId] = useState<string | null>(null)
 
   const load = useCallback(async () => {
     setError(null)
@@ -108,6 +116,29 @@ export function RulesCard({ api, servers, groups }: RulesCardProps) {
       active = false
     }
   }, [api, t])
+
+  useEffect(() => {
+    if (
+      initialRuleId === null ||
+      initialRuleId === '' ||
+      initialRuleId === openedRuleId ||
+      rules === null
+    ) {
+      return
+    }
+    let active = true
+    queueMicrotask(() => {
+      if (!active) return
+      const target = rules.find((rule) => rule.id === initialRuleId)
+      if (target !== undefined) {
+        setEditing(target)
+        setOpenedRuleId(initialRuleId)
+      }
+    })
+    return () => {
+      active = false
+    }
+  }, [initialRuleId, openedRuleId, rules])
 
   const save = async (input: AlertRuleInput) => {
     if (editing === null) return

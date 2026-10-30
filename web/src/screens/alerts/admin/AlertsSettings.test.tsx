@@ -1,4 +1,4 @@
-import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type {
@@ -8,18 +8,13 @@ import type {
   AlertChannelInput,
   AlertRuleInput,
   AlertsAdminApi,
-} from '../../api/alertsAdmin'
-import type { GroupsApi } from '../../api/groups'
-import type { MeApi, MePermissions, Permission } from '../../api/me'
-import type { ServerSummary } from '../../api/servers'
-import type { SystemVersion } from '../../api/system'
-import { PermissionsProvider } from '../../auth/permissions'
-import i18n from '../../i18n'
-import { Settings } from '../Settings'
+} from '../../../api/alertsAdmin'
+import type { ServerSummary } from '../../../api/servers'
+import i18n from '../../../i18n'
 import { ChannelForm } from './ChannelForm'
 import { ChannelsCard } from './ChannelsCard'
 import { ChecksCard } from './ChecksCard'
-import { PrivateTargetsCard } from './AlertsSettings'
+import { PrivateTargetsCard } from './PrivateTargetsCard'
 import { RulesCard } from './RulesCard'
 
 function rule(overrides: Partial<AlertRule> = {}): AlertRule {
@@ -117,52 +112,6 @@ function fakeApi(overrides: Partial<AlertsAdminApi> = {}): AlertsAdminApi {
   }
 }
 
-const system: SystemVersion = {
-  version: '1.2.3',
-  commit: 'a'.repeat(40),
-  update: {
-    current: 'a'.repeat(40),
-    latest: 'a'.repeat(40),
-    pending: [],
-    notes: { en: [], es: [] },
-    ci: 'green',
-    checkedAt: '2026-10-24T10:00:00Z',
-    error: '',
-    updateAvailable: false,
-  },
-  status: {
-    state: 'idle',
-    from: '',
-    to: '',
-    startedAt: '',
-    finishedAt: '',
-    log: [],
-  },
-}
-
-const systemApi = {
-  version: () => Promise.resolve(system),
-  check: () => Promise.resolve(system),
-  update: () => Promise.resolve({ target: system.commit }),
-}
-
-function me(permissions: string[]): MeApi {
-  const scopes: MePermissions = {
-    organization: permissions as Permission[],
-    servers: {},
-    stacks: {},
-    containers: {},
-  }
-  return {
-    get: () =>
-      Promise.resolve({
-        user: { id: 'u1', username: 'alice', display_name: 'Alice', email: '' },
-        bindings: { bindings: [] },
-        permissions: scopes,
-      }),
-  }
-}
-
 const servers: ServerSummary[] = [
   {
     id: 's1',
@@ -176,14 +125,6 @@ const servers: ServerSummary[] = [
     agentUpgradeCommand: '',
   },
 ]
-
-const groupsApi: GroupsApi = {
-  list: () => Promise.resolve([{ id: 'g1', name: 'Main' }]),
-  create: () => Promise.reject(new Error('unexpected')),
-  rename: () => Promise.reject(new Error('unexpected')),
-  remove: () => Promise.reject(new Error('unexpected')),
-  setServerGroup: () => Promise.reject(new Error('unexpected')),
-}
 
 describe('alert settings', () => {
   beforeEach(async () => {
@@ -363,33 +304,5 @@ describe('alert settings', () => {
     await waitFor(() => expect(updateSettings).toHaveBeenCalledWith(true))
     await waitFor(() => expect(toggle.checked).toBe(true))
     expect(screen.getByText('Private-network policy saved.')).toBeTruthy()
-  })
-
-  it('shows the section to an admin and hides it from viewers and app operators', async () => {
-    const alertsApi = fakeApi()
-    const { unmount } = render(
-      <PermissionsProvider meApi={me(['settings.manage', 'alerts.manage'])}>
-        <Settings api={systemApi} alertsApi={alertsApi} groupsApi={groupsApi} />
-      </PermissionsProvider>,
-    )
-    expect(await screen.findByRole('heading', { name: 'Alerts' })).toBeTruthy()
-    unmount()
-
-    const viewer = render(
-      <PermissionsProvider meApi={me(['alerts.view'])}>
-        <Settings api={systemApi} alertsApi={alertsApi} groupsApi={groupsApi} />
-      </PermissionsProvider>,
-    )
-    await act(async () => {})
-    expect(screen.queryByRole('heading', { name: 'Alerts' })).toBeNull()
-    viewer.unmount()
-
-    render(
-      <PermissionsProvider meApi={me(['alerts.view', 'alerts.silence'])}>
-        <Settings api={systemApi} alertsApi={alertsApi} groupsApi={groupsApi} />
-      </PermissionsProvider>,
-    )
-    await act(async () => {})
-    expect(screen.queryByRole('heading', { name: 'Alerts' })).toBeNull()
   })
 })

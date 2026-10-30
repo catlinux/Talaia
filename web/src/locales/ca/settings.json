@@ -1,11 +1,10 @@
 {
   "title": "Configuració",
-  "subtitle": "Compte, servidors, alertes i sistema",
+  "subtitle": "Compte, servidors, integracions i sistema",
   "tabs": {
     "label": "Seccions de configuració",
     "account": "Compte",
     "servers": "Servidors",
-    "alerts": "Alertes",
     "integrations": "Integracions",
     "system": "Sistema"
   },

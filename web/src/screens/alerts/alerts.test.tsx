@@ -3,6 +3,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ReactNode } from 'react'
 
 import type { Alert, AlertSilence, AlertSummary, AlertsApi } from '../../api/alerts'
+import type { AlertRule, AlertsAdminApi } from '../../api/alertsAdmin'
+import type { Group, GroupsApi } from '../../api/groups'
+import { ApiError } from '../../api/http'
 import type { MeApi, MePermissions, Permission } from '../../api/me'
 import { PermissionsProvider } from '../../auth/permissions'
 import { ToastProvider } from '../../components/ui'
@@ -31,6 +34,25 @@ function alert(overrides: Partial<Alert> = {}): Alert {
     ackedBy: '',
     silenced: false,
     summary: { key: 'alerts.container_down', params: {} },
+    ...overrides,
+  }
+}
+
+function rule(overrides: Partial<AlertRule> = {}): AlertRule {
+  return {
+    id: 'r1',
+    name: 'CPU high',
+    type: 'cpu_high',
+    enabled: true,
+    severity: 'warning',
+    params: { threshold: 90, for_seconds: 0 },
+    scopeType: 'organization',
+    serverId: null,
+    groupId: null,
+    scopeName: null,
+    channelIds: [],
+    repeatIntervalSeconds: 0,
+    builtin: false,
     ...overrides,
   }
 }
@@ -81,6 +103,28 @@ function fakeApi(overrides: Partial<AlertsApi> = {}): AlertsApi {
     unwatch: () => Promise.resolve(),
     createSilence: () => Promise.resolve(silence()),
     deleteSilence: () => Promise.resolve(),
+    ...overrides,
+  }
+}
+
+function adminApi(overrides: Partial<AlertsAdminApi> = {}): AlertsAdminApi {
+  return {
+    listRules: () => Promise.resolve([]),
+    createRule: () => Promise.reject(new Error('unexpected')),
+    updateRule: () => Promise.reject(new Error('unexpected')),
+    deleteRule: () => Promise.reject(new Error('unexpected')),
+    listChecks: () => Promise.resolve([]),
+    createCheck: () => Promise.reject(new Error('unexpected')),
+    updateCheck: () => Promise.reject(new Error('unexpected')),
+    deleteCheck: () => Promise.reject(new Error('unexpected')),
+    runCheck: () => Promise.reject(new Error('unexpected')),
+    listChannels: () => Promise.resolve([]),
+    createChannel: () => Promise.reject(new Error('unexpected')),
+    updateChannel: () => Promise.reject(new Error('unexpected')),
+    deleteChannel: () => Promise.reject(new Error('unexpected')),
+    testChannel: () => Promise.reject(new Error('unexpected')),
+    getSettings: () => Promise.resolve({ allowPrivateTargets: false }),
+    updateSettings: (allowPrivateTargets) => Promise.resolve({ allowPrivateTargets }),
     ...overrides,
   }
 }
@@ -146,6 +190,88 @@ describe('alerts screen', () => {
     renderAlerts(<Alerts api={fakeApi({ silences: () => Promise.resolve([silence()]) })} />)
     expect(await screen.findByText('maintenance')).toBeTruthy()
     expect(screen.getByRole('tab', { name: 'Silences' }).getAttribute('aria-selected')).toBe('true')
+  })
+
+  it('opens the management tabs and the linked rule from their addresses', async () => {
+    window.history.replaceState({}, '', '/alerts/rules?rule=r1')
+    const listServers = vi.fn(() => Promise.resolve([]))
+    const listGroups = vi.fn<() => Promise<Group[]>>(() => Promise.resolve([]))
+    const listRules = vi.fn(() => Promise.resolve([rule()]))
+    const groups: GroupsApi = {
+      list: listGroups,
+      create: () => Promise.reject(new Error('unexpected')),
+      rename: () => Promise.reject(new Error('unexpected')),
+      remove: () => Promise.reject(new Error('unexpected')),
+      setServerGroup: () => Promise.reject(new Error('unexpected')),
+    }
+    renderAlerts(
+      <PermissionsProvider meApi={me(['alerts.view', 'alerts.manage'])}>
+        <Alerts
+          api={fakeApi()}
+          alertsAdminApi={adminApi({ listRules })}
+          serversApi={{ listServers }}
+          groupsApi={groups}
+        />
+      </PermissionsProvider>,
+    )
+
+    expect(await screen.findByRole('tab', { name: 'Rules' })).toBeTruthy()
+    expect(await screen.findByRole('dialog')).toBeTruthy()
+    expect((screen.getByLabelText('Name') as HTMLInputElement).value).toBe('CPU high')
+    expect(listServers).toHaveBeenCalledTimes(1)
+    expect(listGroups).toHaveBeenCalledTimes(1)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+    fireEvent.click(screen.getByRole('tab', { name: 'Channels' }))
+    expect(window.location.pathname).toBe('/alerts/channels')
+    expect(
+      await screen.findByLabelText('Allow checks and notifications to reach private networks'),
+    ).toBeTruthy()
+  })
+
+  it('redirects a management address to the inbox without alerts.manage', async () => {
+    window.history.replaceState({}, '', '/alerts/rules')
+    renderAlerts(
+      <PermissionsProvider meApi={me(['alerts.view'])}>
+        <Alerts api={fakeApi({ list: () => Promise.resolve([]) })} />
+      </PermissionsProvider>,
+    )
+
+    await waitFor(() => expect(window.location.pathname).toBe('/alerts'))
+    expect(screen.queryByRole('tab', { name: 'Rules' })).toBeNull()
+    expect(screen.getByRole('tab', { name: 'Active' })).toBeTruthy()
+  })
+
+  it('retries loading the servers and groups of a management tab', async () => {
+    window.history.replaceState({}, '', '/alerts/checks')
+    const listServers = vi
+      .fn<() => Promise<never[]>>()
+      .mockRejectedValueOnce(new ApiError('internal', 500))
+      .mockResolvedValueOnce([])
+    const listGroups = vi.fn<() => Promise<Group[]>>(() => Promise.resolve([]))
+    renderAlerts(
+      <PermissionsProvider meApi={me(['alerts.view', 'alerts.manage'])}>
+        <Alerts
+          api={fakeApi()}
+          alertsAdminApi={adminApi()}
+          serversApi={{ listServers }}
+          groupsApi={{
+            list: listGroups,
+            create: () => Promise.reject(new Error('unexpected')),
+            rename: () => Promise.reject(new Error('unexpected')),
+            remove: () => Promise.reject(new Error('unexpected')),
+            setServerGroup: () => Promise.reject(new Error('unexpected')),
+          }}
+        />
+      </PermissionsProvider>,
+    )
+
+    expect((await screen.findByRole('alert')).textContent).toContain(
+      'Something went wrong. Try again.',
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'Retry' }))
+    expect(await screen.findByRole('button', { name: 'Add check' })).toBeTruthy()
+    expect(listServers).toHaveBeenCalledTimes(2)
   })
 
   it('shows the inbox subtitle with severity and new counts', async () => {

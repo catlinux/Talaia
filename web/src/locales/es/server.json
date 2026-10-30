@@ -491,7 +491,7 @@
     "editTitle": "Editar {{type}} para este servidor",
     "dialogIntro": "Estos valores solo se aplican a este servidor; la regla heredada y el resto de servidores conservan su configuraci?n.",
     "otherTitle": "Otras reglas de este servidor",
-    "otherHint": "Las reglas de ?mbito de stack o contenedor y las reglas exclusivas del servidor se gestionan en {{settings}} > {{alerts}}.",
+    "otherHint": "Las reglas de ?mbito de stack o contenedor y las reglas exclusivas del servidor se gestionan en {{alerts}} > {{rules}}.",
     "actions": {
       "customise": "Personalizar",
       "turnOff": "Desactivar para este servidor",

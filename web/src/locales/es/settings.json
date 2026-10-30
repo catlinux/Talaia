@@ -1,11 +1,10 @@
 {
   "title": "Ajustes",
-  "subtitle": "Cuenta, servidores, alertas y sistema",
+  "subtitle": "Cuenta, servidores, integraciones y sistema",
   "tabs": {
     "label": "Secciones de ajustes",
     "account": "Cuenta",
     "servers": "Servidores",
-    "alerts": "Alertas",
     "integrations": "Integraciones",
     "system": "Sistema"
   },

@@ -20,11 +20,11 @@ Para recibir avisos en un servidor nuevo (ejemplo con Telegram):
 2. **Activa el bot.** Abre tu bot y pulsa **Iniciar** (o escribe algo). Sin esto no puede escribirte.
 3. **Obtén tu ID de chat.** Abre **@userinfobot**, pulsa **Iniciar** y copia el número `Id`. Para un grupo,
    añade el bot al grupo; el ID del grupo es negativo.
-4. **Crea el canal.** En **Ajustes > Alertas > Canales** pulsa añadir, elige **Telegram**, rellena el ID del
+4. **Crea el canal.** En **Alertas > Canales** pulsa añadir, elige **Telegram**, rellena el ID del
    chat y el token del bot, y guarda.
 5. **Pruébalo.** Pulsa **Enviar prueba**: debe llegar un mensaje al bot. Si falla, el error (censurado)
    aparece en el canal.
-6. **Revisa las reglas.** En **Ajustes > Alertas > Reglas** están las seis reglas integradas, ya activas. Una
+6. **Revisa las reglas.** En **Alertas > Reglas** están las seis reglas integradas, ya activas. Una
    regla sin canales asignados usa **todos los canales activos**, así que ya avisan por tu canal. Añade aquí
    las de CPU o memoria si las quieres (no vienen por defecto) y elige el intervalo de repetición
    (**nunca** = un aviso al activarse y otro al resolverse).
@@ -132,7 +132,7 @@ amplia del mismo tipo **y la misma gravedad** para los sujetos a los que afecta 
 servidor, stack, contenedor), aunque la estrecha esté desactivada. Las reglas del mismo tipo con distinta
 gravedad no se sustituyen: las de disco al 80 % (aviso) y al 90 % (crítica) conviven. Una alerta que estaba
 abierta cuando un ajuste pasó a sustituir su regla se resuelve. Las reglas de stack o contenedor, y las que solo
-existen para el servidor, aparecen en solo lectura; se gestionan en **Ajustes > Alertas > Reglas**. Las reglas
+existen para el servidor, aparecen en solo lectura; se gestionan en **Alertas > Reglas**. Las reglas
 de ámbito grupo todavía no se muestran en la pestaña.
 
 Una regla tiene un tipo, una gravedad (`warning` o `critical`), un ámbito, parámetros, un intervalo de
@@ -250,7 +250,7 @@ escaneo aparte.
 
 ## Canales de notificación
 
-Configura los canales en **Ajustes > Alertas > Canales**. Cada canal tiene un nombre, un tipo, un interruptor
+Configura los canales en **Alertas > Canales**. Cada canal tiene un nombre, un tipo, un interruptor
 de activación y un idioma (`ca`, `es` o `en`) que controla el texto del mensaje. Se puede probar en el sitio:
 la prueba se envía de inmediato y se muestra el éxito o el error censurado.
 
@@ -335,7 +335,7 @@ Por defecto se bloquean:
 - direcciones de metadatos de nube.
 
 El interruptor **Permitir que las comprobaciones y las notificaciones lleguen a redes privadas** de
-**Ajustes > Alertas** relaja las restricciones de direcciones privadas, de bucle local y NAT de operador. **No**
+**Alertas** relaja las restricciones de direcciones privadas, de bucle local y NAT de operador. **No**
 relaja las link-local, los rangos reservados de documentación, multicast/difusión ni los metadatos de nube.
 `169.254.169.254` y `fd00:ec2::254` siguen bloqueadas diga lo que diga el interruptor, porque pueden exponer
 credenciales de instancia y datos de control del proveedor. Déjalo apagado salvo que
@@ -359,7 +359,7 @@ Los permisos son:
 | `alerts.silence` | Stack | Confirmar, crear/borrar silencios y dejar de vigilar un contenedor |
 | `alerts.manage` | Organización | Reglas, comprobaciones, canales, envíos de prueba y el ajuste de redes privadas |
 
-Solo `admin` tiene `alerts.manage`; la sección **Ajustes > Alertas** se oculta a todos los demás. Las claves
+Solo `admin` tiene `alerts.manage`; las pestañas de gestión de Alertas se ocultan a todos los demás. Las claves
 de API pueden usar `alerts.view` y `alerts.silence`, pero nunca `alerts.manage`: las rutas de gestión rechazan
 las claves de API aunque sus asignaciones de rol las permitieran.
 
@@ -458,7 +458,7 @@ Deja al menos 1 GiB libre para el núcleo y PostgreSQL.
 
 1. Abre **Alertas > Activas** y comprueba que el incidente existe. Si no existe, la regla está desactivada, su
    ámbito no coincide, la condición aún no es cierta o no ha pasado la duración pendiente.
-2. Abre **Ajustes > Alertas > Canales** y lee el último estado. Usa **Enviar prueba**; el error censurado
+2. Abre **Alertas > Canales** y lee el último estado. Usa **Enviar prueba**; el error censurado
    aparece ahí.
 3. Revisa la lista de canales de la regla. Una lista vacía significa todos los canales activos; una lista con
    elementos excluye todos los canales no seleccionados.

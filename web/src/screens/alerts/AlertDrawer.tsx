@@ -11,7 +11,6 @@ import { TimeSeriesChart, type ChartSeries } from '../../components/chart/TimeSe
 import { SeverityTag, ConfirmDialog, Drawer, useToast, type Severity } from '../../components/ui'
 import { Link } from '../../router'
 import { TimedOut, waitForJob } from '../server/waitForJob'
-import { storeSettingsTab } from '../settings/SettingsTabs'
 import { alertMessageText, ruleLabel } from './AlertMessage'
 import { alertActions, type AlertCauseAction } from './alertActions'
 import { alertScope, alertState } from './inboxModel'
@@ -376,7 +375,11 @@ export function AlertDrawer({
       at: exactDate(alert.resolvedAt, language),
     })
   }
-  const editRule = canManage ? '/settings' : null
+  const editRule = canManage
+    ? alert.ruleId === null || alert.ruleId === ''
+      ? '/alerts/rules'
+      : `/alerts/rules?rule=${encodeURIComponent(alert.ruleId)}`
+    : null
 
   return (
     <>
@@ -521,11 +524,7 @@ export function AlertDrawer({
               <span>{ruleLabel(t, rule?.type ?? alert.ruleType)}</span>
               {rule !== null ? <SeverityTag severity={rule.severity} /> : null}
               <span>{thresholdText(rule, t, language)}</span>
-              {editRule !== null ? (
-                <Link to={editRule} onClick={() => storeSettingsTab('alerts')}>
-                  {t('drawer.rule.edit')}
-                </Link>
-              ) : null}
+              {editRule !== null ? <Link to={editRule}>{t('drawer.rule.edit')}</Link> : null}
             </div>
           </div>
 

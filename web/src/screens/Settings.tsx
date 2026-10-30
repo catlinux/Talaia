@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
-import { createAlertsAdminApi, type AlertsAdminApi } from '../api/alertsAdmin'
 import { createAuthApi, type AccessApi } from '../api/auth'
 import { createAPIKeysApi, type APIKeysApi } from '../api/apikeys'
 import { createGroupsApi, type Group, type GroupsApi } from '../api/groups'
@@ -21,16 +20,11 @@ import {
 } from '../api/system'
 import { errorMessage } from '../auth/AuthGate'
 import { usePermissions } from '../auth/permissions'
+import { useNavigate, useRoute } from '../router'
 import { ManualUpgrade } from './server/ManualUpgrade'
 import { AccessCard } from './settings/AccessCard'
-import { AlertsSettings } from './settings/AlertsSettings'
 import { APIKeysCard } from './settings/APIKeysCard'
-import {
-  SettingsTabs,
-  readSettingsTab,
-  storeSettingsTab,
-  type SettingsTab,
-} from './settings/SettingsTabs'
+import { SettingsTabs, settingsTabFromPath, type SettingsTab } from './settings/SettingsTabs'
 import { OIDCSettingsCard } from './settings/OIDCSettingsCard'
 
 /** pollEvery is how often the progress of a running update is asked for. */
@@ -54,8 +48,6 @@ interface SettingsProps {
   oidcApi?: OIDCApi
   /** groupsApi supplies the group names of the key scope selector. */
   groupsApi?: GroupsApi
-  /** alertsApi manages alert rules, checks, channels and settings. */
-  alertsApi?: AlertsAdminApi
   /** pollMs overrides the polling interval, for the tests. */
   pollMs?: number
 }
@@ -71,7 +63,6 @@ const defaultAccessApi = createAuthApi()
 const defaultKeysApi = createAPIKeysApi()
 const defaultOIDCApi = createOIDCApi()
 const defaultGroupsApi = createGroupsApi()
-const defaultAlertsApi = createAlertsAdminApi()
 
 /** shortSHA returns the seven characters the panel shows of a commit. */
 function shortSHA(sha: string): string {
@@ -161,12 +152,13 @@ export function Settings({
   keysApi,
   oidcApi,
   groupsApi,
-  alertsApi,
   pollMs = pollEvery,
 }: SettingsProps) {
   const { t, i18n } = useTranslation(['settings', 'errors'])
   const language = i18n.resolvedLanguage ?? i18n.language
   const { can, loading: permissionsLoading } = usePermissions()
+  const { path } = useRoute()
+  const navigate = useNavigate()
   const canSettings = !permissionsLoading && can('settings.manage')
   // A test or an embedding may pass a system-only API. In production the
   // default system API means the panel also manages trusted devices and
@@ -175,8 +167,6 @@ export function Settings({
   const keys = keysApi ?? (api === defaultApi ? defaultKeysApi : undefined)
   const oidc = oidcApi ?? (api === defaultApi ? defaultOIDCApi : undefined)
   const groupsClient = groupsApi ?? (api === defaultApi ? defaultGroupsApi : undefined)
-  const alertsAdmin = alertsApi ?? (api === defaultApi ? defaultAlertsApi : undefined)
-  const [selectedTab, setSelectedTab] = useState<SettingsTab | null>(() => readSettingsTab())
   const [view, setView] = useState<View>({ status: 'loading' })
   const [confirming, setConfirming] = useState(false)
   const [requesting, setRequesting] = useState(false)
@@ -202,7 +192,6 @@ export function Settings({
 
   const showServers = canSettings && api.listServers !== undefined
   const canUsers = !permissionsLoading && can('users.manage')
-  const canAlerts = !permissionsLoading && can('alerts.manage' as never)
   const canAgentUpdate = canSettings && can('server.agent_update')
   const canUpdateAgent = canAgentUpdate && api.updateAgent !== undefined
   const canUpdateAll = canAgentUpdate && api.updateAllAgents !== undefined
@@ -231,7 +220,7 @@ export function Settings({
   }, [api, canSettings, t])
 
   useEffect(() => {
-    if (!groupsClient || (!canUsers && !canAlerts)) return
+    if (!groupsClient || !canUsers) return
     let cancelled = false
     groupsClient.list().then(
       (next) => {
@@ -244,7 +233,7 @@ export function Settings({
     return () => {
       cancelled = true
     }
-  }, [canAlerts, canUsers, groupsClient])
+  }, [canUsers, groupsClient])
 
   useEffect(() => {
     if (!canSettings) {
@@ -589,23 +578,28 @@ export function Settings({
     const tabs: SettingsTab[] = []
     if (access !== undefined) tabs.push('account')
     if (showServers) tabs.push('servers')
-    if (canAlerts && alertsAdmin !== undefined) tabs.push('alerts')
     if (keys !== undefined || (canSettings && oidc !== undefined)) tabs.push('integrations')
     if (canSettings && system !== null && update !== null) tabs.push('system')
     return tabs
-  }, [access, alertsAdmin, canAlerts, canSettings, keys, oidc, showServers, system, update])
+  }, [access, canSettings, keys, oidc, showServers, system, update])
 
-  // A stored tab may refer to a card that is not available yet (permissions or
-  // system data still loading), so fall back without overwriting the choice.
+  const routeTab = settingsTabFromPath(path)
+
+  useEffect(() => {
+    if (path !== '/settings' && !path.startsWith('/settings/')) return
+    if (path === '/settings/alerts') {
+      navigate('/alerts/rules', { replace: true })
+      return
+    }
+    if (routeTab === null) navigate('/settings', { replace: true })
+  }, [navigate, path, routeTab])
+
+  // The route may point to a card that is not available yet (permissions or
+  // system data still loading), so show the first available one until it is.
   const activeTab =
-    selectedTab !== null && availableTabs.includes(selectedTab)
-      ? selectedTab
+    routeTab !== null && availableTabs.includes(routeTab)
+      ? routeTab
       : (availableTabs[0] ?? 'account')
-
-  const selectTab = (tab: SettingsTab) => {
-    setSelectedTab(tab)
-    storeSettingsTab(tab)
-  }
 
   return (
     <section className="settings" aria-labelledby="settings-title">
@@ -655,7 +649,7 @@ export function Settings({
         </section>
       ) : null}
 
-      <SettingsTabs tabs={availableTabs} active={activeTab} onChange={selectTab} />
+      <SettingsTabs tabs={availableTabs} active={activeTab} />
 
       {availableTabs.length > 0 ? (
         <div
@@ -750,10 +744,6 @@ export function Settings({
                 </p>
               ) : null}
             </section>
-          ) : null}
-
-          {activeTab === 'alerts' && canAlerts && alertsAdmin !== undefined ? (
-            <AlertsSettings api={alertsAdmin} servers={servers ?? []} groups={groups} />
           ) : null}
 
           {activeTab === 'integrations' ? (

@@ -139,7 +139,7 @@ of the current phase and the next one.
 - [x] Fleet-wide containers and stacks with row and bulk actions
 - [x] "What is this?" catalogue: description, importance and what to do if it fails for common Debian services and Docker images, as a tooltip in the tables
 - [x] Alerts inbox: filters, grouping, new/seen/silenced, bulk actions, detail drawer with actions on the cause
-- [ ] Alert rules, channels and checks moved from Settings to Alerts
+- [x] Alert rules, channels and checks moved from Settings to Alerts
 - [ ] Command palette (Ctrl+K); Users, Audit and Settings on the new components; mobile pass and docs
 
 ## Phase 6 · Deploys, domains and templates (0.7.0, see `.agents/plans/fase6/fase6.PLAN.md`)

@@ -10,7 +10,13 @@
     "label": "Alert sections",
     "active": "Active",
     "history": "History",
-    "silences": "Silences"
+    "silences": "Silences",
+    "rules": "Rules",
+    "checks": "Checks",
+    "channels": "Channels"
+  },
+  "management": {
+    "loading": "Loading alert settings…"
   },
   "empty": {
     "title": "No active alerts",

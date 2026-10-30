@@ -21,11 +21,11 @@ To get alerts on a new server (example with Telegram):
    you.
 3. **Get your chat ID.** Open **@userinfobot**, press **Start** and copy the `Id` number. For a group, add the
    bot to the group; the group ID is negative.
-4. **Create the channel.** In **Settings > Alerts > Channels** press add, choose **Telegram**, fill in the chat
+4. **Create the channel.** In **Alerts > Channels** press add, choose **Telegram**, fill in the chat
    ID and the bot token, and save.
 5. **Test it.** Press **Send test**: a message must reach the bot. If it fails, the (redacted) error shows on
    the channel.
-6. **Review the rules.** **Settings > Alerts > Rules** holds the six built-in rules, already enabled. A rule
+6. **Review the rules.** **Alerts > Rules** holds the six built-in rules, already enabled. A rule
    with no channels assigned uses **all enabled channels**, so they already notify through your channel. Add
    the CPU or memory rules here if you want them (they are not created by default) and choose the repeat
    interval (**never** = one notice when it opens and one when it resolves).
@@ -132,7 +132,7 @@ of the same type **and the same severity** for the subjects it matches (organiza
 stack, container), even when the narrow rule is disabled. Rules of the same type with a different severity do
 not replace each other: the 80 % warning and the 90 % critical disk rules coexist. An alert that was open
 when an override started replacing its rule is resolved. Rules scoped to a stack or a container, and rules
-that only exist for the server, are listed read-only; manage them in **Settings > Alerts > Rules**. Rules
+that only exist for the server, are listed read-only; manage them in **Alerts > Rules**. Rules
 scoped to a group are not shown in the tab yet.
 
 A rule has a type, a severity (`warning` or `critical`), a scope, parameters, an optional repeat interval
@@ -247,7 +247,7 @@ separate scan.
 
 ## Notification channels
 
-Configure channels in **Settings > Alerts > Channels**. Every channel has a name, a type, an enabled switch
+Configure channels in **Alerts > Channels**. Every channel has a name, a type, an enabled switch
 and a language (`ca`, `es` or `en`) that controls the message text. A channel can be tested in place: the
 test is sent immediately and its success or redacted error is shown.
 
@@ -330,7 +330,7 @@ By default the guard blocks:
 - multicast, unspecified and broadcast addresses;
 - cloud metadata addresses.
 
-The **Allow checks and notifications to reach private networks** switch in **Settings > Alerts** relaxes the
+The **Allow checks and notifications to reach private networks** switch in **Alerts** relaxes the
 private, loopback and CGNAT restrictions. It does **not** relax link-local addresses, the reserved
 documentation ranges, multicast/broadcast or cloud metadata. `169.254.169.254` and `fd00:ec2::254` remain
 blocked whatever the switch says, because they can expose instance credentials and cloud control data. Leave the switch off unless the core and the targets are on a trusted
@@ -354,7 +354,7 @@ The permissions are:
 | `alerts.silence` | Stack | Acknowledge, create/delete silences and stop watching a container |
 | `alerts.manage` | Organization | Rules, checks, channels, test sends and the private-target setting |
 
-Only `admin` has `alerts.manage`; the **Settings > Alerts** section is hidden for everybody else. API keys
+Only `admin` has `alerts.manage`; the Alerts management tabs are hidden for everybody else. API keys
 can use `alerts.view` and `alerts.silence`, but never `alerts.manage`: the management routes reject API keys
 even when their role bindings would allow them.
 
@@ -453,7 +453,7 @@ least 1 GiB free for the core and PostgreSQL.
 
 1. Open **Alerts > Active** and check that the incident exists. If it does not, the rule is disabled, its
    scope does not match, the condition is not true yet, or the pending duration has not elapsed.
-2. Open **Settings > Alerts > Channels** and read the last status. Use **Send test**; a redacted error is
+2. Open **Alerts > Channels** and read the last status. Use **Send test**; a redacted error is
    shown there.
 3. Check the rule's channel list. An empty list means all active channels; a non-empty list excludes every
    channel not selected.

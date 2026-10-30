@@ -201,7 +201,9 @@ describe('AlertDrawer', () => {
     expect(screen.getByRole('link', { name: 'vps-web-01' }).getAttribute('href')).toBe(
       '/servers/s1',
     )
-    expect(screen.getByRole('link', { name: 'Edit rule' }).getAttribute('href')).toBe('/settings')
+    expect(screen.getByRole('link', { name: 'Edit rule' }).getAttribute('href')).toBe(
+      '/alerts/rules?rule=r1',
+    )
     expect(screen.getByRole('img', { name: /CPU/ })).toBeTruthy()
   })
 

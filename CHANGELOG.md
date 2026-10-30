@@ -18,6 +18,12 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.6.15] - 2026-10-30
+
+### Changed
+
+- Panel: alert rules, checks and notification channels moved from Settings to the Alerts page, so everything about alerts is in one place; every Settings and Alerts tab has its own address.
+
 ## [0.6.14] - 2026-10-30
 
 ### Added
@@ -786,7 +792,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.6.14...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.6.15...HEAD
+[0.6.15]: https://github.com/catlinux/Talaia/releases/tag/v0.6.15
 [0.6.14]: https://github.com/catlinux/Talaia/releases/tag/v0.6.14
 [0.6.13]: https://github.com/catlinux/Talaia/releases/tag/v0.6.13
 [0.6.12]: https://github.com/catlinux/Talaia/releases/tag/v0.6.12

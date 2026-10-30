@@ -8,11 +8,11 @@ import type {
   AlertRuleScopeType,
   AlertRuleSeverity,
   AlertRuleType,
-} from '../../api/alertsAdmin'
-import type { Group } from '../../api/groups'
-import type { ServerSummary } from '../../api/servers'
-import { errorMessage } from '../../auth/AuthGate'
-import { Dialog } from '../users/Dialog'
+} from '../../../api/alertsAdmin'
+import type { Group } from '../../../api/groups'
+import type { ServerSummary } from '../../../api/servers'
+import { errorMessage } from '../../../auth/AuthGate'
+import { Dialog } from '../../users/Dialog'
 
 interface RuleFormProps {
   rule: AlertRule | null
