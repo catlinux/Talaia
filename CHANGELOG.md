@@ -18,6 +18,12 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.6.1] - 2026-10-30
+
+### Added
+
+- Contract for phase 6 (apps), not used by the core or the agent yet: typed commands `GitProbe`, `AppSource`, `AppBuild`, `AppRelease`, `ProxyApply` and `ProxyInstall` (numbers 28 to 33 of `CoreMsg`), and `Inventory.proxy` (publishing mode and whether ports 80 and 443 are free). No existing field changes.
+
 ## [0.6.0] - 2026-10-28
 
 ### Changed
@@ -700,7 +706,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.6.1...HEAD
+[0.6.1]: https://github.com/catlinux/Talaia/releases/tag/v0.6.1
 [0.6.0]: https://github.com/catlinux/Talaia/releases/tag/v0.6.0
 [0.5.20]: https://github.com/catlinux/Talaia/releases/tag/v0.5.20
 [0.5.19]: https://github.com/catlinux/Talaia/releases/tag/v0.5.19

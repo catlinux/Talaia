@@ -13,6 +13,12 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+## [0.6.1] - 2026-10-30
+
+### Añadido
+
+- Contrato de la fase 6 (apps), todavía sin uso en el core ni en el agente: comandos tipados `GitProbe`, `AppSource`, `AppBuild`, `AppRelease`, `ProxyApply` y `ProxyInstall` (números 28 a 33 de `CoreMsg`) y `Inventory.proxy` (modo de publicación y si los puertos 80 y 443 están libres). Ningún campo existente cambia.
+
 ## [0.6.0] - 2026-10-28
 
 ### Cambiado
@@ -700,7 +706,8 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
   `.gitattributes` y `.gitignore`.
 - Licencia WNCL-1.0 aplicada: archivo `LICENSE` y sección de créditos en los README.
 
-[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.6.0...HEAD
+[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.6.1...HEAD
+[0.6.1]: https://github.com/catlinux/Talaia/releases/tag/v0.6.1
 [0.6.0]: https://github.com/catlinux/Talaia/releases/tag/v0.6.0
 [0.5.20]: https://github.com/catlinux/Talaia/releases/tag/v0.5.20
 [0.5.19]: https://github.com/catlinux/Talaia/releases/tag/v0.5.19

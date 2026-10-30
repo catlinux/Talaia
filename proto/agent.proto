@@ -39,6 +39,12 @@ message CoreMsg {
     AptStatus apt_status = 25;
     AptUpgrade apt_upgrade = 26;
     HostReboot host_reboot = 27;
+    AppSource app_source = 28;
+    AppBuild app_build = 29;
+    AppRelease app_release = 30;
+    ProxyApply proxy_apply = 31;
+    ProxyInstall proxy_install = 32;
+    GitProbe git_probe = 33;
   }
 }
 
@@ -243,6 +249,124 @@ message HostReboot {
   string hostname = 1;
 }
 
+// GitProbe asks which commit a branch points at (git ls-remote), without
+// cloning. The commit comes back as the JSON output of the job
+// ({"commit": "<40 hex>"}). Same repository rules as AppSource.
+message GitProbe {
+  // https:// or ssh URL of a repository on a host the agent trusts (github.com).
+  string repo_url = 1;
+  string branch = 2;
+  // Private key (PEM) of the deploy key of the app; empty for public repositories.
+  // It is written to a 0600 temporary file and deleted when the command ends.
+  string deploy_key = 3;
+}
+
+// AppSource fetches one commit of a branch into the build workspace of the
+// stack, /var/lib/talaia/builds/<stack>/, replacing what was there. The result
+// comes back as the JSON output of the job ({"commit": "...", "subject": "..."}).
+message AppSource {
+  // Stack name, as in StackWrite.
+  string name = 1;
+  string repo_url = 2;
+  string branch = 3;
+  // Wanted commit (40 hex); empty means the tip of the branch. If the branch has
+  // moved on, the agent uses the tip and says so in the result.
+  string commit = 4;
+  string deploy_key = 5;
+}
+
+// AppBuild builds the image of an app from the workspace AppSource filled, with
+// docker build and fixed arguments. The image is tagged talaia/<name>:<tag>.
+message AppBuild {
+  string name = 1;
+  // Image tag, the first 12 characters of the commit.
+  string tag = 2;
+  // Path of the Dockerfile inside the workspace; empty means "Dockerfile".
+  string dockerfile_path = 3;
+  // Build context inside the workspace; empty means its root.
+  string build_context = 4;
+  // Only variables the user marked "available at build time".
+  repeated BuildArg build_args = 5;
+}
+
+message BuildArg {
+  string key = 1;
+  string value = 2;
+}
+
+// AppRelease starts the image talaia/<name>:<tag> in the stack of the app. The
+// stack must have been written with StackWrite first; the agent changes nothing
+// but the image of the service.
+message AppRelease {
+  string name = 1;
+  string tag = 2;
+  // Compose service that runs the app.
+  string service = 3;
+  // Start the new container next to the old one and remove the old one only when
+  // the new one is healthy; if it is not, the old one keeps serving.
+  bool zero_downtime = 4;
+  // TCP port the app listens on inside the container, for the health check when
+  // the image has no HEALTHCHECK.
+  uint32 port = 5;
+  // Tags of talaia/<name> to keep after the release (the new one is always kept);
+  // the agent removes the other talaia/<name>:* images and nothing else.
+  repeated string keep_tags = 6;
+}
+
+// ProxyMode is how apps are published on a server.
+enum ProxyMode {
+  PROXY_MODE_UNSPECIFIED = 0;
+  // Apps listen on 127.0.0.1 and the administrator's own web server (Apache,
+  // nginx…) points at them. Talaia never touches that server.
+  PROXY_MODE_EXTERNAL = 1;
+  // Talaia runs Caddy on ports 80 and 443.
+  PROXY_MODE_MANAGED = 2;
+}
+
+// ProxyInstall installs or removes the managed proxy (Caddy). Installing is
+// refused when port 80 or 443 is in use.
+message ProxyInstall {
+  ProxyInstallAction action = 1;
+}
+
+enum ProxyInstallAction {
+  PROXY_INSTALL_ACTION_UNSPECIFIED = 0;
+  PROXY_INSTALL_ACTION_INSTALL = 1;
+  PROXY_INSTALL_ACTION_REMOVE = 2;
+}
+
+// ProxyApply replaces the whole configuration of the managed proxy. The agent
+// builds the Caddy configuration itself from these routes.
+message ProxyApply {
+  repeated ProxyRoute routes = 1;
+}
+
+message ProxyRoute {
+  // DNS name, no wildcards.
+  string hostname = 1;
+  // Compose service name of the app on the talaia-proxy network, and its port.
+  string upstream_service = 2;
+  uint32 upstream_port = 3;
+}
+
+// ProxyStatus is what the agent reports about publishing apps.
+message ProxyStatus {
+  ProxyMode mode = 1;
+  // Whether nothing listens on the port now.
+  bool port_80_free = 2;
+  bool port_443_free = 3;
+  // Caddy image version; empty unless the mode is managed.
+  string caddy_version = 4;
+  repeated ProxyCertificate certificates = 5;
+}
+
+message ProxyCertificate {
+  string hostname = 1;
+  // valid | pending | failed
+  string state = 2;
+  google.protobuf.Timestamp expires_at = 3;
+}
+
 // JobEvent reports how a command (identified by CoreMsg.job_id) is going.
 message JobEvent {
   string job_id = 1;
@@ -300,6 +424,9 @@ message Inventory {
   // True when the agent accepts terminal sessions on the host itself
   // ([terminal] host in agent.toml). Older agents leave it false.
   bool host_terminal = 18;
+  // How apps are published on this server and whether ports 80 and 443 are
+  // free; unset for agents that predate apps.
+  ProxyStatus proxy = 19;
 }
 
 // AptSummary is what the panel shows without asking: the agent simulates an
