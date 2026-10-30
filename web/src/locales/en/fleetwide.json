@@ -1,0 +1,151 @@
+{
+  "common": {
+    "notConnected_one": "Not connected: {{servers}}",
+    "notConnected_other": "Not connected: {{servers}}",
+    "failed_one": "Could not read {{count}} server: {{servers}}",
+    "failed_other": "Could not read {{count}} servers: {{servers}}",
+    "refreshFailed": "The list could not be refreshed: the last data is shown.",
+    "loadError": "The fleet could not be loaded.",
+    "retry": "Retry",
+    "clearFilters": "Clear filters",
+    "noServersTitle": "There are no servers yet",
+    "noServersBody": "Add a server to see its containers and stacks.",
+    "goServers": "Go to Servers",
+    "noStack": "No stack",
+    "service": "service {{name}}",
+    "rowActions": "Actions for {{name}}",
+    "state": {
+      "running": "Running",
+      "exited": "Stopped",
+      "paused": "Paused",
+      "restarting": "Restarting",
+      "created": "Created",
+      "dead": "Dead"
+    },
+    "action": {
+      "start": "Start",
+      "stop": "Stop",
+      "restart": "Restart",
+      "remove": "Remove",
+      "logs": "Logs",
+      "terminal": "Terminal",
+      "up": "Up",
+      "pull": "Pull",
+      "down": "Down"
+    },
+    "bulk": {
+      "notAllowed_one": "{{count}} selected item cannot run this action",
+      "notAllowed_other": "{{count}} selected items cannot run this action",
+      "confirm": "Confirm"
+    },
+    "toast": {
+      "done": "{{action}} on {{name}} finished.",
+      "failed": "{{action}} on {{name}} failed: {{message}}",
+      "bulk": "{{done}} succeeded, {{failed}} failed.",
+      "timeout": "The agent did not answer in time."
+    }
+  },
+  "containers": {
+    "title": "Containers",
+    "subtitle_one": "{{count}} container · updated at {{time}}",
+    "subtitle_other": "{{count}} containers · updated at {{time}}",
+    "loading": "Loading the containers…",
+    "emptyTitle": "Nothing deployed yet",
+    "emptyBody": "Open a server and deploy a container or a stack.",
+    "noResultsTitle": "No containers match these filters",
+    "noResultsBody": "Change or clear the filters to see more containers.",
+    "filters": {
+      "search": "Search by container, image, stack or server",
+      "state": "State",
+      "allStates": "All states",
+      "running": "Running",
+      "stopped": "Stopped",
+      "problems": "Problems",
+      "server": "Server",
+      "allServers": "All servers",
+      "stack": "Stack",
+      "allStacks": "All stacks",
+      "group": "Group by",
+      "groupNone": "No grouping",
+      "groupServer": "Server",
+      "groupStack": "Stack"
+    },
+    "columns": {
+      "state": "State",
+      "name": "Container",
+      "image": "Image",
+      "stack": "Stack",
+      "server": "Server",
+      "cpu": "CPU",
+      "ram": "RAM",
+      "status": "Docker status",
+      "actions": "Actions"
+    },
+    "remove": {
+      "title": "Remove {{name}}?",
+      "body": "The container is deleted. Its volumes are kept.",
+      "confirm": "Remove the container"
+    },
+    "bulk": {
+      "stopTitle_one": "Stop {{count}} container?",
+      "stopTitle_other": "Stop {{count}} containers?",
+      "stopBody": "The selected containers stop. Services that depend on them will stop answering.",
+      "restartTitle_one": "Restart {{count}} container?",
+      "restartTitle_other": "Restart {{count}} containers?",
+      "restartBody": "The selected containers restart."
+    }
+  },
+  "stacks": {
+    "title": "Stacks",
+    "subtitle_one": "{{count}} stack · updated at {{time}}",
+    "subtitle_other": "{{count}} stacks · updated at {{time}}",
+    "loading": "Loading the stacks…",
+    "emptyTitle": "There are no managed stacks yet",
+    "emptyBody": "Open a server and deploy a stack.",
+    "noResultsTitle": "No stacks match these filters",
+    "noResultsBody": "Change or clear the filters to see more stacks.",
+    "notManaged": "Not managed",
+    "notManagedBody": "Running Compose projects that Talaia does not manage yet.",
+    "adopt": "Adopt",
+    "adopted": "Adopted",
+    "broken": "Files missing",
+    "containersValue": "{{running}} / {{total}}",
+    "status": {
+      "allRunning": "All running",
+      "someStopped": "Some stopped",
+      "stopped": "Stopped"
+    },
+    "filters": {
+      "search": "Search by stack or server",
+      "server": "Server",
+      "allServers": "All servers",
+      "status": "Status",
+      "allStatuses": "All stacks",
+      "allRunning": "All running",
+      "problems": "Need attention"
+    },
+    "columns": {
+      "status": "Status",
+      "name": "Stack",
+      "server": "Server",
+      "containers": "Containers",
+      "flags": "Flags",
+      "actions": "Actions"
+    },
+    "down": {
+      "title": "Down {{name}}?",
+      "body": "The stack stops. Its containers will stop answering.",
+      "confirm": "Down the stack"
+    },
+    "bulk": {
+      "notAllowed_one": "{{count}} selected stack cannot run this action",
+      "notAllowed_other": "{{count}} selected stacks cannot run this action",
+      "restartTitle_one": "Restart {{count}} stack?",
+      "restartTitle_other": "Restart {{count}} stacks?",
+      "restartBody": "The selected stacks restart.",
+      "pullTitle_one": "Pull the images of {{count}} stack?",
+      "pullTitle_other": "Pull the images of {{count}} stacks?",
+      "pullBody": "The selected stacks pull their images."
+    }
+  }
+}

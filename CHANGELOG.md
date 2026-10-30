@@ -18,6 +18,12 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.6.11] - 2026-10-30
+
+### Added
+
+- Panel: Containers and Stacks pages for the whole fleet — one table with search, filters, grouping by server or stack, actions per row and bulk start, stop, restart and pull with confirmation.
+
 ## [0.6.10] - 2026-10-30
 
 ### Changed
@@ -762,7 +768,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.6.10...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.6.11...HEAD
+[0.6.11]: https://github.com/catlinux/Talaia/releases/tag/v0.6.11
 [0.6.10]: https://github.com/catlinux/Talaia/releases/tag/v0.6.10
 [0.6.9]: https://github.com/catlinux/Talaia/releases/tag/v0.6.9
 [0.6.8]: https://github.com/catlinux/Talaia/releases/tag/v0.6.8

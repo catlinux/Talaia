@@ -1,0 +1,151 @@
+{
+  "common": {
+    "notConnected_one": "Sense connexió: {{servers}}",
+    "notConnected_other": "Sense connexió: {{servers}}",
+    "failed_one": "No s'ha pogut llegir {{count}} servidor: {{servers}}",
+    "failed_other": "No s'han pogut llegir {{count}} servidors: {{servers}}",
+    "refreshFailed": "No s'ha pogut actualitzar la llista: es mostren les últimes dades.",
+    "loadError": "No s'ha pogut carregar la flota.",
+    "retry": "Reintenta",
+    "clearFilters": "Neteja els filtres",
+    "noServersTitle": "Encara no hi ha servidors",
+    "noServersBody": "Afegeix un servidor per veure'n els contenidors i les stacks.",
+    "goServers": "Ves a Servidors",
+    "noStack": "Sense stack",
+    "service": "servei {{name}}",
+    "rowActions": "Accions de {{name}}",
+    "state": {
+      "running": "En marxa",
+      "exited": "Aturat",
+      "paused": "Pausat",
+      "restarting": "Reiniciant",
+      "created": "Creat",
+      "dead": "Mort"
+    },
+    "action": {
+      "start": "Inicia",
+      "stop": "Atura",
+      "restart": "Reinicia",
+      "remove": "Elimina",
+      "logs": "Registres",
+      "terminal": "Terminal",
+      "up": "Aixeca",
+      "pull": "Baixa imatges",
+      "down": "Atura"
+    },
+    "bulk": {
+      "notAllowed_one": "{{count}} element seleccionat no pot fer aquesta acció",
+      "notAllowed_other": "{{count}} elements seleccionats no poden fer aquesta acció",
+      "confirm": "Confirma"
+    },
+    "toast": {
+      "done": "{{action}} de {{name}} ha acabat.",
+      "failed": "{{action}} de {{name}} ha fallat: {{message}}",
+      "bulk": "{{done}} correctes, {{failed}} fallides.",
+      "timeout": "L'agent no ha respost a temps."
+    }
+  },
+  "containers": {
+    "title": "Contenidors",
+    "subtitle_one": "{{count}} contenidor · actualitzat a les {{time}}",
+    "subtitle_other": "{{count}} contenidors · actualitzat a les {{time}}",
+    "loading": "S'estan carregant els contenidors…",
+    "emptyTitle": "Encara no hi ha res desplegat",
+    "emptyBody": "Obre un servidor i desplega un contenidor o una stack.",
+    "noResultsTitle": "Cap contenidor coincideix amb aquests filtres",
+    "noResultsBody": "Canvia o neteja els filtres per veure més contenidors.",
+    "filters": {
+      "search": "Cerca per contenidor, imatge, stack o servidor",
+      "state": "Estat",
+      "allStates": "Tots els estats",
+      "running": "En marxa",
+      "stopped": "Aturats",
+      "problems": "Problemes",
+      "server": "Servidor",
+      "allServers": "Tots els servidors",
+      "stack": "Stack",
+      "allStacks": "Totes les stacks",
+      "group": "Agrupa per",
+      "groupNone": "Sense agrupació",
+      "groupServer": "Servidor",
+      "groupStack": "Stack"
+    },
+    "columns": {
+      "state": "Estat",
+      "name": "Contenidor",
+      "image": "Imatge",
+      "stack": "Stack",
+      "server": "Servidor",
+      "cpu": "CPU",
+      "ram": "RAM",
+      "status": "Estat de Docker",
+      "actions": "Accions"
+    },
+    "remove": {
+      "title": "Eliminar {{name}}?",
+      "body": "El contenidor s'elimina. Els volums es conserven.",
+      "confirm": "Elimina el contenidor"
+    },
+    "bulk": {
+      "stopTitle_one": "Aturar {{count}} contenidor?",
+      "stopTitle_other": "Aturar {{count}} contenidors?",
+      "stopBody": "Els contenidors seleccionats s'aturen. Els serveis que en depenen deixaran de respondre.",
+      "restartTitle_one": "Reiniciar {{count}} contenidor?",
+      "restartTitle_other": "Reiniciar {{count}} contenidors?",
+      "restartBody": "Els contenidors seleccionats es reinicien."
+    }
+  },
+  "stacks": {
+    "title": "Stacks",
+    "subtitle_one": "{{count}} stack · actualitzada a les {{time}}",
+    "subtitle_other": "{{count}} stacks · actualitzades a les {{time}}",
+    "loading": "S'estan carregant les stacks…",
+    "emptyTitle": "Encara no hi ha stacks gestionades",
+    "emptyBody": "Obre un servidor i desplega una stack.",
+    "noResultsTitle": "Cap stack coincideix amb aquests filtres",
+    "noResultsBody": "Canvia o neteja els filtres per veure més stacks.",
+    "notManaged": "No gestionades",
+    "notManagedBody": "Projectes Compose en marxa que Talaia encara no gestiona.",
+    "adopt": "Adopta",
+    "adopted": "Adoptada",
+    "broken": "Falten fitxers",
+    "containersValue": "{{running}} / {{total}}",
+    "status": {
+      "allRunning": "Totes en marxa",
+      "someStopped": "Algunes aturades",
+      "stopped": "Aturades"
+    },
+    "filters": {
+      "search": "Cerca per stack o servidor",
+      "server": "Servidor",
+      "allServers": "Tots els servidors",
+      "status": "Estat",
+      "allStatuses": "Totes les stacks",
+      "allRunning": "Totes en marxa",
+      "problems": "Necessiten atenció"
+    },
+    "columns": {
+      "status": "Estat",
+      "name": "Stack",
+      "server": "Servidor",
+      "containers": "Contenidors",
+      "flags": "Marques",
+      "actions": "Accions"
+    },
+    "down": {
+      "title": "Aturar {{name}}?",
+      "body": "La stack s'atura. Els seus contenidors deixaran de respondre.",
+      "confirm": "Atura la stack"
+    },
+    "bulk": {
+      "notAllowed_one": "{{count}} stack seleccionada no pot fer aquesta acció",
+      "notAllowed_other": "{{count}} stacks seleccionades no poden fer aquesta acció",
+      "restartTitle_one": "Reiniciar {{count}} stack?",
+      "restartTitle_other": "Reiniciar {{count}} stacks?",
+      "restartBody": "Les stacks seleccionades es reinicien.",
+      "pullTitle_one": "Baixar les imatges de {{count}} stack?",
+      "pullTitle_other": "Baixar les imatges de {{count}} stacks?",
+      "pullBody": "Les stacks seleccionades baixen les imatges."
+    }
+  }
+}

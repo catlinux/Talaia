@@ -13,6 +13,12 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+## [0.6.11] - 2026-10-30
+
+### Añadido
+
+- Panel: páginas de Contenedores y Stacks para toda la flota — una tabla con búsqueda, filtros, agrupación por servidor o stack, acciones por fila y acciones en bloque de inicio, parada, reinicio y descarga de imágenes con confirmación.
+
 ## [0.6.10] - 2026-10-30
 
 ### Cambiado
@@ -762,7 +768,8 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
   `.gitattributes` y `.gitignore`.
 - Licencia WNCL-1.0 aplicada: archivo `LICENSE` y sección de créditos en los README.
 
-[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.6.10...HEAD
+[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.6.11...HEAD
+[0.6.11]: https://github.com/catlinux/Talaia/releases/tag/v0.6.11
 [0.6.10]: https://github.com/catlinux/Talaia/releases/tag/v0.6.10
 [0.6.9]: https://github.com/catlinux/Talaia/releases/tag/v0.6.9
 [0.6.8]: https://github.com/catlinux/Talaia/releases/tag/v0.6.8

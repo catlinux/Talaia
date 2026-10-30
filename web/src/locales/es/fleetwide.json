@@ -1,0 +1,151 @@
+{
+  "common": {
+    "notConnected_one": "Sin conexión: {{servers}}",
+    "notConnected_other": "Sin conexión: {{servers}}",
+    "failed_one": "No se ha podido leer {{count}} servidor: {{servers}}",
+    "failed_other": "No se han podido leer {{count}} servidores: {{servers}}",
+    "refreshFailed": "No se ha podido actualizar la lista: se muestran los últimos datos.",
+    "loadError": "No se ha podido cargar la flota.",
+    "retry": "Reintentar",
+    "clearFilters": "Limpiar filtros",
+    "noServersTitle": "Todavía no hay servidores",
+    "noServersBody": "Añade un servidor para ver sus contenedores y stacks.",
+    "goServers": "Ir a Servidores",
+    "noStack": "Sin stack",
+    "service": "servicio {{name}}",
+    "rowActions": "Acciones de {{name}}",
+    "state": {
+      "running": "En marcha",
+      "exited": "Detenido",
+      "paused": "Pausado",
+      "restarting": "Reiniciando",
+      "created": "Creado",
+      "dead": "Muerto"
+    },
+    "action": {
+      "start": "Iniciar",
+      "stop": "Detener",
+      "restart": "Reiniciar",
+      "remove": "Eliminar",
+      "logs": "Registros",
+      "terminal": "Terminal",
+      "up": "Levantar",
+      "pull": "Descargar imágenes",
+      "down": "Detener"
+    },
+    "bulk": {
+      "notAllowed_one": "{{count}} elemento seleccionado no puede realizar esta acción",
+      "notAllowed_other": "{{count}} elementos seleccionados no pueden realizar esta acción",
+      "confirm": "Confirmar"
+    },
+    "toast": {
+      "done": "{{action}} de {{name}} ha terminado.",
+      "failed": "{{action}} de {{name}} ha fallado: {{message}}",
+      "bulk": "{{done}} correctas, {{failed}} fallidas.",
+      "timeout": "El agente no ha respondido a tiempo."
+    }
+  },
+  "containers": {
+    "title": "Contenedores",
+    "subtitle_one": "{{count}} contenedor · actualizado a las {{time}}",
+    "subtitle_other": "{{count}} contenedores · actualizado a las {{time}}",
+    "loading": "Se están cargando los contenedores…",
+    "emptyTitle": "Todavía no hay nada desplegado",
+    "emptyBody": "Abre un servidor y despliega un contenedor o una stack.",
+    "noResultsTitle": "Ningún contenedor coincide con estos filtros",
+    "noResultsBody": "Cambia o limpia los filtros para ver más contenedores.",
+    "filters": {
+      "search": "Buscar por contenedor, imagen, stack o servidor",
+      "state": "Estado",
+      "allStates": "Todos los estados",
+      "running": "En marcha",
+      "stopped": "Detenidos",
+      "problems": "Problemas",
+      "server": "Servidor",
+      "allServers": "Todos los servidores",
+      "stack": "Stack",
+      "allStacks": "Todas las stacks",
+      "group": "Agrupar por",
+      "groupNone": "Sin agrupación",
+      "groupServer": "Servidor",
+      "groupStack": "Stack"
+    },
+    "columns": {
+      "state": "Estado",
+      "name": "Contenedor",
+      "image": "Imagen",
+      "stack": "Stack",
+      "server": "Servidor",
+      "cpu": "CPU",
+      "ram": "RAM",
+      "status": "Estado de Docker",
+      "actions": "Acciones"
+    },
+    "remove": {
+      "title": "¿Eliminar {{name}}?",
+      "body": "El contenedor se elimina. Sus volúmenes se conservan.",
+      "confirm": "Eliminar el contenedor"
+    },
+    "bulk": {
+      "stopTitle_one": "¿Detener {{count}} contenedor?",
+      "stopTitle_other": "¿Detener {{count}} contenedores?",
+      "stopBody": "Los contenedores seleccionados se detienen. Los servicios que dependen de ellos dejarán de responder.",
+      "restartTitle_one": "¿Reiniciar {{count}} contenedor?",
+      "restartTitle_other": "¿Reiniciar {{count}} contenedores?",
+      "restartBody": "Los contenedores seleccionados se reinician."
+    }
+  },
+  "stacks": {
+    "title": "Stacks",
+    "subtitle_one": "{{count}} stack · actualizada a las {{time}}",
+    "subtitle_other": "{{count}} stacks · actualizadas a las {{time}}",
+    "loading": "Se están cargando las stacks…",
+    "emptyTitle": "Todavía no hay stacks gestionadas",
+    "emptyBody": "Abre un servidor y despliega una stack.",
+    "noResultsTitle": "Ninguna stack coincide con estos filtros",
+    "noResultsBody": "Cambia o limpia los filtros para ver más stacks.",
+    "notManaged": "No gestionadas",
+    "notManagedBody": "Proyectos Compose en marcha que Talaia todavía no gestiona.",
+    "adopt": "Adoptar",
+    "adopted": "Adoptada",
+    "broken": "Faltan archivos",
+    "containersValue": "{{running}} / {{total}}",
+    "status": {
+      "allRunning": "Todas en marcha",
+      "someStopped": "Algunas detenidas",
+      "stopped": "Detenidas"
+    },
+    "filters": {
+      "search": "Buscar por stack o servidor",
+      "server": "Servidor",
+      "allServers": "Todos los servidores",
+      "status": "Estado",
+      "allStatuses": "Todas las stacks",
+      "allRunning": "Todas en marcha",
+      "problems": "Necesitan atención"
+    },
+    "columns": {
+      "status": "Estado",
+      "name": "Stack",
+      "server": "Servidor",
+      "containers": "Contenedores",
+      "flags": "Marcas",
+      "actions": "Acciones"
+    },
+    "down": {
+      "title": "¿Detener {{name}}?",
+      "body": "La stack se detiene. Sus contenedores dejarán de responder.",
+      "confirm": "Detener la stack"
+    },
+    "bulk": {
+      "notAllowed_one": "{{count}} stack seleccionada no puede realizar esta acción",
+      "notAllowed_other": "{{count}} stacks seleccionadas no pueden realizar esta acción",
+      "restartTitle_one": "¿Reiniciar {{count}} stack?",
+      "restartTitle_other": "¿Reiniciar {{count}} stacks?",
+      "restartBody": "Las stacks seleccionadas se reinician.",
+      "pullTitle_one": "¿Descargar las imágenes de {{count}} stack?",
+      "pullTitle_other": "¿Descargar las imágenes de {{count}} stacks?",
+      "pullBody": "Las stacks seleccionadas descargan sus imágenes."
+    }
+  }
+}

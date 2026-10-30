@@ -8,6 +8,7 @@ import caAuth from '../locales/ca/auth.json'
 import caCommon from '../locales/ca/common.json'
 import caErrors from '../locales/ca/errors.json'
 import caFleet from '../locales/ca/fleet.json'
+import caFleetwide from '../locales/ca/fleetwide.json'
 import caMetrics from '../locales/ca/metrics.json'
 import caOverview from '../locales/ca/overview.json'
 import caServer from '../locales/ca/server.json'
@@ -23,6 +24,7 @@ import enAuth from '../locales/en/auth.json'
 import enCommon from '../locales/en/common.json'
 import enErrors from '../locales/en/errors.json'
 import enFleet from '../locales/en/fleet.json'
+import enFleetwide from '../locales/en/fleetwide.json'
 import enMetrics from '../locales/en/metrics.json'
 import enOverview from '../locales/en/overview.json'
 import enServer from '../locales/en/server.json'
@@ -38,6 +40,7 @@ import esAuth from '../locales/es/auth.json'
 import esCommon from '../locales/es/common.json'
 import esErrors from '../locales/es/errors.json'
 import esFleet from '../locales/es/fleet.json'
+import esFleetwide from '../locales/es/fleetwide.json'
 import esMetrics from '../locales/es/metrics.json'
 import esOverview from '../locales/es/overview.json'
 import esServer from '../locales/es/server.json'
@@ -65,6 +68,7 @@ void i18n
         about: caAbout,
         audit: caAudit,
         fleet: caFleet,
+        fleetwide: caFleetwide,
         metrics: caMetrics,
         overview: caOverview,
         server: caServer,
@@ -82,6 +86,7 @@ void i18n
         about: esAbout,
         audit: esAudit,
         fleet: esFleet,
+        fleetwide: esFleetwide,
         metrics: esMetrics,
         overview: esOverview,
         server: esServer,
@@ -99,6 +104,7 @@ void i18n
         about: enAbout,
         audit: enAudit,
         fleet: enFleet,
+        fleetwide: enFleetwide,
         metrics: enMetrics,
         overview: enOverview,
         server: enServer,
@@ -119,6 +125,7 @@ void i18n
       'about',
       'audit',
       'fleet',
+      'fleetwide',
       'metrics',
       'overview',
       'server',

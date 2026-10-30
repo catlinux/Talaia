@@ -23,9 +23,11 @@ import { Link, matchRoute, RouterProvider, useNavigate, useRoute } from './route
 import { About } from './screens/About'
 import { Audit } from './screens/Audit'
 import { Alerts } from './screens/Alerts'
+import { Containers } from './screens/Containers'
 import { Overview } from './screens/Overview'
 import { ServerScreen } from './screens/ServerScreen'
 import { Servers } from './screens/Servers'
+import { Stacks } from './screens/Stacks'
 import { Settings } from './screens/Settings'
 import { Users } from './screens/Users'
 
@@ -217,13 +219,13 @@ function PanelShell({
     page = <About />
   } else if (isContainers) {
     page = canContainers ? (
-      <PanelMessage title={t('nav.containers')} body={t('shell.comingSoon')} />
+      <Containers client={fleetClient} containersApi={containersApi} />
     ) : (
       <PanelMessage title={t('shell.noAccess')} />
     )
   } else if (isStacks) {
     page = canStacks ? (
-      <PanelMessage title={t('nav.stacks')} body={t('shell.comingSoon')} />
+      <Stacks client={fleetClient} containersApi={containersApi} />
     ) : (
       <PanelMessage title={t('shell.noAccess')} />
     )

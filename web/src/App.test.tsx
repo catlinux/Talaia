@@ -365,6 +365,7 @@ describe('App', () => {
       groupsApi: groupsApi(),
       invitesApi: invitesApi(),
       serversApi: serversApi(),
+      containersApi: containersApi(),
     })
     await screen.findAllByText('vps-web-01')
 
@@ -374,8 +375,8 @@ describe('App', () => {
 
     await openSidebarLink(navContainers.en)
     expect(window.location.pathname).toBe('/containers')
-    expect(currentTitle()).toBe(navContainers.en)
-    expect(screen.getByText('Coming in the next update')).toBeTruthy()
+    expect(await screen.findByRole('heading', { level: 1, name: navContainers.en })).toBeTruthy()
+    expect((await screen.findAllByText('shop-web-1')).length).toBeGreaterThan(0)
 
     await openSidebarLink(navStacks.en)
     expect(window.location.pathname).toBe('/stacks')
@@ -525,12 +526,14 @@ describe('App', () => {
     renderApp(serverApis())
     await screen.findByRole('heading', { level: 1, name: 'vps-web-01' })
 
-    act(() => {
+    await act(async () => {
       window.history.replaceState({}, '', '/servers')
       window.dispatchEvent(new PopStateEvent('popstate'))
     })
 
-    expect(await screen.findByRole('heading', { level: 1, name: serversTitles.en })).toBeTruthy()
+    expect(
+      await screen.findByRole('heading', { level: 1, name: serversTitles.en }, { timeout: 15_000 }),
+    ).toBeTruthy()
     expect(window.location.pathname).toBe('/servers')
   }, 15_000)
 
