@@ -134,7 +134,7 @@ Cada funcionalidad indica la versión donde está prevista. Detalle en [ROADMAP.
 |---|---|---|---|
 | Contenedores y stacks | Acciones, logs en directo, editor Compose, terminal del contenedor, imágenes/volúmenes/redes, adoptar existentes | Historial de revisiones y reversión, avisos de imágenes nuevas | Podman |
 | Servidor entero | Métricas, systemd, journald, actualizaciones apt y reinicio, terminal del anfitrión (fase 3 cerrada en 0.4.0) | Cortafuegos, fail2ban, usuarios y claves SSH, cron, explorador de archivos, auditoría de bastionado | — |
-| Despliegues y apps | — | Stacks desde Git, builds con Dockerfile/Nixpacks, despliegue sin cortes, dominios + SSL (Caddy), catálogo de plantillas | Entornos de prueba por pull request |
+| Despliegues y apps | — | Stacks desde GitHub, builds con Dockerfile, despliegue sin cortes, dominios detrás de tu proxy actual o con Caddy gestionado, catálogo de plantillas | Entornos de prueba por pull request |
 | Monitorización y alertas | — | Historial de métricas, reglas de alerta, comprobaciones HTTP/TCP, caducidad de certificados, Telegram/ntfy/correo/Discord/webhook (0.6.0) | Página de estado pública |
 | Copias de seguridad | — | Planes con restic, volcados coherentes de bases de datos, S3/B2/SFTP, restaurar desde el panel | Prueba de restauración mensual automática |
 | Automatización de flota | — | Acciones en bloque, procedimientos programados, sincronización GitOps | Playbooks de Ansible, creación de VPS vía API del proveedor |

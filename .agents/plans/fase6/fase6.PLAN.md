@@ -1,7 +1,9 @@
 # Fase 6 · Despliegues, dominios y plantillas (0.7.0)
 
-Estado: **plan escrito (2026-10-28, Opus). Bloqueado hasta que el mantenedor cierre M1-M6.** Ningún paso empezado.
-Criterio del ROADMAP: *«hacer push a `main` publica la app por HTTPS sin hacer nada más»*.
+Estado: **plan escrito (2026-10-28, Opus); M1-M6 cerradas el 2026-10-30.** Ningún paso empezado.
+Criterio del ROADMAP: *«hacer push a `main` publica la app por HTTPS sin hacer nada más»*. En modo externo (M1) se
+cumple a partir del segundo despliegue: el bloque de Apache de cada dominio se pone una vez, a mano, y desde ahí cada
+push publica solo.
 
 Punto de partida (0.6.0): un **stack** es un proyecto Compose en `/opt/talaia/stacks/<nombre>/` (`compose.yaml` +
 `.env`), o uno adoptado que vive en su propio directorio. Comandos tipados `StackWrite` (valida con
@@ -21,16 +23,37 @@ según la memoria `feedback-estilo-visual` (capturas claro/oscuro/móvil); proto
 o npm nuevas salvo que el paso lo diga**; toda imagen de terceros que Talaia arranque (Caddy, builder) se fija por
 **digest** y se lista en `CREDITS.md`/`THIRD-PARTY-NOTICES.txt` (recordar al mantenedor el script de licencias).
 
-## Decisiones del mantenedor (cerrar antes de empezar)
+## Decisiones del mantenedor (cerradas el 2026-10-30; M1, M2 y M4 delegadas en Opus)
 
-| # | Pregunta | Recomendación | Bloquea |
-|---|---|---|---|
-| M1 | **Caddy y los puertos 80/443.** El proxy gestionado necesita 80 y 443 en el servidor de la app (Let's Encrypt HTTP-01/TLS-ALPN). El VPS del mantenedor ya tiene Apache ahí. | **Modo doble por servidor:** *gestionado* (Talaia instala Caddy en 80/443, solo si están libres; nunca toca otro servidor web) o *externo* (Talaia publica la app en `127.0.0.1:<puerto>` y muestra el bloque de configuración para Apache/nginx; el HTTPS lo pone el proxy existente). El criterio de cierre se prueba en modo gestionado en un servidor con 80/443 libres. | 7, 8, 13 |
-| M2 | **Builds sin Dockerfile.** Por lo que sé (hasta mediados de 2026), Railway dejó Nixpacks en mantenimiento y lo sustituye por Railpack. **Verificarlo antes de decidir.** | Fase 6 con **Dockerfile** obligatorio (paso 5) y el constructor automático como paso separado (paso 6) con el que esté vivo; si no hay uno mantenido y con licencia compatible, el paso 6 pasa a *Ideas*. | 6 |
-| M3 | **Las 15 plantillas.** | Propuesta: Uptime Kuma, Vaultwarden, Forgejo, Nextcloud, WordPress, Ghost, Umami, Plausible CE, Paperless-ngx, Miniflux, FreshRSS, Jellyfin, Immich, Homepage y Mealie (más PostgreSQL, MariaDB y Redis como bloques). Revisar la licencia de cada imagen (solo se referencian, no se redistribuyen). Sin logotipos (marcas). | 11 |
-| M4 | **Proveedores Git.** | GitHub, GitLab y Gitea/Forgejo (los tres firman o llevan token). Y **sondeo** de la rama cada 2 min como alternativa, para servidores que no reciben webhooks. Verificar que GitHub acepta webhooks a un puerto no estándar (`:8443`); si no, el sondeo cubre ese caso. | 4 |
-| M5 | **Entornos por pull request** (la maqueta los muestra). | Fuera de la fase → *Ideas*. | — |
-| M6 | **Entorno de la prueba real.** | Un servidor con 80/443 libres (el Debian de casa o un VPS de pruebas), un subdominio que apunte a él y un repositorio de ejemplo con Dockerfile. | 16 |
+Requisito del mantenedor que manda sobre todo lo demás: **el VPS real tiene muchos servicios (Apache en 80/443 con
+otras webs) y ninguno puede verse afectado; todo debe convivir.** Ver *Convivencia* más abajo.
+
+| # | Decisión | Pasos |
+|---|---|---|
+| M1 | **Modo externo por defecto; Caddy gestionado solo a petición.** Si 80/443 están ocupados (el VPS real), Talaia no instala ningún proxy: la app escucha en `127.0.0.1:<puerto libre>` y el panel da el bloque de Apache (y nginx) listo para pegar, con los pasos de certbot. **Talaia nunca escribe, recarga ni reinicia Apache ni otro servidor web.** El modo gestionado (Caddy en 80/443) solo se ofrece si los dos puertos están libres y el usuario lo elige a mano en ese servidor. El modo gestionado se prueba con e2e en local, no en el VPS real. | 7, 13 |
+| M2 | **Solo Dockerfile en esta fase.** El repo de la app debe traer `Dockerfile` (ruta configurable). El constructor automático (Nixpacks/Railpack) pasa a *Ideas*: más dependencia de terceros y builds más pesados en un servidor compartido. El antiguo paso 6 se elimina. | 5 |
+| M3 | **Plantillas = instalación en un clic de apps conocidas** (elegir, poner dominio y poco más; Talaia genera el stack con contraseñas aleatorias). Lista: Uptime Kuma, Vaultwarden, Forgejo, Nextcloud, WordPress, Ghost, Umami, Plausible CE, Paperless-ngx, Miniflux, FreshRSS, Jellyfin, Immich, Homepage y Mealie (más PostgreSQL, MariaDB y Redis como bloques). El mantenedor puede cambiar nombres hasta el paso 10. Revisar la licencia de cada imagen (solo se referencian). Sin logotipos. | 10 |
+| M4 | **Solo GitHub** (el mantenedor solo usa GitHub): webhook firmado `X-Hub-Signature-256` y **sondeo** de la rama cada 2 min como alternativa. Solo URLs de `github.com` (HTTPS o SSH) con la clave de host de GitHub fijada; sin TOFU. GitLab y Gitea/Forgejo → *Ideas* (añadirlos después es solo otra comprobación de firma y otra clave de host). | 3, 4 |
+| M5 | **Entornos por pull request fuera** (ya están en *After 1.0* del ROADMAP). | — |
+| M6 | **La prueba real es en el VPS de producción.** Reglas en *Convivencia*: nada se instala en el VPS hasta el final de la fase; la prueba usa un subdominio y un repo de prueba y el mantenedor ejecuta él mismo, paso a paso, lo que toque Apache. | 15 |
+
+## Convivencia con otros servicios y reglas para el VPS real (M1, M6)
+
+- Talaia solo toca lo que ha creado como app: stacks con la etiqueta `dev.talaia.app`, imágenes `talaia/<stack>:*`,
+  redes `talaia-*` y `/var/lib/talaia/builds/`. **Nunca** `docker system prune`, ni `image prune` general, ni stacks
+  o contenedores ajenos, ni Apache.
+- Puertos: el agente elige el puerto de la app en un rango propio (por defecto 20000-29999), comprobando sockets en
+  escucha y puertos publicados por Docker; siempre en `127.0.0.1`, nunca en `0.0.0.0`. Un puerto ocupado = error
+  claro, nunca se quita a otro servicio.
+- Recursos: límites de CPU/RAM por defecto en cada app (editables) y un solo build a la vez por servidor; el build
+  se niega con menos de 2 GiB libres.
+- El panel avisa antes de crear un dominio que ya sirve otra web (resolver y comparar), sin bloquear.
+- Desarrollo y pruebas siempre en local (Postgres portable, Docker local/e2e). **No se actualiza el VPS durante la
+  fase**: solo al final, por el botón del panel y con CI en verde. La migración `0017` solo crea tablas nuevas.
+- Prueba real (paso 15): el mantenedor crea un subdominio de prueba, Talaia despliega un repo de ejemplo en
+  `127.0.0.1`, y el mantenedor añade el bloque de Apache siguiendo instrucciones paso a paso (`apachectl configtest`
+  antes de `systemctl reload apache2`). Después: push a `main` → la app cambia sola; volver atrás; borrar la app deja
+  el servidor como estaba.
 
 ## Decisiones técnicas (tomadas; cambiar solo con motivo)
 
@@ -60,8 +83,8 @@ o npm nuevas salvo que el paso lo diga**; toda imagen de terceros que Talaia arr
   `GIT_CONFIG_NOSYSTEM=1`, `HOME` vacío y temporal. Clon superficial de **un commit concreto** de la rama.
 - Repos privados: **clave de despliegue ed25519 por app** generada en el core (la pública se muestra para pegarla en
   el proveedor; la privada sellada). Viaja en el comando, se escribe 0600 en un temporal y se borra al acabar.
-  `known_hosts`: fijos los de GitHub, GitLab y Codeberg; para otros, **TOFU** guardado en `app.known_host` y
-  visible en el panel; un cambio de clave falla el despliegue.
+  `known_hosts`: solo las claves publicadas de `github.com`, fijas en el agente (M4); cualquier otro host se
+  rechaza. La columna `app.known_host` se mantiene para cuando haya más proveedores.
 - Espacio de trabajo `/var/lib/talaia/builds/<stack>/` 0700, borrado tras cada build; límite de tamaño del clon
   (1 GiB) y tiempo (5 min).
 
@@ -81,8 +104,8 @@ o npm nuevas salvo que el paso lo diga**; toda imagen de terceros que Talaia arr
 ### D4 · Webhooks y sondeo
 - Ruta pública `POST /api/v1/hooks/git/{app_id}` (declarada en `routePerms` como pública con firma; la prueba
   guardiana de `chi.Walk` debe seguir verde). Cuerpo máx. 1 MiB, límite por IP y por app.
-- Firma: GitHub `X-Hub-Signature-256` (HMAC-SHA256), Gitea/Forgejo `X-Gitea-Signature`, GitLab
-  `X-Gitlab-Token` (comparación en tiempo constante). Secreto por app, sellado, mostrado **una vez**.
+- Firma: solo GitHub `X-Hub-Signature-256` (HMAC-SHA256, comparación en tiempo constante; M4). Secreto por app,
+  sellado, mostrado **una vez**. El evento `ping` de GitHub responde 200 sin desplegar.
 - Del cuerpo solo se usa la rama y el commit; solo eventos push a la rama configurada; deduplicado por id de
   entrega. El agente comprueba que ese commit es el que tiene la rama al hacer el fetch (si no, usa el de la rama
   y lo anota).
@@ -96,8 +119,10 @@ o npm nuevas salvo que el paso lo diga**; toda imagen de terceros que Talaia arr
   (`ProxyApply`: lista de `{hostname, upstream servicio:puerto}`); el agente la convierte a JSON de Caddy (no
   acepta JSON del core) y la carga. Certificados automáticos de Caddy (HTTP-01/TLS-ALPN).
 - Al añadir un dominio, el core avisa (sin bloquear) si no resuelve a la IP del servidor.
-- Modo **externo** (M1): sin Caddy; la app se publica en `127.0.0.1:<puerto>` y el panel muestra el bloque para
-  Apache y nginx.
+- Modo **externo** (M1, **por defecto**): sin Caddy; la app se publica en `127.0.0.1:<puerto>` y el panel muestra
+  el bloque para Apache y nginx (con `ProxyPass`, cabeceras `X-Forwarded-*` y WebSocket) y los pasos de certbot.
+  El agente no toca nunca la configuración del servidor web.
+- El modo gestionado solo se puede activar si el agente comprueba que 80 y 443 están libres en ese momento.
 - El inventario informa del modo, de la versión de Caddy y del estado de cada certificado (para la pantalla
   Dominios).
 
@@ -129,33 +154,33 @@ CHANGELOG, o el script falla) y marca ✅ aquí y en los dos TODO. Ejecutor por 
 
 | # | Paso | Archivos | Terminado cuando | Ejecutor · esfuerzo | Versión |
 |---|---|---|---|---|---|
-| 1 | Proto: `AppSource`, `AppBuild`, `AppRelease`, `ProxyApply`, `ProxyInstall`, `GitProbe`; campos de proxy en `Inventory` | `proto/agent.proto` (+ generado) | `buf lint` y `buf breaking` en verde; ningún número reusado | Sonnet (sesión) · medio | 0.6.1 |
-| 2 | Migración 0017 y store de apps, variables, despliegues y dominios; permiso `server.proxy` | `core/internal/store/migrations/0017_apps.sql`, `core/internal/store/apps.go`, `core/internal/rbac/**` | pruebas con BD: únicos, secretos sellados, `superseded`; rbac (`app_operator` no `stack.edit`) | AgentRelay · alto | 0.6.2 |
-| 3 | Agente: Git endurecido (D2) | `agent/internal/source/**` | pruebas: esquemas y argumentos rechazados, hooks ignorados, submódulos no, TOFU, cambio de clave falla, temporales borrados | AgentRelay · alto + **revisión Opus** | 0.6.3 |
-| 4 | Core: webhooks firmados de los tres proveedores y sondeo (D4) | `core/internal/api/hooks.go`, `core/internal/deploy/poll.go`, `core/internal/api/authz.go` | pruebas: firma mala/ausente/repetida, otra rama, cuerpo grande, límite; guardiana `chi.Walk` en verde | AgentRelay · alto + **revisión Opus** | 0.6.4 |
-| 5 | Agente: build con Dockerfile (D3) | `agent/internal/build/**` | pruebas con runner falso: argumentos exactos, espacio libre, tiempo, secretos fuera de build-args, limpieza | AgentRelay · medio | 0.6.5 |
-| 6 | Agente: build automático sin Dockerfile (según M2) | `agent/internal/build/auto*.go` | prueba con un proyecto Node y uno Go de ejemplo | AgentRelay · medio | 0.6.6 |
-| 7 | Agente: proxy Caddy gestionado y modo externo (D5) | `agent/internal/proxy/**` | pruebas: JSON generado, socket Unix, imagen por digest, 80/443 ocupados → modo externo con aviso | AgentRelay · alto + **revisión Opus** | 0.6.7 |
-| 8 | Agente: release sin corte, reversión y limpieza de imágenes (D3) | `agent/internal/release/**` | pruebas: nuevo sano → viejo fuera; nuevo enfermo → viejo sigue y `failed`; se guardan 3 imágenes | AgentRelay · alto + **revisión Opus** | 0.6.8 |
-| 9 | Core: canalización de despliegue (cola por app, estados, log, generación del compose, «editada a mano») | `core/internal/deploy/**` | pruebas con agente falso: push → build → release → `succeeded`; push durante otro → `superseded`; fallo de build no toca el stack | AgentRelay · alto | 0.6.9 |
-| 10 | API de apps, variables, dominios, despliegues, reversión y proxy; auditoría | `core/internal/api/{apps,domains,deployments,proxy}.go`, `core/internal/api/api.go`, `core/internal/api/authz.go` | pruebas por rol; secretos nunca en respuestas; clave de API puede desplegar y no editar | AgentRelay · medio | 0.6.10 |
-| 11 | Plantillas (D7) según M3 | `templates/**`, `core/internal/templates/**` | prueba que valida todas con `docker compose config` (en CI) y los parámetros | AgentRelay · medio | 0.6.11 |
-| 12 | Panel: Apps (lista y ficha con despliegues, log en vivo, volver atrás, variables) | `web/src/screens/Apps*.tsx`, `web/src/screens/apps/**`, `web/src/api/apps.ts`, locales | capturas claro/oscuro/móvil; pruebas por rol | AgentRelay · alto | 0.6.12 |
-| 13 | Panel: asistente de nueva app (maqueta 4) | `web/src/screens/apps/wizard/**`, locales | capturas; los cinco pasos con los tres orígenes | AgentRelay · alto | 0.6.13 |
-| 14 | Panel: Dominios (estado del certificado) y Plantillas; modo de proxy en el servidor | `web/src/screens/{Domains,Templates}*.tsx`, `web/src/screens/server/**` | capturas; pruebas | AgentRelay · medio | 0.6.14 |
-| 15 | Docs EN+ES (apps, Git y webhooks, proxy, plantillas, seguridad) y **revisión de seguridad Opus** de toda la fase | `docs/**` | guía paso a paso del criterio comprobada | Opus | 0.6.15 |
-| 16 | Prueba real con el mantenedor (M6): crear la app desde Git, push a `main`, ver la app por HTTPS; volver atrás; cierre | ROADMAP, README, TODO | push → HTTPS sin tocar nada más | Opus + mantenedor | 0.7.0 |
+| 1 | Proto: `AppSource`, `AppBuild`, `AppRelease`, `ProxyApply`, `ProxyInstall`, `GitProbe`; campos de proxy (modo, 80/443 libres) en `Inventory` | `proto/agent.proto` (+ generado) | `buf lint` y `buf breaking` en verde; ningún número reusado | Sonnet (sesión) · medio | 0.6.1 |
+| 2 | Migración 0017 y store de apps, variables, despliegues y dominios; permiso `server.proxy` | `core/internal/store/migrations/0017_apps.sql`, `core/internal/store/apps.go`, `core/internal/rbac/**` | pruebas con BD: únicos, secretos sellados, `superseded`; rbac (`app_operator` no `stack.edit`); la migración solo crea tablas | AgentRelay · alto | 0.6.2 |
+| 3 | Agente: Git endurecido (D2), solo `github.com` | `agent/internal/source/**` | pruebas: esquemas, hosts y argumentos rechazados, hooks ignorados, submódulos no, clave de host fijada, temporales borrados | AgentRelay · alto + **revisión Opus** | 0.6.3 |
+| 4 | Core: webhook firmado de GitHub y sondeo (D4) | `core/internal/api/hooks.go`, `core/internal/deploy/poll.go`, `core/internal/api/authz.go` | pruebas: firma mala/ausente/repetida, `ping`, otra rama, cuerpo grande, límite; guardiana `chi.Walk` en verde | AgentRelay · alto + **revisión Opus** | 0.6.4 |
+| 5 | Agente: build con Dockerfile (D3), uno a la vez por servidor | `agent/internal/build/**` | pruebas con runner falso: argumentos exactos, espacio libre, tiempo, secretos fuera de build-args, limpieza solo de lo suyo | AgentRelay · medio | 0.6.5 |
+| 6 | Agente: modo externo por defecto (puerto libre en `127.0.0.1`) y Caddy gestionado opcional (D5) | `agent/internal/proxy/**` | pruebas: elección de puerto sin pisar sockets ni puertos Docker; 80/443 ocupados → gestionado imposible; JSON de Caddy, socket Unix, digest; nunca toca otro servidor web | AgentRelay · alto + **revisión Opus** | 0.6.6 |
+| 7 | Agente: release sin corte, reversión y limpieza de imágenes (D3) | `agent/internal/release/**` | pruebas: nuevo sano → viejo fuera; nuevo enfermo → viejo sigue y `failed`; se guardan 3 imágenes; solo borra `talaia/<stack>:*` | AgentRelay · alto + **revisión Opus** | 0.6.7 |
+| 8 | Core: canalización de despliegue (cola por app, estados, log, generación del compose con límites de CPU/RAM, «editada a mano») | `core/internal/deploy/**` | pruebas con agente falso: push → build → release → `succeeded`; push durante otro → `superseded`; fallo de build no toca el stack | AgentRelay · alto | 0.6.8 |
+| 9 | API de apps, variables, dominios, despliegues, reversión y proxy (incluido el bloque de Apache/nginx); auditoría | `core/internal/api/{apps,domains,deployments,proxy}.go`, `core/internal/api/api.go`, `core/internal/api/authz.go` | pruebas por rol; secretos nunca en respuestas; clave de API puede desplegar y no editar | AgentRelay · medio | 0.6.9 |
+| 10 | Plantillas (D7) según M3 | `templates/**`, `core/internal/templates/**` | prueba que valida todas con `docker compose config` (en CI) y los parámetros | AgentRelay · medio | 0.6.10 |
+| 11 | Panel: Apps (lista y ficha con despliegues, log en vivo, volver atrás, variables) | `web/src/screens/Apps*.tsx`, `web/src/screens/apps/**`, `web/src/api/apps.ts`, locales | capturas claro/oscuro/móvil; pruebas por rol | AgentRelay · alto | 0.6.11 |
+| 12 | Panel: asistente de nueva app (maqueta 4) | `web/src/screens/apps/wizard/**`, locales | capturas; los cinco pasos con los tres orígenes; en modo externo, el paso Dominio muestra el bloque de Apache | AgentRelay · alto | 0.6.12 |
+| 13 | Panel: Dominios (estado del certificado o «lo gestiona tu Apache») y Plantillas; modo de proxy en el servidor | `web/src/screens/{Domains,Templates}*.tsx`, `web/src/screens/server/**` | capturas; pruebas | AgentRelay · medio | 0.6.13 |
+| 14 | Docs EN+ES (apps, GitHub y webhooks, modo externo con Apache paso a paso, Caddy, plantillas, seguridad), e2e del modo gestionado en local y **revisión de seguridad Opus** de toda la fase | `docs/**`, `test/e2e/**` | guía paso a paso del criterio comprobada en local | Opus | 0.6.14 |
+| 15 | Prueba real en el VPS con el mantenedor (M6, *Convivencia*): actualizar por el panel, app de prueba desde GitHub, bloque de Apache a mano, push a `main`, volver atrás, borrar; cierre | ROADMAP, README, TODO | push → la app cambia por HTTPS sin tocar nada; los demás servicios del VPS siguen igual | Opus + mantenedor | 0.7.0 |
 
-Paralelismo posible (archivos disjuntos), siempre una ejecución de AgentRelay a la vez: 1 primero; luego 2, 3, 5 y 7
-en cualquier orden; 4 tras 2; 8 tras 5 y 7; 9 tras 2, 3, 5 y 8; 10 tras 9; 11 tras 10; 12-14 tras 10.
+Paralelismo posible (archivos disjuntos), siempre una ejecución de AgentRelay a la vez: 1 primero; luego 2, 3, 5 y 6
+en cualquier orden; 4 tras 2; 7 tras 5 y 6; 8 tras 2, 3, 5 y 7; 9 tras 8; 10 tras 9; 11-13 tras 9.
 
-Fuera de la fase (a *Ideas*): entornos por pull request, dominios comodín y DNS-01 para apps, registro de imágenes,
+Fuera de la fase (a *Ideas*): entornos por pull request, build sin Dockerfile (Nixpacks/Railpack), GitLab y
+Gitea/Forgejo, configurar Apache automáticamente, dominios comodín y DNS-01 para apps, registro de imágenes,
 `talaiactl deploy`, regla de alerta `deploy_failed`, builds en otro servidor, varios servicios con despliegue sin
 corte.
 
 ## Cómo seguir
 
-1. El mantenedor contesta M1-M6 (se anotan aquí, en *Decisiones del mantenedor*).
-2. `/clear` → `/model sonnet` → «ejecuta el paso 1 de `.agents/plans/fase6/fase6.PLAN.md`» y seguir en orden.
-   Los pasos 3, 4, 7 y 8 los revisa Opus antes de aceptarlos (`/model opus` → «revisa el paso N de fase6»).
-3. Ante un imprevisto de diseño, el ejecutor para y lo anota aquí.
+1. `/clear` → `/model sonnet` → «ejecuta el paso 1 de `.agents/plans/fase6/fase6.PLAN.md`» y seguir en orden.
+   Los pasos 3, 4, 6 y 7 los revisa Opus antes de aceptarlos (`/model opus` → «revisa el paso N de fase6»).
+2. Ante un imprevisto de diseño, el ejecutor para y lo anota aquí.
+3. Nada se instala en el VPS real hasta el paso 15.

@@ -135,7 +135,7 @@ Each feature is tagged with the release where it is planned. See [ROADMAP.md](RO
 |---|---|---|---|
 | Containers and stacks | Actions, live logs, Compose editor, container terminal, images/volumes/networks, adopt existing | Revision history and rollback, image update notices | Podman |
 | Whole server | Metrics, systemd, journald, apt updates and reboot, host terminal (phase 3 closed in 0.4.0) | Firewall, fail2ban, users and SSH keys, cron, file browser, hardening audit | — |
-| Deploys and apps | — | Stacks from Git, Dockerfile/Nixpacks builds, zero-downtime deploys, domains + SSL (Caddy), template catalog | Preview environments per pull request |
+| Deploys and apps | — | Stacks from GitHub, Dockerfile builds, zero-downtime deploys, domains behind your existing proxy or managed Caddy, template catalog | Preview environments per pull request |
 | Monitoring and alerts | — | Metrics history, alert rules, HTTP/TCP checks, certificate expiry, Telegram/ntfy/email/Discord/webhook (0.6.0) | Public status page |
 | Backups | — | restic plans, consistent database dumps, S3/B2/SFTP, restore from the panel | Automatic monthly restore test |
 | Fleet automation | — | Bulk actions, scheduled procedures, GitOps sync | Ansible playbooks, VPS provisioning via provider APIs |

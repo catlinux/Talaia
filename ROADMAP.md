@@ -117,10 +117,11 @@ Talaia warns you before your users do.
 
 The Coolify part.
 
-- Stacks from Git and push webhooks
-- Builds with Dockerfile and Nixpacks
+- Stacks from GitHub and push webhooks
+- Builds with a Dockerfile
 - Zero-downtime deploys and rollback
-- Managed Caddy: domains + automatic SSL
+- Domains: behind the proxy already on the server (Apache, nginx) without touching it, or managed Caddy with
+  automatic SSL when ports 80/443 are free
 - Template catalog (15 initial apps)
 - New app wizard (mockup 4)
 

@@ -130,14 +130,14 @@ tareas concretas de la fase actual y de la siguiente.
 
 ## Fase 6 · Despliegues, dominios y plantillas (0.7.0, ver `.agents/plans/fase6/fase6.PLAN.md`)
 
-Bloqueada hasta que el mantenedor conteste M1-M6 del plan (Caddy y los puertos 80/443, builds sin Dockerfile, las 15 plantillas, proveedores Git, entornos por pull request, entorno de prueba).
+Decisiones cerradas el 2026-10-30: proxy externo por defecto (Talaia nunca toca Apache ni otros servicios del servidor), solo Dockerfile, solo GitHub, nada se instala en el VPS real hasta la prueba final.
 
 - [ ] Contrato: comandos tipados de origen Git, build, release y proxy
 - [ ] Apps, variables de entorno, despliegues y dominios en la base de datos; permiso `server.proxy`
-- [ ] Agente: fetch de Git endurecido con clave de despliegue por app y claves de host fijadas
-- [ ] Core: webhooks de push firmados (GitHub, GitLab, Gitea/Forgejo) y sondeo de la rama
-- [ ] Agente: builds con Dockerfile, y sin él si existe un constructor mantenido
-- [ ] Agente: Caddy gestionado (dominios y HTTPS automático) o proxy externo cuando 80/443 están ocupados
+- [ ] Agente: fetch de Git endurecido desde GitHub con clave de despliegue por app y clave de host fijada
+- [ ] Core: webhooks de push firmados de GitHub y sondeo de la rama
+- [ ] Agente: builds con Dockerfile, uno a la vez por servidor
+- [ ] Agente: proxy externo por defecto (app en un puerto libre de `127.0.0.1`, bloque de Apache/nginx en el panel) y Caddy gestionado opcional solo si 80/443 están libres
 - [ ] Agente: release sin corte, vuelta atrás a una de las tres últimas imágenes y limpieza de imágenes
 - [ ] Core: canalización de despliegue (un despliegue por app, pushes sustituidos, logs) y su API
 - [ ] Catálogo de plantillas (15 apps) publicado con el core
@@ -167,6 +167,7 @@ Bloqueada hasta que el mantenedor conteste M1-M6 del plan (Caddy y los puertos 8
 
 Apunta aquí las ideas nuevas en lugar de añadirlas a la fase actual.
 
+- Builds sin Dockerfile (Nixpacks/Railpack), webhooks de GitLab y Gitea/Forgejo, y escribir la configuración de Apache/nginx automáticamente (fuera de la fase 6 desde el 2026-10-30)
 - App móvil (PWA) con notificaciones push
 - Integración con Tailscale/Headscale para crear la red privada automáticamente
 - Panel de costes por proveedor

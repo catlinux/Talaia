@@ -130,14 +130,14 @@ of the current phase and the next one.
 
 ## Phase 6 · Deploys, domains and templates (0.7.0, see `.agents/plans/fase6/fase6.PLAN.md`)
 
-Blocked until the maintainer answers M1-M6 in the plan (Caddy and ports 80/443, builds without a Dockerfile, the 15 templates, Git providers, pull request environments, test environment).
+Decisions closed on 2026-10-30: external proxy by default (Talaia never touches Apache or other services on the server), Dockerfile only, GitHub only, nothing installed on the real VPS until the final test.
 
 - [ ] Contract: typed commands for Git source, build, release and proxy
 - [ ] Apps, environment variables, deployments and domains in the database; `server.proxy` permission
-- [ ] Agent: hardened Git fetch with per-app deploy keys and pinned host keys
-- [ ] Core: signed push webhooks (GitHub, GitLab, Gitea/Forgejo) and branch polling
-- [ ] Agent: builds with a Dockerfile, and without one if a maintained builder exists
-- [ ] Agent: managed Caddy (domains and automatic HTTPS) or an external proxy when 80/443 are taken
+- [ ] Agent: hardened Git fetch from GitHub with per-app deploy keys and a pinned host key
+- [ ] Core: signed GitHub push webhooks and branch polling
+- [ ] Agent: builds with a Dockerfile, one at a time per server
+- [ ] Agent: external proxy by default (app on a free `127.0.0.1` port, Apache/nginx block shown in the panel) and optional managed Caddy only when 80/443 are free
 - [ ] Agent: zero-downtime release, rollback to one of the last three images and image cleanup
 - [ ] Core: deploy pipeline (one deploy per app, superseded pushes, logs) and its API
 - [ ] Template catalog (15 apps) shipped with the core
@@ -167,6 +167,7 @@ Blocked until the maintainer answers M1-M6 in the plan (Caddy and ports 80/443, 
 
 Write new ideas here instead of adding them to the current phase.
 
+- Builds without a Dockerfile (Nixpacks/Railpack), GitLab and Gitea/Forgejo webhooks, and writing the Apache/nginx configuration automatically (left out of phase 6 on 2026-10-30)
 - Mobile app (PWA) with push notifications
 - Integration with Tailscale/Headscale to create the private network automatically
 - Cost dashboard per provider

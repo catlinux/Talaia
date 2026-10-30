@@ -119,10 +119,11 @@ minuto.
 
 La parte de Coolify.
 
-- Stacks desde Git y webhooks de push
-- Builds con Dockerfile y Nixpacks
+- Stacks desde GitHub y webhooks de push
+- Builds con Dockerfile
 - Despliegues sin cortes y reversión
-- Caddy gestionado: dominios + SSL automático
+- Dominios: detrás del proxy que ya tenga el servidor (Apache, nginx) sin tocarlo, o Caddy gestionado con SSL
+  automático cuando los puertos 80/443 están libres
 - Catálogo de plantillas (15 apps iniciales)
 - Asistente de nueva app (maqueta 4)
 
