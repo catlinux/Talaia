@@ -13,6 +13,12 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+## [0.6.5] - 2026-10-30
+
+### Cambiado
+
+- Panel: estilo visual sobrio — superficies planas, paleta neutra con un solo acento, sin fondos de puntos, resplandores, degradados ni etiquetas en mayúsculas espaciadas; IBM Plex Sans 14 px como tipografía base (primer paso del bloque panel v2).
+
 ## [0.6.4] - 2026-10-30
 
 ### Añadido
@@ -726,7 +732,8 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
   `.gitattributes` y `.gitignore`.
 - Licencia WNCL-1.0 aplicada: archivo `LICENSE` y sección de créditos en los README.
 
-[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.6.4...HEAD
+[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.6.5...HEAD
+[0.6.5]: https://github.com/catlinux/Talaia/releases/tag/v0.6.5
 [0.6.4]: https://github.com/catlinux/Talaia/releases/tag/v0.6.4
 [0.6.3]: https://github.com/catlinux/Talaia/releases/tag/v0.6.3
 [0.6.2]: https://github.com/catlinux/Talaia/releases/tag/v0.6.2

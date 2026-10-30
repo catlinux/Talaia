@@ -18,6 +18,12 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.6.5] - 2026-10-30
+
+### Changed
+
+- Panel: sober visual style — flat surfaces, neutral palette with one accent, no dotted backgrounds, glows, gradients or spaced uppercase labels; IBM Plex Sans 14 px as the base font (first step of the panel v2 block).
+
 ## [0.6.4] - 2026-10-30
 
 ### Added
@@ -726,7 +732,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.6.4...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.6.5...HEAD
+[0.6.5]: https://github.com/catlinux/Talaia/releases/tag/v0.6.5
 [0.6.4]: https://github.com/catlinux/Talaia/releases/tag/v0.6.4
 [0.6.3]: https://github.com/catlinux/Talaia/releases/tag/v0.6.3
 [0.6.2]: https://github.com/catlinux/Talaia/releases/tag/v0.6.2

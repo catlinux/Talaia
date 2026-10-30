@@ -130,8 +130,8 @@ tareas concretas de la fase actual y de la siguiente.
 
 ## Panel v2 · panel profesional y alertas cómodas (entre los pasos 4 y 5 de la fase 6, ver `.agents/plans/panel-v2/panel-v2.PLAN.md`)
 
-- [ ] Maqueta estática del diseño nuevo, aprobada por el mantenedor
-- [ ] Tokens y estilos base sobrios (sin fondos con puntos, resplandores ni degradados)
+- [x] Maqueta estática del diseño nuevo, aprobada por el mantenedor
+- [x] Tokens y estilos base sobrios (sin fondos con puntos, resplandores ni degradados)
 - [ ] Componentes comunes: cabecera de página, tabla de datos, insignia de estado, cajón, menú, aviso, confirmación
 - [ ] URLs reales, barra lateral agrupada y barra superior (migas, campana de alertas, menú de usuario)
 - [ ] Resumen con «Requiere atención» primero; servidores en tabla

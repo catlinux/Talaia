@@ -130,8 +130,8 @@ of the current phase and the next one.
 
 ## Panel v2 · professional panel and easier alerts (between phase 6 steps 4 and 5, see `.agents/plans/panel-v2/panel-v2.PLAN.md`)
 
-- [ ] Static mockup of the new design, approved by the maintainer
-- [ ] Sober design tokens and base styles (no dotted backgrounds, glows or gradients)
+- [x] Static mockup of the new design, approved by the maintainer
+- [x] Sober design tokens and base styles (no dotted backgrounds, glows or gradients)
 - [ ] Shared components: page header, data table, status badge, drawer, menu, toast, confirmation
 - [ ] Real URLs, grouped sidebar and top bar (breadcrumbs, alert bell, user menu)
 - [ ] Overview with "needs attention" first; servers as a table

@@ -14,18 +14,16 @@
 
 .alerts__eyebrow {
   margin: 0;
-  color: var(--accent);
-  font-family: var(--f-mono);
-  font-size: 0.7rem;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+  color: var(--muted);
+  font-size: 0.8125rem;
+  font-weight: 500;
 }
 
 .alerts__title {
   margin: 0;
-  font-size: clamp(1.9rem, 3.6vw, 2.6rem);
-  font-weight: 700;
-  letter-spacing: -0.03em;
+  font-size: 1.25rem;
+  font-weight: 600;
+  letter-spacing: normal;
 }
 
 .alerts__intro {
@@ -110,22 +108,8 @@
   gap: 8px;
   padding: 15px 17px;
   border: 1px solid var(--line);
-  border-left: 4px solid var(--line);
   border-radius: var(--radius);
   background: var(--surface);
-  box-shadow: var(--shadow-1);
-}
-
-.alert-card--critical {
-  border-left-color: var(--crit);
-}
-
-.alert-card--warning {
-  border-left-color: var(--warn);
-}
-
-.alert-card--info {
-  border-left-color: var(--accent);
 }
 
 .alert-card__top {
@@ -197,11 +181,8 @@
   gap: 6px;
   padding: 3px 9px;
   border-radius: 999px;
-  font-family: var(--f-mono);
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   font-weight: 600;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
 }
 
 .alert-severity__mark {
@@ -249,8 +230,8 @@
   display: grid;
   justify-items: center;
   gap: 7px;
-  padding: 54px 24px;
-  border: 1px dashed var(--line);
+  padding: 48px 24px;
+  border: 1px solid var(--line);
   border-radius: var(--radius);
   color: var(--muted);
   text-align: center;
@@ -259,7 +240,8 @@
 .alerts__empty h2 {
   margin: 0;
   color: var(--ink);
-  font-size: 1.1rem;
+  font-size: 0.9375rem;
+  font-weight: 600;
 }
 
 .alerts__empty p {
@@ -285,8 +267,7 @@
 }
 
 .alerts__loading {
-  font-family: var(--f-mono);
-  font-size: 0.8rem;
+  font-size: 0.875rem;
 }
 
 .alerts__error {
@@ -327,7 +308,8 @@
 
 .alert-card__title {
   margin: 0;
-  font-size: 1rem;
+  font-size: 0.9375rem;
+  font-weight: 600;
   overflow-wrap: anywhere;
 }
 
@@ -366,22 +348,6 @@
 }
 
 /* Fleet server card indicators. */
-.server--alerts-critical {
-  border-left: 4px solid var(--crit);
-}
-
-.server--alerts-warning {
-  border-left: 4px solid var(--warn);
-}
-
-.server--alerts-critical:hover {
-  border-left-color: var(--crit);
-}
-
-.server--alerts-warning:hover {
-  border-left-color: var(--warn);
-}
-
 .server__badges-inline {
   display: flex;
   flex-wrap: wrap;
@@ -397,8 +363,7 @@
   border-radius: 999px;
   background: var(--warn-soft);
   color: var(--warn);
-  font-family: var(--f-mono);
-  font-size: 0.67rem;
+  font-size: 0.75rem;
   font-weight: 600;
   white-space: nowrap;
 }
@@ -447,17 +412,16 @@
 
 .alerts-settings__eyebrow {
   margin: 0;
-  color: var(--accent);
-  font-family: var(--f-mono);
-  font-size: 0.7rem;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+  color: var(--muted);
+  font-size: 0.8125rem;
+  font-weight: 500;
 }
 
 .alerts-settings__title {
   margin: 0;
-  font-size: clamp(1.4rem, 2.8vw, 1.9rem);
-  letter-spacing: -0.02em;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  letter-spacing: normal;
 }
 
 .alerts-admin__card .settings__card-head {
@@ -469,7 +433,8 @@
 }
 
 .alerts-admin__card h3 {
-  font-size: 1.05rem;
+  font-size: 0.9375rem;
+  font-weight: 600;
 }
 
 .alerts-admin__actions,
@@ -551,9 +516,7 @@
 .alerts-admin__choice-type {
   margin-left: auto;
   color: var(--muted);
-  font-family: var(--f-mono);
-  font-size: 0.66rem;
-  text-transform: uppercase;
+  font-size: 0.75rem;
 }
 
 .alerts-admin__name {
@@ -570,18 +533,14 @@
   border-radius: 999px;
   background: var(--surface-2);
   color: var(--muted);
-  font-family: var(--f-mono);
-  font-size: 0.64rem;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
+  font-size: 0.75rem;
 }
 
 .alerts-admin__severity {
   display: inline-flex;
   padding: 2px 8px;
   border-radius: 999px;
-  font-family: var(--f-mono);
-  font-size: 0.68rem;
+  font-size: 0.75rem;
   font-weight: 600;
 }
 
@@ -645,8 +604,7 @@
 
 .settings__message--warning {
   padding: 9px 11px;
-  border-left: 3px solid var(--warn);
-  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  border-radius: var(--radius-sm);
   background: var(--warn-soft);
   color: var(--ink);
   font-size: 0.84rem;

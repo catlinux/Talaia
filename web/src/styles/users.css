@@ -14,9 +14,9 @@
 
 .users__title {
   margin: 0;
-  font-size: clamp(1.9rem, 3.6vw, 2.6rem);
-  font-weight: 700;
-  letter-spacing: -0.03em;
+  font-size: 1.25rem;
+  font-weight: 600;
+  letter-spacing: normal;
 }
 
 .users__subtitle,
@@ -32,7 +32,7 @@
   padding: 10px 14px;
   border: 1px solid color-mix(in srgb, var(--crit) 40%, transparent);
   border-radius: var(--radius-sm);
-  background: color-mix(in srgb, var(--crit) 8%, var(--surface));
+  background: var(--crit-soft);
   color: var(--crit);
 }
 
@@ -102,12 +102,9 @@
   padding: 8px 10px;
   border-bottom: 1px solid var(--line);
   color: var(--muted);
-  font-family: var(--f-mono);
-  font-size: 0.72rem;
+  font-size: 0.8125rem;
   font-weight: 500;
-  letter-spacing: 0.04em;
   text-align: left;
-  text-transform: uppercase;
 }
 
 .users-table td {
@@ -322,8 +319,7 @@
   display: grid;
   place-items: center;
   padding: 24px;
-  background: color-mix(in srgb, var(--bg) 55%, transparent);
-  backdrop-filter: blur(3px);
+  background: var(--overlay);
 }
 
 .dialog__panel {
@@ -331,9 +327,9 @@
   max-height: min(88vh, 780px);
   overflow: auto;
   border: 1px solid var(--line);
-  border-radius: 18px;
+  border-radius: 8px;
   background: var(--surface);
-  box-shadow: var(--shadow-2);
+  box-shadow: var(--shadow);
 }
 
 .dialog__panel--side {
@@ -341,7 +337,7 @@
   justify-self: end;
   height: 100%;
   max-height: 100%;
-  border-radius: 18px 0 0 18px;
+  border-radius: 8px 0 0 8px;
 }
 
 .dialog__head {
@@ -355,7 +351,8 @@
 
 .dialog__title {
   margin: 0;
-  font-size: 1.15rem;
+  font-size: 0.9375rem;
+  font-weight: 600;
 }
 
 .dialog__close {
@@ -527,10 +524,8 @@
   .users-table td::before {
     content: attr(data-label);
     color: var(--muted);
-    font-family: var(--f-mono);
-    font-size: 0.7rem;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
+    font-size: 0.8125rem;
+    font-weight: 500;
   }
 
   .dialog {
@@ -542,6 +537,6 @@
   .dialog__panel--side {
     width: 100%;
     max-height: 92vh;
-    border-radius: 18px 18px 0 0;
+    border-radius: 8px 8px 0 0;
   }
 }

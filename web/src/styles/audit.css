@@ -14,10 +14,9 @@
 
 .audit__title {
   margin: 0;
-  font-family: var(--f-display);
-  font-size: clamp(1.7rem, 3.2vw, 2.3rem);
-  font-weight: 500;
-  letter-spacing: -0.03em;
+  font-size: 1.25rem;
+  font-weight: 600;
+  letter-spacing: normal;
 }
 
 .audit__subtitle {
@@ -34,7 +33,6 @@
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: var(--surface);
-  box-shadow: var(--shadow-1);
 }
 
 .audit__field {
@@ -79,7 +77,6 @@
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: var(--surface);
-  box-shadow: var(--shadow-1);
 }
 
 .audit__table {
@@ -92,12 +89,9 @@
   padding: 10px 12px;
   border-bottom: 1px solid var(--line);
   color: var(--muted);
-  font-family: var(--f-mono);
-  font-size: 0.6875rem;
+  font-size: 0.8125rem;
   font-weight: 500;
-  letter-spacing: 0.08em;
   text-align: left;
-  text-transform: uppercase;
   white-space: nowrap;
 }
 
@@ -132,8 +126,7 @@
   display: inline-block;
   padding: 1px 8px;
   border-radius: 999px;
-  font-family: var(--f-mono);
-  font-size: 0.6875rem;
+  font-size: 0.75rem;
   font-weight: 500;
   white-space: nowrap;
 }
@@ -162,7 +155,7 @@
 .audit__details-toggle {
   padding: 2px 0;
   border: 0;
-  border-bottom: 1px dotted var(--line);
+  border-bottom: 1px solid var(--line);
   background: none;
   color: var(--accent);
   font: inherit;
@@ -201,8 +194,8 @@
 
 .audit__detail dt {
   color: var(--muted);
-  font-family: var(--f-mono);
-  font-size: 0.6875rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
 }
 
 .audit__detail dd {
@@ -263,7 +256,6 @@
     border: 1px solid var(--line);
     border-radius: var(--radius);
     background: var(--surface);
-    box-shadow: var(--shadow-1);
   }
 
   .audit__table td {
@@ -278,12 +270,9 @@
   .audit__table td::before {
     content: attr(data-label);
     color: var(--muted);
-    font-family: var(--f-mono);
-    font-size: 0.6875rem;
+    font-size: 0.8125rem;
     font-weight: 500;
-    letter-spacing: 0.06em;
     text-align: left;
-    text-transform: uppercase;
   }
 
   .audit__details-row {
