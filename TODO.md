@@ -137,6 +137,7 @@ of the current phase and the next one.
 - [ ] Overview with "needs attention" first; servers as a table
 - [ ] Server page with a fixed header and tabs as routes
 - [ ] Fleet-wide containers and stacks with row and bulk actions
+- [ ] "What is this?" catalogue: description, importance and what to do if it fails for common Debian services and Docker images, as a tooltip in the tables
 - [ ] Alerts inbox: filters, grouping, new/seen/silenced, bulk actions, detail drawer with actions on the cause
 - [ ] Alert rules, channels and checks moved from Settings to Alerts
 - [ ] Command palette (Ctrl+K); Users, Audit and Settings on the new components; mobile pass and docs
@@ -180,6 +181,7 @@ Decisions closed on 2026-10-30: external proxy by default (Talaia never touches 
 
 Write new ideas here instead of adding them to the current phase.
 
+- Own notes per container or service (for example "shop website, do not touch during opening hours"), stored in the core
 - Builds without a Dockerfile (Nixpacks/Railpack), GitLab and Gitea/Forgejo webhooks, and writing the Apache/nginx configuration automatically (left out of phase 6 on 2026-10-30)
 - Mobile app (PWA) with push notifications
 - Integration with Tailscale/Headscale to create the private network automatically

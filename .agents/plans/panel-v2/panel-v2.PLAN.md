@@ -92,6 +92,7 @@ y hace las capturas (arnés temporal: memoria `handoff.md`, «Capturas»). Cada 
 | 5 | Servidores: tabla con filtros/orden, vista de tarjetas opcional, *Añadir servidor* | `web/src/screens/Servers*.tsx` (sustituye `Fleet.tsx`), `web/src/screens/fleet/**` | capturas; tests de filtros, orden y permisos | AgentRelay · medio |
 | 6 | Ficha de servidor: cabecera fija con métricas y menú de acciones; pestañas como rutas; partir `ServerScreen.tsx` (1100 líneas) | `web/src/screens/ServerScreen.tsx`, `web/src/screens/server/**` | sin cambios de funcionalidad; tests existentes verdes | AgentRelay · alto |
 | 7 | Contenedores y Stacks globales: tablas de toda la flota con acciones por fila y en bloque | `web/src/screens/{Containers,Stacks}*.tsx`, `web/src/api/containers.ts` (solo si falta un listado), locales | capturas; tests de acciones y permisos por ámbito | AgentRelay · alto |
+| 7b | Catálogo «¿qué es esto?» (petición del mantenedor, 2026-10-30): ficha de ~60-80 servicios de Debian y de las imágenes Docker más comunes con qué es, categoría, importancia (esencial/importante/prescindible) y qué hacer si falla; icono ⓘ con tooltip en las tablas de contenedores, stacks y servicios y ficha completa en el detalle; lo desconocido muestra su origen (stack/servicio de Compose, imagen, descripción de systemd); la importancia pondera «Requiere atención» | `web/src/catalog/**`, `web/src/components/ui/InfoTip*.tsx`, pantallas de contenedores/servicios, locales | tests de búsqueda en el catálogo (nombres de unidad, imágenes con registro y etiqueta) y del tooltip | AgentRelay · medio |
 | 8 | Alertas · Bandeja: tabla, filtros en la URL, agrupar, nueva/vista/silenciada, acciones en bloque | `web/src/screens/Alerts.tsx`, `web/src/screens/alerts/{Inbox,BulkBar,Filters}*.tsx`, locales | tests: filtros, agrupación, bloque con permisos parciales | AgentRelay · alto |
 | 9 | Alertas · Detalle en cajón con cronología, regla y acciones sobre la causa; campana de la barra superior | `web/src/screens/alerts/AlertDrawer*.tsx`, `web/src/components/shell/AlertBell*.tsx`, locales | tests; capturas | AgentRelay · alto |
 | 10 | Mudar Reglas, Canales y Comprobaciones de Ajustes a Alertas (pestañas por permiso); Ajustes queda con cuenta, servidores, integraciones y sistema | `web/src/screens/alerts/**`, `web/src/screens/Settings.tsx`, `web/src/screens/settings/SettingsTabs.tsx`, locales | sin pérdida de funciones; tests movidos y verdes | AgentRelay · medio |
@@ -99,10 +100,12 @@ y hace las capturas (arnés temporal: memoria `handoff.md`, «Capturas»). Cada 
 | 12 | Usuarios, Auditoría y Ajustes con los componentes nuevos (tablas, cabeceras, diálogos) | `web/src/screens/{Users,Audit,Settings}*.tsx` y subcarpetas | capturas; tests verdes | AgentRelay · medio |
 | 13 | Repaso móvil y accesibilidad, capturas finales, docs EN+ES (guía del panel), revisión Opus del bloque | `docs/{en,es}/**`, ajustes menores | 390 px sin desbordes; revisión hecha | Opus |
 
-Orden: 0 → 1 → 2 → 3, luego 4-12 en cualquier orden salvo 9 tras 8 y 10 tras 8. Después se retoma la fase 6 en su
+Orden: 0 → 1 → 2 → 3, luego 4-12 en cualquier orden salvo 7b tras 7, 9 tras 8 y 10 tras 8. Después se retoma la fase 6 en su
 paso 5.
 
 ## Fuera del bloque (a *Ideas* si surge)
+
+- Notas propias por contenedor/servicio (necesitan tabla y API en el core): anotadas en *Ideas* del TODO.
 
 Paneles personalizables, widgets arrastrables, notificaciones del navegador, cambios en la API del core (si un paso
 necesita un endpoint nuevo, el ejecutor para y lo anota aquí).

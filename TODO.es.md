@@ -137,6 +137,7 @@ tareas concretas de la fase actual y de la siguiente.
 - [ ] Resumen con «Requiere atención» primero; servidores en tabla
 - [ ] Ficha de servidor con cabecera fija y pestañas como rutas
 - [ ] Contenedores y stacks de toda la flota con acciones por fila y en bloque
+- [ ] Catálogo «¿qué es esto?»: descripción, importancia y qué hacer si falla de los servicios de Debian y las imágenes Docker habituales, como tooltip en las tablas
 - [ ] Bandeja de alertas: filtros, agrupación, nueva/vista/silenciada, acciones en bloque, detalle con acciones sobre la causa
 - [ ] Reglas, canales y comprobaciones de alertas movidos de Ajustes a Alertas
 - [ ] Paleta de comandos (Ctrl+K); Usuarios, Auditoría y Ajustes con los componentes nuevos; repaso móvil y docs
@@ -180,6 +181,7 @@ Decisiones cerradas el 2026-10-30: proxy externo por defecto (Talaia nunca toca 
 
 Apunta aquí las ideas nuevas en lugar de añadirlas a la fase actual.
 
+- Notas propias por contenedor o servicio (por ejemplo «web de la tienda, no tocar en horario comercial»), guardadas en el core
 - Builds sin Dockerfile (Nixpacks/Railpack), webhooks de GitLab y Gitea/Forgejo, y escribir la configuración de Apache/nginx automáticamente (fuera de la fase 6 desde el 2026-10-30)
 - App móvil (PWA) con notificaciones push
 - Integración con Tailscale/Headscale para crear la red privada automáticamente
