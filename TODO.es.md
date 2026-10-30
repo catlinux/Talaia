@@ -128,6 +128,19 @@ tareas concretas de la fase actual y de la siguiente.
   - [ ] Parar o borrar un contenedor desde la API avisa al motor cuando se acepta el trabajo, no cuando termina bien; una parada fallida se vuelve a vigilar a los 2 minutos
   - [ ] La pestaña **Alertas** del servidor no muestra como heredadas las reglas de ámbito grupo: el tipo `Server` del panel no lleva el grupo, así que `AlertsSection` nunca recibe `groupId`
 
+## Panel v2 · panel profesional y alertas cómodas (entre los pasos 4 y 5 de la fase 6, ver `.agents/plans/panel-v2/panel-v2.PLAN.md`)
+
+- [ ] Maqueta estática del diseño nuevo, aprobada por el mantenedor
+- [ ] Tokens y estilos base sobrios (sin fondos con puntos, resplandores ni degradados)
+- [ ] Componentes comunes: cabecera de página, tabla de datos, insignia de estado, cajón, menú, aviso, confirmación
+- [ ] URLs reales, barra lateral agrupada y barra superior (migas, campana de alertas, menú de usuario)
+- [ ] Resumen con «Requiere atención» primero; servidores en tabla
+- [ ] Ficha de servidor con cabecera fija y pestañas como rutas
+- [ ] Contenedores y stacks de toda la flota con acciones por fila y en bloque
+- [ ] Bandeja de alertas: filtros, agrupación, nueva/vista/silenciada, acciones en bloque, detalle con acciones sobre la causa
+- [ ] Reglas, canales y comprobaciones de alertas movidos de Ajustes a Alertas
+- [ ] Paleta de comandos (Ctrl+K); Usuarios, Auditoría y Ajustes con los componentes nuevos; repaso móvil y docs
+
 ## Fase 6 · Despliegues, dominios y plantillas (0.7.0, ver `.agents/plans/fase6/fase6.PLAN.md`)
 
 Decisiones cerradas el 2026-10-30: proxy externo por defecto (Talaia nunca toca Apache ni otros servicios del servidor), solo Dockerfile, solo GitHub, nada se instala en el VPS real hasta la prueba final.

@@ -1,6 +1,6 @@
 # Fase 6 · Despliegues, dominios y plantillas (0.7.0)
 
-Estado: **plan escrito (2026-10-28, Opus); M1-M6 cerradas el 2026-10-30.** Pasos 1 a 4 hechos (0.6.4); el 3 y el 4 revisados.
+Estado: **plan escrito (2026-10-28, Opus); M1-M6 cerradas el 2026-10-30.** Pasos 1 a 4 hechos (0.6.4); el 3 y el 4 revisados. **Pausada tras el paso 4** para el bloque *Panel v2* (`.agents/plans/panel-v2/panel-v2.PLAN.md`); al volver, cada paso toma el siguiente parche libre en vez del número de la tabla.
 Criterio del ROADMAP: *«hacer push a `main` publica la app por HTTPS sin hacer nada más»*. En modo externo (M1) se
 cumple a partir del segundo despliegue: el bloque de Apache de cada dominio se pone una vez, a mano, y desde ahí cada
 push publica solo.

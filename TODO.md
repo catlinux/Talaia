@@ -128,6 +128,19 @@ of the current phase and the next one.
   - [ ] Container stop/remove from the API tells the engine when the job is accepted, not when it succeeds; a failed stop is watched again after 2 minutes
   - [ ] The server **Alerts** tab does not show group-scoped rules as inherited: the panel's `Server` type carries no group, so `AlertsSection` never receives `groupId`
 
+## Panel v2 · professional panel and easier alerts (between phase 6 steps 4 and 5, see `.agents/plans/panel-v2/panel-v2.PLAN.md`)
+
+- [ ] Static mockup of the new design, approved by the maintainer
+- [ ] Sober design tokens and base styles (no dotted backgrounds, glows or gradients)
+- [ ] Shared components: page header, data table, status badge, drawer, menu, toast, confirmation
+- [ ] Real URLs, grouped sidebar and top bar (breadcrumbs, alert bell, user menu)
+- [ ] Overview with "needs attention" first; servers as a table
+- [ ] Server page with a fixed header and tabs as routes
+- [ ] Fleet-wide containers and stacks with row and bulk actions
+- [ ] Alerts inbox: filters, grouping, new/seen/silenced, bulk actions, detail drawer with actions on the cause
+- [ ] Alert rules, channels and checks moved from Settings to Alerts
+- [ ] Command palette (Ctrl+K); Users, Audit and Settings on the new components; mobile pass and docs
+
 ## Phase 6 · Deploys, domains and templates (0.7.0, see `.agents/plans/fase6/fase6.PLAN.md`)
 
 Decisions closed on 2026-10-30: external proxy by default (Talaia never touches Apache or other services on the server), Dockerfile only, GitHub only, nothing installed on the real VPS until the final test.
