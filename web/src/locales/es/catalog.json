@@ -742,6 +742,126 @@
         "El gestor de usuario se reinicia una y otra vez — lee `journalctl --user -n 50 --no-pager` como ese usuario.",
         "Falta el directorio de ejecución — comprueba `/run/user/<uid>` y la unidad `user-runtime-dir@`."
       ]
+    },
+    "systemd-tmpfiles": {
+      "name": "Archivos temporales",
+      "what": "Crea directorios temporales y elimina archivos antiguos durante el arranque y con un temporizador.",
+      "ifFails": "Los archivos temporales pueden acumularse o pueden faltar directorios esperados; los servicios que escriben en ellos pueden fallar.",
+      "details": "systemd-tmpfiles aplica reglas de `/usr/lib/tmpfiles.d`, `/etc/tmpfiles.d` y `/run/tmpfiles.d` para crear directorios, corregir permisos y borrar archivos antiguos. Normalmente se ejecuta al principio del arranque y otra vez mediante `systemd-tmpfiles-clean.timer`. Evita que `/tmp` y `/var/tmp` crezcan sin límite; no es una herramienta de copia ni de limpieza general de los datos de las aplicaciones.",
+      "stop": "Si paras el temporizador, solo dejas de hacer la limpieza periódica; si paras las unidades de arranque, pueden faltar directorios esperados. El sistema puede seguir funcionando, pero los archivos temporales y los permisos pueden quedar inconsistentes. No lo desactives salvo que otra herramienta gestione esas rutas.",
+      "problems": [
+        "Los archivos temporales llenan el disco — revisa `/etc/tmpfiles.d` y `/usr/lib/tmpfiles.d`, y ejecuta `systemd-tmpfiles --clean` para aplicar las reglas de limpieza.",
+        "Un servicio no puede escribir en su directorio de ejecución — comprueba las reglas `d` o `z` de esa ruta y ejecuta `systemd-tmpfiles --create`.",
+        "El temporizador de limpieza falla — comprueba `systemctl status systemd-tmpfiles-clean.timer` y su registro."
+      ]
+    },
+    "systemd-fsck": {
+      "name": "Comprobaciones de sistemas de archivos",
+      "what": "Comprueba los sistemas de archivos locales durante el arranque cuando no se desmontaron limpiamente.",
+      "ifFails": "Un sistema de archivos dañado puede no repararse al arrancar y el sistema puede no montarlo.",
+      "details": "Las unidades systemd-fsck ejecutan `fsck` en los sistemas de archivos locales antes de montarlos, usando los números de paso de `/etc/fstab`. Las unidades quotacheck recalculan las cuotas de uso de disco cuando hace falta. Un arranque normal se salta la comprobación completa si el sistema estaba limpio; una comprobación forzada puede tardar mucho.",
+      "stop": "Si paras o enmascaras estas unidades, se saltan las comprobaciones automáticas y los errores pueden crecer. El sistema de archivos raíz puede montarse en solo lectura o fallar si está dañado. No las desactives; reserva una ventana de mantenimiento si necesitas forzar una comprobación.",
+      "problems": [
+        "El arranque se queda esperando en una comprobación — déjala terminar; una comprobación forzada en un disco grande puede tardar minutos.",
+        "El sistema de archivos se monta en solo lectura — revisa `journalctl -xb` por errores de fsck y planifica una reparación sin montar desde una consola de recuperación.",
+        "quotacheck no termina — revisa las opciones de cuota de `/etc/fstab` y el tamaño del sistema de archivos, y ejecútalo durante un mantenimiento."
+      ]
+    },
+    "systemd-oomd": {
+      "name": "Gestor de presión de memoria",
+      "what": "Detiene procesos o sesiones cuando la presión de memoria se vuelve peligrosa.",
+      "ifFails": "El sistema puede quedarse sin memoria y congelarse o matar procesos de forma impredecible.",
+      "details": "systemd-oomd vigila la presión de memoria y puede detener un servicio o una sesión de usuario antes de que toda la máquina deje de responder. Usa límites de cgroup y umbrales configurados, no un simple porcentaje de memoria libre. Es una red de seguridad, no un sustituto de suficiente RAM o de límites sensatos en los servicios.",
+      "stop": "Si paras oomd, quitas ese aviso y esa protección tempranos. El sistema OOM del kernel todavía puede terminar procesos, pero normalmente más tarde y con menos criterio. Solo es seguro si vigilas la memoria de otra forma y tienes suficiente swap o margen.",
+      "problems": [
+        "Un servicio se detiene sin avisar — revisa `journalctl -u systemd-oomd -n 50 --no-pager` y el uso de memoria del servicio.",
+        "La máquina se sigue congelando — inspecciona la presión de memoria con `systemd-cgtop` y reduce los límites de los servicios o añade RAM.",
+        "oomd no está disponible — comprueba `systemctl status systemd-oomd`; no todos los kernels o contenedores lo admiten."
+      ]
+    },
+    "systemd-hostnamed": {
+      "name": "Nombre de host, idioma y zona horaria",
+      "what": "Aplica cambios de nombre de host, idioma y zona horaria cuando se piden.",
+      "ifFails": "Cambiar el nombre de host, el idioma o la zona horaria puede fallar o necesitar un reinicio.",
+      "details": "systemd-hostnamed, localed y timedated son servicios pequeños que aplican ajustes del sistema cuando usas `hostnamectl`, `localectl` o `timedatectl`. Se ejecutan cuando se piden y normalmente quedan inactivos entre cambios. No hacen falta para todas las tareas de arranque; exponen esos controles a las herramientas y al escritorio.",
+      "stop": "Si los paras, solo bloqueas los cambios hechos con esas herramientas hasta que el servicio vuelva a arrancar. El nombre de host, el idioma y la zona horaria existentes se mantienen. Es seguro dejarlos parados en un servidor que configuras a mano.",
+      "problems": [
+        "hostnamectl falla — comprueba `systemctl status systemd-hostnamed` y el mensaje de la orden.",
+        "La zona horaria no cambia — revisa `timedatectl` y `systemctl status systemd-timedated`.",
+        "El idioma se rechaza — verifica que el locale está generado y disponible en `locale -a`."
+      ]
+    },
+    "systemd-sysctl": {
+      "name": "Ajustes del kernel y módulos",
+      "what": "Aplica ajustes del kernel, carga módulos y prepara reglas de dispositivos y formatos binarios al arrancar.",
+      "ifFails": "Pueden faltar ajustes del kernel o módulos, así que la red, la seguridad o el hardware pueden comportarse mal.",
+      "details": "Este grupo aplica los valores de `/etc/sysctl.d` al arrancar, carga los módulos de `/etc/modules-load.d`, registra formatos binarios y crea nodos de dispositivo. `modprobe@.service` carga un módulo cuando algo lo pide. Son unidades internas del arranque, no servicios que gestiones a diario.",
+      "stop": "Pararlos durante una sesión no deshace los ajustes ya aplicados, y desactivarlos puede dejar el siguiente arranque sin esos ajustes o módulos. El efecto depende de lo que necesite el servidor. Déjalos activos salvo que hayas movido la misma configuración a otro mecanismo.",
+      "problems": [
+        "Un valor de sysctl no se aplica — ejecuta `sysctl --system` y revisa los archivos de `/etc/sysctl.d`.",
+        "Falta un módulo — revisa `/etc/modules-load.d` y prueba el módulo con `modprobe <módulo>`.",
+        "Un servicio falla porque falta un nodo de dispositivo — comprueba `systemd-tmpfiles` y los registros de udev."
+      ]
+    },
+    "systemd-early-boot": {
+      "name": "Preparación del arranque",
+      "what": "Prepara la máquina al arrancar: sistemas de archivos, semilla aleatoria, identidad, registros, TPM y estado del hardware.",
+      "ifFails": "El servidor puede arrancar con estado antiguo, sin datos del registro o con el sistema de archivos raíz sin preparar.",
+      "details": "Estas unidades se ejecutan al principio y casi siempre una sola vez: vuelven a montar el sistema de archivos raíz, restauran la semilla aleatoria, generan identidad y usuarios, actualizan bases de datos del registro y del hardware, amplían sistemas de archivos y configuran TPM y hibernación. Algunas solo se ejecutan en el primer arranque o si el hardware las admite. Son piezas internas del arranque y es normal verlas inactivas o terminadas después.",
+      "stop": "Desactivarlas puede romper el siguiente arranque o dejar inconsistentes la identidad, el registro y el estado del hardware. No son servicios que se paren para ahorrar recursos. Cambia la configuración de base y deja estas unidades en paz.",
+      "problems": [
+        "El arranque se detiene en una unidad temprana — lee `journalctl -xb` y busca la primera unidad que falla.",
+        "La ID de máquina o el sistema de archivos raíz cambian sin motivo — revisa la clonación de discos y el registro de arranque antes de regenerar la identidad.",
+        "Fallan unidades de TPM o hibernación — comprueba si el hardware y el kernel las admiten; en un VPS suele ser inofensivo."
+      ]
+    },
+    "console-setup": {
+      "name": "Teclado y fuente de consola",
+      "what": "Configura el teclado, la fuente de consola y la consola virtual al arrancar.",
+      "ifFails": "La consola local puede usar una distribución de teclado o una fuente equivocadas, pero el acceso SSH no se ve afectado.",
+      "details": "Estas unidades aplican la configuración de consola de Debian, la distribución del teclado y la fuente a la consola de texto local. Importan en una máquina física o una consola serie, no normalmente en un VPS en la nube. Se ejecutan al arrancar y después suelen quedar inactivas.",
+      "stop": "Si las paras, solo cambia el aspecto de la consola local y el comportamiento del teclado. No afecta a SSH, a los contenedores ni a los servicios en marcha. Es seguro desactivarlas en un servidor sin pantalla si nunca usas la consola local.",
+      "problems": [
+        "El teclado de la consola tiene la distribución equivocada — revisa `/etc/default/keyboard` y ejecuta `dpkg-reconfigure keyboard-configuration`.",
+        "La fuente de la consola no se lee — revisa `/etc/default/console-setup` y ejecuta `setupcon`.",
+        "Una unidad de consola falla al arrancar — comprueba `systemctl status console-setup` y el registro de arranque."
+      ]
+    },
+    "systemd-power": {
+      "name": "Apagado y suspensión",
+      "what": "Gestiona las solicitudes de apagado, reinicio, halt, kexec y suspensión.",
+      "ifFails": "Una solicitud de apagado o suspensión puede no completarse limpiamente.",
+      "details": "Estas unidades solo se ejecutan cuando la máquina se apaga, se reinicia o entra en suspensión. Coordinan los últimos pasos y están inactivas durante el funcionamiento normal. Verlas inactivas es lo esperado y no significa que el servidor no pueda apagarse.",
+      "stop": "Pararlas mientras el sistema funciona apenas hace nada; desactivarlas puede romper el apagado o la suspensión. No las enmascares salvo que tengas un sustituto. Usa `systemctl poweroff`, `reboot` o `suspend` con normalidad.",
+      "problems": [
+        "El servidor no se apaga — revisa `journalctl -xb` y cualquier trabajo que bloquee el apagado.",
+        "La suspensión no está disponible — comprueba la salida de `systemctl suspend` y si la máquina virtual la permite.",
+        "Una unidad de apagado falla — lee su registro con `journalctl -u systemd-shutdown -b -1`."
+      ]
+    },
+    "systemd-ask-password": {
+      "name": "Solicitudes de contraseña",
+      "what": "Muestra peticiones de contraseña durante el arranque o para operaciones privilegiadas.",
+      "ifFails": "Puede no aparecer una petición de arranque o de desbloqueo de disco, y la máquina se queda esperando.",
+      "details": "Las unidades systemd-ask-password piden contraseñas necesarias antes de que exista una sesión normal, como la de un disco cifrado o un secreto de configuración de red. La petición puede aparecer en la consola, como mensaje de pared o en un agente gráfico. En la mayoría de servidores solo la ves cuando un disco o un servicio necesita una frase de paso.",
+      "stop": "Parar el agente solo quita una forma de responder; la petición de consola puede seguir funcionando. Desactivar todas las unidades ask-password puede dejar una máquina cifrada esperando al arrancar. Asegúrate de tener acceso a la consola antes de cambiarlas.",
+      "problems": [
+        "El arranque espera una contraseña — usa la consola del proveedor o la consola serie y escribe allí la frase de paso.",
+        "No se ve ninguna petición — comprueba `systemctl status systemd-ask-password-console` y la configuración de la consola.",
+        "Se rechaza la frase de paso — verifica el dispositivo cifrado y la distribución del teclado antes de volver a intentarlo."
+      ]
+    },
+    "network-wait-online": {
+      "name": "Espera de red",
+      "what": "Espera a que la red esté en línea antes de arrancar los servicios que dependen de ella.",
+      "ifFails": "El arranque o el inicio de un servicio pueden esperar a la red hasta agotar el tiempo de espera.",
+      "details": "Estas unidades piden al gestor de red que informe cuando la conectividad está lista. Son opcionales y útiles para servicios que necesitan la red durante el arranque. Un servidor que no dependa de la red temprana puede no necesitarlas, y pueden retrasar el arranque cuando la red va lenta.",
+      "stop": "Desactivar las unidades de espera permite que el arranque siga sin esperar a la red. Los servicios que la necesitan pueden arrancar demasiado pronto y reintentar. A menudo es seguro en servidores cuyos servicios saben reconectarse.",
+      "problems": [
+        "El arranque espera dos minutos a la red — comprueba `systemctl status systemd-networkd-wait-online` y la configuración de red.",
+        "El servicio arranca antes de que haya DNS — añade una dependencia de orden o mantén la espera de red activa.",
+        "La unidad dice que no hay red aunque funcione — revisa el estado de la interfaz y las opciones de espera del gestor de red."
+      ]
     }
   },
   "screen": {

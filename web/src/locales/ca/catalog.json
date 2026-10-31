@@ -742,6 +742,126 @@
         "El gestor d’usuari es reinicia una i altra vegada — llegeix `journalctl --user -n 50 --no-pager` com aquell usuari.",
         "Falta el directori d’execució — comprova `/run/user/<uid>` i la unitat `user-runtime-dir@`."
       ]
+    },
+    "systemd-tmpfiles": {
+      "name": "Fitxers temporals",
+      "what": "Crea directoris temporals i elimina fitxers antics durant l’arrencada i amb un temporitzador.",
+      "ifFails": "Els fitxers temporals es poden acumular o poden faltar directoris esperats; els serveis que hi escriuen poden fallar.",
+      "details": "systemd-tmpfiles aplica regles de `/usr/lib/tmpfiles.d`, `/etc/tmpfiles.d` i `/run/tmpfiles.d` per crear directoris, corregir permisos i esborrar fitxers antics. Normalment s’executa al principi de l’arrencada i una altra vegada mitjançant `systemd-tmpfiles-clean.timer`. Evita que `/tmp` i `/var/tmp` creixin sense límit; no és una eina de còpia ni de neteja general de les dades de les aplicacions.",
+      "stop": "Si atures el temporitzador, només deixes de fer la neteja periòdica; si atures les unitats d’arrencada, poden faltar directoris esperats. El sistema pot seguir funcionant, però els fitxers temporals i els permisos poden quedar inconsistents. No el desactivis llevat que una altra eina gestioni aquestes rutes.",
+      "problems": [
+        "Els fitxers temporals omplen el disc — revisa `/etc/tmpfiles.d` i `/usr/lib/tmpfiles.d`, i executa `systemd-tmpfiles --clean` per aplicar les regles de neteja.",
+        "Un servei no pot escriure al seu directori d’execució — comprova les regles `d` o `z` d’aquesta ruta i executa `systemd-tmpfiles --create`.",
+        "El temporitzador de neteja falla — comprova `systemctl status systemd-tmpfiles-clean.timer` i el seu registre."
+      ]
+    },
+    "systemd-fsck": {
+      "name": "Comprovacions de sistemes de fitxers",
+      "what": "Comprova els sistemes de fitxers locals durant l’arrencada quan no es van desmuntar net.",
+      "ifFails": "Un sistema de fitxers malmès pot no reparar-se en arrencar i el sistema pot no muntar-lo.",
+      "details": "Les unitats systemd-fsck executen `fsck` als sistemes de fitxers locals abans de muntar-los, usant els números de pas de `/etc/fstab`. Les unitats quotacheck recalculen les quotes d’ús de disc quan cal. Una arrencada normal s’estalvia la comprovació completa si el sistema estava net; una comprovació forçada pot trigar molt.",
+      "stop": "Si atures o emmascares aquestes unitats, saltes les comprovacions automàtiques i els errors poden créixer. El sistema de fitxers arrel es pot muntar en només lectura o fallar si està malmès. No les desactivis; reserva una finestra de manteniment si necessites forçar una comprovació.",
+      "problems": [
+        "L’arrencada s’espera en una comprovació — deixa-la acabar; una comprovació forçada en un disc gran pot trigar minuts.",
+        "El sistema de fitxers es munta en només lectura — revisa `journalctl -xb` per errors de fsck i planifica una reparació sense muntar des d’una consola de recuperació.",
+        "quotacheck no acaba — revisa les opcions de quota de `/etc/fstab` i la mida del sistema de fitxers, i executa’l durant un manteniment."
+      ]
+    },
+    "systemd-oomd": {
+      "name": "Gestor de pressió de memòria",
+      "what": "Atura processos o sessions quan la pressió de memòria es torna perillosa.",
+      "ifFails": "El sistema es pot quedar sense memòria i congelar-se o matar processos de manera impredictible.",
+      "details": "systemd-oomd vigila la pressió de memòria i pot aturar un servei o una sessió d’usuari abans que tota la màquina deixi de respondre. Fa servir límits de cgroup i llindars configurats, no un simple percentatge de memòria lliure. És una xarxa de seguretat, no un substitut de prou RAM o de límits sensats als serveis.",
+      "stop": "Si atures oomd, treus aquest avís i aquesta protecció primerencs. El sistema OOM del nucli encara pot aturar processos, però normalment més tard i amb menys criteri. Només és segur si vigiles la memòria d’una altra manera i tens prou swap o marge.",
+      "problems": [
+        "Un servei s’atura sense avisar — revisa `journalctl -u systemd-oomd -n 50 --no-pager` i l’ús de memòria del servei.",
+        "La màquina es continua congelant — inspecciona la pressió de memòria amb `systemd-cgtop` i redueix els límits dels serveis o afegeix RAM.",
+        "oomd no està disponible — comprova `systemctl status systemd-oomd`; no tots els nuclis o contenidors l’admeten."
+      ]
+    },
+    "systemd-hostnamed": {
+      "name": "Nom de host, idioma i zona horària",
+      "what": "Aplica canvis de nom de host, idioma i zona horària quan es demanen.",
+      "ifFails": "Canviar el nom de host, l’idioma o la zona horària pot fallar o necessitar un reinici.",
+      "details": "systemd-hostnamed, localed i timedated són serveis petits que apliquen ajustos del sistema quan fas servir `hostnamectl`, `localectl` o `timedatectl`. S’executen quan es demanen i normalment queden inactius entre canvis. No calen per a totes les tasques d’arrencada; exposen aquests controls a les eines i a l’escriptori.",
+      "stop": "Si els atures, només bloques els canvis fets amb aquestes eines fins que el servei torni a arrencar. El nom de host, l’idioma i la zona horària existents es mantenen. És segur deixar-los aturats en un servidor que configures a mà.",
+      "problems": [
+        "hostnamectl falla — comprova `systemctl status systemd-hostnamed` i el missatge de l’ordre.",
+        "La zona horària no canvia — revisa `timedatectl` i `systemctl status systemd-timedated`.",
+        "L’idioma es rebutja — verifica que el locale està generat i disponible a `locale -a`."
+      ]
+    },
+    "systemd-sysctl": {
+      "name": "Paràmetres del nucli i mòduls",
+      "what": "Aplica paràmetres del nucli, carrega mòduls i prepara regles de dispositius i formats binaris en arrencar.",
+      "ifFails": "Poden faltar paràmetres del nucli o mòduls, així que la xarxa, la seguretat o el maquinari es poden comportar malament.",
+      "details": "Aquest grup aplica els valors de `/etc/sysctl.d` en arrencar, carrega els mòduls de `/etc/modules-load.d`, registra formats binaris i crea nodes de dispositiu. `modprobe@.service` carrega un mòdul quan alguna cosa el demana. Són unitats internes de l’arrencada, no serveis que gestionis cada dia.",
+      "stop": "Aturar-les durant una sessió no desfà els ajustos ja aplicats, i desactivar-les pot deixar la propera arrencada sense aquests ajustos o mòduls. L’efecte depèn del que necessiti el servidor. Deixa-les actives llevat que hagis mogut la mateixa configuració a un altre mecanisme.",
+      "problems": [
+        "Un valor de sysctl no s’aplica — executa `sysctl --system` i revisa els fitxers de `/etc/sysctl.d`.",
+        "Falta un mòdul — revisa `/etc/modules-load.d` i prova el mòdul amb `modprobe <mòdul>`.",
+        "Un servei falla perquè falta un node de dispositiu — comprova `systemd-tmpfiles` i els registres d’udev."
+      ]
+    },
+    "systemd-early-boot": {
+      "name": "Preparació de l’arrencada",
+      "what": "Prepara la màquina en arrencar: sistemes de fitxers, llavor aleatòria, identitat, registres, TPM i estat del maquinari.",
+      "ifFails": "El servidor pot arrencar amb estat antic, sense dades del registre o amb el sistema de fitxers arrel sense preparar.",
+      "details": "Aquestes unitats s’executen al principi i gairebé sempre una sola vegada: tornen a muntar el sistema de fitxers arrel, restauren la llavor aleatòria, generen identitat i usuaris, actualitzen bases de dades del registre i del maquinari, amplien sistemes de fitxers i configuren TPM i hibernació. Algunes només s’executen en la primera arrencada o si el maquinari les admet. Són peces internes de l’arrencada i és normal veure-les inactives o acabades després.",
+      "stop": "Desactivar-les pot trencar la propera arrencada o deixar inconsistents la identitat, el registre i l’estat del maquinari. No són serveis que s’aturin per estalviar recursos. Canvia la configuració de base i deixa aquestes unitats tranquil·les.",
+      "problems": [
+        "L’arrencada s’atura en una unitat primerenca — llegeix `journalctl -xb` i busca la primera unitat que falla.",
+        "La ID de màquina o el sistema de fitxers arrel canvien sense motiu — revisa la clonació de discs i el registre d’arrencada abans de regenerar la identitat.",
+        "Fallen unitats de TPM o hibernació — comprova si el maquinari i el nucli les admeten; en un VPS sol ser inofensiu."
+      ]
+    },
+    "console-setup": {
+      "name": "Teclat i tipus de lletra de consola",
+      "what": "Configura el teclat, el tipus de lletra de consola i la consola virtual en arrencar.",
+      "ifFails": "La consola local pot fer servir una distribució de teclat o un tipus de lletra equivocats, però l’accés SSH no es veu afectat.",
+      "details": "Aquestes unitats apliquen la configuració de consola de Debian, la distribució del teclat i el tipus de lletra a la consola de text local. Importen en una màquina física o una consola sèrie, no normalment en un VPS al núvol. S’executen en arrencar i després solen quedar inactives.",
+      "stop": "Si les atures, només canvia l’aspecte de la consola local i el comportament del teclat. No afecta SSH, els contenidors ni els serveis en marxa. És segur desactivar-les en un servidor sense pantalla si mai no fas servir la consola local.",
+      "problems": [
+        "El teclat de la consola té la distribució equivocada — revisa `/etc/default/keyboard` i executa `dpkg-reconfigure keyboard-configuration`.",
+        "El tipus de lletra de la consola no es llegeix — revisa `/etc/default/console-setup` i executa `setupcon`.",
+        "Una unitat de consola falla en arrencar — comprova `systemctl status console-setup` i el registre d’arrencada."
+      ]
+    },
+    "systemd-power": {
+      "name": "Apagada i suspensió",
+      "what": "Gestiona les sol·licituds d’apagada, reinici, halt, kexec i suspensió.",
+      "ifFails": "Una sol·licitud d’apagada o suspensió pot no completar-se netament.",
+      "details": "Aquestes unitats només s’executen quan la màquina s’apaga, es reinicia o entra en suspensió. Coordinen els últims passos i estan inactives durant el funcionament normal. Veure-les inactives és l’esperat i no vol dir que el servidor no es pugui apagar.",
+      "stop": "Aturar-les mentre el sistema funciona gairebé no fa res; desactivar-les pot trencar l’apagada o la suspensió. No les emmascaris llevat que tinguis un substitut. Fes servir `systemctl poweroff`, `reboot` o `suspend` amb normalitat.",
+      "problems": [
+        "El servidor no s’apaga — revisa `journalctl -xb` i qualsevol feina que bloquegi l’apagada.",
+        "La suspensió no està disponible — comprova la sortida de `systemctl suspend` i si la màquina virtual la permet.",
+        "Una unitat d’apagada falla — llegeix el seu registre amb `journalctl -u systemd-shutdown -b -1`."
+      ]
+    },
+    "systemd-ask-password": {
+      "name": "Sol·licituds de contrasenya",
+      "what": "Mostra peticions de contrasenya durant l’arrencada o per a operacions privilegiades.",
+      "ifFails": "Pot no aparèixer una petició d’arrencada o de desbloqueig de disc, i la màquina es queda esperant.",
+      "details": "Les unitats systemd-ask-password demanen contrasenyes necessàries abans que existeixi una sessió normal, com la d’un disc xifrat o un secret de configuració de xarxa. La petició pot aparèixer a la consola, com a missatge de paret o en un agent gràfic. En la majoria de servidors només la veus quan un disc o un servei necessita una frase de pas.",
+      "stop": "Aturar l’agent només treu una manera de respondre; la petició de consola pot seguir funcionant. Desactivar totes les unitats ask-password pot deixar una màquina xifrada esperant en arrencar. Assegura’t que tens accés a la consola abans de canviar-les.",
+      "problems": [
+        "L’arrencada espera una contrasenya — usa la consola del proveïdor o la consola sèrie i escriu-hi la frase de pas.",
+        "No es veu cap petició — comprova `systemctl status systemd-ask-password-console` i la configuració de la consola.",
+        "Es rebutja la frase de pas — verifica el dispositiu xifrat i la distribució del teclat abans de tornar-ho a provar."
+      ]
+    },
+    "network-wait-online": {
+      "name": "Espera de xarxa",
+      "what": "Espera que la xarxa estigui en línia abans d’arrencar els serveis que en depenen.",
+      "ifFails": "L’arrencada o l’inici d’un servei poden esperar la xarxa fins a esgotar el temps d’espera.",
+      "details": "Aquestes unitats demanen al gestor de xarxa que informi quan la connectivitat està a punt. Són opcionals i útils per a serveis que necessiten la xarxa durant l’arrencada. Un servidor que no depengui de la xarxa primerenca pot no necessitar-les, i poden endarrerir l’arrencada quan la xarxa va lenta.",
+      "stop": "Desactivar les unitats d’espera permet que l’arrencada continuï sense esperar la xarxa. Els serveis que la necessiten poden arrencar massa aviat i reintentar. Sovint és segur en servidors els serveis dels quals saben reconnectar-se.",
+      "problems": [
+        "L’arrencada espera dos minuts la xarxa — comprova `systemctl status systemd-networkd-wait-online` i la configuració de xarxa.",
+        "El servei arrenca abans que hi hagi DNS — afegeix una dependència d’ordre o mantén l’espera de xarxa activa.",
+        "La unitat diu que no hi ha xarxa tot i funcionar — revisa l’estat de la interfície i les opcions d’espera del gestor de xarxa."
+      ]
     }
   },
   "screen": {

@@ -32,6 +32,37 @@ describe('lookupService', () => {
     expect(lookupService('user-runtime-dir@1000.service')?.id).toBe('user-session')
   })
 
+  it('matches the grouped internal systemd units of this batch', () => {
+    expect(lookupService('systemd-tmpfiles-setup.service')?.id).toBe('systemd-tmpfiles')
+    expect(lookupService('systemd-fsck-root.service')?.id).toBe('systemd-fsck')
+    expect(lookupService('systemd-quotacheck.service')?.id).toBe('systemd-fsck')
+    expect(lookupService('systemd-oomd.service')?.id).toBe('systemd-oomd')
+    expect(lookupService('systemd-hostnamed.service')?.id).toBe('systemd-hostnamed')
+    expect(lookupService('systemd-timedated.service')?.id).toBe('systemd-hostnamed')
+    expect(lookupService('systemd-modules-load.service')?.id).toBe('systemd-sysctl')
+    expect(lookupService('modprobe@drm.service')?.id).toBe('systemd-sysctl')
+    expect(lookupService('systemd-remount-fs.service')?.id).toBe('systemd-early-boot')
+    expect(lookupService('systemd-journal-flush.service')?.id).toBe('systemd-early-boot')
+    expect(lookupService('console-setup.service')?.id).toBe('console-setup')
+    expect(lookupService('systemd-poweroff.service')?.id).toBe('systemd-power')
+    expect(lookupService('systemd-ask-password-console.service')?.id).toBe('systemd-ask-password')
+    expect(lookupService('systemd-networkd-wait-online.service')?.id).toBe('network-wait-online')
+    expect(lookupService('NetworkManager-wait-online.service')?.id).toBe('network-wait-online')
+  })
+
+  it('keeps the exact systemd units of the existing entries', () => {
+    for (const id of [
+      'systemd-journald',
+      'systemd-logind',
+      'systemd-networkd',
+      'systemd-resolved',
+      'systemd-timesyncd',
+      'systemd-udevd',
+    ]) {
+      expect(lookupService(`${id}.service`)?.id).toBe(id)
+    }
+  })
+
   it('prefers an exact unit over a pattern', () => {
     expect(lookupService('mysql.service')?.id).toBe('mariadb')
     expect(lookupService('docker.service')?.id).toBe('docker')
@@ -114,6 +145,16 @@ describe('catalog translations', () => {
       'plymouth',
       'user-session',
       'getty',
+      'systemd-tmpfiles',
+      'systemd-fsck',
+      'systemd-oomd',
+      'systemd-hostnamed',
+      'systemd-sysctl',
+      'systemd-early-boot',
+      'console-setup',
+      'systemd-power',
+      'systemd-ask-password',
+      'network-wait-online',
     ]
     for (const language of ['ca', 'es', 'en']) {
       const t = i18n.getFixedT(language, 'catalog')

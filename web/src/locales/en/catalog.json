@@ -742,6 +742,126 @@
         "The user manager keeps restarting — read `journalctl --user -n 50 --no-pager` as that user.",
         "The runtime directory is missing — check `/run/user/<uid>` and the `user-runtime-dir@` unit."
       ]
+    },
+    "systemd-tmpfiles": {
+      "name": "Temporary files",
+      "what": "Creates temporary directories and removes old files during boot and on a timer.",
+      "ifFails": "Temporary files may pile up or expected directories may be missing; services that write to them can fail.",
+      "details": "systemd-tmpfiles applies rules from `/usr/lib/tmpfiles.d`, `/etc/tmpfiles.d` and `/run/tmpfiles.d` to create directories, fix permissions and delete old files. It normally runs early at boot and again through `systemd-tmpfiles-clean.timer`. It keeps `/tmp` and `/var/tmp` from growing forever; it is not a general backup or cleanup tool for application data.",
+      "stop": "Stopping the timer only stops periodic cleanup; stopping the boot units can leave expected directories missing. The system may still run, but temporary files and permissions can become inconsistent. Do not disable it unless you have another tool that manages those paths.",
+      "problems": [
+        "Temporary files fill the disk — check `/etc/tmpfiles.d` and `/usr/lib/tmpfiles.d`, then run `systemd-tmpfiles --clean` to apply the cleanup rules.",
+        "A service cannot write to its runtime directory — verify the `d` or `z` rules for that path and run `systemd-tmpfiles --create`.",
+        "The cleanup timer fails — check `systemctl status systemd-tmpfiles-clean.timer` and its log."
+      ]
+    },
+    "systemd-fsck": {
+      "name": "Boot filesystem checks",
+      "what": "Checks local filesystems during boot when they were not cleanly unmounted.",
+      "ifFails": "A damaged filesystem may not be repaired at boot and the system can fail to mount it.",
+      "details": "systemd-fsck units run `fsck` on local filesystems before they are mounted, using the pass numbers in `/etc/fstab`. The quotacheck units recalculate disk-usage quotas when needed. A normal boot skips the full check when the filesystem was clean; a forced check can take a long time.",
+      "stop": "Stopping or masking these units skips automatic checks and can let errors grow. The root filesystem may still mount read-only or fail if it is damaged. Do not disable them; schedule a maintenance window if you need to force a check.",
+      "problems": [
+        "Boot waits at a filesystem check — let it finish; a forced check on a large disk can take minutes.",
+        "The filesystem is mounted read-only — check `journalctl -xb` for fsck errors and plan an offline repair from a recovery console.",
+        "quotacheck keeps running — check `/etc/fstab` quota options and the filesystem size, then run it during maintenance."
+      ]
+    },
+    "systemd-oomd": {
+      "name": "Memory pressure manager",
+      "what": "Kills processes or sessions when memory pressure becomes dangerous.",
+      "ifFails": "The system may run out of memory and freeze or kill processes unpredictably.",
+      "details": "systemd-oomd watches memory pressure and can stop a selected service or user session before the whole machine becomes unresponsive. It uses cgroup limits and configured thresholds, not a simple free-memory percentage. It is a safety net, not a replacement for enough RAM or sensible service limits.",
+      "stop": "Stopping oomd removes that early warning and protection. The kernel OOM killer can still terminate processes, but usually later and with less choice. It is safe only if you monitor memory another way and have enough swap or headroom.",
+      "problems": [
+        "A service is killed unexpectedly — check `journalctl -u systemd-oomd -n 50 --no-pager` and the memory use of the service.",
+        "The machine still freezes — inspect memory pressure with `systemd-cgtop` and reduce service limits or add RAM.",
+        "oomd is unavailable — check `systemctl status systemd-oomd`; not every kernel or container supports it."
+      ]
+    },
+    "systemd-hostnamed": {
+      "name": "Hostname and locale settings",
+      "what": "Applies hostname, locale and timezone changes on demand.",
+      "ifFails": "Changing the hostname, locale or timezone may fail or need a reboot.",
+      "details": "systemd-hostnamed, localed and timedated are small services that apply system settings when you use `hostnamectl`, `localectl` or `timedatectl`. They run on demand and normally stay inactive between changes. They are not needed for every boot task; they expose those controls to tools and the desktop.",
+      "stop": "Stopping them only blocks changes made through those tools until the service starts again. Existing hostname, locale and timezone settings remain in place. It is safe to leave them stopped on a server you configure by hand.",
+      "problems": [
+        "hostnamectl fails — check `systemctl status systemd-hostnamed` and the message from the command.",
+        "The timezone did not change — check `timedatectl` and `systemctl status systemd-timedated`.",
+        "The locale is rejected — verify the locale is generated and available in `locale -a`."
+      ]
+    },
+    "systemd-sysctl": {
+      "name": "Kernel settings and modules",
+      "what": "Applies kernel settings, loads modules and prepares device and binary-format rules at boot.",
+      "ifFails": "Kernel settings or modules may be missing, so networking, security or hardware features can behave incorrectly.",
+      "details": "This group applies `/etc/sysctl.d` values at boot, loads modules listed in `/etc/modules-load.d`, registers binary formats and creates device nodes. `modprobe@.service` loads a module on demand when something asks for it. These are boot-time plumbing units, not services you manage day to day.",
+      "stop": "Stopping them during a session does not undo settings already applied, and disabling them can leave the next boot without those settings or modules. The effect depends on what the server needs. Keep them enabled unless you have moved the same configuration to another mechanism.",
+      "problems": [
+        "A sysctl value is not applied — run `sysctl --system` and check the files under `/etc/sysctl.d`.",
+        "A module is missing — check `/etc/modules-load.d` and test the module with `modprobe <module>`.",
+        "A service fails because a device node is missing — check `systemd-tmpfiles` and the udev logs."
+      ]
+    },
+    "systemd-early-boot": {
+      "name": "Early boot setup",
+      "what": "Prepares the machine at boot: filesystems, random seed, machine identity, journals, TPM and hardware state.",
+      "ifFails": "The server may boot with stale state, missing journal data or an unprepared root filesystem.",
+      "details": "These units run early and mostly once: remount the root filesystem, restore the random seed, generate machine identity and users, update journal and hardware databases, grow filesystems and configure TPM and hibernation state. Some units run only on first boot or when the hardware supports them. They are internal boot plumbing and normal to see as inactive or exited later.",
+      "stop": "Disabling them can break the next boot or leave identity, journal and hardware state inconsistent. They are not services you stop to save resources. Change the underlying configuration instead and leave these units alone.",
+      "problems": [
+        "The boot stops at an early unit — read `journalctl -xb` and look for the first failed unit.",
+        "The machine ID or root filesystem changed unexpectedly — check disk cloning and the boot log before regenerating identity.",
+        "TPM or hibernation units fail — check whether the hardware and kernel support them; a failure is often harmless on a VPS."
+      ]
+    },
+    "console-setup": {
+      "name": "Console keyboard and font",
+      "what": "Configures the keyboard, console font and virtual console at boot.",
+      "ifFails": "The local console may use the wrong keyboard layout or font, but SSH access is not affected.",
+      "details": "These units apply Debian console settings, keyboard layout and font to the local text console. They matter on a physical machine or a serial console, not usually on a cloud VPS. They run at boot and are normally inactive afterwards.",
+      "stop": "Stopping them only changes the local console appearance and keyboard behaviour. It does not affect SSH, containers or running services. It is safe to disable them on a headless server if you never use the local console.",
+      "problems": [
+        "The console keyboard has the wrong layout — check `/etc/default/keyboard` and run `dpkg-reconfigure keyboard-configuration`.",
+        "The console font is unreadable — check `/etc/default/console-setup` and run `setupcon`.",
+        "A console unit fails at boot — check `systemctl status console-setup` and the boot log."
+      ]
+    },
+    "systemd-power": {
+      "name": "Power and sleep",
+      "what": "Handles shutdown, reboot, halt, kexec and sleep requests.",
+      "ifFails": "A shutdown or suspend request may not complete cleanly.",
+      "details": "These units run only when the machine is shutting down, rebooting or entering sleep. They coordinate the final steps and are inactive during normal operation. Seeing them inactive is expected and does not mean the server cannot shut down.",
+      "stop": "Stopping them while the system is running has little effect; disabling them can break shutdown or sleep. Do not mask them unless you have a replacement. Use `systemctl poweroff`, `reboot` or `suspend` normally.",
+      "problems": [
+        "The server does not shut down — check `journalctl -xb` and any failed job blocking shutdown.",
+        "Suspend is not supported — check `systemctl suspend` output and whether the virtual machine exposes suspend.",
+        "A shutdown unit failed — read its log with `journalctl -u systemd-shutdown -b -1`."
+      ]
+    },
+    "systemd-ask-password": {
+      "name": "Password prompts",
+      "what": "Shows password prompts during boot or for privileged operations.",
+      "ifFails": "A boot or disk-unlock prompt may not appear, leaving the machine waiting.",
+      "details": "systemd-ask-password units ask for passwords needed before a normal session exists, such as an encrypted disk or a network configuration secret. The prompt can appear on the console, a wall message or a graphical agent. On most servers you only see it when a disk or service needs a passphrase.",
+      "stop": "Stopping the agent only removes one way to answer prompts; the console prompt may still work. Disabling all ask-password units can leave an encrypted machine waiting at boot. Make sure you have console access before changing them.",
+      "problems": [
+        "Boot waits for a password — use the provider console or serial console and type the passphrase there.",
+        "No prompt is visible — check `systemctl status systemd-ask-password-console` and the console configuration.",
+        "A passphrase is rejected — verify the encrypted device and keyboard layout before retrying."
+      ]
+    },
+    "network-wait-online": {
+      "name": "Network wait-online",
+      "what": "Waits for the network to be online before dependent services start.",
+      "ifFails": "Boot or a service start can wait for the network until it times out.",
+      "details": "These units ask the network manager to report when connectivity is ready. They are optional and useful for services that need the network during boot. A server that does not depend on early networking may not need them, and they can delay boot when the network is slow.",
+      "stop": "Disabling the wait-online units lets boot continue without waiting for the network. Services that need the network may start too early and retry. It is often safe on servers whose services handle reconnects.",
+      "problems": [
+        "Boot waits two minutes for the network — check `systemctl status systemd-networkd-wait-online` and the network configuration.",
+        "The service starts before DNS is ready — add an ordering dependency or keep wait-online enabled.",
+        "The unit reports offline while the network works — check the interface state and the manager's wait-online options."
+      ]
     }
   },
   "screen": {

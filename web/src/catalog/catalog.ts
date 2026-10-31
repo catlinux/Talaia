@@ -735,6 +735,134 @@ export const catalog: CatalogEntry[] = [
     importance: 'important',
     unitPatterns: [/^user@/, /^user-runtime-dir@/],
   },
+  {
+    id: 'systemd-tmpfiles',
+    kind: 'service',
+    category: 'system',
+    importance: 'important',
+    unitPatterns: [/^systemd-tmpfiles/],
+  },
+  {
+    id: 'systemd-fsck',
+    kind: 'service',
+    category: 'system',
+    importance: 'important',
+    unitPatterns: [/^systemd-fsck/, /^systemd-quotacheck/],
+  },
+  {
+    id: 'systemd-oomd',
+    kind: 'service',
+    category: 'system',
+    importance: 'important',
+    units: ['systemd-oomd'],
+  },
+  {
+    id: 'systemd-hostnamed',
+    kind: 'service',
+    category: 'system',
+    importance: 'optional',
+    units: ['systemd-hostnamed', 'systemd-localed', 'systemd-timedated'],
+  },
+  {
+    id: 'systemd-sysctl',
+    kind: 'service',
+    category: 'system',
+    importance: 'important',
+    units: [
+      'systemd-sysctl',
+      'systemd-modules-load',
+      'systemd-binfmt',
+      'kmod-static-nodes',
+      'ldconfig',
+    ],
+    unitPatterns: [/^modprobe@/],
+  },
+  {
+    id: 'systemd-early-boot',
+    kind: 'service',
+    category: 'system',
+    importance: 'important',
+    units: [
+      'systemd-remount-fs',
+      'systemd-random-seed',
+      'systemd-firstboot',
+      'systemd-machine-id-commit',
+      'systemd-sysusers',
+      'systemd-update-done',
+      'systemd-journal-flush',
+      'systemd-journal-catalog-update',
+      'systemd-hwdb-update',
+      'systemd-pstore',
+      'systemd-growfs-root',
+      'systemd-repart',
+      'systemd-sysext',
+      'systemd-confext',
+      'systemd-pcrmachine',
+      'systemd-pcrphase',
+      'systemd-pcrphase-initrd',
+      'systemd-pcrphase-sysinit',
+      'systemd-tpm2-setup',
+      'systemd-tpm2-setup-early',
+      'systemd-battery-check',
+      'systemd-bsod',
+      'systemd-initctl',
+      'systemd-rfkill',
+      'systemd-network-generator',
+      'systemd-networkd-persistent-storage',
+      'systemd-user-sessions',
+      'systemd-udev-trigger',
+      'systemd-udev-settle',
+      'systemd-udev-load-credentials',
+      'systemd-hibernate-clear',
+      'systemd-hibernate-resume',
+      'systemd-soft-reboot',
+      'systemd-update-utmp',
+    ],
+  },
+  {
+    id: 'console-setup',
+    kind: 'service',
+    category: 'system',
+    importance: 'optional',
+    units: [
+      'systemd-vconsole-setup',
+      'console-setup',
+      'keyboard-setup',
+      'kbd',
+      'console-screen',
+      'setvtrgb',
+    ],
+  },
+  {
+    id: 'systemd-power',
+    kind: 'service',
+    category: 'system',
+    importance: 'important',
+    units: [
+      'systemd-poweroff',
+      'systemd-reboot',
+      'systemd-halt',
+      'systemd-kexec',
+      'systemd-suspend',
+      'systemd-hibernate',
+      'systemd-hybrid-sleep',
+      'systemd-suspend-then-hibernate',
+    ],
+  },
+  {
+    id: 'systemd-ask-password',
+    kind: 'service',
+    category: 'system',
+    importance: 'optional',
+    unitPatterns: [/^systemd-ask-password/],
+  },
+  {
+    id: 'network-wait-online',
+    kind: 'service',
+    category: 'network',
+    importance: 'optional',
+    units: ['systemd-networkd-wait-online', 'NetworkManager-wait-online'],
+  },
 ]
 
 const docsById: Partial<Record<string, string>> = {
@@ -837,6 +965,26 @@ const docsById: Partial<Record<string, string>> = {
   initrd: 'https://manpages.debian.org/update-initramfs.8',
   plymouth: 'https://www.freedesktop.org/wiki/Software/Plymouth/',
   'user-session': 'https://www.freedesktop.org/software/systemd/man/latest/systemd.special.html',
+  'systemd-tmpfiles':
+    'https://www.freedesktop.org/software/systemd/man/latest/systemd-tmpfiles.html',
+  'systemd-fsck':
+    'https://www.freedesktop.org/software/systemd/man/latest/systemd-fsck@.service.html',
+  'systemd-oomd':
+    'https://www.freedesktop.org/software/systemd/man/latest/systemd-oomd.service.html',
+  'systemd-hostnamed':
+    'https://www.freedesktop.org/software/systemd/man/latest/systemd-hostnamed.service.html',
+  'systemd-sysctl':
+    'https://www.freedesktop.org/software/systemd/man/latest/systemd-sysctl.service.html',
+  'systemd-early-boot':
+    'https://www.freedesktop.org/software/systemd/man/latest/systemd.special.html',
+  'console-setup':
+    'https://www.freedesktop.org/software/systemd/man/latest/systemd-vconsole-setup.service.html',
+  'systemd-power':
+    'https://www.freedesktop.org/software/systemd/man/latest/systemd-poweroff.service.html',
+  'systemd-ask-password':
+    'https://www.freedesktop.org/software/systemd/man/latest/systemd-ask-password.html',
+  'network-wait-online':
+    'https://www.freedesktop.org/software/systemd/man/latest/systemd-networkd-wait-online.service.html',
 }
 
 for (const entry of catalog) {
