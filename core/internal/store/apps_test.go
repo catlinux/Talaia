@@ -326,6 +326,65 @@ func TestDeploymentNumberingLogAndSupersede(t *testing.T) {
 	}
 }
 
+func TestClaimNextDeploymentRespectsActiveApps(t *testing.T) {
+	s := newTestStore(t)
+	ctx := context.Background()
+	firstApp := createTestApp(t, s, newTestServerID(t, s))
+	secondApp := createTestApp(t, s, firstApp.ServerID)
+
+	first, err := s.CreateDeployment(ctx, Deployment{AppID: firstApp.ID, Trigger: "create"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	second, err := s.CreateDeployment(ctx, Deployment{AppID: firstApp.ID, Trigger: "push"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	other, err := s.CreateDeployment(ctx, Deployment{AppID: secondApp.ID, Trigger: "create"})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	claimed, err := s.ClaimNextDeployment(ctx)
+	if err != nil {
+		t.Fatalf("first claim: %v", err)
+	}
+	if claimed.State != DeploymentBuilding || claimed.StartedAt.IsZero() {
+		t.Fatalf("claimed = %+v", claimed)
+	}
+	if claimed.ID != first.ID && claimed.ID != other.ID {
+		t.Fatalf("claimed %s, want one of the first deployments", claimed.ID)
+	}
+
+	next, err := s.ClaimNextDeployment(ctx)
+	if err != nil {
+		t.Fatalf("second claim: %v", err)
+	}
+	if next.AppID == claimed.AppID {
+		t.Fatalf("claimed another deployment of the busy app %s", claimed.AppID)
+	}
+
+	if _, err := s.ClaimNextDeployment(ctx); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("third claim = %v, want ErrNotFound", err)
+	}
+
+	if _, err := s.FailInterruptedDeployments(ctx); err != nil {
+		t.Fatal(err)
+	}
+	got, err := s.GetDeployment(ctx, claimed.ID)
+	if err != nil || got.State != DeploymentFailed || got.FinishedAt.IsZero() {
+		t.Fatalf("interrupted deployment = %+v, %v", got, err)
+	}
+
+	recovered, err := s.ClaimNextDeployment(ctx)
+	if err != nil {
+		t.Fatalf("claim after failure: %v", err)
+	}
+	if recovered.ID != second.ID && recovered.ID != other.ID {
+		t.Fatalf("recovered %s", recovered.ID)
+	}
+}
+
 func TestCreateDeploymentAllocatesConcurrentNumbers(t *testing.T) {
 	s := newTestStore(t)
 	ctx := context.Background()

@@ -656,3 +656,15 @@ func TestServeTracksTheInventoryFacts(t *testing.T) {
 	stream.close()
 	waitServe(t, done)
 }
+
+func TestProxyModeFromInventory(t *testing.T) {
+	info := AgentInfo{}
+	info.applyInventory(&agentv1.Inventory{Proxy: &agentv1.ProxyStatus{Mode: agentv1.ProxyMode_PROXY_MODE_MANAGED}})
+	if info.ProxyMode != agentv1.ProxyMode_PROXY_MODE_MANAGED {
+		t.Errorf("proxy mode = %v", info.ProxyMode)
+	}
+	info.applyInventory(&agentv1.Inventory{})
+	if info.ProxyMode != agentv1.ProxyMode_PROXY_MODE_UNSPECIFIED {
+		t.Errorf("proxy mode without inventory = %v", info.ProxyMode)
+	}
+}

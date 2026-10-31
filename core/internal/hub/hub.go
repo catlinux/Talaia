@@ -139,6 +139,9 @@ type AgentInfo struct {
 	AptListsUpdatedAt time.Time
 	// HostTerminal is true when the agent accepts terminal sessions on the host.
 	HostTerminal bool
+	// ProxyMode is how apps are published on the server; unspecified when the
+	// agent has not reported it.
+	ProxyMode agentv1.ProxyMode
 	// ContainerStats is the last sample of the running containers, by short id;
 	// StatsAt says when it was taken.
 	ContainerStats map[string]*agentv1.ContainerStat
@@ -181,6 +184,11 @@ func (info *AgentInfo) applyInventory(inventory *agentv1.Inventory) {
 	info.AdoptedStacks = inventory.GetAdoptedStacks()
 	info.BrokenStacks = inventory.GetBrokenStacks()
 	info.HostTerminal = inventory.GetHostTerminal()
+	if proxy := inventory.GetProxy(); proxy != nil {
+		info.ProxyMode = proxy.GetMode()
+	} else {
+		info.ProxyMode = agentv1.ProxyMode_PROXY_MODE_UNSPECIFIED
+	}
 
 	if summary := inventory.GetApt(); summary == nil {
 		info.AptKnown = false
@@ -343,6 +351,17 @@ func (h *Hub) Dispatch(serverID string, msg *agentv1.CoreMsg) error {
 	default:
 		return ErrAgentBusy
 	}
+}
+
+// ProxyMode returns the mode the agent of a server reported, or unspecified
+// when the server is not connected.
+func (h *Hub) ProxyMode(_ context.Context, serverID string) agentv1.ProxyMode {
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+	if info, ok := h.agents[serverID]; ok {
+		return info.ProxyMode
+	}
+	return agentv1.ProxyMode_PROXY_MODE_UNSPECIFIED
 }
 
 // Connected returns a copy of the connected agents, ordered by hostname.

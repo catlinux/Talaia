@@ -27,6 +27,7 @@ import (
 	"github.com/catlinux/Talaia/core/internal/ca"
 	"github.com/catlinux/Talaia/core/internal/checks"
 	"github.com/catlinux/Talaia/core/internal/config"
+	"github.com/catlinux/Talaia/core/internal/deploy"
 	"github.com/catlinux/Talaia/core/internal/hub"
 	"github.com/catlinux/Talaia/core/internal/install"
 	"github.com/catlinux/Talaia/core/internal/jobs"
@@ -112,6 +113,7 @@ type panelOptions struct {
 	Metrics        *api.MetricsDeps
 	Alerts         *api.AlertsDeps
 	System         *api.SystemDeps
+	Hooks          *api.HooksDeps
 	Origins        []string
 	TLS            bool
 	Limiter        *api.RateLimiter
@@ -162,6 +164,7 @@ func newCoreRouter(st *store.Store, agents api.LiveAgents, options panelOptions)
 		Metrics:            options.Metrics,
 		Alerts:             options.Alerts,
 		System:             options.System,
+		Hooks:              options.Hooks,
 		Authz: api.NewAuthorizer(api.AuthorizerDeps{
 			Bindings: st,
 			Servers:  st,
@@ -380,6 +383,27 @@ func serve() error {
 		logger.Info("notifications started")
 		panel.Alerts = &api.AlertsDeps{Store: st, Box: box, Audit: st, Hooks: engine, Checks: runner, Notifier: worker, Servers: st, Now: time.Now}
 		panel.Containers = &api.ContainerDeps{Agents: agentHub, Dispatcher: agentHub, Jobs: st, Audit: st, Servers: st, Alerts: engine}
+
+		deployer := deploy.New(deploy.Options{
+			Store:  st,
+			Agent:  deploy.NewHubAgent(deploy.HubAgentOptions{Dispatcher: agentHub, Jobs: st}),
+			Box:    box,
+			Modes:  agentHub,
+			Logger: logger,
+		})
+		go func() {
+			if err := deployer.Run(ctx); err != nil && ctx.Err() == nil {
+				logger.Error("deployment worker stopped", "error", err)
+			}
+		}()
+		panel.Hooks = &api.HooksDeps{
+			Apps:       st,
+			Box:        box,
+			Deploy:     deployer,
+			Audit:      st,
+			IPLimiter:  api.NewRateLimiterWithClock(60, time.Minute, time.Now),
+			AppLimiter: api.NewRateLimiterWithClock(30, time.Minute, time.Now),
+		}
 
 		// Terminal sessions: the ones an earlier run left open are closed first.
 		if err := terminal.CloseOrphans(context.Background(), st); err != nil {

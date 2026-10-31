@@ -13,6 +13,12 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.6.36] - 2026-10-31
+
+### Added
+
+- Core: deployment pipeline (phase 6 step 8): one deployment at a time per app, a newer push supersedes the one still waiting, build then release through the agent, states and a log bounded to 256 KiB, compose file generated with CPU and memory limits and the dev.talaia.app label, and stacks edited by hand only get the image of the app service changed. The core now knows the proxy mode each agent reports.
+
 ## [0.6.35] - 2026-10-31
 
 ### Added
@@ -915,7 +921,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.6.35...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.6.36...HEAD
+[0.6.36]: https://github.com/catlinux/Talaia/releases/tag/v0.6.36
 [0.6.35]: https://github.com/catlinux/Talaia/releases/tag/v0.6.35
 [0.6.34]: https://github.com/catlinux/Talaia/releases/tag/v0.6.34
 [0.6.33]: https://github.com/catlinux/Talaia/releases/tag/v0.6.33

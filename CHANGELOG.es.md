@@ -13,6 +13,12 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+## [0.6.36] - 2026-10-31
+
+### Añadido
+
+- Core: canalización de despliegue (fase 6, paso 8): un despliegue a la vez por app, un push nuevo sustituye al que aún espera, build y luego publicación a través del agente, estados y un registro limitado a 256 KiB, compose generado con límites de CPU y memoria y la etiqueta dev.talaia.app, y en los stacks editados a mano solo se cambia la imagen del servicio de la app. El core conoce ahora el modo de proxy que informa cada agente.
+
 ## [0.6.35] - 2026-10-31
 
 ### Añadido
@@ -915,7 +921,8 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
   `.gitattributes` y `.gitignore`.
 - Licencia WNCL-1.0 aplicada: archivo `LICENSE` y sección de créditos en los README.
 
-[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.6.35...HEAD
+[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.6.36...HEAD
+[0.6.36]: https://github.com/catlinux/Talaia/releases/tag/v0.6.36
 [0.6.35]: https://github.com/catlinux/Talaia/releases/tag/v0.6.35
 [0.6.34]: https://github.com/catlinux/Talaia/releases/tag/v0.6.34
 [0.6.33]: https://github.com/catlinux/Talaia/releases/tag/v0.6.33

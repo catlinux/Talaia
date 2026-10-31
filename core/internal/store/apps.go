@@ -396,6 +396,64 @@ func (s *Store) CreateDeployment(ctx context.Context, deployment Deployment) (De
 	return created, nil
 }
 
+// ClaimNextDeployment marks the oldest queued deployment of an app that has no
+// deployment building or releasing, and returns it in the building state. It
+// returns ErrNotFound when nothing can run now.
+func (s *Store) ClaimNextDeployment(ctx context.Context) (Deployment, error) {
+	tx, err := s.pool.Begin(ctx)
+	if err != nil {
+		return Deployment{}, fmt.Errorf("claim deployment: %w", err)
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+
+	var id string
+	err = tx.QueryRow(ctx,
+		`SELECT d.id
+		 FROM deployment d
+		 WHERE d.state = $1
+		   AND NOT EXISTS (
+		       SELECT 1 FROM deployment active
+		        WHERE active.app_id = d.app_id
+		          AND active.state IN ($2, $3)
+		   )
+		 ORDER BY d.number, d.id
+		 FOR UPDATE SKIP LOCKED
+		 LIMIT 1`, DeploymentQueued, DeploymentBuilding, DeploymentReleasing).Scan(&id)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return Deployment{}, ErrNotFound
+	}
+	if err != nil {
+		return Deployment{}, fmt.Errorf("find a queued deployment: %w", err)
+	}
+
+	deployment, err := scanDeployment(tx.QueryRow(ctx,
+		`UPDATE deployment
+		 SET state = $2, started_at = now(), finished_at = NULL
+		 WHERE id = $1
+		 RETURNING `+deploymentColumns, id, DeploymentBuilding))
+	if err != nil {
+		return Deployment{}, fmt.Errorf("claim deployment %q: %w", id, err)
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return Deployment{}, fmt.Errorf("commit claimed deployment: %w", err)
+	}
+	return deployment, nil
+}
+
+// FailInterruptedDeployments closes deployments a core restart left building
+// or releasing. A queued deployment is not touched.
+func (s *Store) FailInterruptedDeployments(ctx context.Context) (int64, error) {
+	tag, err := s.pool.Exec(ctx,
+		`UPDATE deployment
+		 SET state = $1, error = 'the core stopped during the deployment', finished_at = now()
+		 WHERE state IN ($2, $3)`,
+		DeploymentFailed, DeploymentBuilding, DeploymentReleasing)
+	if err != nil {
+		return 0, fmt.Errorf("fail interrupted deployments: %w", err)
+	}
+	return tag.RowsAffected(), nil
+}
+
 // GetDeployment returns one deployment or ErrNotFound.
 func (s *Store) GetDeployment(ctx context.Context, id string) (Deployment, error) {
 	deployment, err := scanDeployment(s.pool.QueryRow(ctx,
