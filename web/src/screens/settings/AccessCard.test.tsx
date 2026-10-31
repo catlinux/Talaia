@@ -7,6 +7,7 @@ import type {
   PublicKeyCredentialCreationOptionsJSON,
   RegistrationCredentialJSON,
 } from '../../auth/webauthn'
+import { ToastProvider } from '../../components/ui'
 import i18n from '../../i18n'
 import { AccessCard } from './AccessCard'
 
@@ -94,7 +95,11 @@ function mockRegistrationCredential(): PublicKeyCredential {
 }
 
 function renderCard(api: AccessApi) {
-  render(<AccessCard api={api} />)
+  render(
+    <ToastProvider>
+      <AccessCard api={api} />
+    </ToastProvider>,
+  )
 }
 
 describe('AccessCard', () => {

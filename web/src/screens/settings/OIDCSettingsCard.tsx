@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 
 import type { OIDCApi, OIDCSettings } from '../../api/oidc'
 import { errorMessage } from '../../auth/AuthGate'
+import { useToast } from '../../components/ui'
 import { CheckIcon, CopyIcon } from '../../components/icons'
 
 interface OIDCSettingsCardProps {
@@ -31,6 +32,7 @@ function formOf(settings: OIDCSettings): FormState {
 /** OIDCSettingsCard edits the single sign-on configuration. */
 export function OIDCSettingsCard({ api }: OIDCSettingsCardProps) {
   const { t } = useTranslation(['settings', 'errors'])
+  const toast = useToast()
   const [settings, setSettings] = useState<OIDCSettings | null>(null)
   const [form, setForm] = useState<FormState>({
     enabled: false,
@@ -42,7 +44,6 @@ export function OIDCSettingsCard({ api }: OIDCSettingsCardProps) {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [notice, setNotice] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
   const [showErrors, setShowErrors] = useState(false)
 
@@ -78,12 +79,11 @@ export function OIDCSettingsCard({ api }: OIDCSettingsCardProps) {
     }
     setSaving(true)
     setError(null)
-    setNotice(null)
     try {
       const next = await api.update(form)
       setSettings(next)
       setForm(formOf(next))
-      setNotice(t('settings:oidc.saved'))
+      toast.success(t('settings:toast.oidcSaved'))
     } catch (cause) {
       setError(errorMessage(t, cause))
     } finally {
@@ -224,11 +224,6 @@ export function OIDCSettingsCard({ api }: OIDCSettingsCardProps) {
           {error !== null ? (
             <p className="settings__message settings__message--error" role="alert">
               {error}
-            </p>
-          ) : null}
-          {notice !== null ? (
-            <p className="settings__notice" role="status">
-              {notice}
             </p>
           ) : null}
 

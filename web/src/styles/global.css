@@ -437,24 +437,6 @@ code {
   max-width: 880px;
 }
 
-.settings__head {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.settings__title {
-  margin: 0;
-  font-size: 1.25rem;
-  font-weight: 600;
-  line-height: 1.2;
-}
-
-.settings__subtitle {
-  margin: 0;
-  color: var(--muted);
-}
-
 .settings__message {
   margin: 0;
   color: var(--muted);
@@ -487,6 +469,10 @@ code {
   margin: 0;
   font-size: 0.9375rem;
   font-weight: 600;
+}
+
+.settings__card .users__actions {
+  justify-content: flex-end;
 }
 
 .settings__facts {
@@ -683,32 +669,18 @@ code {
   font-size: 0.8125rem;
 }
 
-.settings__servers {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.settings__server {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 0;
-  border-top: 1px solid var(--line);
-}
-
-.settings__server:first-child {
-  padding-top: 0;
-  border-top: 0;
-}
-
 .settings__server-name {
-  flex: 1;
   min-width: 0;
   overflow-wrap: anywhere;
+  font-weight: 500;
+}
+
+.settings__server-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
 }
 
 .settings__server-state {
@@ -1025,27 +997,12 @@ code {
   gap: 12px;
 }
 
-.settings__server {
-  flex-wrap: wrap;
-}
-
-.settings__server-agent {
-  color: var(--muted);
-  font-size: 0.8125rem;
-  white-space: nowrap;
-}
-
-.settings__server-update,
 .settings__server-update-all {
   padding: 5px 10px;
   font-size: 0.875rem;
 }
 
 @media (max-width: 720px) {
-  .settings__server-agent {
-    flex-basis: 100%;
-  }
-
   .settings__server-update-all {
     width: 100%;
   }
@@ -1119,8 +1076,4 @@ code {
 
 .manualupdate__copy:hover {
   background: var(--surface-2);
-}
-
-.settings__server .manualupdate {
-  flex-basis: 100%;
 }

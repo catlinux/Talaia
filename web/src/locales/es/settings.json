@@ -84,6 +84,12 @@
       "confirm": "Eliminar servidor",
       "removing": "Eliminando…",
       "cancel": "Cancelar"
+    },
+    "table": {
+      "name": "Servidor",
+      "agent": "Agente",
+      "status": "Estado",
+      "actions": "Acciones"
     }
   },
   "access": {
@@ -245,5 +251,17 @@
     "saved": "Configuración del inicio de sesión único guardada.",
     "saving": "Guardando…",
     "save": "Guardar configuración"
+  },
+  "toast": {
+    "serverRemoved": "Servidor eliminado.",
+    "agentUpdate": "Actualización del agente de {{name}} iniciada.",
+    "agentsUpdated": "Actualizaciones en cola: {{queued}}, omitidas: {{skipped}}.",
+    "keyCreated": "Clave de API creada.",
+    "keyRevoked": "Clave de API revocada.",
+    "oidcSaved": "Configuración de inicio de sesión único guardada.",
+    "deviceAdded": "Dispositivo de confianza añadido.",
+    "deviceRemoved": "Dispositivo de confianza eliminado.",
+    "passkeyAdded": "Clave de acceso añadida.",
+    "passkeyRemoved": "Clave de acceso eliminada."
   }
 }

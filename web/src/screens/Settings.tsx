@@ -20,6 +20,14 @@ import {
 } from '../api/system'
 import { errorMessage } from '../auth/AuthGate'
 import { usePermissions } from '../auth/permissions'
+import {
+  ConfirmDialog,
+  DataTable,
+  PageHeader,
+  ToastProvider,
+  useToast,
+  type DataTableColumn,
+} from '../components/ui'
 import { useNavigate, useRoute } from '../router'
 import { ManualUpgrade } from './server/ManualUpgrade'
 import { AccessCard } from './settings/AccessCard'
@@ -146,7 +154,15 @@ function NoteText({ note }: { note: string }) {
  * button only queues the request: the host helper does the work, and the screen
  * follows its progress through the status of the API, so a reload resumes it.
  */
-export function Settings({
+export function Settings(props: SettingsProps) {
+  return (
+    <ToastProvider>
+      <SettingsContent {...props} />
+    </ToastProvider>
+  )
+}
+
+function SettingsContent({
   api = defaultApi,
   accessApi,
   keysApi,
@@ -155,6 +171,7 @@ export function Settings({
   pollMs = pollEvery,
 }: SettingsProps) {
   const { t, i18n } = useTranslation(['settings', 'errors'])
+  const toast = useToast()
   const language = i18n.resolvedLanguage ?? i18n.language
   const { can, loading: permissionsLoading } = usePermissions()
   const { path } = useRoute()
@@ -180,7 +197,6 @@ export function Settings({
   const [serversError, setServersError] = useState<string | null>(null)
   const [groups, setGroups] = useState<Group[]>([])
   const [removing, setRemoving] = useState<ServerSummary | null>(null)
-  const [confirmName, setConfirmName] = useState('')
   const [removeBusy, setRemoveBusy] = useState(false)
   const [removeError, setRemoveError] = useState<string | null>(null)
 
@@ -406,7 +422,6 @@ export function Settings({
 
   const startRemoval = (server: ServerSummary) => {
     setRemoving(server)
-    setConfirmName('')
     setRemoveError(null)
     setUpdatingAgent(null)
     setUpdatingAll(false)
@@ -414,14 +429,11 @@ export function Settings({
 
   const cancelRemoval = () => {
     setRemoving(null)
-    setConfirmName('')
     setRemoveError(null)
   }
 
   const confirmRemoval = () => {
-    if (!removing || !api.removeServer || confirmName !== removing.name) {
-      return
-    }
+    if (!removing || !api.removeServer) return
     const target = removing
     setRemoveBusy(true)
     setRemoveError(null)
@@ -429,10 +441,10 @@ export function Settings({
       () => {
         setRemoveBusy(false)
         setRemoving(null)
-        setConfirmName('')
         setServers((current) =>
           current === null ? current : current.filter((server) => server.id !== target.id),
         )
+        toast.success(t('settings:toast.serverRemoved'))
         reloadServers()
       },
       (error: unknown) => {
@@ -483,6 +495,7 @@ export function Settings({
         setUpdateBusy(false)
         setUpdatingAgent(null)
         setUpdateNotice(t('settings:servers.updateStarted'))
+        toast.success(t('settings:toast.agentUpdate', { name: target.name }))
         reloadServers()
       },
       (error: unknown) => {
@@ -506,6 +519,12 @@ export function Settings({
         setUpdatingAll(false)
         setUpdateNotice(
           t('settings:servers.updateAllResult', {
+            queued: result.queued.length,
+            skipped: result.skipped.length,
+          }),
+        )
+        toast.success(
+          t('settings:toast.agentsUpdated', {
             queued: result.queued.length,
             skipped: result.skipped.length,
           }),
@@ -574,6 +593,70 @@ export function Settings({
       : t('settings:update.to', { sha: shortSHA(update.latest) })
   }
 
+  const serverColumns: DataTableColumn<ServerSummary>[] = [
+    {
+      id: 'name',
+      header: t('settings:servers.table.name'),
+      sortValue: (server) => server.name,
+      cell: (server) => <span className="settings__server-name">{server.name}</span>,
+    },
+    {
+      id: 'agent',
+      header: t('settings:servers.table.agent'),
+      sortValue: (server) => server.agentVersion,
+      cell: (server) =>
+        server.agentVersion === ''
+          ? t('settings:servers.agentUnknown')
+          : t('settings:servers.agentVersion', { version: server.agentVersion }),
+    },
+    {
+      id: 'status',
+      header: t('settings:servers.table.status'),
+      sortValue: (server) => (server.connected ? 0 : 1),
+      cell: (server) => (
+        <span
+          className={
+            server.connected
+              ? 'settings__server-state settings__server-state--online'
+              : 'settings__server-state'
+          }
+        >
+          {server.connected ? t('settings:servers.connected') : t('settings:servers.offline')}
+        </span>
+      ),
+    },
+    {
+      id: 'actions',
+      header: t('settings:servers.table.actions'),
+      align: 'right',
+      cell: (server) => (
+        <div className="settings__server-actions">
+          {canUpdateAgent && server.agentUpdateAvailable ? (
+            <button
+              type="button"
+              className="settings__button"
+              onClick={() => startAgentUpdate(server)}
+            >
+              {t('settings:servers.update')}
+            </button>
+          ) : null}
+          {canRemoveServer ? (
+            <button
+              type="button"
+              className="settings__button settings__server-remove"
+              onClick={() => startRemoval(server)}
+            >
+              {t('settings:servers.remove')}
+            </button>
+          ) : null}
+          {canAgentUpdate && server.agentUpdateManual ? (
+            <ManualUpgrade command={server.agentUpgradeCommand} />
+          ) : null}
+        </div>
+      ),
+    },
+  ]
+
   const availableTabs = useMemo<SettingsTab[]>(() => {
     const tabs: SettingsTab[] = []
     if (access !== undefined) tabs.push('account')
@@ -602,13 +685,8 @@ export function Settings({
       : (availableTabs[0] ?? 'account')
 
   return (
-    <section className="settings" aria-labelledby="settings-title">
-      <header className="settings__head">
-        <h1 className="settings__title" id="settings-title">
-          {t('settings:title')}
-        </h1>
-        <p className="settings__subtitle">{t('settings:subtitle')}</p>
-      </header>
+    <section className="settings" aria-label={t('settings:title')}>
+      <PageHeader title={t('settings:title')} subtitle={t('settings:subtitle')} />
 
       {waiting ? (
         <p className="settings__notice" role="status">
@@ -677,62 +755,15 @@ export function Settings({
                   </button>
                 ) : null}
               </div>
-              {serversError !== null ? (
-                <p className="settings__message settings__message--error" role="alert">
-                  {serversError}
-                </p>
-              ) : servers === null ? (
-                <p className="settings__message" role="status">
-                  {t('settings:servers.loading')}
-                </p>
-              ) : servers.length === 0 ? (
-                <p className="settings__message">{t('settings:servers.empty')}</p>
-              ) : (
-                <ul className="settings__servers">
-                  {servers.map((server) => (
-                    <li className="settings__server" key={server.id}>
-                      <span className="settings__server-name">{server.name}</span>
-                      <span className="settings__server-agent">
-                        {server.agentVersion === ''
-                          ? t('settings:servers.agentUnknown')
-                          : t('settings:servers.agentVersion', { version: server.agentVersion })}
-                      </span>
-                      <span
-                        className={
-                          server.connected
-                            ? 'settings__server-state settings__server-state--online'
-                            : 'settings__server-state'
-                        }
-                      >
-                        {server.connected
-                          ? t('settings:servers.connected')
-                          : t('settings:servers.offline')}
-                      </span>
-                      {canUpdateAgent && server.agentUpdateAvailable ? (
-                        <button
-                          type="button"
-                          className="settings__button settings__server-update"
-                          onClick={() => startAgentUpdate(server)}
-                        >
-                          {t('settings:servers.update')}
-                        </button>
-                      ) : null}
-                      {canRemoveServer ? (
-                        <button
-                          type="button"
-                          className="settings__button settings__server-remove"
-                          onClick={() => startRemoval(server)}
-                        >
-                          {t('settings:servers.remove')}
-                        </button>
-                      ) : null}
-                      {canAgentUpdate && server.agentUpdateManual ? (
-                        <ManualUpgrade command={server.agentUpgradeCommand} />
-                      ) : null}
-                    </li>
-                  ))}
-                </ul>
-              )}
+              <DataTable
+                columns={serverColumns}
+                rows={servers ?? []}
+                rowKey={(server) => server.id}
+                loading={servers === null && serversError === null}
+                error={serversError ?? undefined}
+                onRetry={reloadServers}
+                empty={<p className="settings__message">{t('settings:servers.empty')}</p>}
+              />
               {updateNotice !== null ? (
                 <p className="settings__notice" role="status">
                   {updateNotice}
@@ -899,147 +930,66 @@ export function Settings({
         </div>
       ) : null}
 
-      {canSettings && confirming && update !== null ? (
-        <div className="settings__overlay">
-          <div
-            className="settings__dialog"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="settings-confirm-title"
-          >
-            <h2 className="settings__dialog-title" id="settings-confirm-title">
-              {t('settings:confirm.title')}
-            </h2>
-            <p className="settings__dialog-body">
-              {t('settings:confirm.body', { sha: shortSHA(update.latest) })}
-            </p>
-            <p className="settings__dialog-body">{t('settings:confirm.backup')}</p>
-            <div className="settings__dialog-actions">
-              <button
-                type="button"
-                className="settings__button settings__button--primary"
-                onClick={requestUpdate}
-              >
-                {t('settings:confirm.yes')}
-              </button>
-              <button
-                type="button"
-                className="settings__button"
-                onClick={() => setConfirming(false)}
-              >
-                {t('settings:confirm.no')}
-              </button>
-            </div>
-          </div>
-        </div>
-      ) : null}
+      <ConfirmDialog
+        open={canSettings && confirming && update !== null}
+        title={t('settings:confirm.title')}
+        body={
+          <>
+            <p>{t('settings:confirm.body', { sha: shortSHA(update?.latest ?? '') })}</p>
+            <p>{t('settings:confirm.backup')}</p>
+          </>
+        }
+        confirmLabel={t('settings:confirm.yes')}
+        onConfirm={requestUpdate}
+        onCancel={() => setConfirming(false)}
+      />
 
-      {canSettings && (updatingAgent !== null || updatingAll) ? (
-        <div className="settings__overlay">
-          <div
-            className="settings__dialog"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="settings-agent-update-title"
-          >
-            <h2 className="settings__dialog-title" id="settings-agent-update-title">
-              {updatingAll
-                ? t('settings:servers.updateConfirm.titleAll')
-                : t('settings:servers.updateConfirm.titleAgent', {
-                    name: updatingAgent?.name ?? '',
-                  })}
-            </h2>
-            <p className="settings__dialog-body">
+      <ConfirmDialog
+        open={canSettings && (updatingAgent !== null || updatingAll)}
+        title={
+          updatingAll
+            ? t('settings:servers.updateConfirm.titleAll')
+            : t('settings:servers.updateConfirm.titleAgent', {
+                name: updatingAgent?.name ?? '',
+              })
+        }
+        body={
+          <>
+            <p>
               {updatingAll
                 ? t('settings:servers.updateConfirm.bodyAll')
                 : t('settings:servers.updateConfirm.bodyAgent')}
             </p>
-            {updateError !== null ? (
-              <p className="settings__message settings__message--error" role="alert">
-                {updateError}
-              </p>
-            ) : null}
-            <div className="settings__dialog-actions">
-              <button
-                type="button"
-                className="settings__button settings__button--primary"
-                disabled={updateBusy}
-                onClick={updatingAll ? confirmAllUpdates : confirmAgentUpdate}
-              >
-                {updateBusy
-                  ? t('settings:servers.updateConfirm.updating')
-                  : updatingAll
-                    ? t('settings:servers.updateConfirm.confirmAll')
-                    : t('settings:servers.updateConfirm.confirmAgent')}
-              </button>
-              <button
-                type="button"
-                className="settings__button"
-                disabled={updateBusy}
-                onClick={cancelUpdate}
-              >
-                {t('settings:servers.updateConfirm.cancel')}
-              </button>
-            </div>
-          </div>
-        </div>
-      ) : null}
+            {updateError !== null ? <p role="alert">{updateError}</p> : null}
+          </>
+        }
+        confirmLabel={
+          updatingAll
+            ? t('settings:servers.updateConfirm.confirmAll')
+            : t('settings:servers.updateConfirm.confirmAgent')
+        }
+        busy={updateBusy}
+        onConfirm={updatingAll ? confirmAllUpdates : confirmAgentUpdate}
+        onCancel={cancelUpdate}
+      />
 
-      {canSettings && removing !== null ? (
-        <div className="settings__overlay">
-          <div
-            className="settings__dialog"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="settings-remove-title"
-          >
-            <h2 className="settings__dialog-title" id="settings-remove-title">
-              {t('settings:servers.confirm.title', { name: removing.name })}
-            </h2>
-            <p className="settings__dialog-body">{t('settings:servers.confirm.effect')}</p>
-            <p className="settings__dialog-body">{t('settings:servers.confirm.reinstall')}</p>
-            <p className="settings__dialog-body">
-              {t('settings:servers.confirm.prompt', { name: removing.name })}
-            </p>
-            <label className="settings__field" htmlFor="settings-remove-name">
-              <span>{t('settings:servers.confirm.name')}</span>
-              <input
-                id="settings-remove-name"
-                className="settings__input"
-                type="text"
-                autoComplete="off"
-                value={confirmName}
-                onChange={(event) => setConfirmName(event.target.value)}
-              />
-            </label>
-            {removeError !== null ? (
-              <p className="settings__message settings__message--error" role="alert">
-                {removeError}
-              </p>
-            ) : null}
-            <div className="settings__dialog-actions">
-              <button
-                type="button"
-                className="settings__button settings__button--danger"
-                disabled={confirmName !== removing.name || removeBusy}
-                onClick={confirmRemoval}
-              >
-                {removeBusy
-                  ? t('settings:servers.confirm.removing')
-                  : t('settings:servers.confirm.confirm')}
-              </button>
-              <button
-                type="button"
-                className="settings__button"
-                disabled={removeBusy}
-                onClick={cancelRemoval}
-              >
-                {t('settings:servers.confirm.cancel')}
-              </button>
-            </div>
-          </div>
-        </div>
-      ) : null}
+      <ConfirmDialog
+        open={canSettings && removing !== null}
+        title={t('settings:servers.confirm.title', { name: removing?.name ?? '' })}
+        body={
+          <>
+            <p>{t('settings:servers.confirm.effect')}</p>
+            <p>{t('settings:servers.confirm.reinstall')}</p>
+            {removeError !== null ? <p role="alert">{removeError}</p> : null}
+          </>
+        }
+        confirmLabel={t('settings:servers.confirm.confirm')}
+        danger
+        busy={removeBusy}
+        requireText={removing?.name ?? ''}
+        onConfirm={confirmRemoval}
+        onCancel={cancelRemoval}
+      />
     </section>
   )
 }

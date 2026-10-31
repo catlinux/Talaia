@@ -84,6 +84,12 @@
       "confirm": "Remove server",
       "removing": "Removing…",
       "cancel": "Cancel"
+    },
+    "table": {
+      "name": "Server",
+      "agent": "Agent",
+      "status": "Status",
+      "actions": "Actions"
     }
   },
   "access": {
@@ -245,5 +251,17 @@
     "saved": "Single sign-on settings saved.",
     "saving": "Saving…",
     "save": "Save settings"
+  },
+  "toast": {
+    "serverRemoved": "Server removed.",
+    "agentUpdate": "Agent update started for {{name}}.",
+    "agentsUpdated": "Agent updates queued: {{queued}}, skipped: {{skipped}}.",
+    "keyCreated": "API key created.",
+    "keyRevoked": "API key revoked.",
+    "oidcSaved": "Single sign-on settings saved.",
+    "deviceAdded": "Trusted device added.",
+    "deviceRemoved": "Trusted device removed.",
+    "passkeyAdded": "Passkey added.",
+    "passkeyRemoved": "Passkey removed."
   }
 }

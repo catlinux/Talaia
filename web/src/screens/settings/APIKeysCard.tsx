@@ -8,13 +8,19 @@ import type { Role, Scope } from '../../api/users'
 import { errorMessage } from '../../auth/AuthGate'
 import { CheckIcon, CopyIcon, PlusIcon, TrashIcon } from '../../components/icons'
 import {
+  ConfirmDialog,
+  DataTable,
+  Drawer,
+  useToast,
+  type DataTableColumn,
+} from '../../components/ui'
+import {
   RoleDescription,
   RoleSelect,
   ScopeFields,
   ScopeLabel,
   roleLabel,
 } from '../users/AccessFields'
-import { Dialog } from '../users/Dialog'
 
 interface APIKeysCardProps {
   api: APIKeysApi
@@ -59,6 +65,7 @@ function scopeValid(scope: Scope): boolean {
 /** APIKeysCard lists and creates the API keys of the signed-in user. */
 export function APIKeysCard({ api, canListAll, servers, groups }: APIKeysCardProps) {
   const { t, i18n } = useTranslation(['settings', 'users', 'errors'])
+  const toast = useToast()
   const language = i18n.resolvedLanguage ?? i18n.language
   const [keys, setKeys] = useState<APIKey[] | null>(null)
   const [all, setAll] = useState(false)
@@ -105,12 +112,85 @@ export function APIKeysCard({ api, canListAll, servers, groups }: APIKeysCardPro
       await api.revoke(revoking.id)
       setRevoking(null)
       await load()
+      toast.success(t('settings:toast.keyRevoked'))
     } catch (cause) {
       setRevokeError(errorMessage(t, cause))
     } finally {
       setRevokeBusy(false)
     }
   }
+
+  const columns: DataTableColumn<APIKey>[] = [
+    {
+      id: 'name',
+      header: t('settings:apiKeys.table.name'),
+      sortValue: (key) => key.name,
+      cell: (key) => key.name,
+    },
+    {
+      id: 'prefix',
+      header: t('settings:apiKeys.table.prefix'),
+      cell: (key) => <code>{key.keyId}</code>,
+    },
+    {
+      id: 'access',
+      header: t('settings:apiKeys.table.access'),
+      cell: (key) => (
+        <div className="users__chips">
+          {key.bindings.map((binding) => (
+            <span className="chip" key={binding.id}>
+              {roleLabel(t, binding.role)} ·{' '}
+              <ScopeLabel scope={binding.scope} groups={groups} servers={servers} />
+            </span>
+          ))}
+        </div>
+      ),
+    },
+    {
+      id: 'expires',
+      header: t('settings:apiKeys.table.expires'),
+      sortValue: (key) => key.expiresAt ?? '',
+      cell: (key) => formatDate(key.expiresAt, language, t('settings:apiKeys.never')),
+    },
+    {
+      id: 'lastUsed',
+      header: t('settings:apiKeys.table.lastUsed'),
+      sortValue: (key) => key.lastUsedAt ?? '',
+      cell: (key) => formatDate(key.lastUsedAt, language, t('settings:apiKeys.never')),
+    },
+    {
+      id: 'status',
+      header: t('settings:apiKeys.table.status'),
+      sortValue: (key) => keyStatus(key, loadedAt),
+      cell: (key) => {
+        const status = keyStatus(key, loadedAt)
+        return (
+          <span className={`chip chip--${status === 'active' ? 'ok' : 'warn'}`}>
+            {t(`settings:apiKeys.status.${status}`)}
+          </span>
+        )
+      },
+    },
+    {
+      id: 'actions',
+      header: t('settings:apiKeys.table.actions'),
+      align: 'right',
+      cell: (key) =>
+        !key.revoked ? (
+          <button
+            type="button"
+            className="ui-btn ui-btn--danger"
+            onClick={() => {
+              setRevokeError(null)
+              setRevoking(key)
+            }}
+          >
+            <TrashIcon />
+            {t('settings:apiKeys.revoke')}
+          </button>
+        ) : null,
+    },
+  ]
 
   return (
     <section className="settings__card" aria-labelledby="settings-apikeys-title">
@@ -143,84 +223,15 @@ export function APIKeysCard({ api, canListAll, servers, groups }: APIKeysCardPro
         </div>
       </div>
 
-      {error !== null ? (
-        <p className="settings__message settings__message--error" role="alert">
-          {error}
-        </p>
-      ) : null}
-
-      {keys === null ? (
-        <p className="settings__message" role="status">
-          {t('settings:apiKeys.loading')}
-        </p>
-      ) : keys.length === 0 ? (
-        <p className="settings__message">{t('settings:apiKeys.empty')}</p>
-      ) : (
-        <div className="users-table-wrap">
-          <table className="users-table">
-            <thead>
-              <tr>
-                <th scope="col">{t('settings:apiKeys.table.name')}</th>
-                <th scope="col">{t('settings:apiKeys.table.prefix')}</th>
-                <th scope="col">{t('settings:apiKeys.table.access')}</th>
-                <th scope="col">{t('settings:apiKeys.table.expires')}</th>
-                <th scope="col">{t('settings:apiKeys.table.lastUsed')}</th>
-                <th scope="col">{t('settings:apiKeys.table.status')}</th>
-                <th scope="col">{t('settings:apiKeys.table.actions')}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {keys.map((key) => {
-                const status = keyStatus(key, loadedAt)
-                return (
-                  <tr key={key.id}>
-                    <td data-label={t('settings:apiKeys.table.name')}>{key.name}</td>
-                    <td data-label={t('settings:apiKeys.table.prefix')}>
-                      <code>{key.keyId}</code>
-                    </td>
-                    <td data-label={t('settings:apiKeys.table.access')}>
-                      <div className="users__chips">
-                        {key.bindings.map((binding) => (
-                          <span className="chip" key={binding.id}>
-                            {roleLabel(t, binding.role)} ·{' '}
-                            <ScopeLabel scope={binding.scope} groups={groups} servers={servers} />
-                          </span>
-                        ))}
-                      </div>
-                    </td>
-                    <td data-label={t('settings:apiKeys.table.expires')}>
-                      {formatDate(key.expiresAt, language, t('settings:apiKeys.never'))}
-                    </td>
-                    <td data-label={t('settings:apiKeys.table.lastUsed')}>
-                      {formatDate(key.lastUsedAt, language, t('settings:apiKeys.never'))}
-                    </td>
-                    <td data-label={t('settings:apiKeys.table.status')}>
-                      <span className={`chip chip--${status === 'active' ? 'ok' : 'warn'}`}>
-                        {t(`settings:apiKeys.status.${status}`)}
-                      </span>
-                    </td>
-                    <td data-label={t('settings:apiKeys.table.actions')}>
-                      {!key.revoked ? (
-                        <button
-                          type="button"
-                          className="cbtn cbtn--danger"
-                          onClick={() => {
-                            setRevokeError(null)
-                            setRevoking(key)
-                          }}
-                        >
-                          <TrashIcon />
-                          {t('settings:apiKeys.revoke')}
-                        </button>
-                      ) : null}
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
+      <DataTable
+        columns={columns}
+        rows={keys ?? []}
+        rowKey={(key) => key.id}
+        loading={keys === null && error === null}
+        error={error ?? undefined}
+        onRetry={() => void load()}
+        empty={<p className="settings__message">{t('settings:apiKeys.empty')}</p>}
+      />
 
       {creating ? (
         <CreateKeyDialog
@@ -232,39 +243,21 @@ export function APIKeysCard({ api, canListAll, servers, groups }: APIKeysCardPro
         />
       ) : null}
 
-      {revoking !== null ? (
-        <Dialog
-          title={t('settings:apiKeys.revokeTitle', { name: revoking.name })}
-          onClose={() => setRevoking(null)}
-          footer={
-            <div className="users__actions">
-              <button
-                type="button"
-                className="settings__button"
-                disabled={revokeBusy}
-                onClick={() => setRevoking(null)}
-              >
-                {t('settings:apiKeys.cancel')}
-              </button>
-              <button
-                type="button"
-                className="settings__button settings__button--danger"
-                disabled={revokeBusy}
-                onClick={() => void confirmRevoke()}
-              >
-                {revokeBusy ? t('settings:apiKeys.revoking') : t('settings:apiKeys.revokeConfirm')}
-              </button>
-            </div>
-          }
-        >
-          <p>{t('settings:apiKeys.revokeBody')}</p>
-          {revokeError !== null ? (
-            <p className="settings__message settings__message--error" role="alert">
-              {revokeError}
-            </p>
-          ) : null}
-        </Dialog>
-      ) : null}
+      <ConfirmDialog
+        open={revoking !== null}
+        title={t('settings:apiKeys.revokeTitle', { name: revoking?.name ?? '' })}
+        body={
+          <>
+            <p>{t('settings:apiKeys.revokeBody')}</p>
+            {revokeError !== null ? <p role="alert">{revokeError}</p> : null}
+          </>
+        }
+        confirmLabel={t('settings:apiKeys.revokeConfirm')}
+        danger
+        busy={revokeBusy}
+        onConfirm={() => void confirmRevoke()}
+        onCancel={() => setRevoking(null)}
+      />
     </section>
   )
 }
@@ -283,6 +276,7 @@ function CreateKeyDialog({
   onCreated: () => void
 }) {
   const { t, i18n } = useTranslation(['settings', 'users', 'errors'])
+  const toast = useToast()
   const language = i18n.resolvedLanguage ?? i18n.language
   const [name, setName] = useState('')
   const [days, setDays] = useState(90)
@@ -325,6 +319,7 @@ function CreateKeyDialog({
       })
       setCreated(result)
       setCode('')
+      toast.success(t('settings:toast.keyCreated'))
       onCreated()
     } catch (cause) {
       setCode('')
@@ -344,7 +339,8 @@ function CreateKeyDialog({
   }
 
   return (
-    <Dialog
+    <Drawer
+      open
       title={
         created === null ? t('settings:apiKeys.createTitle') : t('settings:apiKeys.createdTitle')
       }
@@ -501,6 +497,6 @@ function CreateKeyDialog({
           </p>
         </div>
       )}
-    </Dialog>
+    </Drawer>
   )
 }

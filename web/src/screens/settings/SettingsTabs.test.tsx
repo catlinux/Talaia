@@ -7,6 +7,7 @@ import type { MeApi, MePermissions, MeResponse } from '../../api/me'
 import type { OIDCApi } from '../../api/oidc'
 import type { SystemVersion } from '../../api/system'
 import { PermissionsProvider } from '../../auth/permissions'
+import { ToastProvider } from '../../components/ui'
 import i18n from '../../i18n'
 import { RouterProvider, useRoute } from '../../router'
 import { Settings, type SettingsApi } from '../Settings'
@@ -115,11 +116,13 @@ function mountSettings(
 ) {
   window.history.replaceState({}, '', path)
   return render(
-    <RouterProvider>
-      <PermissionsProvider meApi={meApi(permissions)}>
-        <Settings {...props} />
-      </PermissionsProvider>
-    </RouterProvider>,
+    <ToastProvider>
+      <RouterProvider>
+        <PermissionsProvider meApi={meApi(permissions)}>
+          <Settings {...props} />
+        </PermissionsProvider>
+      </RouterProvider>
+    </ToastProvider>,
   )
 }
 

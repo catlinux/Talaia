@@ -5,6 +5,7 @@ import type { AccessApi } from '../api/auth'
 import { ApiError } from '../api/http'
 import { AgentUpdateError, type ServerSummary, type ServersApi } from '../api/servers'
 import type { SystemVersion, UpdateInfo, UpdateStatus } from '../api/system'
+import { ToastProvider } from '../components/ui'
 import i18n from '../i18n'
 import { RouterProvider } from '../router'
 import { Settings, pollEvery, type SettingsApi } from './Settings'
@@ -67,9 +68,11 @@ function apiWith(
 
 function renderSettings(api: SettingsApi, access?: AccessApi) {
   render(
-    <RouterProvider>
-      <Settings api={api} accessApi={access} />
-    </RouterProvider>,
+    <ToastProvider>
+      <RouterProvider>
+        <Settings api={api} accessApi={access} />
+      </RouterProvider>
+    </ToastProvider>,
   )
 }
 
@@ -386,11 +389,15 @@ describe('Settings', () => {
     const confirm = screen.getByRole('button', { name: 'Remove server' }) as HTMLButtonElement
     expect(confirm.disabled).toBe(true)
 
-    fireEvent.change(screen.getByLabelText('Server name'), { target: { value: 'vps-web-0' } })
+    fireEvent.change(screen.getByLabelText('Type vps-web-01 to confirm'), {
+      target: { value: 'vps-web-0' },
+    })
     expect(confirm.disabled).toBe(true)
     expect(removeServer).not.toHaveBeenCalled()
 
-    fireEvent.change(screen.getByLabelText('Server name'), { target: { value: 'vps-web-01' } })
+    fireEvent.change(screen.getByLabelText('Type vps-web-01 to confirm'), {
+      target: { value: 'vps-web-01' },
+    })
     expect(confirm.disabled).toBe(false)
     fireEvent.click(confirm)
 
@@ -454,19 +461,21 @@ describe('Settings', () => {
 
   it('renders code spans in notes without HTML', async () => {
     const { container } = render(
-      <RouterProvider>
-        <Settings
-          api={apiWith(() =>
-            Promise.resolve(
-              makeSystem({
-                update: {
-                  notes: { en: ['Use `talaia-core` and <b>not HTML</b>'], es: [] },
-                },
-              }),
-            ),
-          )}
-        />
-      </RouterProvider>,
+      <ToastProvider>
+        <RouterProvider>
+          <Settings
+            api={apiWith(() =>
+              Promise.resolve(
+                makeSystem({
+                  update: {
+                    notes: { en: ['Use `talaia-core` and <b>not HTML</b>'], es: [] },
+                  },
+                }),
+              ),
+            )}
+          />
+        </RouterProvider>
+      </ToastProvider>,
     )
 
     expect(await screen.findByText('talaia-core')).toBeTruthy()
@@ -855,9 +864,11 @@ describe('Settings', () => {
       .fn<() => Promise<SystemVersion>>()
       .mockResolvedValue(makeSystem({ status: { state: 'running' } }))
     const { unmount } = render(
-      <RouterProvider>
-        <Settings api={apiWith(version)} />
-      </RouterProvider>,
+      <ToastProvider>
+        <RouterProvider>
+          <Settings api={apiWith(version)} />
+        </RouterProvider>
+      </ToastProvider>,
     )
 
     await act(async () => {})

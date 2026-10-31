@@ -84,6 +84,12 @@
       "confirm": "Elimina el servidor",
       "removing": "S'està eliminant…",
       "cancel": "Cancel·la"
+    },
+    "table": {
+      "name": "Servidor",
+      "agent": "Agent",
+      "status": "Estat",
+      "actions": "Accions"
     }
   },
   "access": {
@@ -245,5 +251,17 @@
     "saved": "Configuració de l'inici de sessió únic desada.",
     "saving": "Desant…",
     "save": "Desa la configuració"
+  },
+  "toast": {
+    "serverRemoved": "Servidor eliminat.",
+    "agentUpdate": "S'ha iniciat l'actualització de l'agent de {{name}}.",
+    "agentsUpdated": "Actualitzacions en cua: {{queued}}, omeses: {{skipped}}.",
+    "keyCreated": "S'ha creat la clau d'API.",
+    "keyRevoked": "S'ha revocat la clau d'API.",
+    "oidcSaved": "S'ha desat la configuració d'inici de sessió únic.",
+    "deviceAdded": "S'ha afegit el dispositiu de confiança.",
+    "deviceRemoved": "S'ha eliminat el dispositiu de confiança.",
+    "passkeyAdded": "S'ha afegit la clau d'accés.",
+    "passkeyRemoved": "S'ha eliminat la clau d'accés."
   }
 }

@@ -7,6 +7,7 @@ import type { Group, GroupsApi } from '../api/groups'
 import { ApiError } from '../api/http'
 import type { OIDCApi, OIDCSettings } from '../api/oidc'
 import type { SystemVersion } from '../api/system'
+import { ToastProvider } from '../components/ui'
 import i18n from '../i18n'
 import { RouterProvider } from '../router'
 import { Settings, type SettingsApi } from './Settings'
@@ -41,7 +42,11 @@ const systemApi: SettingsApi = {
 }
 
 function renderSettings(ui: ReactNode) {
-  return render(<RouterProvider>{ui}</RouterProvider>)
+  return render(
+    <ToastProvider>
+      <RouterProvider>{ui}</RouterProvider>
+    </ToastProvider>,
+  )
 }
 
 function fakeGroups(): GroupsApi {
@@ -141,6 +146,34 @@ describe('Settings API keys and single sign-on', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Create key' }))
     expect(screen.queryByText('tlk_abcdefghijkl_secret')).toBeNull()
     expect(screen.getByLabelText(/Authenticator code/)).toBeTruthy()
+  })
+
+  it('lists API keys in the shared table and revokes one after confirmation', async () => {
+    const keys = fakeKeys()
+    const revoke = vi.fn(() => Promise.resolve())
+    keys.list = () =>
+      Promise.resolve([
+        {
+          id: 'k1',
+          keyId: 'tlk_abcdefghijkl',
+          name: 'deploy',
+          expiresAt: '2026-12-01T10:00:00Z',
+          lastUsedAt: null,
+          revoked: false,
+          bindings: [],
+        },
+      ])
+    keys.revoke = revoke
+    renderSettings(<Settings api={systemApi} keysApi={keys} groupsApi={fakeGroups()} />)
+
+    expect(await screen.findByText('deploy')).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Revoke' }))
+    const dialog = screen.getByRole('dialog')
+    expect(within(dialog).getByText('Revoke deploy?')).toBeTruthy()
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Revoke key' }))
+
+    await waitFor(() => expect(revoke).toHaveBeenCalledWith('k1'))
+    expect(await screen.findByText('API key revoked.')).toBeTruthy()
   })
 
   it('never prefills the OIDC secret and shows the discovery error', async () => {

@@ -5,6 +5,7 @@ import type { AccessApi, PasskeySummary, PasskeysInfo, TrustedDevice } from '../
 import { ApiError, isSignedOut } from '../../api/http'
 import { errorMessage } from '../../auth/AuthGate'
 import { forgetTrustedDevice, rememberTrustedDevice } from '../../auth/PinLogin'
+import { ConfirmDialog } from '../../components/ui'
 import {
   isPasskeyCancellation,
   passkeysSupported,
@@ -492,54 +493,27 @@ export function AccessCard({ api }: AccessCardProps) {
         </>
       )}
 
-      {removingDevice !== null || removingPasskey !== null ? (
-        <div className="settings__overlay">
-          <div
-            className="settings__dialog"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="settings-access-remove-title"
-          >
-            <h2 className="settings__dialog-title" id="settings-access-remove-title">
-              {t('settings:access.remove.title', {
-                name: removingDevice?.name ?? removingPasskey?.name ?? '',
-              })}
-            </h2>
-            <p className="settings__dialog-body">
+      <ConfirmDialog
+        open={removingDevice !== null || removingPasskey !== null}
+        title={t('settings:access.remove.title', {
+          name: removingDevice?.name ?? removingPasskey?.name ?? '',
+        })}
+        body={
+          <>
+            <p>
               {removingDevice !== null
                 ? t('settings:access.devices.removeBody')
                 : t('settings:access.passkeys.removeBody')}
             </p>
-            {removeError !== null ? (
-              <p className="settings__message settings__message--error" role="alert">
-                {removeError}
-              </p>
-            ) : null}
-            <div className="settings__dialog-actions">
-              <button
-                type="button"
-                className="settings__button settings__button--danger"
-                disabled={removePending}
-                onClick={() => {
-                  void confirmRemoval()
-                }}
-              >
-                {removePending
-                  ? t('settings:access.remove.removing')
-                  : t('settings:access.remove.confirm')}
-              </button>
-              <button
-                type="button"
-                className="settings__button"
-                disabled={removePending}
-                onClick={cancelRemoval}
-              >
-                {t('settings:access.remove.cancel')}
-              </button>
-            </div>
-          </div>
-        </div>
-      ) : null}
+            {removeError !== null ? <p role="alert">{removeError}</p> : null}
+          </>
+        }
+        confirmLabel={t('settings:access.remove.confirm')}
+        danger
+        busy={removePending}
+        onConfirm={() => void confirmRemoval()}
+        onCancel={cancelRemoval}
+      />
     </section>
   )
 }
