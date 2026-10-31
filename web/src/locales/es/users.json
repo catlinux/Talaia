@@ -200,6 +200,25 @@
     "memberRemoved": "{{name}} eliminado del equipo.",
     "groupCreated": "Grupo {{name}} creado.",
     "groupRenamed": "Grupo renombrado a {{name}}.",
-    "groupDeleted": "Grupo {{name}} eliminado."
+    "groupDeleted": "Grupo {{name}} eliminado.",
+    "twoFactorReset_one": "Autenticación en dos pasos restablecida para {{name}}: {{sessions}} sesión cerrada.",
+    "twoFactorReset_other": "Autenticación en dos pasos restablecida para {{name}}: {{sessions}} sesiones cerradas."
+  },
+  "resetTwoFactor": {
+    "menu": "Restablecer la autenticación en dos pasos",
+    "title": "¿Restablecer la autenticación en dos pasos de {{name}}?",
+    "body": "Esto elimina el autenticador, los códigos de recuperación y los dispositivos de confianza de {{name}}, y cierra todas sus sesiones. En su próximo inicio de sesión tendrá que configurar un autenticador nuevo. Úsalo cuando haya perdido el teléfono.",
+    "username": "Escribe {{name}} para confirmar",
+    "code": "Tu código actual del autenticador",
+    "codeHint": "Introduce el código de 6 dígitos de tu propia aplicación de autenticación.",
+    "confirm": "Restablecer la autenticación en dos pasos",
+    "working": "Restableciendo…",
+    "errors": {
+      "username": "El nombre de usuario no coincide.",
+      "self": "No puedes restablecer aquí tu propia autenticación en dos pasos.",
+      "code": "El código no es válido o ya se ha utilizado. Introduce tu código actual.",
+      "rateLimited": "Demasiados intentos. Espera unos minutos y vuelve a probar.",
+      "notFound": "Ese usuario ya no existe. Actualiza la lista."
+    }
   }
 }

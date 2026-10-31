@@ -154,8 +154,9 @@ cerrar la paleta.
 
 **Usuarios** está disponible para administradores. **Personas**, **Equipos** y **Grupos** cubren las
 cuentas, la pertenencia a equipos y los grupos de servidores. Desde aquí puedes invitar a un usuario,
-editar una cuenta, activarla o desactivarla, eliminarla y asignarle un rol y un ámbito. Las
-descripciones de los roles y las reglas de acceso están en [permisos.md](permisos.md).
+editar una cuenta, activarla o desactivarla, eliminarla, restablecer la autenticación en dos pasos de
+otro usuario y asignarle un rol y un ámbito. Las descripciones de los roles y las reglas de acceso están
+en [permisos.md](permisos.md).
 
 **Auditoría** muestra las pestañas **Registro de auditoría** y **Grabaciones** cuando tu cuenta tiene
 esos permisos. El registro lista todas las acciones registradas, de la más reciente a la más antigua, y

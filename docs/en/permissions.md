@@ -123,7 +123,10 @@ Talaia always keeps at least one active user with the organization administrator
 through a team. The core refuses to disable the last one, or to remove or demote the last
 organization-admin binding (including through a team), with `409 last_admin`. Users cannot disable or
 delete their own account. A user can only be deleted once disabled, typing the username to confirm; the
-account, its access, API keys and team memberships go, and the audit history keeps the name.
+account, its access, API keys and team memberships go, and the audit history keeps the name. An
+administrator can reset another user's two-factor authentication from **People**, typing the target
+username and the administrator's own current code; this removes the authenticator, recovery codes and
+trusted devices and closes the user's sessions.
 
 ## Invitations
 

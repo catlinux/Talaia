@@ -13,6 +13,12 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+## [0.6.30] - 2026-10-31
+
+### Añadido
+
+- Panel: Usuarios > Personas tiene **Restablecer la autenticación en dos pasos** para otro usuario (cuando ha perdido el teléfono): escribes su nombre y tu propio código actual; se borran su autenticador, sus códigos de recuperación y sus dispositivos de confianza, se cierran sus sesiones y en el próximo inicio de sesión configura un autenticador nuevo.
+
 ## [0.6.29] - 2026-10-31
 
 ### Añadido
@@ -879,7 +885,8 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
   `.gitattributes` y `.gitignore`.
 - Licencia WNCL-1.0 aplicada: archivo `LICENSE` y sección de créditos en los README.
 
-[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.6.29...HEAD
+[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.6.30...HEAD
+[0.6.30]: https://github.com/catlinux/Talaia/releases/tag/v0.6.30
 [0.6.29]: https://github.com/catlinux/Talaia/releases/tag/v0.6.29
 [0.6.28]: https://github.com/catlinux/Talaia/releases/tag/v0.6.28
 [0.6.27]: https://github.com/catlinux/Talaia/releases/tag/v0.6.27

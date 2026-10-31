@@ -141,8 +141,8 @@ Use the arrow keys to move, **Enter** to open the selected result and **Esc** to
 
 **Users** is available to administrators. **People**, **Teams** and **Groups** cover accounts, team
 membership and server groups. From here you can invite a user, edit an account, enable or disable it,
-delete it, and assign a role and scope. The role descriptions and access rules are in
-[permissions.md](permissions.md).
+delete it, reset another user's two-factor authentication, and assign a role and scope. The role
+descriptions and access rules are in [permissions.md](permissions.md).
 
 **Audit** has the **Audit log** and **Recordings** tabs when your account has those permissions. The
 log lists every recorded action newest first and can be filtered by action group, server and actor or

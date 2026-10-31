@@ -200,6 +200,25 @@
     "memberRemoved": "{{name}} removed from the team.",
     "groupCreated": "Group {{name}} created.",
     "groupRenamed": "Group renamed to {{name}}.",
-    "groupDeleted": "Group {{name}} deleted."
+    "groupDeleted": "Group {{name}} deleted.",
+    "twoFactorReset_one": "Two-factor authentication reset for {{name}}: {{sessions}} session closed.",
+    "twoFactorReset_other": "Two-factor authentication reset for {{name}}: {{sessions}} sessions closed."
+  },
+  "resetTwoFactor": {
+    "menu": "Reset two-factor authentication",
+    "title": "Reset two-factor authentication for {{name}}?",
+    "body": "This removes the authenticator, recovery codes and trusted devices of {{name}}, and closes all their sessions. On their next sign-in they must set up a new authenticator. Use it when they have lost their phone.",
+    "username": "Type {{name}} to confirm",
+    "code": "Your current authenticator code",
+    "codeHint": "Enter the 6-digit code from your own authenticator app.",
+    "confirm": "Reset two-factor authentication",
+    "working": "Resetting…",
+    "errors": {
+      "username": "The username does not match.",
+      "self": "You cannot reset your own two-factor authentication here.",
+      "code": "The code is not valid or has already been used. Enter your current code.",
+      "rateLimited": "Too many attempts. Wait a few minutes and try again.",
+      "notFound": "That user no longer exists. Refresh the list."
+    }
   }
 }

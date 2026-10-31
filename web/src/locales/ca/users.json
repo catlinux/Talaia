@@ -200,6 +200,25 @@
     "memberRemoved": "S'ha tret {{name}} de l'equip.",
     "groupCreated": "S'ha creat el grup {{name}}.",
     "groupRenamed": "El grup s'ha reanomenat a {{name}}.",
-    "groupDeleted": "S'ha eliminat el grup {{name}}."
+    "groupDeleted": "S'ha eliminat el grup {{name}}.",
+    "twoFactorReset_one": "Autenticació en dos passos restablerta per a {{name}}: {{sessions}} sessió tancada.",
+    "twoFactorReset_other": "Autenticació en dos passos restablerta per a {{name}}: {{sessions}} sessions tancades."
+  },
+  "resetTwoFactor": {
+    "menu": "Restableix l’autenticació en dos passos",
+    "title": "Restablir l’autenticació en dos passos de {{name}}?",
+    "body": "Això elimina l’autenticador, els codis de recuperació i els dispositius de confiança de {{name}}, i tanca totes les seves sessions. En el proper inici de sessió haurà de configurar un autenticador nou. Fes-ho servir quan hagi perdut el telèfon.",
+    "username": "Escriu {{name}} per confirmar",
+    "code": "El teu codi actual de l’autenticador",
+    "codeHint": "Introdueix el codi de 6 dígits de la teva pròpia aplicació d’autenticació.",
+    "confirm": "Restableix l’autenticació en dos passos",
+    "working": "S’està restablint…",
+    "errors": {
+      "username": "El nom d’usuari no coincideix.",
+      "self": "No pots restablir aquí la teva pròpia autenticació en dos passos.",
+      "code": "El codi no és vàlid o ja s’ha utilitzat. Introdueix el teu codi actual.",
+      "rateLimited": "Massa intents. Espera uns minuts i torna-ho a provar.",
+      "notFound": "Aquest usuari ja no existeix. Actualitza la llista."
+    }
   }
 }

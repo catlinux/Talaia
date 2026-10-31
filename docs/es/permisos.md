@@ -125,7 +125,10 @@ directo o a través de un equipo. El núcleo se niega a desactivar al último, o
 última asignación de administrador de organización (también a través de un equipo), con
 `409 last_admin`. Nadie puede desactivar ni borrar su propia cuenta. Un usuario solo se puede borrar
 cuando está desactivado, escribiendo su nombre para confirmar; se van la cuenta, su acceso, sus claves de
-API y sus pertenencias a equipos, y el historial de auditoría conserva el nombre.
+API y sus pertenencias a equipos, y el historial de auditoría conserva el nombre. Un administrador puede
+restablecer la autenticación en dos pasos de otro usuario desde **Personas**, escribiendo el nombre del
+usuario y su propio código actual; esto elimina el autenticador, los códigos de recuperación y los
+dispositivos de confianza, y cierra las sesiones del usuario.
 
 ## Invitaciones
 

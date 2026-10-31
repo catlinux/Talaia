@@ -44,6 +44,7 @@ function fakeUsers(users: AdminUser[], disable = vi.fn(() => Promise.resolve()))
     disable,
     enable: vi.fn(() => Promise.resolve()),
     delete: vi.fn(() => Promise.resolve()),
+    resetTwoFactor: vi.fn(() => Promise.resolve({ sessionsRevoked: 2, devicesRevoked: 1 })),
     listBindings: vi.fn(() => Promise.resolve(binding ? [binding] : [])),
     addBinding: vi.fn((_userId, role, scope) => Promise.resolve({ id: 'b2', role, scope })),
     updateBinding: vi.fn(() => Promise.resolve()),
@@ -404,6 +405,99 @@ describe('Users screen', () => {
 
     const disabled = await menuFor('disabled')
     expect(within(disabled).getByRole('menuitem', { name: 'Delete' })).toBeTruthy()
+    authUser.username = null
+  })
+
+  it('hides the two-factor reset for the signed-in user', async () => {
+    authUser.username = 'admin'
+    renderUsers(
+      fakeUsers([
+        account(),
+        account({ id: 'u2', username: 'bob', displayName: 'Bob', email: 'bob@example.com' }),
+      ]),
+    )
+    await screen.findAllByText('Ada')
+    const rowFor = (username: string) => screen.getByText(username).closest('tr')!
+    const menuFor = async (username: string) => {
+      fireEvent.click(
+        within(rowFor(username)).getByRole('button', { name: `Actions for ${username}` }),
+      )
+      return screen.getByRole('menu', { name: 'Actions' })
+    }
+
+    const selfMenu = await menuFor('admin')
+    expect(
+      within(selfMenu).queryByRole('menuitem', { name: 'Reset two-factor authentication' }),
+    ).toBeNull()
+    fireEvent.keyDown(selfMenu, { key: 'Escape' })
+
+    const otherMenu = await menuFor('bob')
+    expect(
+      within(otherMenu).getByRole('menuitem', { name: 'Reset two-factor authentication' }),
+    ).toBeTruthy()
+    authUser.username = null
+  })
+
+  it('confirms a two-factor reset with the username and a six-digit code', async () => {
+    authUser.username = 'admin'
+    const usersApi = fakeUsers([
+      account({ id: 'u2', username: 'bob', displayName: 'Bob', email: 'bob@example.com' }),
+    ])
+    renderUsers(usersApi)
+    fireEvent.click(
+      within(await openRowMenu('bob')).getByRole('menuitem', {
+        name: 'Reset two-factor authentication',
+      }),
+    )
+
+    const dialog = screen.getByRole('dialog')
+    const confirm = within(dialog).getByRole('button', { name: 'Reset two-factor authentication' })
+    const username = within(dialog).getByLabelText('Type bob to confirm')
+    const code = within(dialog).getByLabelText('Your current authenticator code')
+
+    expect(confirm).toHaveProperty('disabled', true)
+    fireEvent.change(username, { target: { value: 'bo' } })
+    fireEvent.change(code, { target: { value: '123456' } })
+    expect(confirm).toHaveProperty('disabled', true)
+    fireEvent.change(username, { target: { value: 'bob' } })
+    fireEvent.change(code, { target: { value: '12345' } })
+    expect(confirm).toHaveProperty('disabled', true)
+    fireEvent.change(code, { target: { value: '123456' } })
+    expect(confirm).toHaveProperty('disabled', false)
+
+    fireEvent.click(confirm)
+    await waitFor(() => expect(usersApi.resetTwoFactor).toHaveBeenCalledWith('u2', 'bob', '123456'))
+    expect(
+      await screen.findByText('Two-factor authentication reset for bob: 2 sessions closed.'),
+    ).toBeTruthy()
+    authUser.username = null
+  })
+
+  it('shows the invalid code message when the reset code is rejected', async () => {
+    authUser.username = 'admin'
+    const usersApi = fakeUsers([
+      account({ id: 'u2', username: 'bob', displayName: 'Bob', email: 'bob@example.com' }),
+    ])
+    usersApi.resetTwoFactor = vi.fn(() => Promise.reject(new ApiError('code_invalid', 403)))
+    renderUsers(usersApi)
+    fireEvent.click(
+      within(await openRowMenu('bob')).getByRole('menuitem', {
+        name: 'Reset two-factor authentication',
+      }),
+    )
+
+    const dialog = screen.getByRole('dialog')
+    fireEvent.change(within(dialog).getByLabelText('Type bob to confirm'), {
+      target: { value: 'bob' },
+    })
+    fireEvent.change(within(dialog).getByLabelText('Your current authenticator code'), {
+      target: { value: '123456' },
+    })
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Reset two-factor authentication' }))
+
+    expect((await within(dialog).findByRole('alert')).textContent).toBe(
+      'The code is not valid or has already been used. Enter your current code.',
+    )
     authUser.username = null
   })
 

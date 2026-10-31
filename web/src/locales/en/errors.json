@@ -40,5 +40,6 @@
   "sessionRevoked": "Your session has been revoked. Sign in again.",
   "cannotDisableSelf": "You cannot disable your own account.",
   "cannotDeleteSelf": "You cannot delete your own account.",
+  "cannotResetSelf": "You cannot reset your own two-factor authentication here.",
   "userNotDisabled": "Disable this account before deleting it."
 }

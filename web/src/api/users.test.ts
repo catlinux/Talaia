@@ -94,6 +94,24 @@ describe('api users client', () => {
     )
   })
 
+  it('sends the two-factor reset confirmation and maps the revoked counts', async () => {
+    const fetchImpl = vi.fn(() =>
+      Promise.resolve(json({ sessions_revoked: 3, devices_revoked: 2 }, 200)),
+    )
+    const api = createUsersApi(fetchImpl as unknown as typeof fetch)
+
+    await expect(api.resetTwoFactor('u/1', 'alice', '123456')).resolves.toEqual({
+      sessionsRevoked: 3,
+      devicesRevoked: 2,
+    })
+    expect(fetchImpl).toHaveBeenCalledWith('/api/v1/users/u%2F1/reset-2fa', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ confirm_username: 'alice', totp_code: '123456' }),
+    })
+  })
+
   it('maps last_admin to the shared error code', async () => {
     const fetchImpl = vi.fn(() => Promise.resolve(json({ error: { code: 'last_admin' } }, 409)))
     const api = createUsersApi(fetchImpl as unknown as typeof fetch)

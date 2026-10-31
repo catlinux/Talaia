@@ -13,6 +13,12 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.6.30] - 2026-10-31
+
+### Added
+
+- Panel: Users > People has **Reset two-factor authentication** for another user (when they lost their phone): you type their name and your own current code; their authenticator, recovery codes and trusted devices are removed, their sessions are closed and they set up a new authenticator at the next sign-in.
+
 ## [0.6.29] - 2026-10-31
 
 ### Added
@@ -879,7 +885,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.6.29...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.6.30...HEAD
+[0.6.30]: https://github.com/catlinux/Talaia/releases/tag/v0.6.30
 [0.6.29]: https://github.com/catlinux/Talaia/releases/tag/v0.6.29
 [0.6.28]: https://github.com/catlinux/Talaia/releases/tag/v0.6.28
 [0.6.27]: https://github.com/catlinux/Talaia/releases/tag/v0.6.27

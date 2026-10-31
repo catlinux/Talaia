@@ -172,6 +172,7 @@ function usersApi(): UsersApi {
     disable: unexpected,
     enable: unexpected,
     delete: unexpected,
+    resetTwoFactor: unexpected,
     listBindings: () => Promise.resolve([]),
     addBinding: unexpected,
     updateBinding: unexpected,

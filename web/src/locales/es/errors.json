@@ -40,5 +40,6 @@
   "sessionRevoked": "Tu sesión ha sido revocada. Vuelve a iniciar sesión.",
   "cannotDisableSelf": "No puedes desactivar tu propia cuenta.",
   "cannotDeleteSelf": "No puedes eliminar tu propia cuenta.",
+  "cannotResetSelf": "No puedes restablecer aquí tu propia autenticación en dos pasos.",
   "userNotDisabled": "Desactiva esta cuenta antes de eliminarla."
 }

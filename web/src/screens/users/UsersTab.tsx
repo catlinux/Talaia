@@ -1,8 +1,9 @@
-import { useState, type FormEvent } from 'react'
+import { useId, useState, type FormEvent } from 'react'
 import type { TFunction } from 'i18next'
 import { useTranslation } from 'react-i18next'
 
 import type { Group } from '../../api/groups'
+import { ApiError } from '../../api/http'
 import type { CreatedInvite, Invite, InvitesApi } from '../../api/invites'
 import type { ServerSummary } from '../../api/servers'
 import type { AdminUser, Binding, Role, Scope, UsersApi } from '../../api/users'
@@ -77,6 +78,7 @@ export function UsersTab({
   const [editing, setEditing] = useState<EditState | null>(null)
   const [toggling, setToggling] = useState<AdminUser | null>(null)
   const [deleting, setDeleting] = useState<AdminUser | null>(null)
+  const [resetting, setResetting] = useState<AdminUser | null>(null)
   const [inviting, setInviting] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -242,16 +244,27 @@ export function UsersTab({
             label: t('users:edit'),
             onSelect: () => setEditing({ user, displayName: user.displayName, email: user.email }),
           },
-          {
-            id: 'toggle',
-            label: user.disabled ? t('users:enable') : t('users:disable'),
-            danger: !user.disabled,
+        ]
+        if (user.totpEnabled && user.username !== auth?.username) {
+          entries.push({
+            id: 'reset2fa',
+            label: t('users:resetTwoFactor.menu'),
+            danger: true,
             onSelect: () => {
               setError(null)
-              setToggling(user)
+              setResetting(user)
             },
+          })
+        }
+        entries.push({
+          id: 'toggle',
+          label: user.disabled ? t('users:enable') : t('users:disable'),
+          danger: !user.disabled,
+          onSelect: () => {
+            setError(null)
+            setToggling(user)
           },
-        ]
+        })
         if (user.disabled && user.username !== auth?.username) {
           entries.push({
             id: 'delete',
@@ -495,6 +508,18 @@ export function UsersTab({
         }}
       />
 
+      {resetting !== null ? (
+        <ResetTwoFactorDialog
+          user={resetting}
+          api={usersApi}
+          onClose={() => {
+            setResetting(null)
+            setError(null)
+          }}
+          onDone={onRefresh}
+        />
+      ) : null}
+
       {inviting ? (
         <InviteDrawer
           api={invitesApi}
@@ -680,6 +705,127 @@ function InviteDrawer({
           </p>
         </div>
       )}
+    </Drawer>
+  )
+}
+
+function resetTwoFactorError(t: TFunction, cause: unknown): string {
+  if (cause instanceof ApiError) {
+    if (cause.code === 'invalid_request' && cause.field === 'confirm_username') {
+      return t('users:resetTwoFactor.errors.username')
+    }
+    if (cause.code === 'cannot_reset_self') return t('users:resetTwoFactor.errors.self')
+    if (cause.code === 'code_invalid') return t('users:resetTwoFactor.errors.code')
+    if (cause.code === 'rate_limited') return t('users:resetTwoFactor.errors.rateLimited')
+    if (cause.code === 'not_found') return t('users:resetTwoFactor.errors.notFound')
+  }
+  return errorMessage(t, cause)
+}
+
+function ResetTwoFactorDialog({
+  user,
+  api,
+  onClose,
+  onDone,
+}: {
+  user: AdminUser
+  api: UsersApi
+  onClose: () => void
+  onDone: () => Promise<void>
+}) {
+  const { t } = useTranslation(['users', 'errors'])
+  const toast = useToast()
+  const usernameID = useId()
+  const codeID = useId()
+  const codeHintID = useId()
+  const [username, setUsername] = useState('')
+  const [code, setCode] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const valid = username === user.username && /^\d{6}$/.test(code)
+
+  const submit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    if (!valid || busy) return
+    setBusy(true)
+    setError(null)
+    try {
+      const result = await api.resetTwoFactor(user.id, user.username, code)
+      toast.success(
+        t('users:toast.twoFactorReset', {
+          name: user.username,
+          sessions: result.sessionsRevoked,
+          count: result.sessionsRevoked,
+        }),
+      )
+      setBusy(false)
+      onClose()
+      void onDone().catch(() => undefined)
+    } catch (cause) {
+      setError(resetTwoFactorError(t, cause))
+      setBusy(false)
+    }
+  }
+
+  return (
+    <Drawer
+      open
+      title={t('users:resetTwoFactor.title', { name: user.username })}
+      onClose={busy ? () => undefined : onClose}
+      footer={
+        <div className="users__actions">
+          <button type="button" className="ui-btn" disabled={busy} onClick={onClose}>
+            {t('actions.cancel')}
+          </button>
+          <button
+            type="submit"
+            form="reset-two-factor-form"
+            className="ui-btn ui-btn--danger"
+            disabled={busy || !valid}
+          >
+            {busy ? t('users:resetTwoFactor.working') : t('users:resetTwoFactor.confirm')}
+          </button>
+        </div>
+      }
+    >
+      <form id="reset-two-factor-form" noValidate onSubmit={submit}>
+        <p>{t('users:resetTwoFactor.body', { name: user.username })}</p>
+        <label className="field" htmlFor={usernameID}>
+          <span className="field__label">
+            {t('users:resetTwoFactor.username', { name: user.username })}
+          </span>
+          <input
+            id={usernameID}
+            className="field__input"
+            autoComplete="off"
+            value={username}
+            onChange={(event) => setUsername(event.target.value)}
+          />
+        </label>
+        <label className="field" htmlFor={codeID}>
+          <span className="field__label">{t('users:resetTwoFactor.code')}</span>
+          <input
+            id={codeID}
+            className="field__input"
+            type="text"
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            pattern="[0-9]*"
+            maxLength={6}
+            aria-describedby={codeHintID}
+            value={code}
+            onChange={(event) => setCode(event.target.value.replace(/\D/g, '').slice(0, 6))}
+          />
+        </label>
+        <span className="users__hint" id={codeHintID}>
+          {t('users:resetTwoFactor.codeHint')}
+        </span>
+        {error !== null ? (
+          <p className="users__error" role="alert">
+            {error}
+          </p>
+        ) : null}
+      </form>
     </Drawer>
   )
 }

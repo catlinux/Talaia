@@ -32,6 +32,12 @@ export interface AdminUser {
   bindings: Binding[]
 }
 
+/** ResetTwoFactorResult reports how much state the core revoked. */
+export interface ResetTwoFactorResult {
+  sessionsRevoked: number
+  devicesRevoked: number
+}
+
 /** UsersApi manages accounts and their assignments. */
 export interface UsersApi {
   list(): Promise<AdminUser[]>
@@ -39,6 +45,7 @@ export interface UsersApi {
   disable(userId: string): Promise<void>
   enable(userId: string): Promise<void>
   delete(userId: string, username: string): Promise<void>
+  resetTwoFactor(userId: string, username: string, totpCode: string): Promise<ResetTwoFactorResult>
   listBindings(userId: string): Promise<Binding[]>
   addBinding(userId: string, role: Role, scope: Scope): Promise<Binding>
   updateBinding(bindingId: string, role: Role): Promise<void>
@@ -72,6 +79,11 @@ interface usersResponse {
 
 interface bindingsResponse {
   bindings: apiBinding[]
+}
+
+interface resetTwoFactorResponse {
+  sessions_revoked: number
+  devices_revoked: number
 }
 
 function toScope(scope: apiBinding['scope']): Scope {
@@ -123,6 +135,16 @@ export function createUsersApi(fetchImpl?: typeof fetch): UsersApi {
       http.delete<void>(`/api/v1/users/${encodeURIComponent(userId)}`, {
         confirm_username: username,
       }),
+    resetTwoFactor: async (userId, username, totpCode) => {
+      const body = await http.post<resetTwoFactorResponse>(
+        `/api/v1/users/${encodeURIComponent(userId)}/reset-2fa`,
+        { confirm_username: username, totp_code: totpCode },
+      )
+      return {
+        sessionsRevoked: body.sessions_revoked,
+        devicesRevoked: body.devices_revoked,
+      }
+    },
     listBindings: async (userId) => {
       const body = await http.get<bindingsResponse>(
         `/api/v1/users/${encodeURIComponent(userId)}/bindings`,
