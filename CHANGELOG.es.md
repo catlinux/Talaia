@@ -13,6 +13,12 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+## [0.6.49] - 2026-10-31
+
+### Corregido
+
+- CI: aviso del lint en la comprobación de espacio libre del build del agente, que solo se compila en Linux.
+
 ## [0.6.48] - 2026-10-31
 
 ### Corregido
@@ -993,7 +999,8 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
   `.gitattributes` y `.gitignore`.
 - Licencia WNCL-1.0 aplicada: archivo `LICENSE` y sección de créditos en los README.
 
-[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.6.48...HEAD
+[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.6.49...HEAD
+[0.6.49]: https://github.com/catlinux/Talaia/releases/tag/v0.6.49
 [0.6.48]: https://github.com/catlinux/Talaia/releases/tag/v0.6.48
 [0.6.47]: https://github.com/catlinux/Talaia/releases/tag/v0.6.47
 [0.6.46]: https://github.com/catlinux/Talaia/releases/tag/v0.6.46
