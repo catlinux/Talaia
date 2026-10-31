@@ -11,7 +11,7 @@ Para las métricas, las reglas de alerta y los canales de notificación, consult
 
 [Estructura](#estructura) · [Resumen](#resumen) · [Servidores](#servidores) · [Página del servidor](#página-del-servidor) ·
 [Contenedores y stacks](#contenedores-y-stacks) · [Consejos «¿Qué es?»](#consejos-qué-es) ·
-[Alertas](#alertas) · [Paleta de comandos](#paleta-de-comandos) · [Usuarios, Auditoría y Ajustes](#usuarios-auditoría-y-ajustes) ·
+[Catálogo](#catálogo) · [Alertas](#alertas) · [Paleta de comandos](#paleta-de-comandos) · [Usuarios, Auditoría y Ajustes](#usuarios-auditoría-y-ajustes) ·
 [Móvil](#móvil)
 
 ## Estructura
@@ -104,6 +104,19 @@ un contenedor.
 Los servicios e imágenes conocidos usan el catálogo integrado; cuando Talaia no conoce uno, la ficha
 muestra igualmente su origen o, en un servicio desconocido, la descripción que informa systemd. Consulta
 la ficha antes de detener algo: indica si el servidor o tu acceso dependen de ello y qué revisar primero.
+
+**Ver la ficha completa** abre la ficha detallada en un panel lateral: qué es en palabras sencillas,
+**Si lo detienes**, **Si falla** con sus **Problemas habituales** y cómo resolverlos, **Cómo
+comprobarlo** con órdenes que puedes copiar (`systemctl status`, `journalctl` o `docker logs`, además
+de herramientas concretas como `certbot certificates`), el origen y un enlace a la documentación
+oficial.
+
+## Catálogo
+
+**Catálogo**, en Administración, lista todos los servicios e imágenes de contenedor que Talaia
+reconoce, explicados para principiantes. Busca por nombre, id, unidad o imagen y filtra por **Tipo**,
+**Categoría** e **Importancia**; los filtros se guardan en la dirección. **Ver ficha** abre la misma
+ficha detallada que el botón ⓘ.
 
 ## Alertas
 

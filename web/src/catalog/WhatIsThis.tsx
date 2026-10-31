@@ -220,6 +220,19 @@ export function describeStack(name: string, containers: Container[]): CatalogDes
   }
 }
 
+/** CatalogText renders a catalogue text with its `code` spans, never HTML. */
+function CatalogText({ value }: { value: string }) {
+  return (
+    <>
+      {value
+        .split('`')
+        .map((part, index) =>
+          index % 2 === 1 ? <code key={index}>{part}</code> : <span key={index}>{part}</span>,
+        )}
+    </>
+  )
+}
+
 export type WhatIsThisTarget =
   | { kind: 'service'; unit: ServiceUnit }
   | { kind: 'container'; container: Container }
@@ -275,16 +288,22 @@ export function WhatIsThis({ target, variant = 'compact' }: WhatIsThisProps) {
         <>
           <section className="whatisthis__section">
             <h3 className="whatisthis__heading">{t('label.what')}</h3>
-            <p className="whatisthis__what">{description.what}</p>
+            <p className="whatisthis__what">
+              <CatalogText value={description.what} />
+            </p>
             {description.details !== undefined ? (
-              <p className="whatisthis__what">{description.details}</p>
+              <p className="whatisthis__what">
+                <CatalogText value={description.details} />
+              </p>
             ) : null}
           </section>
 
           {description.stop !== undefined ? (
             <section className="whatisthis__section">
               <h3 className="whatisthis__heading">{t('label.stop')}</h3>
-              <p className="whatisthis__what">{description.stop}</p>
+              <p className="whatisthis__what">
+                <CatalogText value={description.stop} />
+              </p>
             </section>
           ) : null}
 
@@ -292,14 +311,18 @@ export function WhatIsThis({ target, variant = 'compact' }: WhatIsThisProps) {
             <section className="whatisthis__section">
               <h3 className="whatisthis__heading">{t('label.ifFails')}</h3>
               {description.ifFails !== undefined ? (
-                <p className="whatisthis__fail">{description.ifFails}</p>
+                <p className="whatisthis__fail">
+                  <CatalogText value={description.ifFails} />
+                </p>
               ) : null}
               {description.problems.length > 0 ? (
                 <>
                   <h4 className="whatisthis__subheading">{t('label.problems')}</h4>
                   <ul className="whatisthis__problems">
                     {description.problems.map((problem) => (
-                      <li key={problem}>{problem}</li>
+                      <li key={problem}>
+                        <CatalogText value={problem} />
+                      </li>
                     ))}
                   </ul>
                 </>
@@ -353,10 +376,12 @@ export function WhatIsThis({ target, variant = 'compact' }: WhatIsThisProps) {
         </>
       ) : (
         <>
-          <p className="whatisthis__what">{description.what}</p>
+          <p className="whatisthis__what">
+            <CatalogText value={description.what} />
+          </p>
           {description.ifFails !== undefined ? (
             <p className="whatisthis__fail">
-              <strong>{t('label.ifFails')}:</strong> {description.ifFails}
+              <strong>{t('label.ifFails')}:</strong> <CatalogText value={description.ifFails} />
             </p>
           ) : null}
           {description.origin !== description.what ? (

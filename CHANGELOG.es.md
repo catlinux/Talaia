@@ -13,6 +13,13 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+## [0.6.26] - 2026-10-31
+
+### Añadido
+
+- Catálogo: 139 entradas, 51 nuevas (temporizadores de mantenimiento, unidades internas de systemd agrupadas por función, NetworkManager, firewalld, OpenDKIM, Open vSwitch, gestores de inicio de sesión gráfico, Jellyfin, Immich, TimescaleDB e imágenes base como Node.js, Python, PHP, Alpine, Debian y Ubuntu). Cada entrada explica en ca, es y en qué hace en el día a día, qué pasa si lo detienes y sus problemas habituales con cómo resolverlos; las órdenes de los textos se muestran como código. Las órdenes de comprobación del host solo se ofrecen para servicios, no para contenedores.
+- Docs: la guía del panel describe la ficha completa y la pantalla Catálogo.
+
 ## [0.6.25] - 2026-10-31
 
 ### Añadido
@@ -852,7 +859,8 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
   `.gitattributes` y `.gitignore`.
 - Licencia WNCL-1.0 aplicada: archivo `LICENSE` y sección de créditos en los README.
 
-[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.6.25...HEAD
+[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.6.26...HEAD
+[0.6.26]: https://github.com/catlinux/Talaia/releases/tag/v0.6.26
 [0.6.25]: https://github.com/catlinux/Talaia/releases/tag/v0.6.25
 [0.6.24]: https://github.com/catlinux/Talaia/releases/tag/v0.6.24
 [0.6.23]: https://github.com/catlinux/Talaia/releases/tag/v0.6.23

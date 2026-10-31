@@ -10,7 +10,7 @@ For metrics, alert rules and notification channels, see [monitoring.md](monitori
 
 [Layout](#layout) · [Overview](#overview) · [Servers](#servers) · [Server page](#server-page) ·
 [Containers and Stacks](#containers-and-stacks) · [What is this? tips](#what-is-this-tips) ·
-[Alerts](#alerts) · [Command palette](#command-palette) · [Users, Audit and Settings](#users-audit-and-settings) ·
+[Catalogue](#catalogue) · [Alerts](#alerts) · [Command palette](#command-palette) · [Users, Audit and Settings](#users-audit-and-settings) ·
 [Mobile](#mobile)
 
 ## Layout
@@ -95,6 +95,18 @@ Known services and images use the built-in catalogue; when Talaia does not know 
 shows its origin or, for an unknown service, the description reported by systemd. Use the card before
 stopping something: it tells you whether the server or your access depends on it and what to check
 first.
+
+**View full card** opens the detailed card in a side panel: what it is in plain words, **If you stop
+it**, **If it fails** with its **Common problems** and how to fix them, **How to check it** with
+commands you can copy (`systemctl status`, `journalctl` or `docker logs`, plus specific tools such as
+`certbot certificates`), the origin and a link to the official documentation.
+
+## Catalogue
+
+**Catalogue**, under Administration, lists every service and container image Talaia recognises,
+written for beginners. Search by name, id, unit or image, and filter by **Type**, **Category** and
+**Importance**; the filters are kept in the address. **View card** opens the same detailed card as the
+ⓘ button.
 
 ## Alerts
 

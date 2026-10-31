@@ -18,6 +18,13 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.6.26] - 2026-10-31
+
+### Added
+
+- Catalogue: 139 entries, 51 of them new (maintenance timers, internal systemd units grouped by purpose, NetworkManager, firewalld, OpenDKIM, Open vSwitch, display managers, Jellyfin, Immich, TimescaleDB and base images such as Node.js, Python, PHP, Alpine, Debian and Ubuntu). Every entry explains in ca, es and en what it does day to day, what happens if you stop it and its common problems with how to fix them; commands in the texts are shown as code. Host check commands are only offered for services, not for containers.
+- Docs: the panel guide describes the full card and the Catalogue screen.
+
 ## [0.6.25] - 2026-10-31
 
 ### Added
@@ -852,7 +859,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.6.25...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.6.26...HEAD
+[0.6.26]: https://github.com/catlinux/Talaia/releases/tag/v0.6.26
 [0.6.25]: https://github.com/catlinux/Talaia/releases/tag/v0.6.25
 [0.6.24]: https://github.com/catlinux/Talaia/releases/tag/v0.6.24
 [0.6.23]: https://github.com/catlinux/Talaia/releases/tag/v0.6.23

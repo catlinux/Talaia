@@ -194,3 +194,14 @@
 .whatisthis__section .whatisthis__origin {
   font-size: 14px;
 }
+
+.whatisthis p code,
+.whatisthis li code {
+  padding: 0 4px;
+  border-radius: 4px;
+  background: var(--sunken);
+  color: var(--ink);
+  font-family: var(--f-mono);
+  font-size: 0.9em;
+  overflow-wrap: anywhere;
+}
