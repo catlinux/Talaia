@@ -13,6 +13,12 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.6.35] - 2026-10-31
+
+### Added
+
+- Agent: app releases (phase 6 step 7). Without downtime for single-service apps without volumes or published ports (managed proxy): a second container starts and the old one is removed only when the new one is healthy within 120 seconds; otherwise the old one keeps serving and the release fails. Other apps, including those behind your own Apache, use a plain compose up. Rollback to one of the last three good images, and cleanup that only removes other talaia/<stack> images.
+
 ## [0.6.34] - 2026-10-31
 
 ### Added
@@ -909,7 +915,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.6.34...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.6.35...HEAD
+[0.6.35]: https://github.com/catlinux/Talaia/releases/tag/v0.6.35
 [0.6.34]: https://github.com/catlinux/Talaia/releases/tag/v0.6.34
 [0.6.33]: https://github.com/catlinux/Talaia/releases/tag/v0.6.33
 [0.6.32]: https://github.com/catlinux/Talaia/releases/tag/v0.6.32

@@ -299,6 +299,30 @@ func (m *Manager) Do(ctx context.Context, name string, action agentv1.StackActio
 	}
 }
 
+// ComposeCommand returns the directory and the fixed docker compose arguments
+// that address the stack name. It lets another command, such as a release,
+// scale a service with the same rules as Do.
+func (m *Manager) ComposeCommand(name string) (string, []string, error) {
+	dir, err := m.existing(name)
+	if err != nil {
+		return "", nil, err
+	}
+	record, adopted, err := m.adoption(name)
+	if err != nil {
+		return "", nil, err
+	}
+	if adopted && record.broken() {
+		return "", nil, brokenStackError(name)
+	}
+
+	project := []string{"compose", "--project-name", name}
+	if adopted {
+		project = append(project, "--project-directory", record.WorkingDir, "-f", record.ConfigFile)
+		return record.WorkingDir, project, nil
+	}
+	return dir, project, nil
+}
+
 // Read returns the files of the stack as JSON: {"compose": "...", "env": "..."}.
 func (m *Manager) Read(_ context.Context, name string) (string, error) {
 	dir, err := m.existing(name)

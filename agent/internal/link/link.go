@@ -30,6 +30,7 @@ import (
 	"github.com/catlinux/Talaia/agent/internal/inventory"
 	"github.com/catlinux/Talaia/agent/internal/jobs"
 	"github.com/catlinux/Talaia/agent/internal/proxy"
+	"github.com/catlinux/Talaia/agent/internal/release"
 	"github.com/catlinux/Talaia/agent/internal/source"
 	"github.com/catlinux/Talaia/agent/internal/stacks"
 	"github.com/catlinux/Talaia/agent/internal/terminal"
@@ -637,14 +638,15 @@ func jitter(backoff time.Duration) time.Duration {
 }
 
 // newExecutor builds the executor of a real agent: container actions, stacks,
-// app source and builds, the proxy, Docker resources, agent updates, apt and
-// host operations, and the journal.
+// app source, builds and releases, the proxy, Docker resources, agent updates,
+// apt and host operations, and the journal.
 func newExecutor(cfg config.Config, identity *enroll.Identity, checker *apt.Checker, aptOps jobs.AptOperations, proxyManager *proxy.Manager) *jobs.Executor {
 	docker := jobs.NewDockerActions()
 	return jobs.New(docker).
 		WithStacks(stacks.NewDefault().WithProjects(inventory.NewDocker())).
 		WithSource(source.NewDefault()).
 		WithBuild(appbuild.NewDefault()).
+		WithRelease(release.NewDefault()).
 		WithProxy(proxyManager).
 		WithResources(docker).
 		WithUpdates(update.New(update.Options{CoreURL: cfg.CoreURL, Identity: identity})).

@@ -154,6 +154,23 @@ func TestWriteRefusesBadInput(t *testing.T) {
 	}
 }
 
+func TestComposeCommandReturnsTheStackDirectory(t *testing.T) {
+	m, _, root := newManager(t)
+	if _, err := m.Write(context.Background(), "shop", sampleCompose, ""); err != nil {
+		t.Fatal(err)
+	}
+	dir, args, err := m.ComposeCommand("shop")
+	if err != nil {
+		t.Fatalf("ComposeCommand: %v", err)
+	}
+	if dir != filepath.Join(root, "shop") {
+		t.Errorf("dir = %q", dir)
+	}
+	if !reflect.DeepEqual(args, []string{"compose", "--project-name", "shop"}) {
+		t.Errorf("args = %v", args)
+	}
+}
+
 func TestDoRunsComposeWithFixedArguments(t *testing.T) {
 	m, runner, root := newManager(t)
 	if _, err := m.Write(context.Background(), "shop", sampleCompose, ""); err != nil {

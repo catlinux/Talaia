@@ -96,6 +96,10 @@ otras webs) y ninguno puede verse afectado; todo debe convivir.** Ver *Convivenc
   `--no-recreate`, esperar a que el nuevo esté sano (healthcheck del Dockerfile o, si no hay, conexión TCP al
   puerto), quitar el viejo y volver a 1. Si el nuevo no arranca sano en 120 s se elimina y **el viejo sigue
   sirviendo**: despliegue `failed`, sin corte. Sin la opción: `up -d` normal.
+  **Nota (2026-10-31, revisión del paso 7):** en modo externo el servicio publica `127.0.0.1:<puerto>` y un segundo
+  contenedor no puede escuchar en el mismo puerto del host; por eso el agente desactiva el «sin corte» cuando el
+  servicio publica puertos y hace un `up -d` normal (corte de segundos). El «sin corte» real solo existe en modo
+  gestionado (Caddy por la red `talaia-proxy`). El panel y la documentación deben decirlo.
 - **Volver atrás**: se conservan las 3 últimas imágenes correctas; revertir = desplegar la imagen de un
   `deployment` anterior sin build. La limpieza borra las demás imágenes `talaia/<stack>:*`.
 - Cola por app en el core (`core/internal/deploy`): un despliegue a la vez; un push nuevo deja como `superseded`
@@ -160,7 +164,7 @@ CHANGELOG, o el script falla) y marca ✅ aquí y en los dos TODO. Ejecutor por 
 | 4 ✅ | Core: webhook firmado de GitHub y sondeo (D4) | `core/internal/api/hooks.go`, `core/internal/deploy/poll.go`, `core/internal/api/authz.go` | pruebas: firma mala/ausente/repetida, `ping`, otra rama, cuerpo grande, límite; guardiana `chi.Walk` en verde | AgentRelay · alto + **revisión Opus** | 0.6.4 |
 | 5 ✅ | Agente: build con Dockerfile (D3), uno a la vez por servidor | `agent/internal/build/**` | pruebas con runner falso: argumentos exactos, espacio libre, tiempo, secretos fuera de build-args, limpieza solo de lo suyo | AgentRelay · medio | 0.6.5 |
 | 6 ✅ | Agente: modo externo por defecto (puerto libre en `127.0.0.1`) y Caddy gestionado opcional (D5) | `agent/internal/proxy/**` | pruebas: elección de puerto sin pisar sockets ni puertos Docker; 80/443 ocupados → gestionado imposible; JSON de Caddy, socket Unix, digest; nunca toca otro servidor web | AgentRelay · alto + **revisión Opus** | 0.6.6 |
-| 7 | Agente: release sin corte, reversión y limpieza de imágenes (D3) | `agent/internal/release/**` | pruebas: nuevo sano → viejo fuera; nuevo enfermo → viejo sigue y `failed`; se guardan 3 imágenes; solo borra `talaia/<stack>:*` | AgentRelay · alto + **revisión Opus** | 0.6.7 |
+| 7 ✅ | Agente: release sin corte, reversión y limpieza de imágenes (D3) | `agent/internal/release/**` | pruebas: nuevo sano → viejo fuera; nuevo enfermo → viejo sigue y `failed`; se guardan 3 imágenes; solo borra `talaia/<stack>:*` | AgentRelay · alto + **revisión Opus** | 0.6.7 |
 | 8 | Core: canalización de despliegue (cola por app, estados, log, generación del compose con límites de CPU/RAM, «editada a mano») | `core/internal/deploy/**` | pruebas con agente falso: push → build → release → `succeeded`; push durante otro → `superseded`; fallo de build no toca el stack | AgentRelay · alto | 0.6.8 |
 | 9 | API de apps, variables, dominios, despliegues, reversión y proxy (incluido el bloque de Apache/nginx); auditoría | `core/internal/api/{apps,domains,deployments,proxy}.go`, `core/internal/api/api.go`, `core/internal/api/authz.go` | pruebas por rol; secretos nunca en respuestas; clave de API puede desplegar y no editar | AgentRelay · medio | 0.6.9 |
 | 10 | Plantillas (D7) según M3 | `templates/**`, `core/internal/templates/**` | prueba que valida todas con `docker compose config` (en CI) y los parámetros | AgentRelay · medio | 0.6.10 |

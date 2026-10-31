@@ -28,6 +28,7 @@ const (
 	stackWriteTimeout   = 2 * time.Minute
 	resourceTimeout     = 5 * time.Minute
 	sourceTimeout       = 5 * time.Minute
+	releaseTimeout      = 10 * time.Minute
 	proxyInstallTimeout = 10 * time.Minute
 	proxyApplyTimeout   = time.Minute
 )
@@ -47,6 +48,9 @@ var errNoSource = errors.New("the git source is not available on this agent")
 
 // errNoBuild is the failure of an app build command without the builder.
 var errNoBuild = errors.New("the image builder is not available on this agent")
+
+// errNoRelease is the failure of an app release command without the releaser.
+var errNoRelease = errors.New("the app releaser is not available on this agent")
 
 // errNoProxy is the failure of a proxy command without the proxy manager.
 var errNoProxy = errors.New("the proxy manager is not available on this agent")
@@ -83,6 +87,11 @@ type AppBuilder interface {
 	Build(ctx context.Context, app *agentv1.AppBuild) (string, error)
 }
 
+// AppReleaser starts an app image in its stack.
+type AppReleaser interface {
+	Release(ctx context.Context, app *agentv1.AppRelease) (string, error)
+}
+
 // ProxyManager installs the managed proxy and loads its configuration.
 type ProxyManager interface {
 	Install(ctx context.Context, action agentv1.ProxyInstallAction) (string, error)
@@ -98,6 +107,8 @@ type Executor struct {
 	sources SourceFetcher
 	// builds is nil until WithBuild sets it.
 	builds AppBuilder
+	// releases is nil until WithRelease sets it.
+	releases AppReleaser
 	// proxy is nil until WithProxy sets it.
 	proxy ProxyManager
 	// resources is nil until WithResources sets it.
@@ -146,6 +157,12 @@ func (e *Executor) WithBuild(builder AppBuilder) *Executor {
 	return e
 }
 
+// WithRelease lets the executor start an app image.
+func (e *Executor) WithRelease(releaser AppReleaser) *Executor {
+	e.releases = releaser
+	return e
+}
+
 // WithProxy lets the executor install and configure the managed proxy.
 func (e *Executor) WithProxy(manager ProxyManager) *Executor {
 	e.proxy = manager
@@ -183,6 +200,7 @@ func (e *Executor) Handle(ctx context.Context, msg *agentv1.CoreMsg, emit func(*
 	action, logs := msg.GetContainerAction(), msg.GetReadLogs()
 	write, stackAction, read, adopt := msg.GetStackWrite(), msg.GetStackAction(), msg.GetStackRead(), msg.GetStackAdopt()
 	appSource, appBuild := msg.GetAppSource(), msg.GetAppBuild()
+	appRelease := msg.GetAppRelease()
 	proxyInstall, proxyApply := msg.GetProxyInstall(), msg.GetProxyApply()
 	list, remove := msg.GetListResources(), msg.GetRemoveResources()
 	updateCommand := msg.GetAgentUpdate()
@@ -190,7 +208,7 @@ func (e *Executor) Handle(ctx context.Context, msg *agentv1.CoreMsg, emit func(*
 	aptUpgrade, hostReboot := msg.GetAptUpgrade(), msg.GetHostReboot()
 	serviceAction := msg.GetServiceAction()
 	readJournal := msg.GetReadJournal()
-	if action == nil && logs == nil && write == nil && stackAction == nil && read == nil && adopt == nil && appSource == nil && appBuild == nil && proxyInstall == nil && proxyApply == nil && list == nil && remove == nil && updateCommand == nil && aptStatus == nil && aptUpgrade == nil && hostReboot == nil && serviceAction == nil && readJournal == nil {
+	if action == nil && logs == nil && write == nil && stackAction == nil && read == nil && adopt == nil && appSource == nil && appBuild == nil && appRelease == nil && proxyInstall == nil && proxyApply == nil && list == nil && remove == nil && updateCommand == nil && aptStatus == nil && aptUpgrade == nil && hostReboot == nil && serviceAction == nil && readJournal == nil {
 		return false
 	}
 
@@ -288,6 +306,13 @@ func (e *Executor) Handle(ctx context.Context, msg *agentv1.CoreMsg, emit func(*
 				return "", errNoBuild
 			}
 			return e.builds.Build(ctx, appBuild)
+		})
+	case appRelease != nil:
+		go e.execute(ctx, jobID, "app release "+appRelease.GetName(), releaseTimeout, emit, func(ctx context.Context) (string, error) {
+			if e.releases == nil {
+				return "", errNoRelease
+			}
+			return e.releases.Release(ctx, appRelease)
 		})
 	case proxyInstall != nil:
 		go e.execute(ctx, jobID, "proxy install "+proxyInstall.GetAction().String(), proxyInstallTimeout, emit, func(ctx context.Context) (string, error) {

@@ -13,6 +13,12 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+## [0.6.35] - 2026-10-31
+
+### Añadido
+
+- Agente: publicación de apps (fase 6, paso 7). Sin corte para apps de un solo servicio sin volúmenes ni puertos publicados (proxy gestionado): arranca un segundo contenedor y el viejo solo se quita cuando el nuevo está sano en 120 segundos; si no, el viejo sigue sirviendo y la publicación falla. Las demás apps, incluidas las que están detrás de tu propio Apache, usan un compose up normal. Vuelta atrás a una de las tres últimas imágenes correctas y limpieza que solo borra otras imágenes talaia/<stack>.
+
 ## [0.6.34] - 2026-10-31
 
 ### Añadido
@@ -909,7 +915,8 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
   `.gitattributes` y `.gitignore`.
 - Licencia WNCL-1.0 aplicada: archivo `LICENSE` y sección de créditos en los README.
 
-[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.6.34...HEAD
+[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.6.35...HEAD
+[0.6.35]: https://github.com/catlinux/Talaia/releases/tag/v0.6.35
 [0.6.34]: https://github.com/catlinux/Talaia/releases/tag/v0.6.34
 [0.6.33]: https://github.com/catlinux/Talaia/releases/tag/v0.6.33
 [0.6.32]: https://github.com/catlinux/Talaia/releases/tag/v0.6.32
