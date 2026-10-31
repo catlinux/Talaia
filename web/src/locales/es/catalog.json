@@ -107,37 +107,87 @@
     "systemd-journald": {
       "name": "Registro de systemd",
       "what": "Recoge los registros del sistema operativo y de sus servicios.",
-      "ifFails": "Los registros dejan de guardarse y herramientas como journalctl no pueden leer entradas nuevas. Reinícialo solo si el registro no está sano y guarda antes una copia."
+      "ifFails": "Los registros dejan de guardarse y herramientas como journalctl no pueden leer entradas nuevas. Reinícialo solo si el registro no está sano y guarda antes una copia.",
+      "details": "systemd-journald recoge los mensajes del kernel, de systemd y de los servicios. Los guarda en el journal binario de `/var/log/journal` si el almacenamiento persistente está activado, o en memoria en caso contrario. Se leen con `journalctl`, y herramientas como rsyslog pueden guardar copias de texto aparte. Arranca muy pronto y el resto del sistema espera que esté funcionando.",
+      "stop": "Parar o desactivar journald impide que se registren mensajes nuevos y puede dejar `journalctl` con resultados incompletos. Los registros existentes no se borran, pero los mensajes producidos mientras está parado se pierden. No lo pares salvo que estés diagnosticando el propio journal; compruébalo antes con `journalctl --verify`.",
+      "problems": [
+        "El journal está vacío o deja de crecer — comprueba `systemctl status systemd-journald`, el espacio libre en disco y la salida de `journalctl --verify`.",
+        "Los registros desaparecen tras reiniciar — puede que el almacenamiento persistente esté desactivado; revisa `Storage=` en `/etc/systemd/journald.conf` y si existe `/var/log/journal`.",
+        "El journal ocupa demasiado disco — ejecuta `journalctl --disk-usage` y baja `SystemMaxUse=` o elimina entradas antiguas con `journalctl --vacuum-size=...`.",
+        "El servicio no arranca — lee `journalctl -u systemd-journald -n 50 --no-pager`; un `/var/log` lleno o un archivo del journal dañado son causas habituales."
+      ]
     },
     "systemd-logind": {
       "name": "Gestor de sesiones de systemd",
       "what": "Hace un seguimiento de usuarios, sesiones y asientos para los accesos locales y remotos.",
-      "ifFails": "Los accesos nuevos y el seguimiento de sesiones pueden fallar, y las sesiones abiertas pueden verse afectadas. Revisa los registros antes de reiniciar; evítalo si eres el único usuario conectado."
+      "ifFails": "Los accesos nuevos y el seguimiento de sesiones pueden fallar, y las sesiones abiertas pueden verse afectadas. Revisa los registros antes de reiniciar; evítalo si eres el único usuario conectado.",
+      "details": "systemd-logind sigue las sesiones de inicio de sesión locales y remotas, los usuarios y los asientos (seats). Gestiona la limpieza de sesiones, las acciones por inactividad, las teclas de encendido y los permisos para dispositivos como las tarjetas de sonido. Las sesiones de escritorio y los accesos remotos dependen de él, y una shell SSH normal también crea una sesión gestionada por logind. No comprueba las contraseñas; de eso se encargan PAM y el programa de login.",
+      "stop": "Parar logind puede impedir nuevos inicios de sesión y dejar las sesiones existentes sin un seguimiento correcto. Una conexión que ya tengas puede seguir funcionando, pero las herramientas que consultan sesiones o asientos fallarán. Reiniciarlo es disruptivo; si no está sano, suele ser mejor reiniciar el servidor.",
+      "problems": [
+        "Fallan los nuevos inicios de sesión — comprueba `systemctl status systemd-logind` y `journalctl -u systemd-logind -n 50 --no-pager`.",
+        "`loginctl` no muestra sesiones — comprueba que la sesión del usuario se creó y que existe `/run/systemd/sessions`.",
+        "El servidor ignora el botón de encendido o la inactividad — revisa `/etc/systemd/logind.conf` y los valores actuales con `loginctl show-session <sesión>`."
+      ]
     },
     "systemd-networkd": {
       "name": "Gestor de red de systemd",
       "what": "Configura interfaces de red y rutas en servidores que usan systemd-networkd.",
-      "ifFails": "El servidor puede perder la conectividad de red. No lo reinicies en remoto si no tienes acceso a la consola; revisa antes su configuración y sus registros."
+      "ifFails": "El servidor puede perder la conectividad de red. No lo reinicies en remoto si no tienes acceso a la consola; revisa antes su configuración y sus registros.",
+      "details": "systemd-networkd lee archivos `.network`, `.netdev` y `.link`, normalmente en `/etc/systemd/network`, y configura interfaces, direcciones y rutas. Es uno de los varios gestores de red de Debian; algunos servidores lo usan junto con systemd-resolved, mientras que otros usan ifupdown o NetworkManager. Comprueba qué gestor controla una interfaz antes de editar sus archivos. Dos gestores que intentan configurar la misma interfaz pueden dejar sin red al servidor.",
+      "stop": "Parar systemd-networkd elimina las direcciones y rutas que configuró, así que el servidor puede perder la conexión de red. Si estás conectado en remoto, puede que no puedas volver a arrancarlo sin acceso a la consola. Valida la configuración y ten una consola fuera de banda preparada antes de reiniciarlo.",
+      "problems": [
+        "La interfaz no tiene dirección — ejecuta `networkctl status <interfaz>` y revisa el archivo `.network` correspondiente.",
+        "Ha desaparecido la ruta por defecto — comprueba `ip route` y `networkctl status`; un `Gateway=` o un `Address=` incorrecto es una causa habitual.",
+        "Los cambios no se aplican — ejecuta `networkctl reload` y lee `journalctl -u systemd-networkd -n 50 --no-pager`."
+      ]
     },
     "systemd-resolved": {
       "name": "Resolutor DNS de systemd",
       "what": "Proporciona resolución DNS local y caché para la máquina.",
-      "ifFails": "La resolución de nombres puede fallar y los servicios no encontrarán equipos ni direcciones externas. Revisa /etc/resolv.conf y los registros del resolutor antes de reiniciar."
+      "ifFails": "La resolución de nombres puede fallar y los servicios no encontrarán equipos ni direcciones externas. Revisa /etc/resolv.conf y los registros del resolutor antes de reiniciar.",
+      "details": "systemd-resolved proporciona resolución de nombres DNS y caché para la máquina local. Normalmente escucha en `127.0.0.53` y `/etc/resolv.conf` apunta allí, así que los programas preguntan a resolved en lugar de a un servidor DNS remoto. También puede gestionar nombres `.local` y enviar distintos dominios a distintos servidores DNS. Si otro resolutor gestiona `/etc/resolv.conf`, resolved puede estar instalado pero no usarse.",
+      "stop": "Parar resolved puede romper la resolución de nombres de servicios, actualizaciones de paquetes y conexiones nuevas. Las conexiones abiertas pueden seguir funcionando, pero las nuevas consultas DNS fallarán hasta que configures otro resolutor. Revisa `/etc/resolv.conf` y el estado del resolutor antes de reiniciarlo; mantén abierta una sesión SSH que funcione.",
+      "problems": [
+        "Los nombres no se resuelven — ejecuta `resolvectl status` y `resolvectl query example.com`, y revisa los servidores DNS que aparecen para cada enlace.",
+        "`/etc/resolv.conf` apunta a un sitio incorrecto — comprueba si es un enlace simbólico a `/run/systemd/resolve/stub-resolv.conf` y si otro paquete gestiona el archivo.",
+        "Solo fallan algunos dominios — revisa la configuración DNS y los dominios de búsqueda de cada enlace con `resolvectl status`."
+      ]
     },
     "systemd-timesyncd": {
       "name": "Sincronización horaria de systemd",
       "what": "Mantiene el reloj del sistema alineado con servidores NTP.",
-      "ifFails": "El reloj puede desviarse, lo que rompe TLS, los registros y las tareas programadas. Comprueba el acceso a la fuente de tiempo; puede que otro servicio ya gestione el reloj."
+      "ifFails": "El reloj puede desviarse, lo que rompe TLS, los registros y las tareas programadas. Comprueba el acceso a la fuente de tiempo; puede que otro servicio ya gestione el reloj.",
+      "details": "systemd-timesyncd es un cliente NTP pequeño que mantiene el reloj del sistema cerca de los servidores de hora de la red. Sincroniza al arrancar y después periódicamente, y `timedatectl` muestra su estado. Es suficiente para la mayoría de servidores, pero no da la hora a otras máquinas. Usa chrony o ntp cuando necesites un servidor NTP completo.",
+      "stop": "Parar o desactivar timesyncd deja que el reloj se desvíe; no cambia la hora actual de inmediato. Con el paso de los días o las semanas, la desviación puede romper TLS, los registros y las tareas programadas. Vuelve a arrancarlo o asegúrate de que otro servicio de hora, como chrony, gestiona el reloj.",
+      "problems": [
+        "La hora es incorrecta — ejecuta `timedatectl status` y revisa la zona horaria y el estado de sincronización NTP.",
+        "`timedatectl` dice que el reloj no está sincronizado — ejecuta `timedatectl timesync-status` y comprueba el acceso de red a los servidores configurados.",
+        "Hay otro servicio de hora instalado — comprueba si chrony o ntp están activos; dos clientes de hora pueden competir por el reloj."
+      ]
     },
     "systemd-udevd": {
       "name": "Gestor de dispositivos de systemd",
       "what": "Detecta hardware y crea los nodos de dispositivo que usan los servicios.",
-      "ifFails": "Los dispositivos, discos o interfaces nuevos pueden no aparecer y algunos servicios no podrán usar el hardware. Reinícialo solo desde una consola local y después de revisar los registros."
+      "ifFails": "Los dispositivos, discos o interfaces nuevos pueden no aparecer y algunos servicios no podrán usar el hardware. Reinícialo solo desde una consola local y después de revisar los registros.",
+      "details": "systemd-udevd escucha los eventos de dispositivos del kernel y crea nodos de dispositivo, permisos y enlaces simbólicos en `/dev`. También ejecuta las reglas de `/etc/udev/rules.d` y `/usr/lib/udev/rules.d`, que pueden renombrar interfaces o cargar controladores. Los servicios que necesitan discos, tarjetas de red o dispositivos USB dependen de que udev los haya visto. Arranca pronto y normalmente queda en segundo plano.",
+      "stop": "Parar udevd hace que los dispositivos nuevos puedan no obtener nodos o los nombres esperados, y los servicios que arrancan después pueden no ver el hardware. Los dispositivos ya configurados suelen seguir funcionando. Reiniciarlo puede alterar la gestión de dispositivos; hazlo desde una consola local después de revisar los registros.",
+      "problems": [
+        "No aparece un disco o una interfaz de red — comprueba `udevadm info --query=all --name=/dev/sdX` o `ip link`, y lee `journalctl -u systemd-udevd -n 50 --no-pager`.",
+        "Un dispositivo tiene un nombre o permisos incorrectos — inspecciona las reglas con `udevadm test /sys/class/...` y los archivos de `/etc/udev/rules.d`.",
+        "El servicio falla — comprueba `systemctl status systemd-udevd` y el journal; un archivo de reglas roto es una causa habitual."
+      ]
     },
     "dbus": {
       "name": "Bus de mensajes D-Bus",
       "what": "Transporta mensajes del sistema y del escritorio entre servicios que usan D-Bus.",
-      "ifFails": "Los servicios que dependen de D-Bus pueden no iniciarse o no comunicarse. Reiniciar el bus puede interrumpir muchos servicios; revisa los registros y valora reiniciar la máquina si no está sano."
+      "ifFails": "Los servicios que dependen de D-Bus pueden no iniciarse o no comunicarse. Reiniciar el bus puede interrumpir muchos servicios; revisa los registros y valora reiniciar la máquina si no está sano.",
+      "details": "D-Bus es el bus de mensajes que permite a los servicios del sistema y a los programas del escritorio llamarse entre sí. El bus del sistema transporta mensajes de servicios como logind y NetworkManager, mientras que un bus de sesión distinto sirve a cada usuario conectado. Muchos servicios esperan que el bus del sistema esté disponible al arrancar. Es un mecanismo de comunicación local, no un servicio de red por defecto.",
+      "stop": "Parar el bus del sistema puede hacer que los servicios que usan D-Bus no arranquen o no se comuniquen, y las sesiones de escritorio se romperán. Algunos servicios ya en marcha pueden seguir, pero cualquier cosa que intente conectarse fallará. Reiniciar el bus es disruptivo; si no está sano, suele ser más seguro reiniciar el servidor.",
+      "problems": [
+        "Un servicio dice que no puede conectar con el bus del sistema — comprueba `busctl list` y `systemctl status dbus`.",
+        "Una herramienta del escritorio no puede llegar a un servicio — comprueba si el bus de sesión está funcionando y si la sesión del usuario está sana.",
+        "El bus falla al arrancar — lee `journalctl -u dbus -n 50 --no-pager` y revisa `/etc/dbus-1/system.conf` y `/etc/dbus-1/system.d`."
+      ]
     },
     "getty": {
       "name": "Acceso a la consola",
@@ -154,12 +204,26 @@
     "networking": {
       "name": "Red de Debian",
       "what": "Activa las interfaces de red configuradas en /etc/network/interfaces.",
-      "ifFails": "El servidor puede perder la conectividad de red. No lo reinicies en remoto sin acceso a la consola; comprueba antes la configuración de las interfaces."
+      "ifFails": "El servidor puede perder la conectividad de red. No lo reinicies en remoto sin acceso a la consola; comprueba antes la configuración de las interfaces.",
+      "details": "El servicio `networking` es el envoltorio de Debian alrededor de ifupdown. Al arrancar lee `/etc/network/interfaces` y levanta las interfaces marcadas como `auto`, aplicando direcciones, rutas y opciones. Lo usan las instalaciones clásicas de Debian; los sistemas con NetworkManager o systemd-networkd pueden tener la unidad pero no usarla para la interfaz principal. Comprueba qué gestor controla la interfaz antes de editar archivos.",
+      "stop": "Parar `networking` ejecuta las órdenes de bajada de las interfaces que gestiona, así que el servidor puede perder su dirección y su ruta. Por SSH, eso normalmente significa perder el acceso hasta restaurar la red desde una consola. No lo reinicies en remoto sin una vía de recuperación.",
+      "problems": [
+        "Una interfaz no se levanta — ejecuta `ifquery --list` y `ifup --no-act <interfaz>` para revisar la configuración, y luego lee `journalctl -u networking -n 50 --no-pager`.",
+        "Falta la dirección después de un cambio — revisa la sintaxis de `/etc/network/interfaces` y asegúrate de que el nombre de la interfaz coincide.",
+        "NetworkManager e ifupdown no se ponen de acuerdo — comprueba `systemctl status networking` y NetworkManager; desactiva el gestor que no uses."
+      ]
     },
     "ifupdown": {
       "name": "Configuración de interfaz de red",
       "what": "Configura una interfaz de red cuando se activa.",
-      "ifFails": "Esa interfaz puede dejar de funcionar. Revisa su configuración y los registros, y mantén acceso a la consola por si la red no vuelve."
+      "ifFails": "Esa interfaz puede dejar de funcionar. Revisa su configuración y los registros, y mantén acceso a la consola por si la red no vuelve.",
+      "details": "ifupdown proporciona las órdenes `ifup` e `ifdown` y su configuración en `/etc/network/interfaces`. El servicio `networking` las llama al arrancar, y las unidades `ifup@` levantan interfaces individuales. Es el sistema tradicional de configuración de red de Debian, no un demonio que se queda ejecutándose. Si tu servidor usa NetworkManager o systemd-networkd, puede que no gestione la interfaz principal.",
+      "stop": "Parar una unidad `ifup@` baja la interfaz que gestiona; parar el envoltorio `networking` afecta a todas las interfaces que inició. Cualquier sesión remota que use esa interfaz puede cortarse. Ten acceso a la consola y revisa la configuración con `ifup --no-act <interfaz>` antes de bajarla.",
+      "problems": [
+        "`ifup` dice que la interfaz no existe — comprueba el nombre con `ip link` y la sección correspondiente en `/etc/network/interfaces`.",
+        "La interfaz se levanta sin dirección — ejecuta `ifup --no-act <interfaz>` para ver las órdenes y revisa las líneas `address` y `gateway`.",
+        "Un cambio no se aplica — baja y vuelve a subir la interfaz, o reinicia `networking`; evítalo por SSH sin una alternativa de acceso."
+      ]
     },
     "rsyslog": {
       "name": "Rsyslog",
@@ -188,17 +252,38 @@
     "ntp": {
       "name": "Servicio de tiempo NTP",
       "what": "Mantiene el reloj del sistema sincronizado con servidores NTP.",
-      "ifFails": "El reloj puede desviarse y romper TLS, los registros o las tareas programadas. Comprueba la configuración del servidor NTP y el acceso a la red antes de reiniciar."
+      "ifFails": "El reloj puede desviarse y romper TLS, los registros o las tareas programadas. Comprueba la configuración del servidor NTP y el acceso a la red antes de reiniciar.",
+      "details": "El servicio `ntp` es el demonio clásico del Network Time Protocol del proyecto NTP. Mantiene el reloj sincronizado y también puede dar la hora a otras máquinas si se configura. Debian puede instalar chrony o systemd-timesyncd en su lugar; ejecutar más de un demonio de hora puede causar conflictos. Comprueba cuál está activo antes de cambiar la configuración.",
+      "stop": "Parar o desactivar ntp deja que el reloj se desvíe; las otras máquinas que usaban este servidor como fuente de hora también pierden su referencia. La hora actual sigue siendo correcta hasta que se acumula la desviación. Asegúrate de que otro servicio de hora no está gestionando ya el reloj antes de pararlo.",
+      "problems": [
+        "La hora no está sincronizada — ejecuta `ntpq -p` y revisa los servidores configurados en `/etc/ntp.conf`.",
+        "El servicio no arranca — comprueba `systemctl status ntp` y `journalctl -u ntp -n 50 --no-pager`; un conflicto de puerto con chrony o timesyncd es habitual.",
+        "La hora está muy desviada — comprueba `timedatectl status` y si hay otro servicio de hora en marcha; NTP puede tardar en corregir una desviación grande."
+      ]
     },
     "unattended-upgrades": {
       "name": "Actualizaciones automáticas",
       "what": "Instala actualizaciones de seguridad automáticamente en segundo plano.",
-      "ifFails": "Las actualizaciones de seguridad pueden dejar de instalarse. Revisa los registros y el espacio de disco, y vuelve a iniciarlo para que continúen."
+      "ifFails": "Las actualizaciones de seguridad pueden dejar de instalarse. Revisa los registros y el espacio de disco, y vuelve a iniciarlo para que continúen.",
+      "details": "unattended-upgrades instala actualizaciones de seguridad automáticamente, normalmente mediante un temporizador diario de APT. Lee `/etc/apt/apt.conf.d/50unattended-upgrades` y escribe en `/var/log/unattended-upgrades/`. Según la configuración, también puede eliminar paquetes sin usar o reiniciar el servidor. Solo aplica las reglas que actives; no sustituye la revisión de las actualizaciones importantes.",
+      "stop": "Pararlo o desactivarlo detiene las actualizaciones de seguridad automáticas. El servidor sigue funcionando, pero las vulnerabilidades conocidas quedan sin corregir hasta que instales las actualizaciones tú mismo. Es seguro pararlo un rato mientras cambias la configuración; no lo dejes desactivado salvo que otro sistema de actualización cubra el servidor.",
+      "problems": [
+        "No se instalan las actualizaciones — comprueba `systemctl status unattended-upgrades`, los temporizadores con `systemctl list-timers` y `/var/log/unattended-upgrades/unattended-upgrades.log`.",
+        "Hay paquetes retenidos — revisa los orígenes y las listas de paquetes en `/etc/apt/apt.conf.d/50unattended-upgrades` y las preferencias de APT.",
+        "El servicio falla con un error de bloqueo — hay otro proceso de APT en marcha; espera a que termine y comprueba `systemctl status apt-daily`."
+      ]
     },
     "apt-daily": {
       "name": "Tareas diarias de APT",
       "what": "Actualiza las listas de paquetes y prepara las actualizaciones pendientes cada día.",
-      "ifFails": "Las listas de paquetes y la información de actualizaciones pueden quedar desfasadas. Vuelve a iniciarlo o ejecuta apt update manualmente; no interrumpas una actualización en curso."
+      "ifFails": "Las listas de paquetes y la información de actualizaciones pueden quedar desfasadas. Vuelve a iniciarlo o ejecuta apt update manualmente; no interrumpas una actualización en curso.",
+      "details": "apt-daily es un par de temporizadores y servicios de systemd que actualizan las listas de paquetes de APT y, por separado, preparan las actualizaciones. Se ejecutan una vez al día con un retardo aleatorio para que muchas máquinas no coincidan en el mismo espejo. El trabajo lo hace `/usr/lib/apt/apt.systemd.daily`, que también puede iniciar unattended-upgrades. No son demonios que se queden ejecutándose.",
+      "stop": "Parar o desactivar estas unidades detiene la actualización diaria de listas y la preparación de actualizaciones. Las listas de paquetes se quedan anticuadas y las actualizaciones automáticas pueden no ver las nuevas de seguridad. Puedes ejecutar `apt update` a mano; no interrumpas una actualización que ya esté en marcha.",
+      "problems": [
+        "Las listas de paquetes están anticuadas — comprueba `systemctl list-timers 'apt-daily*'` y ejecuta `apt update` manualmente.",
+        "Una tarea de actualización se queda atascada — comprueba `systemctl status apt-daily` y `journalctl -u apt-daily -n 50 --no-pager`; un bloqueo de otro proceso de APT es habitual.",
+        "Las actualizaciones automáticas no empiezan — comprueba si se ejecutó `apt-daily-upgrade` y lee los registros de `/var/log/unattended-upgrades/`."
+      ]
     },
     "docker": {
       "name": "Motor Docker",
@@ -215,7 +300,14 @@
     "containerd": {
       "name": "Runtime containerd",
       "what": "El runtime de contenedores que Docker usa para iniciar y detener contenedores.",
-      "ifFails": "Docker no puede iniciar ni gestionar contenedores. Revisa su registro y el espacio de disco; reiniciar containerd puede afectar a todos los contenedores del servidor."
+      "ifFails": "Docker no puede iniciar ni gestionar contenedores. Revisa su registro y el espacio de disco; reiniciar containerd puede afectar a todos los contenedores del servidor.",
+      "details": "containerd es el entorno de ejecución de contenedores que Docker usa para descargar imágenes, crear contenedores y gestionar su ciclo de vida. Se ejecuta como servicio del sistema y Docker se comunica con él mediante un socket; normalmente gestionas los contenedores con Docker, no con containerd directamente. Otras herramientas como nerdctl o Kubernetes también pueden usarlo. Guarda su estado en `/var/lib/containerd`.",
+      "stop": "Parar containerd detiene todos los contenedores que dependen de él, incluidos los de Docker, y Docker puede dar errores hasta que vuelva. Volver a arrancarlo no siempre reinicia los contenedores; Docker o el orquestador tienen que hacerlo. Planifica el mantenimiento y comprueba el espacio en disco antes de reiniciarlo.",
+      "problems": [
+        "Docker no puede iniciar contenedores — comprueba `systemctl status containerd`, `ctr version` y el registro de containerd.",
+        "El disco está lleno — ejecuta `ctr containers list` y `ctr images list`, y elimina contenido sin usar con cuidado; no borres `/var/lib/containerd`.",
+        "containerd falla después de una actualización — lee `journalctl -u containerd -n 100 --no-pager` y revisa `/etc/containerd/config.toml`."
+      ]
     },
     "apache2": {
       "name": "Servidor HTTP Apache",
@@ -233,12 +325,27 @@
     "nginx": {
       "name": "Nginx",
       "what": "Sirve sitios web y a menudo actúa como proxy inverso de otros servicios.",
-      "ifFails": "Los sitios y servicios proxificados pueden dejar de responder. Ejecuta nginx -t para validar la configuración, revisa el registro de errores y recarga o reinicia."
+      "ifFails": "Los sitios y servicios proxificados pueden dejar de responder. Ejecuta nginx -t para validar la configuración, revisa el registro de errores y recarga o reinicia.",
+      "details": "Nginx es un servidor web y proxy inverso. Puede servir archivos estáticos directamente y pasar peticiones a servidores de aplicaciones, a menudo en puertos locales. Los sitios se configuran en `/etc/nginx/sites-enabled` y `/etc/nginx/conf.d`, con registros en `/var/log/nginx`. Después de un cambio de configuración, pruébala con `nginx -t` y recarga en lugar de reiniciar cuando sea posible.",
+      "stop": "Parar o desactivar nginx deja inaccesibles todos los sitios y aplicaciones proxificadas que sirve. Las conexiones existentes se cierran y los visitantes reciben un error de conexión. Recargar mantiene la interrupción al mínimo en los cambios de configuración; una parada completa solo es para mantenimiento o cuando otro servidor ocupa los puertos.",
+      "problems": [
+        "Nginx no arranca — ejecuta `nginx -t`, corrige el archivo y la línea indicados y vuelve a arrancarlo.",
+        "El sitio devuelve 502 o 504 — la aplicación de destino está caída o lenta; comprueba su servicio y la dirección de `proxy_pass`.",
+        "El navegador recibe conexión rechazada — comprueba `systemctl status nginx`, los puertos a la escucha con `ss -ltnp` y el cortafuegos.",
+        "Los cambios no aparecen — ejecuta `nginx -t` y `systemctl reload nginx`; un error de sintaxis mantiene la configuración antigua en marcha."
+      ]
     },
     "caddy": {
       "name": "Caddy",
       "what": "Sirve sitios web y obtiene certificados TLS automáticamente.",
-      "ifFails": "Los sitios pueden dejar de responder y la renovación de certificados puede fallar. Valida el Caddyfile y revisa los registros antes de recargar."
+      "ifFails": "Los sitios pueden dejar de responder y la renovación de certificados puede fallar. Valida el Caddyfile y revisa los registros antes de recargar.",
+      "details": "Caddy es un servidor web y proxy inverso que obtiene y renueva certificados TLS automáticamente. Lee un `Caddyfile`, normalmente `/etc/caddy/Caddyfile`, y guarda los certificados y el estado en `/var/lib/caddy`. Puede proxificar peticiones a aplicaciones locales y gestionar HTTPS sin una instalación aparte de Certbot. Prueba los cambios de configuración con `caddy validate` antes de recargar.",
+      "stop": "Parar o desactivar Caddy deja inaccesibles los sitios que sirve y detiene la renovación automática de certificados. Los certificados existentes siguen siendo válidos hasta que caducan. Recarga Caddy para los cambios de configuración; una parada completa solo es para mantenimiento o cuando otro servidor ocupa los puertos.",
+      "problems": [
+        "Caddy no arranca — ejecuta `caddy validate --config /etc/caddy/Caddyfile` y lee el error que indica.",
+        "HTTPS falla o el certificado no se emite — comprueba que el DNS apunta a este servidor, que los puertos 80 y 443 están abiertos y lee `journalctl -u caddy -n 100 --no-pager`.",
+        "El sitio devuelve 502 — la aplicación de destino está caída; revisa la dirección de `reverse_proxy` y el servicio de la aplicación."
+      ]
     },
     "haproxy": {
       "name": "HAProxy",

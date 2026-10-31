@@ -178,7 +178,7 @@ describe('catalog translations', () => {
     }
   })
 
-  it('has the detailed fields for the maintenance and boot entries', () => {
+  it('has the detailed fields for the completed entries', () => {
     const ids = [
       'anacron',
       'logrotate',
@@ -239,6 +239,21 @@ describe('catalog translations', () => {
       'timescaledb',
       'immich',
       'immich-postgres',
+      'systemd-journald',
+      'systemd-logind',
+      'systemd-networkd',
+      'systemd-resolved',
+      'systemd-timesyncd',
+      'systemd-udevd',
+      'dbus',
+      'networking',
+      'ifupdown',
+      'ntp',
+      'unattended-upgrades',
+      'apt-daily',
+      'containerd',
+      'nginx',
+      'caddy',
     ]
     for (const language of ['ca', 'es', 'en']) {
       const t = i18n.getFixedT(language, 'catalog')
@@ -270,6 +285,40 @@ describe('catalog translations', () => {
     expect(certbot?.kind).toBe('both')
     expect(certbot?.units).toEqual(['certbot'])
     expect(certbot?.checks).toEqual(['certbot certificates', 'certbot renew --dry-run'])
+  })
+
+  it('adds diagnostic commands to the completed service entries', () => {
+    const checksById = new Map(catalog.map((entry) => [entry.id, entry.checks]))
+    expect(checksById.get('systemd-journald')).toEqual([
+      'journalctl --verify',
+      'journalctl --disk-usage',
+    ])
+    expect(checksById.get('systemd-logind')).toEqual(['loginctl list-sessions'])
+    expect(checksById.get('systemd-networkd')).toEqual(['networkctl status'])
+    expect(checksById.get('systemd-resolved')).toEqual(['resolvectl status'])
+    expect(checksById.get('systemd-timesyncd')).toEqual(['timedatectl timesync-status'])
+    expect(checksById.get('systemd-udevd')).toEqual(['udevadm verify'])
+    expect(checksById.get('dbus')).toEqual(['busctl list'])
+    expect(checksById.get('networking')).toEqual(['ifquery --list'])
+    expect(checksById.get('ifupdown')).toEqual(['ifquery --list'])
+    expect(checksById.get('ntp')).toEqual(['ntpq -p'])
+    expect(checksById.get('unattended-upgrades')).toEqual(['unattended-upgrade --dry-run --debug'])
+    expect(checksById.get('apt-daily')).toEqual([
+      "systemctl list-timers 'apt-daily*'",
+      'apt-get check',
+    ])
+    expect(checksById.get('containerd')).toEqual(['ctr version'])
+    expect(checksById.get('nginx')).toEqual(['nginx -t'])
+    expect(checksById.get('caddy')).toEqual(['caddy validate --config /etc/caddy/Caddyfile'])
+    expect(checksById.get('apache2')).toEqual(['apachectl configtest'])
+    expect(checksById.get('mariadb')).toEqual(['mysqladmin status'])
+    expect(checksById.get('postgresql')).toEqual(['pg_isready'])
+    expect(checksById.get('redis')).toEqual(['redis-cli ping'])
+    expect(checksById.get('fail2ban')).toEqual(['fail2ban-client status'])
+    expect(checksById.get('ufw')).toEqual(['ufw status verbose'])
+    expect(checksById.get('nftables')).toEqual(['nft list ruleset'])
+    expect(checksById.get('wireguard')).toEqual(['wg show'])
+    expect(checksById.get('tailscale')).toEqual(['tailscale status'])
   })
 
   it('describes the Talaia update helper as the update path and service', () => {

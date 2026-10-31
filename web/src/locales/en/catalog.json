@@ -107,37 +107,87 @@
     "systemd-journald": {
       "name": "systemd journal",
       "what": "Collects the logs of the operating system and its services.",
-      "ifFails": "Logs stop being recorded and tools such as journalctl cannot read new entries. Restart it only if the journal is unhealthy and keep a copy of the logs first."
+      "ifFails": "Logs stop being recorded and tools such as journalctl cannot read new entries. Restart it only if the journal is unhealthy and keep a copy of the logs first.",
+      "details": "systemd-journald collects log messages from the kernel, systemd and services. It stores them in the binary journal under `/var/log/journal` when persistent storage is enabled, or in memory otherwise. You read them with `journalctl`, and tools such as rsyslog may keep separate text copies. It starts early and the rest of the system expects it to be running.",
+      "stop": "Stopping or disabling journald stops new messages from being recorded and can leave `journalctl` with incomplete results. Existing logs are not deleted, but messages produced while it is down are lost. Do not stop it unless you are troubleshooting the journal itself; check it with `journalctl --verify` first.",
+      "problems": [
+        "The journal is empty or stops growing — check `systemctl status systemd-journald`, free disk space and the output of `journalctl --verify`.",
+        "Logs disappear after a reboot — persistent storage may be disabled; check `Storage=` in `/etc/systemd/journald.conf` and whether `/var/log/journal` exists.",
+        "The journal uses too much disk — run `journalctl --disk-usage`, then lower `SystemMaxUse=` or remove old entries with `journalctl --vacuum-size=...`.",
+        "The service will not start — read `journalctl -u systemd-journald -n 50 --no-pager`; a full `/var/log` or a damaged journal file is a common cause."
+      ]
     },
     "systemd-logind": {
       "name": "systemd login manager",
       "what": "Tracks users, sessions and seats for local and remote logins.",
-      "ifFails": "New logins and session tracking may fail, and open sessions can be affected. Check the logs before restarting; avoid doing it while you are the only logged-in user."
+      "ifFails": "New logins and session tracking may fail, and open sessions can be affected. Check the logs before restarting; avoid doing it while you are the only logged-in user.",
+      "details": "systemd-logind tracks local and remote login sessions, users and seats. It handles session cleanup, idle actions, power keys and permissions for devices such as sound cards. Desktop sessions and remote logins depend on it, and a normal SSH shell also creates a session managed by logind. It does not check passwords itself; PAM and the login program do that.",
+      "stop": "Stopping logind can prevent new logins and leave existing sessions without proper tracking. A connection you already have may keep working, but tools that ask logind about sessions or seats will fail. Restarting it is disruptive; prefer a reboot if it is unhealthy.",
+      "problems": [
+        "New logins fail — check `systemctl status systemd-logind` and `journalctl -u systemd-logind -n 50 --no-pager`.",
+        "`loginctl` shows no sessions — check that the user session was created and that `/run/systemd/sessions` exists.",
+        "The server ignores the power button or idle settings — review `/etc/systemd/logind.conf` and the current values with `loginctl show-session <session>`."
+      ]
     },
     "systemd-networkd": {
       "name": "systemd network manager",
       "what": "Configures network interfaces and routes on servers that use systemd-networkd.",
-      "ifFails": "The server can lose network connectivity. Do not restart it remotely unless you have console access; check its configuration and logs first."
+      "ifFails": "The server can lose network connectivity. Do not restart it remotely unless you have console access; check its configuration and logs first.",
+      "details": "systemd-networkd reads `.network`, `.netdev` and `.link` files, usually under `/etc/systemd/network`, and configures interfaces, addresses and routes. It is one of several network managers on Debian; some servers use it together with systemd-resolved, while others use ifupdown or NetworkManager. Check which manager owns an interface before editing its files. Two managers trying to configure the same interface can break connectivity.",
+      "stop": "Stopping systemd-networkd removes the addresses and routes it configured, so the server can lose network access. If you are connected remotely, you may not be able to start it again without console access. Validate the configuration and keep an out-of-band console ready before restarting it.",
+      "problems": [
+        "The interface has no address — run `networkctl status <interface>` and check the matching `.network` file.",
+        "The default route disappeared — check `ip route` and `networkctl status`; a wrong `Gateway=` or `Address=` is a common cause.",
+        "Changes do not apply — run `networkctl reload` and read `journalctl -u systemd-networkd -n 50 --no-pager`."
+      ]
     },
     "systemd-resolved": {
       "name": "systemd DNS resolver",
       "what": "Provides local DNS resolution and caching for the machine.",
-      "ifFails": "Name resolution can fail, so services cannot find hosts or external addresses. Check /etc/resolv.conf and the resolver logs before restarting."
+      "ifFails": "Name resolution can fail, so services cannot find hosts or external addresses. Check /etc/resolv.conf and the resolver logs before restarting.",
+      "details": "systemd-resolved provides DNS resolution and caching for the local machine. It normally listens on `127.0.0.53` and `/etc/resolv.conf` points there, so programs ask resolved instead of a remote DNS server. It can also handle `.local` names and send different domains to different DNS servers. If another resolver manages `/etc/resolv.conf`, resolved may be installed but not used.",
+      "stop": "Stopping resolved can break name resolution for services, package updates and new connections. Existing connections may keep working, but new DNS lookups fail until another resolver is configured. Check `/etc/resolv.conf` and the resolver status before restarting; keep a working SSH session open.",
+      "problems": [
+        "Names do not resolve — run `resolvectl status` and `resolvectl query example.com`, then check the DNS servers shown for each link.",
+        "`/etc/resolv.conf` points to the wrong place — check whether it is a symlink to `/run/systemd/resolve/stub-resolv.conf` and whether another package manages the file.",
+        "Only some domains fail — review the per-link DNS and search settings with `resolvectl status`."
+      ]
     },
     "systemd-timesyncd": {
       "name": "systemd time sync",
       "what": "Keeps the system clock aligned with NTP time servers.",
-      "ifFails": "The clock can drift, which breaks TLS, logs and scheduled jobs. Check network access to the time source; other time services may already manage the clock."
+      "ifFails": "The clock can drift, which breaks TLS, logs and scheduled jobs. Check network access to the time source; other time services may already manage the clock.",
+      "details": "systemd-timesyncd is a small NTP client that keeps the system clock close to network time servers. It synchronizes at boot and periodically afterwards, and `timedatectl` shows its state. It is enough for most servers, but it does not serve time to other machines. Use chrony or ntp when you need a full NTP server.",
+      "stop": "Stopping or disabling timesyncd leaves the clock free to drift; it does not change the current time immediately. Over days or weeks, drift can break TLS, logs and scheduled jobs. Start it again or make sure another time service such as chrony is managing the clock.",
+      "problems": [
+        "The clock is wrong — run `timedatectl status` and check the time zone and the NTP synchronization state.",
+        "`timedatectl` says the clock is not synchronized — run `timedatectl timesync-status` and check network access to the configured servers.",
+        "Another time service is installed — check whether chrony or ntp is enabled; running two time clients can make them compete for the clock."
+      ]
     },
     "systemd-udevd": {
       "name": "systemd device manager",
       "what": "Detects hardware and creates the device nodes services use.",
-      "ifFails": "New devices, disks or network interfaces may not appear and some services cannot use hardware. Restart it only from a local console after checking the logs."
+      "ifFails": "New devices, disks or network interfaces may not appear and some services cannot use hardware. Restart it only from a local console after checking the logs.",
+      "details": "systemd-udevd listens for kernel device events and creates device nodes, permissions and symlinks under `/dev`. It also runs the rules in `/etc/udev/rules.d` and `/usr/lib/udev/rules.d`, which can rename interfaces or load drivers. Services that need disks, network cards or USB devices depend on udev having seen them. It starts early and normally stays in the background.",
+      "stop": "Stopping udevd means new devices may not get device nodes or the expected names, and services that start later may miss hardware. Devices that are already set up usually keep working. Restarting it can disrupt device handling; do it from a local console after checking the logs.",
+      "problems": [
+        "A disk or network interface does not appear — check `udevadm info --query=all --name=/dev/sdX` or `ip link`, and read `journalctl -u systemd-udevd -n 50 --no-pager`.",
+        "A device has the wrong name or permissions — inspect the rules with `udevadm test /sys/class/...` and the files under `/etc/udev/rules.d`.",
+        "The service fails — check `systemctl status systemd-udevd` and the journal; a broken rule file is a common cause."
+      ]
     },
     "dbus": {
       "name": "D-Bus message bus",
       "what": "Carries system and desktop messages between services that use D-Bus.",
-      "ifFails": "Services that depend on D-Bus can fail to start or communicate. Restarting the bus can interrupt many services; check the logs and prefer a reboot if it is unhealthy."
+      "ifFails": "Services that depend on D-Bus can fail to start or communicate. Restarting the bus can interrupt many services; check the logs and prefer a reboot if it is unhealthy.",
+      "details": "D-Bus is the message bus that lets system services and desktop programs call each other. The system bus carries messages for services such as logind and NetworkManager, while a separate session bus serves each logged-in user. Many services expect the system bus to be available at startup. It is a local communication mechanism, not a network service by default.",
+      "stop": "Stopping the system bus can make services that use D-Bus fail to start or communicate, and desktop sessions will break. Some already running services may continue, but anything that tries to connect will fail. Restarting the bus is disruptive; a reboot is usually safer if it is unhealthy.",
+      "problems": [
+        "A service says it cannot connect to the system bus — check `busctl list` and `systemctl status dbus`.",
+        "A desktop tool cannot reach a service — check whether the session bus is running and the user session is healthy.",
+        "The bus fails at boot — read `journalctl -u dbus -n 50 --no-pager` and check `/etc/dbus-1/system.conf` and `/etc/dbus-1/system.d`."
+      ]
     },
     "getty": {
       "name": "Console login",
@@ -154,12 +204,26 @@
     "networking": {
       "name": "Debian networking",
       "what": "Brings up the network interfaces configured by /etc/network/interfaces.",
-      "ifFails": "The server can lose network connectivity. Do not restart it remotely without console access; verify the interface configuration first."
+      "ifFails": "The server can lose network connectivity. Do not restart it remotely without console access; verify the interface configuration first.",
+      "details": "The `networking` service is Debian's wrapper around ifupdown. At boot it reads `/etc/network/interfaces` and brings up the interfaces marked `auto`, applying addresses, routes and options. It is used by classic Debian installs; systems with NetworkManager or systemd-networkd may still have the unit but not use it for the main interface. Check which manager owns the interface before editing files.",
+      "stop": "Stopping `networking` runs the down commands for the interfaces it manages, so the server can lose its address and route. Over SSH, that usually means losing access until the network is restored from a console. Do not restart it remotely without a recovery path.",
+      "problems": [
+        "An interface does not come up — run `ifquery --list` and `ifup --no-act <interface>` to check the configuration, then read `journalctl -u networking -n 50 --no-pager`.",
+        "The address is missing after a change — check `/etc/network/interfaces` for syntax and make sure the interface name matches.",
+        "NetworkManager and ifupdown disagree — check `systemctl status networking` and NetworkManager; disable the manager you do not use."
+      ]
     },
     "ifupdown": {
       "name": "Network interface setup",
       "what": "Configures one network interface when it is brought up.",
-      "ifFails": "That interface may stop working. Check its configuration and the unit logs, and keep console access in case the network does not return."
+      "ifFails": "That interface may stop working. Check its configuration and the unit logs, and keep console access in case the network does not return.",
+      "details": "ifupdown provides the `ifup` and `ifdown` commands and their configuration in `/etc/network/interfaces`. The `networking` service calls them at boot, and `ifup@` units bring up individual interfaces. It is the traditional Debian network configuration system, not a daemon that keeps running. If your server uses NetworkManager or systemd-networkd, this may not manage the main interface.",
+      "stop": "Stopping an `ifup@` unit brings down the interface it manages; stopping the `networking` wrapper affects all interfaces it started. Any remote session using that interface can be cut off. Keep console access and check the configuration with `ifup --no-act <interface>` before taking it down.",
+      "problems": [
+        "`ifup` reports an unknown interface — check the interface name with `ip link` and the stanza in `/etc/network/interfaces`.",
+        "The interface comes up without an address — run `ifup --no-act <interface>` to see the commands and check the `address` and `gateway` lines.",
+        "A change does not apply — bring the interface down and up again, or restart `networking`; avoid doing it over SSH without a fallback."
+      ]
     },
     "rsyslog": {
       "name": "Rsyslog",
@@ -188,17 +252,38 @@
     "ntp": {
       "name": "NTP time service",
       "what": "Keeps the system clock synchronized with NTP servers.",
-      "ifFails": "The clock can drift and break TLS, logs or scheduled jobs. Check the NTP server configuration and network access before restarting."
+      "ifFails": "The clock can drift and break TLS, logs or scheduled jobs. Check the NTP server configuration and network access before restarting.",
+      "details": "The `ntp` service is the classic Network Time Protocol daemon from the NTP project. It keeps the clock synchronized and can also serve time to other machines if configured. Debian may install chrony or systemd-timesyncd instead; running more than one time daemon can cause conflicts. Check which one is active before changing the configuration.",
+      "stop": "Stopping or disabling ntp lets the clock drift; other machines that used this server as a time source also lose their reference. The current time remains correct until drift accumulates. Make sure another time service is not already managing the clock before you stop it.",
+      "problems": [
+        "Time is not synchronized — run `ntpq -p` and check the configured servers in `/etc/ntp.conf`.",
+        "The service will not start — check `systemctl status ntp` and `journalctl -u ntp -n 50 --no-pager`; a port conflict with chrony or timesyncd is common.",
+        "The clock is far off — check `timedatectl status` and whether another time service is running; NTP may need time to correct a large offset."
+      ]
     },
     "unattended-upgrades": {
       "name": "Unattended upgrades",
       "what": "Installs security updates automatically in the background.",
-      "ifFails": "Security updates may stop being installed. Check logs and free disk space, then start it again so updates resume."
+      "ifFails": "Security updates may stop being installed. Check logs and free disk space, then start it again so updates resume.",
+      "details": "unattended-upgrades installs security updates automatically, usually through a daily APT timer. It reads `/etc/apt/apt.conf.d/50unattended-upgrades` and writes to `/var/log/unattended-upgrades/`. Depending on the configuration it can also remove unused packages or reboot the server. It only applies the rules you enable; it does not replace reviewing important updates.",
+      "stop": "Stopping or disabling it stops automatic security updates. The server keeps running, but known vulnerabilities stay unpatched until you install updates yourself. It is safe to stop it briefly while you change the configuration; do not leave it off unless another update system covers the server.",
+      "problems": [
+        "Updates are not installed — check `systemctl status unattended-upgrades`, the timers with `systemctl list-timers`, and `/var/log/unattended-upgrades/unattended-upgrades.log`.",
+        "Packages are held back — check the origins and package lists in `/etc/apt/apt.conf.d/50unattended-upgrades` and the APT preferences.",
+        "The service fails with a lock error — another APT process is running; wait for it to finish and check `systemctl status apt-daily`."
+      ]
     },
     "apt-daily": {
       "name": "APT daily jobs",
       "what": "Refreshes package lists and prepares pending updates each day.",
-      "ifFails": "Package lists and update information can become stale. Start it again or run apt update manually; do not interrupt an upgrade already in progress."
+      "ifFails": "Package lists and update information can become stale. Start it again or run apt update manually; do not interrupt an upgrade already in progress.",
+      "details": "apt-daily is a pair of systemd timers and services that refresh APT package lists and, separately, prepare upgrades. They run once a day with a random delay so many machines do not hit the mirror at once. The work is done by `/usr/lib/apt/apt.systemd.daily`, which can also start unattended-upgrades. They are not long-running daemons.",
+      "stop": "Stopping or disabling these units stops the daily refresh and upgrade preparation. Package lists become stale and unattended upgrades may not see new security updates. You can run `apt update` manually; do not interrupt an upgrade that is already running.",
+      "problems": [
+        "Package lists are old — check `systemctl list-timers 'apt-daily*'` and run `apt update` manually.",
+        "An update job is stuck — check `systemctl status apt-daily` and `journalctl -u apt-daily -n 50 --no-pager`; a lock held by another APT process is common.",
+        "Unattended upgrades do not start — check whether `apt-daily-upgrade` ran and read the logs in `/var/log/unattended-upgrades/`."
+      ]
     },
     "docker": {
       "name": "Docker engine",
@@ -215,7 +300,14 @@
     "containerd": {
       "name": "containerd runtime",
       "what": "The container runtime Docker uses to start and stop containers.",
-      "ifFails": "Docker cannot start or manage containers. Check its log and disk space; restarting containerd can disrupt every container on the server."
+      "ifFails": "Docker cannot start or manage containers. Check its log and disk space; restarting containerd can disrupt every container on the server.",
+      "details": "containerd is the container runtime that Docker uses to pull images, create containers and manage their lifecycle. It runs as a system service and Docker talks to it through a socket; you normally manage containers with Docker, not containerd directly. Other tools such as nerdctl or Kubernetes can also use it. It stores its state under `/var/lib/containerd`.",
+      "stop": "Stopping containerd stops every container that depends on it, including Docker containers, and Docker may report errors until it returns. Starting it again does not always restart the containers; Docker or the orchestrator must do that. Plan maintenance and check disk space before restarting.",
+      "problems": [
+        "Docker cannot start containers — check `systemctl status containerd`, `ctr version` and the containerd log.",
+        "The disk is full — run `ctr containers list` and `ctr images list`, then remove unused content carefully; do not delete `/var/lib/containerd`.",
+        "Containerd fails after an upgrade — read `journalctl -u containerd -n 100 --no-pager` and check `/etc/containerd/config.toml`."
+      ]
     },
     "apache2": {
       "name": "Apache HTTP Server",
@@ -233,12 +325,27 @@
     "nginx": {
       "name": "Nginx",
       "what": "Serves websites and often acts as a reverse proxy for other services.",
-      "ifFails": "Websites and proxied services may stop answering. Run nginx -t to validate the configuration, check the error log, then reload or restart."
+      "ifFails": "Websites and proxied services may stop answering. Run nginx -t to validate the configuration, check the error log, then reload or restart.",
+      "details": "Nginx is a web server and reverse proxy. It can serve static files directly and pass requests to application servers, often on local ports. Sites are configured in `/etc/nginx/sites-enabled` and `/etc/nginx/conf.d`, with logs under `/var/log/nginx`. After a configuration change, test it with `nginx -t` and reload rather than restart when possible.",
+      "stop": "Stopping or disabling nginx makes every site and proxied application it serves unavailable. Existing connections close and visitors get a connection error. Reloading keeps downtime minimal for configuration changes; a full stop is only for maintenance or when another server takes over the ports.",
+      "problems": [
+        "Nginx will not start — run `nginx -t`, fix the reported file and line, then start it again.",
+        "The site returns 502 or 504 — the upstream application is down or slow; check its service and the `proxy_pass` address.",
+        "The browser gets a connection refused — check `systemctl status nginx`, the listening ports with `ss -ltnp`, and the firewall.",
+        "Changes do not appear — run `nginx -t` and `systemctl reload nginx`; a syntax error leaves the old configuration running."
+      ]
     },
     "caddy": {
       "name": "Caddy",
       "what": "Serves websites and obtains TLS certificates automatically.",
-      "ifFails": "Websites may stop answering and certificate renewal can fail. Validate the Caddyfile and check the logs before reloading."
+      "ifFails": "Websites may stop answering and certificate renewal can fail. Validate the Caddyfile and check the logs before reloading.",
+      "details": "Caddy is a web server and reverse proxy that obtains and renews TLS certificates automatically. It reads a `Caddyfile`, usually `/etc/caddy/Caddyfile`, and stores certificates and state under `/var/lib/caddy`. It can proxy requests to local applications and handle HTTPS without a separate Certbot setup. Test configuration changes with `caddy validate` before reloading.",
+      "stop": "Stopping or disabling Caddy makes the sites it serves unavailable, and automatic certificate renewal stops. Existing certificates remain valid until they expire. Reload Caddy for configuration changes; a full stop is only for maintenance or when another server takes over the ports.",
+      "problems": [
+        "Caddy will not start — run `caddy validate --config /etc/caddy/Caddyfile` and read the reported error.",
+        "HTTPS fails or the certificate is not issued — check that DNS points to this server, ports 80 and 443 are open, and read `journalctl -u caddy -n 100 --no-pager`.",
+        "The site returns 502 — the upstream application is down; check the `reverse_proxy` address and the application service."
+      ]
     },
     "haproxy": {
       "name": "HAProxy",

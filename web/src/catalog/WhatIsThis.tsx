@@ -68,6 +68,8 @@ function entryDescription(
   entry: CatalogEntry,
   origin: string,
   commands: string[],
+  // Entry checks are host commands: they do not apply to a container or a stack.
+  withChecks = true,
 ): CatalogDescription {
   const base = `entries.${entry.id}`
   return {
@@ -81,7 +83,7 @@ function entryDescription(
     stop: optionalText(`${base}.stop`),
     ifFails: text(`${base}.ifFails`),
     problems: optionalProblems(`${base}.problems`),
-    commands: [...commands, ...(entry.checks ?? [])],
+    commands: withChecks ? [...commands, ...(entry.checks ?? [])] : commands,
     docs: entry.docs,
     origin,
   }
@@ -176,7 +178,7 @@ export function describeContainer(container: Container): CatalogDescription {
       origin,
     }
   }
-  return entryDescription(entry, origin, containerCommands(container.name))
+  return entryDescription(entry, origin, containerCommands(container.name), false)
 }
 
 /**
@@ -195,6 +197,7 @@ export function describeStack(name: string, containers: Container[]): CatalogDes
           image: repositories[0],
         }),
         stackCommands(name),
+        false,
       )
     }
   }

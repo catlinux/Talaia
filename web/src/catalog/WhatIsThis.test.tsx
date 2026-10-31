@@ -126,11 +126,10 @@ describe('describeContainer', () => {
     expect(description.name).toBe('PostgreSQL')
     expect(description.category).toBe('database')
     expect(description.commands).toEqual(['docker logs --tail 50 web', 'docker inspect web'])
-    expect(description.problems).toEqual([])
     expect(description.origin).toBe('Part of stack shop (service db) · image postgres')
   })
 
-  it('adds the entry checks and details for a Certbot container', () => {
+  it('adds the details but not the host checks for a Certbot container', () => {
     const description = describeContainer(
       container({ name: 'certbot', image: 'certbot/certbot:latest', composeProject: '' }),
     )
@@ -140,8 +139,6 @@ describe('describeContainer', () => {
     expect(description.commands).toEqual([
       'docker logs --tail 50 certbot',
       'docker inspect certbot',
-      'certbot certificates',
-      'certbot renew --dry-run',
     ])
   })
 
@@ -200,10 +197,13 @@ describe('WhatIsThis', () => {
     expect(screen.getByRole('button', { name: 'View full card' })).toBeTruthy()
   })
 
-  it('omits the optional sections when the entry has no detailed fields', () => {
+  it('omits the optional sections for a service without a catalogue entry', () => {
     render(
       <WhatIsThis
-        target={{ kind: 'service', unit: service({ name: 'nginx.service' }) }}
+        target={{
+          kind: 'service',
+          unit: service({ name: 'custom-app.service', description: 'Custom app' }),
+        }}
         variant="full"
       />,
     )

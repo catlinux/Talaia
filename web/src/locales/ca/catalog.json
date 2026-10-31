@@ -107,37 +107,87 @@
     "systemd-journald": {
       "name": "Registre de systemd",
       "what": "Recull els registres del sistema operatiu i dels seus serveis.",
-      "ifFails": "Els registres deixen de desar-se i eines com journalctl no poden llegir entrades noves. Reinicia'l només si el registre no està sa i desa'n una còpia abans."
+      "ifFails": "Els registres deixen de desar-se i eines com journalctl no poden llegir entrades noves. Reinicia'l només si el registre no està sa i desa'n una còpia abans.",
+      "details": "systemd-journald recull els missatges del nucli, de systemd i dels serveis. Els desa al journal binari de `/var/log/journal` si l’emmagatzematge persistent està activat, o a la memòria en cas contrari. Es llegeixen amb `journalctl`, i eines com rsyslog poden desar còpies de text a part. Arrenca molt aviat i la resta del sistema espera que estigui funcionant.",
+      "stop": "Aturar o desactivar journald impedeix que es registrin missatges nous i pot deixar `journalctl` amb resultats incomplets. Els registres existents no s’esborren, però els missatges produïts mentre està aturat es perden. No l’aturis tret que estiguis diagnosticant el mateix journal; comprova’l abans amb `journalctl --verify`.",
+      "problems": [
+        "El journal és buit o deixa de créixer — comprova `systemctl status systemd-journald`, l’espai lliure de disc i la sortida de `journalctl --verify`.",
+        "Els registres desapareixen després de reiniciar — pot ser que l’emmagatzematge persistent estigui desactivat; revisa `Storage=` a `/etc/systemd/journald.conf` i si existeix `/var/log/journal`.",
+        "El journal ocupa massa disc — executa `journalctl --disk-usage` i baixa `SystemMaxUse=` o elimina entrades antigues amb `journalctl --vacuum-size=...`.",
+        "El servei no arrenca — llegeix `journalctl -u systemd-journald -n 50 --no-pager`; un `/var/log` ple o un fitxer del journal malmès són causes habituals."
+      ]
     },
     "systemd-logind": {
       "name": "Gestor d'inicis de sessió de systemd",
       "what": "Fa el seguiment d'usuaris, sessions i seients per als accessos locals i remots.",
-      "ifFails": "Els accessos nous i el seguiment de sessions poden fallar, i les sessions obertes es poden veure afectades. Revisa els registres abans de reiniciar; evita-ho si ets l'únic usuari connectat."
+      "ifFails": "Els accessos nous i el seguiment de sessions poden fallar, i les sessions obertes es poden veure afectades. Revisa els registres abans de reiniciar; evita-ho si ets l'únic usuari connectat.",
+      "details": "systemd-logind segueix les sessions d’inici de sessió locals i remotes, els usuaris i els seients (seats). Gestiona la neteja de sessions, les accions per inactivitat, les tecles d’encesa i els permisos per a dispositius com les targetes de so. Les sessions d’escriptori i els accessos remots en depenen, i una shell SSH normal també crea una sessió gestionada per logind. No comprova les contrasenyes; d’això s’encarreguen PAM i el programa d’inici de sessió.",
+      "stop": "Aturar logind pot impedir nous inicis de sessió i deixar les sessions existents sense un seguiment correcte. Una connexió que ja tinguis pot continuar funcionant, però les eines que consulten sessions o seients fallaran. Reiniciar-lo és disruptiu; si no està sa, normalment és millor reiniciar el servidor.",
+      "problems": [
+        "Fallen els nous inicis de sessió — comprova `systemctl status systemd-logind` i `journalctl -u systemd-logind -n 50 --no-pager`.",
+        "`loginctl` no mostra sessions — comprova que la sessió de l’usuari s’ha creat i que existeix `/run/systemd/sessions`.",
+        "El servidor ignora el botó d’encesa o la inactivitat — revisa `/etc/systemd/logind.conf` i els valors actuals amb `loginctl show-session <sessió>`."
+      ]
     },
     "systemd-networkd": {
       "name": "Gestor de xarxa de systemd",
       "what": "Configura interfícies de xarxa i rutes en servidors que fan servir systemd-networkd.",
-      "ifFails": "El servidor pot perdre la connectivitat de xarxa. No el reiniciïs en remot si no tens accés a la consola; revisa'n la configuració i els registres."
+      "ifFails": "El servidor pot perdre la connectivitat de xarxa. No el reiniciïs en remot si no tens accés a la consola; revisa'n la configuració i els registres.",
+      "details": "systemd-networkd llegeix fitxers `.network`, `.netdev` i `.link`, normalment a `/etc/systemd/network`, i configura interfícies, adreces i rutes. És un dels diversos gestors de xarxa de Debian; alguns servidors el fan servir amb systemd-resolved, mentre que d’altres usen ifupdown o NetworkManager. Comprova quin gestor controla una interfície abans d’editar-ne els fitxers. Dos gestors que intenten configurar la mateixa interfície poden deixar el servidor sense xarxa.",
+      "stop": "Aturar systemd-networkd elimina les adreces i rutes que va configurar, així que el servidor pot perdre la connexió de xarxa. Si estàs connectat en remot, potser no podràs tornar-lo a arrencar sense accés a la consola. Valida la configuració i tingues una consola fora de banda preparada abans de reiniciar-lo.",
+      "problems": [
+        "La interfície no té adreça — executa `networkctl status <interfície>` i revisa el fitxer `.network` corresponent.",
+        "Ha desaparegut la ruta per defecte — comprova `ip route` i `networkctl status`; un `Gateway=` o un `Address=` incorrecte és una causa habitual.",
+        "Els canvis no s’apliquen — executa `networkctl reload` i llegeix `journalctl -u systemd-networkd -n 50 --no-pager`."
+      ]
     },
     "systemd-resolved": {
       "name": "Resolutor DNS de systemd",
       "what": "Proporciona resolució DNS local i memòria cau per a la màquina.",
-      "ifFails": "La resolució de noms pot fallar i els serveis no trobaran equips ni adreces externes. Revisa /etc/resolv.conf i els registres del resolutor abans de reiniciar."
+      "ifFails": "La resolució de noms pot fallar i els serveis no trobaran equips ni adreces externes. Revisa /etc/resolv.conf i els registres del resolutor abans de reiniciar.",
+      "details": "systemd-resolved proporciona resolució de noms DNS i memòria cau per a la màquina local. Normalment escolta a `127.0.0.53` i `/etc/resolv.conf` hi apunta, així que els programes pregunten a resolved en lloc d’un servidor DNS remot. També pot gestionar noms `.local` i enviar dominis diferents a servidors DNS diferents. Si un altre resolutor gestiona `/etc/resolv.conf`, resolved pot estar instal·lat però no usar-se.",
+      "stop": "Aturar resolved pot trencar la resolució de noms de serveis, actualitzacions de paquets i connexions noves. Les connexions obertes poden continuar funcionant, però les consultes DNS noves fallaran fins que configuris un altre resolutor. Revisa `/etc/resolv.conf` i l’estat del resolutor abans de reiniciar-lo; mantén oberta una sessió SSH que funcioni.",
+      "problems": [
+        "Els noms no es resolen — executa `resolvectl status` i `resolvectl query example.com`, i revisa els servidors DNS que apareixen per a cada enllaç.",
+        "`/etc/resolv.conf` apunta a un lloc incorrecte — comprova si és un enllaç simbòlic a `/run/systemd/resolve/stub-resolv.conf` i si un altre paquet gestiona el fitxer.",
+        "Només fallen alguns dominis — revisa la configuració DNS i els dominis de cerca de cada enllaç amb `resolvectl status`."
+      ]
     },
     "systemd-timesyncd": {
       "name": "Sincronització horària de systemd",
       "what": "Manté el rellotge del sistema alineat amb servidors NTP.",
-      "ifFails": "El rellotge es pot desviar, cosa que trenca TLS, registres i tasques programades. Comprova l'accés a la font de temps; potser ja hi ha un altre servei que gestiona el rellotge."
+      "ifFails": "El rellotge es pot desviar, cosa que trenca TLS, registres i tasques programades. Comprova l'accés a la font de temps; potser ja hi ha un altre servei que gestiona el rellotge.",
+      "details": "systemd-timesyncd és un client NTP petit que manté el rellotge del sistema a prop dels servidors d’hora de la xarxa. Sincronitza en arrencar i després periòdicament, i `timedatectl` mostra el seu estat. És suficient per a la majoria de servidors, però no dona l’hora a altres màquines. Usa chrony o ntp quan necessitis un servidor NTP complet.",
+      "stop": "Aturar o desactivar timesyncd deixa que el rellotge es desviï; no canvia l’hora actual de seguida. Amb el pas dels dies o les setmanes, la desviació pot trencar TLS, els registres i les tasques programades. Torna a arrencar-lo o assegura’t que un altre servei d’hora, com chrony, gestiona el rellotge.",
+      "problems": [
+        "L’hora és incorrecta — executa `timedatectl status` i revisa la zona horària i l’estat de sincronització NTP.",
+        "`timedatectl` diu que el rellotge no està sincronitzat — executa `timedatectl timesync-status` i comprova l’accés de xarxa als servidors configurats.",
+        "Hi ha un altre servei d’hora instal·lat — comprova si chrony o ntp estan actius; dos clients d’hora poden competir pel rellotge."
+      ]
     },
     "systemd-udevd": {
       "name": "Gestor de dispositius de systemd",
       "what": "Detecta maquinari i crea els nodes de dispositiu que fan servir els serveis.",
-      "ifFails": "Els dispositius, discs o interfícies nous poden no aparèixer i alguns serveis no podran usar el maquinari. Reinicia'l només des d'una consola local i després de revisar els registres."
+      "ifFails": "Els dispositius, discs o interfícies nous poden no aparèixer i alguns serveis no podran usar el maquinari. Reinicia'l només des d'una consola local i després de revisar els registres.",
+      "details": "systemd-udevd escolta els esdeveniments de dispositius del nucli i crea nodes de dispositiu, permisos i enllaços simbòlics a `/dev`. També executa les regles de `/etc/udev/rules.d` i `/usr/lib/udev/rules.d`, que poden renombrar interfícies o carregar controladors. Els serveis que necessiten discs, targetes de xarxa o dispositius USB depenen que udev els hagi vist. Arrenca aviat i normalment queda en segon pla.",
+      "stop": "Aturar udevd fa que els dispositius nous puguin no obtenir nodes o els noms esperats, i els serveis que arrenquen després poden no veure el maquinari. Els dispositius ja configurats solen continuar funcionant. Reiniciar-lo pot alterar la gestió de dispositius; fes-ho des d’una consola local després de revisar els registres.",
+      "problems": [
+        "No apareix un disc o una interfície de xarxa — comprova `udevadm info --query=all --name=/dev/sdX` o `ip link`, i llegeix `journalctl -u systemd-udevd -n 50 --no-pager`.",
+        "Un dispositiu té un nom o permisos incorrectes — inspecciona les regles amb `udevadm test /sys/class/...` i els fitxers de `/etc/udev/rules.d`.",
+        "El servei falla — comprova `systemctl status systemd-udevd` i el journal; un fitxer de regles trencat és una causa habitual."
+      ]
     },
     "dbus": {
       "name": "Bus de missatges D-Bus",
       "what": "Transporta missatges del sistema i d'escriptori entre serveis que fan servir D-Bus.",
-      "ifFails": "Els serveis que depenen de D-Bus poden no iniciar-se o no comunicar-se. Reiniciar el bus pot interrompre molts serveis; revisa els registres i valora reiniciar la màquina si no està sa."
+      "ifFails": "Els serveis que depenen de D-Bus poden no iniciar-se o no comunicar-se. Reiniciar el bus pot interrompre molts serveis; revisa els registres i valora reiniciar la màquina si no està sa.",
+      "details": "D-Bus és el bus de missatges que permet als serveis del sistema i als programes de l’escriptori cridar-se entre si. El bus del sistema transporta missatges de serveis com logind i NetworkManager, mentre que un bus de sessió diferent serveix cada usuari connectat. Molts serveis esperen que el bus del sistema estigui disponible en arrencar. És un mecanisme de comunicació local, no un servei de xarxa per defecte.",
+      "stop": "Aturar el bus del sistema pot fer que els serveis que usen D-Bus no arrenquin o no es comuniquin, i les sessions d’escriptori es trencaran. Alguns serveis ja en marxa poden continuar, però qualsevol cosa que intenti connectar-se fallarà. Reiniciar el bus és disruptiu; si no està sa, normalment és més segur reiniciar el servidor.",
+      "problems": [
+        "Un servei diu que no pot connectar amb el bus del sistema — comprova `busctl list` i `systemctl status dbus`.",
+        "Una eina de l’escriptori no pot arribar a un servei — comprova si el bus de sessió funciona i si la sessió de l’usuari està sana.",
+        "El bus falla en arrencar — llegeix `journalctl -u dbus -n 50 --no-pager` i revisa `/etc/dbus-1/system.conf` i `/etc/dbus-1/system.d`."
+      ]
     },
     "getty": {
       "name": "Accés a la consola",
@@ -154,12 +204,26 @@
     "networking": {
       "name": "Xarxa de Debian",
       "what": "Activa les interfícies de xarxa configurades a /etc/network/interfaces.",
-      "ifFails": "El servidor pot perdre la connectivitat de xarxa. No el reiniciïs en remot sense accés a la consola; comprova abans la configuració de les interfícies."
+      "ifFails": "El servidor pot perdre la connectivitat de xarxa. No el reiniciïs en remot sense accés a la consola; comprova abans la configuració de les interfícies.",
+      "details": "El servei `networking` és l’embolcall de Debian al voltant d’ifupdown. En arrencar llegeix `/etc/network/interfaces` i aixeca les interfícies marcades com a `auto`, aplicant adreces, rutes i opcions. El fan servir les instal·lacions clàssiques de Debian; els sistemes amb NetworkManager o systemd-networkd poden tenir la unitat però no usar-la per a la interfície principal. Comprova quin gestor controla la interfície abans d’editar fitxers.",
+      "stop": "Aturar `networking` executa les ordres de baixada de les interfícies que gestiona, així que el servidor pot perdre l’adreça i la ruta. Per SSH, això normalment vol dir perdre l’accés fins a restaurar la xarxa des d’una consola. No el reiniciïs en remot sense una via de recuperació.",
+      "problems": [
+        "Una interfície no s’aixeca — executa `ifquery --list` i `ifup --no-act <interfície>` per revisar la configuració, i després llegeix `journalctl -u networking -n 50 --no-pager`.",
+        "Falta l’adreça després d’un canvi — revisa la sintaxi de `/etc/network/interfaces` i assegura’t que el nom de la interfície coincideix.",
+        "NetworkManager i ifupdown no es posen d’acord — comprova `systemctl status networking` i NetworkManager; desactiva el gestor que no usis."
+      ]
     },
     "ifupdown": {
       "name": "Configuració d'interfície de xarxa",
       "what": "Configura una interfície de xarxa quan s'activa.",
-      "ifFails": "Aquesta interfície pot deixar de funcionar. Revisa'n la configuració i els registres, i mantén accés a la consola per si la xarxa no torna."
+      "ifFails": "Aquesta interfície pot deixar de funcionar. Revisa'n la configuració i els registres, i mantén accés a la consola per si la xarxa no torna.",
+      "details": "ifupdown proporciona les ordres `ifup` i `ifdown` i la seva configuració a `/etc/network/interfaces`. El servei `networking` les crida en arrencar, i les unitats `ifup@` aixequen interfícies individuals. És el sistema tradicional de configuració de xarxa de Debian, no un dimoni que es queda executant-se. Si el teu servidor usa NetworkManager o systemd-networkd, potser no gestiona la interfície principal.",
+      "stop": "Aturar una unitat `ifup@` baixa la interfície que gestiona; aturar l’embolcall `networking` afecta totes les interfícies que va iniciar. Qualsevol sessió remota que usi aquesta interfície es pot tallar. Tingues accés a la consola i revisa la configuració amb `ifup --no-act <interfície>` abans de baixar-la.",
+      "problems": [
+        "`ifup` diu que la interfície no existeix — comprova el nom amb `ip link` i la secció corresponent a `/etc/network/interfaces`.",
+        "La interfície s’aixeca sense adreça — executa `ifup --no-act <interfície>` per veure les ordres i revisa les línies `address` i `gateway`.",
+        "Un canvi no s’aplica — baixa i torna a aixecar la interfície, o reinicia `networking`; evita-ho per SSH sense una alternativa d’accés."
+      ]
     },
     "rsyslog": {
       "name": "Rsyslog",
@@ -188,17 +252,38 @@
     "ntp": {
       "name": "Servei de temps NTP",
       "what": "Manté el rellotge del sistema sincronitzat amb servidors NTP.",
-      "ifFails": "El rellotge es pot desviar i trencar TLS, registres o tasques programades. Comprova la configuració del servidor NTP i l'accés a la xarxa abans de reiniciar."
+      "ifFails": "El rellotge es pot desviar i trencar TLS, registres o tasques programades. Comprova la configuració del servidor NTP i l'accés a la xarxa abans de reiniciar.",
+      "details": "El servei `ntp` és el dimoni clàssic del Network Time Protocol del projecte NTP. Manté el rellotge sincronitzat i també pot donar l’hora a altres màquines si es configura. Debian pot instal·lar chrony o systemd-timesyncd en el seu lloc; executar més d’un dimoni d’hora pot causar conflictes. Comprova quin està actiu abans de canviar la configuració.",
+      "stop": "Aturar o desactivar ntp deixa que el rellotge es desviï; les altres màquines que feien servir aquest servidor com a font d’hora també perden la referència. L’hora actual continua sent correcta fins que s’acumula la desviació. Assegura’t que un altre servei d’hora no està gestionant ja el rellotge abans d’aturar-lo.",
+      "problems": [
+        "L’hora no està sincronitzada — executa `ntpq -p` i revisa els servidors configurats a `/etc/ntp.conf`.",
+        "El servei no arrenca — comprova `systemctl status ntp` i `journalctl -u ntp -n 50 --no-pager`; un conflicte de port amb chrony o timesyncd és habitual.",
+        "L’hora està molt desviada — comprova `timedatectl status` i si hi ha un altre servei d’hora en marxa; NTP pot trigar a corregir una desviació gran."
+      ]
     },
     "unattended-upgrades": {
       "name": "Actualitzacions automàtiques",
       "what": "Instal·la actualitzacions de seguretat automàticament en segon pla.",
-      "ifFails": "Les actualitzacions de seguretat poden deixar d'instal·lar-se. Revisa els registres i l'espai de disc, i torna'l a iniciar perquè continuïn."
+      "ifFails": "Les actualitzacions de seguretat poden deixar d'instal·lar-se. Revisa els registres i l'espai de disc, i torna'l a iniciar perquè continuïn.",
+      "details": "unattended-upgrades instal·la actualitzacions de seguretat automàticament, normalment mitjançant un temporitzador diari d’APT. Llegeix `/etc/apt/apt.conf.d/50unattended-upgrades` i escriu a `/var/log/unattended-upgrades/`. Segons la configuració, també pot eliminar paquets sense usar o reiniciar el servidor. Només aplica les regles que activis; no substitueix la revisió de les actualitzacions importants.",
+      "stop": "Aturar-lo o desactivar-lo atura les actualitzacions de seguretat automàtiques. El servidor continua funcionant, però les vulnerabilitats conegudes queden sense corregir fins que instal·lis les actualitzacions tu mateix. És segur aturar-lo una estona mentre canvies la configuració; no el deixis desactivat tret que un altre sistema d’actualització cobreixi el servidor.",
+      "problems": [
+        "No s’instal·len les actualitzacions — comprova `systemctl status unattended-upgrades`, els temporitzadors amb `systemctl list-timers` i `/var/log/unattended-upgrades/unattended-upgrades.log`.",
+        "Hi ha paquets retinguts — revisa els orígens i les llistes de paquets a `/etc/apt/apt.conf.d/50unattended-upgrades` i les preferències d’APT.",
+        "El servei falla amb un error de bloqueig — hi ha un altre procés d’APT en marxa; espera que acabi i comprova `systemctl status apt-daily`."
+      ]
     },
     "apt-daily": {
       "name": "Feines diàries d'APT",
       "what": "Actualitza les llistes de paquets i prepara les actualitzacions pendents cada dia.",
-      "ifFails": "Les llistes de paquets i la informació d'actualitzacions es poden quedar desfasades. Torna'l a iniciar o executa apt update manualment; no interrompis una actualització en curs."
+      "ifFails": "Les llistes de paquets i la informació d'actualitzacions es poden quedar desfasades. Torna'l a iniciar o executa apt update manualment; no interrompis una actualització en curs.",
+      "details": "apt-daily és un parell de temporitzadors i serveis de systemd que actualitzen les llistes de paquets d’APT i, per separat, preparen les actualitzacions. S’executen una vegada al dia amb un retard aleatori perquè moltes màquines no coincideixin al mateix mirall. La feina la fa `/usr/lib/apt/apt.systemd.daily`, que també pot iniciar unattended-upgrades. No són dimonis que es quedin executant-se.",
+      "stop": "Aturar o desactivar aquestes unitats atura l’actualització diària de llistes i la preparació d’actualitzacions. Les llistes de paquets queden antiquades i les actualitzacions automàtiques poden no veure les noves de seguretat. Pots executar `apt update` a mà; no interrompis una actualització que ja estigui en marxa.",
+      "problems": [
+        "Les llistes de paquets estan antiquades — comprova `systemctl list-timers 'apt-daily*'` i executa `apt update` manualment.",
+        "Una tasca d’actualització es queda encallada — comprova `systemctl status apt-daily` i `journalctl -u apt-daily -n 50 --no-pager`; un bloqueig d’un altre procés d’APT és habitual.",
+        "Les actualitzacions automàtiques no comencen — comprova si s’ha executat `apt-daily-upgrade` i llegeix els registres de `/var/log/unattended-upgrades/`."
+      ]
     },
     "docker": {
       "name": "Motor Docker",
@@ -215,7 +300,14 @@
     "containerd": {
       "name": "Runtime containerd",
       "what": "El runtime de contenidors que Docker fa servir per iniciar i aturar contenidors.",
-      "ifFails": "Docker no pot iniciar ni gestionar contenidors. Revisa'n el registre i l'espai de disc; reiniciar containerd pot afectar tots els contenidors del servidor."
+      "ifFails": "Docker no pot iniciar ni gestionar contenidors. Revisa'n el registre i l'espai de disc; reiniciar containerd pot afectar tots els contenidors del servidor.",
+      "details": "containerd és l’entorn d’execució de contenidors que Docker usa per descarregar imatges, crear contenidors i gestionar-ne el cicle de vida. S’executa com a servei del sistema i Docker s’hi comunica mitjançant un socket; normalment gestiones els contenidors amb Docker, no amb containerd directament. Altres eines com nerdctl o Kubernetes també el poden usar. Guarda el seu estat a `/var/lib/containerd`.",
+      "stop": "Aturar containerd deté tots els contenidors que en depenen, inclosos els de Docker, i Docker pot donar errors fins que torni. Tornar-lo a arrencar no sempre reinicia els contenidors; Docker o l’orquestrador ho han de fer. Planifica el manteniment i comprova l’espai de disc abans de reiniciar-lo.",
+      "problems": [
+        "Docker no pot iniciar contenidors — comprova `systemctl status containerd`, `ctr version` i el registre de containerd.",
+        "El disc és ple — executa `ctr containers list` i `ctr images list`, i elimina contingut sense usar amb cura; no esborris `/var/lib/containerd`.",
+        "containerd falla després d’una actualització — llegeix `journalctl -u containerd -n 100 --no-pager` i revisa `/etc/containerd/config.toml`."
+      ]
     },
     "apache2": {
       "name": "Servidor HTTP Apache",
@@ -233,12 +325,27 @@
     "nginx": {
       "name": "Nginx",
       "what": "Serveix llocs web i sovint fa de proxy invers per a altres serveis.",
-      "ifFails": "Els llocs i serveis proxificats poden deixar de respondre. Executa nginx -t per validar la configuració, revisa el registre d'errors i recarrega o reinicia."
+      "ifFails": "Els llocs i serveis proxificats poden deixar de respondre. Executa nginx -t per validar la configuració, revisa el registre d'errors i recarrega o reinicia.",
+      "details": "Nginx és un servidor web i proxy invers. Pot servir fitxers estàtics directament i passar peticions a servidors d’aplicacions, sovint en ports locals. Els llocs es configuren a `/etc/nginx/sites-enabled` i `/etc/nginx/conf.d`, amb registres a `/var/log/nginx`. Després d’un canvi de configuració, prova-la amb `nginx -t` i recarrega en lloc de reiniciar quan sigui possible.",
+      "stop": "Aturar o desactivar nginx deixa inaccessibles tots els llocs i aplicacions proxificades que serveix. Les connexions existents es tanquen i els visitants reben un error de connexió. Recarregar manté la interrupció al mínim en els canvis de configuració; una aturada completa només és per a manteniment o quan un altre servidor ocupa els ports.",
+      "problems": [
+        "Nginx no arrenca — executa `nginx -t`, corregeix el fitxer i la línia indicats i torna a arrencar-lo.",
+        "El lloc retorna 502 o 504 — l’aplicació de destinació està caiguda o lenta; comprova el seu servei i l’adreça de `proxy_pass`.",
+        "El navegador rep connexió rebutjada — comprova `systemctl status nginx`, els ports a l’escolta amb `ss -ltnp` i el tallafoc.",
+        "Els canvis no apareixen — executa `nginx -t` i `systemctl reload nginx`; un error de sintaxi manté la configuració antiga en marxa."
+      ]
     },
     "caddy": {
       "name": "Caddy",
       "what": "Serveix llocs web i obté certificats TLS automàticament.",
-      "ifFails": "Els llocs poden deixar de respondre i la renovació de certificats pot fallar. Valida el Caddyfile i revisa els registres abans de recarregar."
+      "ifFails": "Els llocs poden deixar de respondre i la renovació de certificats pot fallar. Valida el Caddyfile i revisa els registres abans de recarregar.",
+      "details": "Caddy és un servidor web i proxy invers que obté i renova certificats TLS automàticament. Llegeix un `Caddyfile`, normalment `/etc/caddy/Caddyfile`, i desa els certificats i l’estat a `/var/lib/caddy`. Pot proxificar peticions a aplicacions locals i gestionar HTTPS sense una instal·lació a part de Certbot. Prova els canvis de configuració amb `caddy validate` abans de recarregar.",
+      "stop": "Aturar o desactivar Caddy deixa inaccessibles els llocs que serveix i atura la renovació automàtica de certificats. Els certificats existents continuen sent vàlids fins que caduquen. Recarrega Caddy per als canvis de configuració; una aturada completa només és per a manteniment o quan un altre servidor ocupa els ports.",
+      "problems": [
+        "Caddy no arrenca — executa `caddy validate --config /etc/caddy/Caddyfile` i llegeix l’error que indica.",
+        "HTTPS falla o el certificat no s’emet — comprova que el DNS apunta a aquest servidor, que els ports 80 i 443 estan oberts i llegeix `journalctl -u caddy -n 100 --no-pager`.",
+        "El lloc retorna 502 — l’aplicació de destinació està caiguda; revisa l’adreça de `reverse_proxy` i el servei de l’aplicació."
+      ]
     },
     "haproxy": {
       "name": "HAProxy",

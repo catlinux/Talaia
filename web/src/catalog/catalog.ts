@@ -57,6 +57,7 @@ export const catalog: CatalogEntry[] = [
     category: 'logs',
     importance: 'essential',
     units: ['systemd-journald'],
+    checks: ['journalctl --verify', 'journalctl --disk-usage'],
   },
   {
     id: 'systemd-logind',
@@ -64,6 +65,7 @@ export const catalog: CatalogEntry[] = [
     category: 'system',
     importance: 'important',
     units: ['systemd-logind'],
+    checks: ['loginctl list-sessions'],
   },
   {
     id: 'systemd-networkd',
@@ -71,6 +73,7 @@ export const catalog: CatalogEntry[] = [
     category: 'network',
     importance: 'essential',
     units: ['systemd-networkd'],
+    checks: ['networkctl status'],
   },
   {
     id: 'systemd-resolved',
@@ -78,6 +81,7 @@ export const catalog: CatalogEntry[] = [
     category: 'dns',
     importance: 'important',
     units: ['systemd-resolved'],
+    checks: ['resolvectl status'],
   },
   {
     id: 'systemd-timesyncd',
@@ -85,6 +89,7 @@ export const catalog: CatalogEntry[] = [
     category: 'time',
     importance: 'optional',
     units: ['systemd-timesyncd'],
+    checks: ['timedatectl timesync-status'],
   },
   {
     id: 'systemd-udevd',
@@ -92,8 +97,16 @@ export const catalog: CatalogEntry[] = [
     category: 'system',
     importance: 'essential',
     units: ['systemd-udevd'],
+    checks: ['udevadm verify'],
   },
-  { id: 'dbus', kind: 'service', category: 'system', importance: 'essential', units: ['dbus'] },
+  {
+    id: 'dbus',
+    kind: 'service',
+    category: 'system',
+    importance: 'essential',
+    units: ['dbus'],
+    checks: ['busctl list'],
+  },
   {
     id: 'getty',
     kind: 'service',
@@ -108,6 +121,7 @@ export const catalog: CatalogEntry[] = [
     category: 'network',
     importance: 'essential',
     units: ['networking'],
+    checks: ['ifquery --list'],
   },
   {
     id: 'ifupdown',
@@ -115,6 +129,7 @@ export const catalog: CatalogEntry[] = [
     category: 'network',
     importance: 'essential',
     unitPatterns: [/^ifup@/],
+    checks: ['ifquery --list'],
   },
   {
     id: 'rsyslog',
@@ -136,6 +151,7 @@ export const catalog: CatalogEntry[] = [
     category: 'time',
     importance: 'optional',
     units: ['ntp', 'ntpsec'],
+    checks: ['ntpq -p'],
   },
   {
     id: 'unattended-upgrades',
@@ -143,6 +159,7 @@ export const catalog: CatalogEntry[] = [
     category: 'updates',
     importance: 'important',
     units: ['unattended-upgrades'],
+    checks: ['unattended-upgrade --dry-run --debug'],
   },
   {
     id: 'apt-daily',
@@ -151,6 +168,7 @@ export const catalog: CatalogEntry[] = [
     importance: 'important',
     units: ['apt-daily', 'apt-daily-upgrade'],
     unitPatterns: [/^apt-daily/],
+    checks: ["systemctl list-timers 'apt-daily*'", 'apt-get check'],
   },
   {
     id: 'docker',
@@ -165,6 +183,7 @@ export const catalog: CatalogEntry[] = [
     category: 'containers',
     importance: 'essential',
     units: ['containerd'],
+    checks: ['ctr version'],
   },
   {
     id: 'apache2',
@@ -172,6 +191,7 @@ export const catalog: CatalogEntry[] = [
     category: 'web',
     importance: 'important',
     units: ['apache2'],
+    checks: ['apachectl configtest'],
   },
   {
     id: 'nginx',
@@ -180,6 +200,7 @@ export const catalog: CatalogEntry[] = [
     importance: 'important',
     units: ['nginx'],
     images: ['nginx'],
+    checks: ['nginx -t'],
   },
   {
     id: 'caddy',
@@ -188,6 +209,7 @@ export const catalog: CatalogEntry[] = [
     importance: 'important',
     units: ['caddy'],
     images: ['caddy'],
+    checks: ['caddy validate --config /etc/caddy/Caddyfile'],
   },
   {
     id: 'haproxy',
@@ -224,14 +246,23 @@ export const catalog: CatalogEntry[] = [
     category: 'security',
     importance: 'important',
     units: ['fail2ban'],
+    checks: ['fail2ban-client status'],
   },
-  { id: 'ufw', kind: 'service', category: 'security', importance: 'important', units: ['ufw'] },
+  {
+    id: 'ufw',
+    kind: 'service',
+    category: 'security',
+    importance: 'important',
+    units: ['ufw'],
+    checks: ['ufw status verbose'],
+  },
   {
     id: 'nftables',
     kind: 'service',
     category: 'security',
     importance: 'important',
     units: ['nftables'],
+    checks: ['nft list ruleset'],
   },
   {
     id: 'iptables',
@@ -318,6 +349,7 @@ export const catalog: CatalogEntry[] = [
     importance: 'important',
     units: ['mariadb', 'mysql'],
     images: ['mariadb', 'bitnami/mariadb'],
+    checks: ['mysqladmin status'],
   },
   {
     id: 'mysql',
@@ -333,6 +365,7 @@ export const catalog: CatalogEntry[] = [
     importance: 'important',
     unitPatterns: [/^postgresql/],
     images: ['postgres', 'bitnami/postgresql'],
+    checks: ['pg_isready'],
   },
   {
     id: 'redis',
@@ -341,6 +374,7 @@ export const catalog: CatalogEntry[] = [
     importance: 'important',
     units: ['redis-server'],
     images: ['redis', 'bitnami/redis'],
+    checks: ['redis-cli ping'],
   },
   {
     id: 'valkey',
@@ -384,6 +418,7 @@ export const catalog: CatalogEntry[] = [
     category: 'network',
     importance: 'important',
     unitPatterns: [/^wg-quick@/],
+    checks: ['wg show'],
   },
   {
     id: 'tailscale',
@@ -391,6 +426,7 @@ export const catalog: CatalogEntry[] = [
     category: 'network',
     importance: 'important',
     units: ['tailscaled'],
+    checks: ['tailscale status'],
   },
   {
     id: 'openvpn',
@@ -1074,12 +1110,18 @@ export const catalog: CatalogEntry[] = [
 const docsById: Partial<Record<string, string>> = {
   ssh: 'https://www.openssh.com/manual.html',
   cron: 'https://man7.org/linux/man-pages/man8/cron.8.html',
-  'systemd-journald': 'https://www.freedesktop.org/software/systemd/man/',
-  'systemd-logind': 'https://www.freedesktop.org/software/systemd/man/',
-  'systemd-networkd': 'https://www.freedesktop.org/software/systemd/man/',
-  'systemd-resolved': 'https://www.freedesktop.org/software/systemd/man/',
-  'systemd-timesyncd': 'https://www.freedesktop.org/software/systemd/man/',
-  'systemd-udevd': 'https://www.freedesktop.org/software/systemd/man/',
+  'systemd-journald':
+    'https://www.freedesktop.org/software/systemd/man/latest/systemd-journald.service.html',
+  'systemd-logind':
+    'https://www.freedesktop.org/software/systemd/man/latest/systemd-logind.service.html',
+  'systemd-networkd':
+    'https://www.freedesktop.org/software/systemd/man/latest/systemd-networkd.service.html',
+  'systemd-resolved':
+    'https://www.freedesktop.org/software/systemd/man/latest/systemd-resolved.service.html',
+  'systemd-timesyncd':
+    'https://www.freedesktop.org/software/systemd/man/latest/systemd-timesyncd.service.html',
+  'systemd-udevd':
+    'https://www.freedesktop.org/software/systemd/man/latest/systemd-udevd.service.html',
   dbus: 'https://www.freedesktop.org/wiki/Software/dbus/',
   getty: 'https://www.freedesktop.org/software/systemd/man/',
   networking: 'https://wiki.debian.org/NetworkConfiguration',
@@ -1088,6 +1130,7 @@ const docsById: Partial<Record<string, string>> = {
   chrony: 'https://chrony-project.org/documentation.html',
   ntp: 'https://www.ntp.org/documentation/',
   'unattended-upgrades': 'https://wiki.debian.org/UnattendedUpgrades',
+  'apt-daily': 'https://manpages.debian.org/apt.conf.5',
   docker: 'https://docs.docker.com/engine/',
   containerd: 'https://containerd.io/docs/',
   apache2: 'https://httpd.apache.org/docs/',
