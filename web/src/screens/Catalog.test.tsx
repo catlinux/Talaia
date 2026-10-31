@@ -30,13 +30,18 @@ afterEach(cleanup)
 
 describe('Catalog', () => {
   it('lists every catalogue entry', () => {
-    renderCatalog()
+    const { container } = renderCatalog()
 
     expect(screen.getByRole('heading', { level: 1, name: 'Catalogue' })).toBeTruthy()
     expect(screen.getByText(`${catalog.length} entries`)).toBeTruthy()
-    for (const entry of catalog) {
-      expect(screen.getByText(i18n.t(`entries.${entry.id}.name`, { ns: 'catalog' }))).toBeTruthy()
-    }
+    const names = Array.from(
+      container.querySelectorAll<HTMLElement>('.catalog__name strong'),
+      (node) => node.textContent,
+    )
+    expect(names).toHaveLength(catalog.length)
+    expect(new Set(names)).toEqual(
+      new Set(catalog.map((entry) => i18n.t(`entries.${entry.id}.name`, { ns: 'catalog' }))),
+    )
   })
 
   it('searches by text and keeps the query in the address', () => {

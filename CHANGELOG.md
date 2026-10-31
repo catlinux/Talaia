@@ -1,9 +1,4 @@
 # Changelog
-- Terminal sessions in the agent (not reachable from the panel yet): a shell from a closed list (`/bin/sh` or `/bin/bash`) runs through the Docker exec API with a terminal, as the user of the container and without privileges, and ends with the stream to the core. Limits: 4 sessions, 15 minutes without activity, 4 hours in total, 16 KiB per output message and 1 MiB/s of output; a shell that does not read its input is closed instead of stalling the agent. It reports whether the container is as good as root on the host (privileged, host PID namespace or Docker socket mounted).
-- Terminal sessions in the core (not reachable from the panel yet): sessions are routed by server and session id, so an agent can only feed its own; at most 4 per server and one per user and container; every session is recorded as an asciicast v2 file in chunks sealed with the secrets key and bound to their position, so a dropped, repeated or swapped chunk is detected on export; a session that cannot be recorded (database down, 50 MiB reached) is closed; keystrokes are not recorded. Keystrokes wait for a busy agent instead of being lost, and a browser that reads too slowly ends its session. Audited as `terminal_open` and `terminal_close`.
-- `talaia-core terminal list` and `talaia-core terminal export <id>` (prints the recording for `asciinema play`), and the setting `terminal_recording_days` / `TALAIA_TERMINAL_RECORDING_DAYS` (default 90, 0 keeps them for ever) with a daily purge. Sessions a restart left open are closed at start.
-- Terminal API: `POST /api/v1/servers/{id}/containers/{c}/terminal` (full session; needs `confirm`, a shell of `sh` or `bash`) starts the shell and answers with a one-time ticket, and `GET /api/v1/terminal/{id}/ws` is the WebSocket (binary messages are keystrokes and output, text messages are control: ticket, resize, closed). The ticket lives 30 seconds, is stored as a hash, works once, and only for the session it was issued for from the panel session that asked for it; a shell nobody attaches to is closed. The WebSocket requires an allowed `Origin` (there is no same-site shortcut) and the session cookie, and the panel session is checked every minute: revoking it closes the terminal. The core closes its sessions on shutdown.
-- Terminal in the panel: a **Terminal** button on every running container opens a shell with xterm.js (served from the panel itself and loaded only when used). It asks first, explaining that the session is recorded and that what you type is kept when the screen shows it, and lets you choose `sh` or `bash`; it shows a permanent *Recording* mark, a red warning when the container is as good as root on the server (privileged, host processes or the Docker socket), and why a session ended (exit code, inactivity, revoked session…) with a button to open a new one. In ca/es/en, for light and dark themes and small screens.
 
 [Leer en castellano](CHANGELOG.es.md)
 
@@ -17,6 +12,14 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 **Security**.
 
 ## [Unreleased]
+
+## [0.6.27] - 2026-10-31
+
+### Fixed
+
+- Panel: leaving a server page while it was still loading (for example with Back) could send you back to that server.
+- Web tests: the suite runs in about 10 seconds instead of 30 and with normal time limits again; `pnpm test:file <file>` runs a single test file.
+- Changelog: the terminal entries of 0.2.1 were above the title of this file; they are back in their release.
 
 ## [0.6.26] - 2026-10-31
 
@@ -774,6 +777,11 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 - Update detection and the update request API: `GET /api/v1/system/version` reports the running version and commit, the newest commit of `main` whose CI is green, the commits pending since the running build and the state the host helper writes; `POST /api/v1/system/update` (full session, confirmation and only the offered commit) queues `requests/update.json` for the helper and is audited as `system_update_requested`. The core asks the public GitHub API every 30 minutes (`update_repo`, `update_check_interval`, `update_api_url`), reuses ETags, backs off when the API rate limit runs out and keeps working if GitHub is unreachable. The build stamps the commit with `-X main.commit` (the `GIT_COMMIT` build argument) and `host_dir` is the directory shared with the helper.
 - The panel can serve a certificate that browsers already trust: when `acme_provider` / `TALAIA_ACME_PROVIDER` is set (currently `ovh`), the core obtains it over ACME DNS-01 with lego, without a reverse proxy and without using ports 80/443, stores the account and the certificate in `<data_dir>/acme/`, renews it 30 days before it expires with backoff on failures and swaps it without a restart, and keeps serving the certificate of Talaia's own CA until the public one is ready; `acme_email` and `acme_directory_url` (for staging or a test server) are the other settings.
 - Contract for terminals in containers (`TerminalOpen`, `TerminalInput`, `TerminalResize`, `TerminalClose` from the core; `TerminalOpened`, `TerminalOutput`, `TerminalClosed` from the agent). Not used yet: it only defines the messages.
+- Terminal sessions in the agent (not reachable from the panel yet): a shell from a closed list (`/bin/sh` or `/bin/bash`) runs through the Docker exec API with a terminal, as the user of the container and without privileges, and ends with the stream to the core. Limits: 4 sessions, 15 minutes without activity, 4 hours in total, 16 KiB per output message and 1 MiB/s of output; a shell that does not read its input is closed instead of stalling the agent. It reports whether the container is as good as root on the host (privileged, host PID namespace or Docker socket mounted).
+- Terminal sessions in the core (not reachable from the panel yet): sessions are routed by server and session id, so an agent can only feed its own; at most 4 per server and one per user and container; every session is recorded as an asciicast v2 file in chunks sealed with the secrets key and bound to their position, so a dropped, repeated or swapped chunk is detected on export; a session that cannot be recorded (database down, 50 MiB reached) is closed; keystrokes are not recorded. Keystrokes wait for a busy agent instead of being lost, and a browser that reads too slowly ends its session. Audited as `terminal_open` and `terminal_close`.
+- `talaia-core terminal list` and `talaia-core terminal export <id>` (prints the recording for `asciinema play`), and the setting `terminal_recording_days` / `TALAIA_TERMINAL_RECORDING_DAYS` (default 90, 0 keeps them for ever) with a daily purge. Sessions a restart left open are closed at start.
+- Terminal API: `POST /api/v1/servers/{id}/containers/{c}/terminal` (full session; needs `confirm`, a shell of `sh` or `bash`) starts the shell and answers with a one-time ticket, and `GET /api/v1/terminal/{id}/ws` is the WebSocket (binary messages are keystrokes and output, text messages are control: ticket, resize, closed). The ticket lives 30 seconds, is stored as a hash, works once, and only for the session it was issued for from the panel session that asked for it; a shell nobody attaches to is closed. The WebSocket requires an allowed `Origin` (there is no same-site shortcut) and the session cookie, and the panel session is checked every minute: revoking it closes the terminal. The core closes its sessions on shutdown.
+- Terminal in the panel: a **Terminal** button on every running container opens a shell with xterm.js (served from the panel itself and loaded only when used). It asks first, explaining that the session is recorded and that what you type is kept when the screen shows it, and lets you choose `sh` or `bash`; it shows a permanent *Recording* mark, a red warning when the container is as good as root on the server (privileged, host processes or the Docker socket), and why a session ended (exit code, inactivity, revoked session…) with a button to open a new one. In ca/es/en, for light and dark themes and small screens.
 - Monorepo skeleton: Go workspace, empty `core`, `agent` and `cli` modules, `Makefile` and `scripts/bump-version.sh`.
 - Agent contract `proto/agent.proto` v0 (`Heartbeat`, `Inventory`, `Metrics`) with `buf` configuration.
 - Core skeleton: HTTP server with `/healthz`, TOML + environment configuration, PostgreSQL connection and first migration.
@@ -859,7 +867,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.6.26...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.6.27...HEAD
+[0.6.27]: https://github.com/catlinux/Talaia/releases/tag/v0.6.27
 [0.6.26]: https://github.com/catlinux/Talaia/releases/tag/v0.6.26
 [0.6.25]: https://github.com/catlinux/Talaia/releases/tag/v0.6.25
 [0.6.24]: https://github.com/catlinux/Talaia/releases/tag/v0.6.24

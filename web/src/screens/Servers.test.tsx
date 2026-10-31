@@ -156,10 +156,12 @@ describe('Servers', () => {
     renderServers(mockClient)
 
     expect(await screen.findByRole('heading', { name: 'Servers' })).toBeTruthy()
-    for (const name of serverNames) {
-      expect(await screen.findByRole('link', { name })).toBeTruthy()
-    }
-    expect(screen.getAllByRole('meter')).toHaveLength(serverNames.length * 3)
+    const links = Array.from(
+      document.querySelectorAll<HTMLAnchorElement>('.servers__name a'),
+      (link) => link.textContent,
+    )
+    expect(new Set(links)).toEqual(new Set(serverNames))
+    expect(document.querySelectorAll('[role="meter"]')).toHaveLength(serverNames.length * 3)
     expect(screen.getByText('Disk at 91%')).toBeTruthy()
   })
 

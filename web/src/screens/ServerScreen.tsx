@@ -237,6 +237,11 @@ export function ServerScreen({
   useEffect(() => {
     if (permissionsLoading || availableTabKey === '') return
     if (parsedAllowed && stackAllowed) return
+    // Permissions may settle after the user has already left this server (Back
+    // pressed while loading); redirecting then would pull them back.
+    const base = tabPath(server.id, 'overview')
+    const here = window.location.pathname
+    if (here !== base && !here.startsWith(`${base}/`)) return
     navigate(tabPath(server.id, fallbackTab), { replace: true })
   }, [
     availableTabKey,

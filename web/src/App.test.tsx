@@ -537,11 +537,9 @@ describe('App', () => {
       window.dispatchEvent(new PopStateEvent('popstate'))
     })
 
-    expect(
-      await screen.findByRole('heading', { level: 1, name: serversTitles.en }, { timeout: 30_000 }),
-    ).toBeTruthy()
+    expect(await screen.findByRole('heading', { level: 1, name: serversTitles.en })).toBeTruthy()
     expect(window.location.pathname).toBe('/servers')
-  }, 30_000)
+  })
 
   it('shows a not-found page for unknown routes', async () => {
     window.history.replaceState({}, '', '/does-not-exist')

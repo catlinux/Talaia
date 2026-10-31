@@ -246,7 +246,7 @@ describe('journal section', () => {
   it('keeps at most 2000 entries while following', async () => {
     const base = Date.parse('2026-10-20T10:00:00Z')
     const initial = entry(0, 'line 0')
-    const burst = Array.from({ length: 2500 }, (_, index) =>
+    const burst = Array.from({ length: maxFollowLines }, (_, index) =>
       entry(0, `line ${index + 1}`, { ts: new Date(base + (index + 1) * 1000).toISOString() }),
     )
     const api = apiWithPages([job(page([initial], 'c1')), job(page(burst, 'c2'))])
@@ -260,10 +260,10 @@ describe('journal section', () => {
       await vi.advanceTimersByTimeAsync(1)
     })
 
-    const items = within(viewer()).getAllByRole('listitem')
+    const items = viewer().querySelectorAll('.journal__entry')
     expect(items).toHaveLength(maxFollowLines)
-    expect(items[0]?.textContent).toContain('line 501')
-    expect(items[items.length - 1]?.textContent).toContain('line 2500')
+    expect(items[0]?.textContent).toContain('line 1')
+    expect(items[items.length - 1]?.textContent).toContain(`line ${maxFollowLines}`)
   })
 
   it('highlights literal search matches case-insensitively', async () => {

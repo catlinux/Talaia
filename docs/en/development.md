@@ -72,6 +72,17 @@ bash scripts/dev.sh down   # stop the database (add -v to remove its data)
 `make dev` publishes the core on `http://127.0.0.1:8080` (`/healthz`) and the web panel on the Vite port
 shown in its output. The credentials in `packaging/dev/compose.yaml` are for local development only.
 
+### Web panel tests
+
+Run the panel tests from `web/`:
+
+```bash
+pnpm test                                    # full suite
+pnpm test:file src/screens/Catalog.test.tsx  # one file
+```
+
+Do not use `pnpm test -- src/x`: the extra `--` reaches Vitest literally and still runs the whole suite.
+
 ## 4. Branches
 
 - `main` is always in a working state.

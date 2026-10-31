@@ -72,6 +72,17 @@ bash scripts/dev.sh down   # detiene la base de datos (con -v borra sus datos)
 `make dev` publica el core en `http://127.0.0.1:8080` (`/healthz`) y el panel web en el puerto de Vite que
 indica su salida. Las credenciales de `packaging/dev/compose.yaml` son solo para desarrollo local.
 
+### Pruebas del panel web
+
+Ejecuta las pruebas del panel desde `web/`:
+
+```bash
+pnpm test                                    # suite completa
+pnpm test:file src/screens/Catalog.test.tsx  # un solo archivo
+```
+
+No uses `pnpm test -- src/x`: el `--` extra llega literalmente a Vitest y sigue ejecutando toda la suite.
+
 ## 4. Ramas
 
 - `main` siempre funciona.

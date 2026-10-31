@@ -13,6 +13,14 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+## [0.6.27] - 2026-10-31
+
+### Corregido
+
+- Panel: salir de la página de un servidor mientras aún cargaba (por ejemplo con Atrás) podía devolverte a ese servidor.
+- Tests web: la suite tarda unos 10 segundos en lugar de 30 y vuelve a tener límites de tiempo normales; `pnpm test:file <archivo>` ejecuta un solo archivo de tests.
+- Changelog: las entradas de terminal de la 0.2.1 estaban encima del título del changelog en inglés; vuelven a su versión.
+
 ## [0.6.26] - 2026-10-31
 
 ### Añadido
@@ -859,7 +867,8 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
   `.gitattributes` y `.gitignore`.
 - Licencia WNCL-1.0 aplicada: archivo `LICENSE` y sección de créditos en los README.
 
-[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.6.26...HEAD
+[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.6.27...HEAD
+[0.6.27]: https://github.com/catlinux/Talaia/releases/tag/v0.6.27
 [0.6.26]: https://github.com/catlinux/Talaia/releases/tag/v0.6.26
 [0.6.25]: https://github.com/catlinux/Talaia/releases/tag/v0.6.25
 [0.6.24]: https://github.com/catlinux/Talaia/releases/tag/v0.6.24
