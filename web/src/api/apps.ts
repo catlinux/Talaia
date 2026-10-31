@@ -128,10 +128,21 @@ export interface ProxyDomain {
   certbot: string
 }
 
+export interface ProxyCertificate {
+  hostname: string
+  state: string
+}
+
 export interface ProxyStatus {
   mode: 'external' | 'managed'
   domains: ProxyDomain[]
+  port80Free?: boolean
+  port443Free?: boolean
+  caddyVersion?: string
+  certificates?: ProxyCertificate[]
 }
+
+export type ProxyAction = 'install' | 'remove' | 'apply'
 
 /** AppsApi reads and controls the apps of the core. */
 export interface AppsApi {
@@ -151,8 +162,10 @@ export interface AppsApi {
 export interface WizardApi extends AppsApi {
   templates(): Promise<TemplateSummary[]>
   create(serverId: string, input: AppInput): Promise<CreatedApp>
+  appDomains(appId: string): Promise<Domain[]>
   addDomain(appId: string, input: DomainInput): Promise<Domain>
   proxy(serverId: string): Promise<ProxyStatus>
+  proxyAction(serverId: string, action: ProxyAction): Promise<void>
 }
 
 interface apiApp {
@@ -244,6 +257,10 @@ interface apiProxyDomain {
 interface apiProxy {
   mode: 'external' | 'managed'
   domains: apiProxyDomain[]
+  port_80_free?: boolean
+  port_443_free?: boolean
+  caddy_version?: string
+  certificates?: Array<{ hostname: string; state: string }>
 }
 
 function toApp(app: apiApp): App {
@@ -404,6 +421,11 @@ export function createAppsApi(fetchImpl?: typeof fetch): WizardApi {
           template_version: input.templateVersion,
         }),
       ),
+    appDomains: async (appId) =>
+      (
+        (await http.get<apiDomain[] | null>(`/api/v1/apps/${encodeURIComponent(appId)}/domains`)) ??
+        []
+      ).map(toDomain),
     addDomain: async (appId, input) =>
       toDomain(
         await http.post<apiDomain>(`/api/v1/apps/${encodeURIComponent(appId)}/domains`, {
@@ -414,7 +436,24 @@ export function createAppsApi(fetchImpl?: typeof fetch): WizardApi {
       ),
     proxy: async (serverId) => {
       const body = await http.get<apiProxy>(`/api/v1/servers/${encodeURIComponent(serverId)}/proxy`)
-      return { mode: body.mode, domains: (body.domains ?? []).map(toProxyDomain) }
+      return {
+        mode: body.mode,
+        domains: (body.domains ?? []).map(toProxyDomain),
+        ...(body.port_80_free === undefined ? {} : { port80Free: body.port_80_free }),
+        ...(body.port_443_free === undefined ? {} : { port443Free: body.port_443_free }),
+        ...(body.caddy_version === undefined ? {} : { caddyVersion: body.caddy_version }),
+        ...(body.certificates === undefined
+          ? {}
+          : {
+              certificates: body.certificates.map((certificate) => ({
+                hostname: certificate.hostname,
+                state: certificate.state,
+              })),
+            }),
+      }
+    },
+    proxyAction: async (serverId, action) => {
+      await http.post<void>(`/api/v1/servers/${encodeURIComponent(serverId)}/proxy`, { action })
     },
   }
 }

@@ -6,6 +6,8 @@ import caAbout from '../locales/ca/about.json'
 import caApps from '../locales/ca/apps.json'
 import caAudit from '../locales/ca/audit.json'
 import caCatalog from '../locales/ca/catalog.json'
+import caDomains from '../locales/ca/domains.json'
+import caTemplates from '../locales/ca/templates.json'
 import caAuth from '../locales/ca/auth.json'
 import caCommon from '../locales/ca/common.json'
 import caErrors from '../locales/ca/errors.json'
@@ -24,6 +26,8 @@ import enAbout from '../locales/en/about.json'
 import enApps from '../locales/en/apps.json'
 import enAudit from '../locales/en/audit.json'
 import enCatalog from '../locales/en/catalog.json'
+import enDomains from '../locales/en/domains.json'
+import enTemplates from '../locales/en/templates.json'
 import enAuth from '../locales/en/auth.json'
 import enCommon from '../locales/en/common.json'
 import enErrors from '../locales/en/errors.json'
@@ -42,6 +46,8 @@ import esAbout from '../locales/es/about.json'
 import esApps from '../locales/es/apps.json'
 import esAudit from '../locales/es/audit.json'
 import esCatalog from '../locales/es/catalog.json'
+import esDomains from '../locales/es/domains.json'
+import esTemplates from '../locales/es/templates.json'
 import esAuth from '../locales/es/auth.json'
 import esCommon from '../locales/es/common.json'
 import esErrors from '../locales/es/errors.json'
@@ -75,6 +81,8 @@ void i18n
         about: caAbout,
         audit: caAudit,
         catalog: caCatalog,
+        domains: caDomains,
+        templates: caTemplates,
         fleet: caFleet,
         fleetwide: caFleetwide,
         metrics: caMetrics,
@@ -95,6 +103,8 @@ void i18n
         about: esAbout,
         audit: esAudit,
         catalog: esCatalog,
+        domains: esDomains,
+        templates: esTemplates,
         fleet: esFleet,
         fleetwide: esFleetwide,
         metrics: esMetrics,
@@ -115,6 +125,8 @@ void i18n
         about: enAbout,
         audit: enAudit,
         catalog: enCatalog,
+        domains: enDomains,
+        templates: enTemplates,
         fleet: enFleet,
         fleetwide: enFleetwide,
         metrics: enMetrics,
@@ -138,6 +150,8 @@ void i18n
       'about',
       'audit',
       'catalog',
+      'domains',
+      'templates',
       'fleet',
       'fleetwide',
       'metrics',

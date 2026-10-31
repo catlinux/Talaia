@@ -1,0 +1,53 @@
+{
+  "title": "Dominis",
+  "subtitle_one": "{{count}} domini · actualitzat a les {{time}}",
+  "subtitle_other": "{{count}} dominis · actualitzats a les {{time}}",
+  "loading": "S'estan carregant els dominis…",
+  "error": "No s'han pogut carregar els dominis.",
+  "retry": "Torna-ho a provar",
+  "refresh": "Actualitza",
+  "emptyTitle": "Encara no hi ha dominis",
+  "emptyBody": "Afegeix un nom d'amfitrió des d'una app o des de l'assistent de nova app.",
+  "noResultsTitle": "Cap domini coincideix amb aquests filtres",
+  "noResultsBody": "Canvia o esborra els filtres per veure més dominis.",
+  "filters": {
+    "search": "Cerca per domini, app o servidor",
+    "server": "Servidor",
+    "allServers": "Tots els servidors",
+    "state": "Estat",
+    "allStates": "Tots els estats",
+    "issues": "Problemes",
+    "clear": "Esborra els filtres"
+  },
+  "columns": {
+    "domain": "Domini",
+    "app": "App",
+    "server": "Servidor",
+    "state": "Estat",
+    "warning": "Avís",
+    "actions": "Accions"
+  },
+  "setup": {
+    "view": "Veure la configuració",
+    "title": "Configuració del domini",
+    "note": "Talaia no canvia mai Apache ni nginx. Enganxa tu el bloc a la configuració del servidor web.",
+    "apache": "Apache",
+    "nginx": "nginx",
+    "steps": "Passos",
+    "copy": "Copia",
+    "copied": "Copiat",
+    "empty": "No hi ha res per copiar."
+  },
+  "state": {
+    "external": "El gestiona el teu Apache",
+    "managed": "Gestionat per Caddy",
+    "valid": "Certificat vàlid",
+    "pending": "Certificat pendent",
+    "failed": "Certificat fallit",
+    "unknown": "Desconegut"
+  },
+  "warnings": {
+    "noResolve": "El nom d'amfitrió no resol.",
+    "mismatch": "El nom d'amfitrió no apunta a aquest servidor."
+  }
+}

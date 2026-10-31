@@ -1,0 +1,19 @@
+{
+  "title": "Plantilles",
+  "subtitle_one": "{{count}} plantilla",
+  "subtitle_other": "{{count}} plantilles",
+  "loading": "S'estan carregant les plantilles…",
+  "error": "No s'han pogut carregar les plantilles.",
+  "retry": "Torna-ho a provar",
+  "search": "Cerca per plantilla, imatge o descripció",
+  "emptyTitle": "No hi ha plantilles disponibles",
+  "emptyBody": "El core no ha publicat cap plantilla.",
+  "noResultsTitle": "Cap plantilla coincideix amb aquesta cerca",
+  "noResultsBody": "Esborra la cerca per veure tota la galeria.",
+  "image": "Imatge",
+  "port": "Port",
+  "ram": "RAM",
+  "ramValue": "{{ram}} MB",
+  "use": "Fes servir la plantilla",
+  "requiresEdit": "Necessites permís per crear apps per fer servir una plantilla."
+}

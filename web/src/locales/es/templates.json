@@ -1,0 +1,19 @@
+{
+  "title": "Plantillas",
+  "subtitle_one": "{{count}} plantilla",
+  "subtitle_other": "{{count}} plantillas",
+  "loading": "Cargando las plantillas…",
+  "error": "No se han podido cargar las plantillas.",
+  "retry": "Reintentar",
+  "search": "Busca por plantilla, imagen o descripción",
+  "emptyTitle": "No hay plantillas disponibles",
+  "emptyBody": "El core no ha publicado ninguna plantilla.",
+  "noResultsTitle": "Ninguna plantilla coincide con esta búsqueda",
+  "noResultsBody": "Borra la búsqueda para ver toda la galería.",
+  "image": "Imagen",
+  "port": "Puerto",
+  "ram": "RAM",
+  "ramValue": "{{ram}} MB",
+  "use": "Usar la plantilla",
+  "requiresEdit": "Necesitas permiso para crear apps para usar una plantilla."
+}

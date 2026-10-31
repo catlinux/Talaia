@@ -155,7 +155,7 @@ Decisions closed on 2026-10-30: external proxy by default (Talaia never touches 
 - [ ] Agent: zero-downtime release, rollback to one of the last three images and image cleanup
 - [ ] Core: deploy pipeline (one deploy per app, superseded pushes, logs) and its API
 - [x] Template catalog (15 apps) shipped with the core
-- [ ] Panel: Apps, new app wizard (mockup 4), Domains and Templates
+- [x] Panel: Apps, new app wizard (mockup 4), Domains and Templates
 - [ ] Docs EN/ES, Opus security review, real test of the criterion and close at 0.7.0
 
 ## Operations block (decided 2026-10-20, before closing phase 2)

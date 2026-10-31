@@ -1,0 +1,19 @@
+{
+  "title": "Templates",
+  "subtitle_one": "{{count}} template",
+  "subtitle_other": "{{count}} templates",
+  "loading": "Loading the templates…",
+  "error": "The templates could not be loaded.",
+  "retry": "Retry",
+  "search": "Search by template, image or description",
+  "emptyTitle": "No templates available",
+  "emptyBody": "The core did not publish any template.",
+  "noResultsTitle": "No templates match this search",
+  "noResultsBody": "Clear the search to see the whole gallery.",
+  "image": "Image",
+  "port": "Port",
+  "ram": "RAM",
+  "ramValue": "{{ram}} MB",
+  "use": "Use template",
+  "requiresEdit": "You need permission to create apps to use a template."
+}

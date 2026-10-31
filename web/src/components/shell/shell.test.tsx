@@ -97,6 +97,8 @@ describe('Sidebar', () => {
       'Containers',
       'Stacks',
       'Apps',
+      'Domains',
+      'Templates',
       'Alerts',
       'Audit',
       'Users',
@@ -145,7 +147,16 @@ describe('Sidebar', () => {
 
     const nav = await screen.findByRole('navigation', { name: 'Main navigation' })
     await within(nav).findByRole('link', { name: 'Servers' })
-    for (const name of ['Containers', 'Stacks', 'Apps', 'Alerts', 'Audit', 'Users']) {
+    for (const name of [
+      'Containers',
+      'Stacks',
+      'Apps',
+      'Domains',
+      'Templates',
+      'Alerts',
+      'Audit',
+      'Users',
+    ]) {
       expect(within(nav).queryByRole('link', { name })).toBeNull()
     }
     expect(within(nav).getByRole('link', { name: 'Settings' })).toBeTruthy()

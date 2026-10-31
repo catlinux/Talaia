@@ -2,6 +2,7 @@ import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } fro
 import { useTranslation } from 'react-i18next'
 
 import { createAlertsAdminApi, type AlertsAdminApi } from '../api/alertsAdmin'
+import type { WizardApi } from '../api/apps'
 import { createAptApi, type AptApi } from '../api/apt'
 import { createContainersApi, type ContainerList, type ContainersApi } from '../api/containers'
 import { isSignedOut } from '../api/http'
@@ -97,6 +98,8 @@ interface ServerScreenProps {
   journalApi?: JournalApi
   /** alertsApi reads and changes the alert rules of this server. */
   alertsApi?: AlertsAdminApi
+  /** proxyApi reads and changes how apps are published. */
+  proxyApi?: WizardApi
   /** pollMs overrides the job polling interval, for the tests. */
   pollMs?: number
 }
@@ -117,6 +120,7 @@ export function ServerScreen({
   metricsApi = defaultMetricsApi,
   journalApi = defaultJournalApi,
   alertsApi = defaultAlertsApi,
+  proxyApi,
   pollMs = pollEvery,
 }: ServerScreenProps) {
   const { t } = useTranslation(['server', 'errors'])
@@ -479,6 +483,7 @@ export function ServerScreen({
         journalApi={journalApi}
         aptApi={aptApi}
         alertsApi={alertsApi}
+        proxyApi={proxyApi}
         onGoToTab={(tab) => navigate(tabPath(server.id, tab))}
         onServicesLoaded={handleServicesLoaded}
         onAptSummary={setLiveApt}

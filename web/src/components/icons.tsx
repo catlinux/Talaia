@@ -46,6 +46,23 @@ export function OverviewIcon({ className }: IconProps) {
   )
 }
 
+export function GlobeIcon({ className }: IconProps) {
+  return (
+    <Icon className={className}>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18" />
+    </Icon>
+  )
+}
+
+export function TemplateIcon({ className }: IconProps) {
+  return (
+    <Icon className={className}>
+      <path d="M4 8v12h16V8M4 8l8-4 8 4M8 12h8M12 9v6" />
+    </Icon>
+  )
+}
+
 export function AppsIcon({ className }: IconProps) {
   return (
     <Icon className={className}>

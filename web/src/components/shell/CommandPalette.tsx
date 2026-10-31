@@ -209,6 +209,18 @@ export function CommandPalette({
           label: t('nav.apps'),
           to: '/apps',
         },
+        {
+          id: 'screen-domains',
+          section: 'screens',
+          label: t('nav.domains'),
+          to: '/domains',
+        },
+        {
+          id: 'screen-templates',
+          section: 'screens',
+          label: t('nav.templates'),
+          to: '/templates',
+        },
       )
     }
     if (canAnywhere('alerts.view') || canAnywhere('alerts.manage')) {

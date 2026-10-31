@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next'
 
 import type { AlertsAdminApi } from '../../api/alertsAdmin'
+import type { WizardApi } from '../../api/apps'
 import type { AptApi } from '../../api/apt'
 import type { ContainerList } from '../../api/containers'
 import type { JournalApi } from '../../api/journal'
@@ -11,6 +12,7 @@ import { AlertsSection } from './AlertsSection'
 import { JournalSection } from './JournalSection'
 import type { OverviewServer, ServerTab } from './OverviewTab'
 import { OverviewTab } from './OverviewTab'
+import { ProxyModeCard } from './ProxyModeCard'
 import { ServicesSection } from './ServicesSection'
 import { UpdatesSection } from './UpdatesSection'
 
@@ -41,6 +43,7 @@ interface ServerPanelsProps {
   journalApi: JournalApi
   aptApi: AptApi
   alertsApi: AlertsAdminApi
+  proxyApi?: WizardApi
   onGoToTab: (tab: ServerTab) => void
   onServicesLoaded: (services: ServiceUnit[]) => void
   onAptSummary: (apt: AptSummary | null) => void
@@ -67,6 +70,7 @@ export function ServerPanels({
   journalApi,
   aptApi,
   alertsApi,
+  proxyApi,
   onGoToTab,
   onServicesLoaded,
   onAptSummary,
@@ -93,6 +97,7 @@ export function ServerPanels({
             tabs={tabs}
             onGoToTab={onGoToTab}
           />
+          {proxyApi !== undefined ? <ProxyModeCard api={proxyApi} serverId={server.id} /> : null}
         </div>
       ) : null}
 

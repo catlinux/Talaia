@@ -31,6 +31,8 @@ const navServers = { ca: 'Servidors', es: 'Servidores', en: 'Servers' } as const
 const navContainers = { ca: 'Contenidors', es: 'Contenedores', en: 'Containers' } as const
 const navStacks = { ca: 'Stacks', es: 'Stacks', en: 'Stacks' } as const
 const navApps = { ca: 'Apps', es: 'Apps', en: 'Apps' } as const
+const navDomains = { ca: 'Dominis', es: 'Dominios', en: 'Domains' } as const
+const navTemplates = { ca: 'Plantilles', es: 'Plantillas', en: 'Templates' } as const
 const navCatalog = { ca: 'Catàleg', es: 'Catálogo', en: 'Catalogue' } as const
 const navSettings = { ca: 'Configuració', es: 'Ajustes', en: 'Settings' } as const
 const navAudit = { ca: 'Auditoria', es: 'Auditoría', en: 'Audit' } as const
@@ -332,8 +334,10 @@ function emptyAppsApi(): WizardApi {
     rollback: unexpected,
     templates: () => Promise.resolve([]),
     create: unexpected,
+    appDomains: () => Promise.resolve([]),
     addDomain: unexpected,
     proxy: () => Promise.resolve({ mode: 'external', domains: [] }),
+    proxyAction: unexpected,
   }
 }
 
@@ -445,6 +449,14 @@ describe('App', () => {
     expect(window.location.pathname).toBe('/apps')
     expect(currentTitle()).toBe(navApps.en)
 
+    await openSidebarLink(navDomains.en)
+    expect(window.location.pathname).toBe('/domains')
+    expect(await screen.findByRole('heading', { level: 1, name: navDomains.en })).toBeTruthy()
+
+    await openSidebarLink(navTemplates.en)
+    expect(window.location.pathname).toBe('/templates')
+    expect(await screen.findByRole('heading', { level: 1, name: navTemplates.en })).toBeTruthy()
+
     await openSidebarLink(navAlerts.en)
     expect(window.location.pathname).toBe('/alerts')
     expect(currentTitle()).toBe(navAlerts.en)
@@ -488,6 +500,8 @@ describe('App', () => {
       navContainers.en,
       navStacks.en,
       navApps.en,
+      navDomains.en,
+      navTemplates.en,
       navAlerts.en,
       navAudit.en,
       navUsers.en,
@@ -641,7 +655,14 @@ describe('App', () => {
 
     const nav = mainNav()
     await within(nav).findByRole('link', { name: navServers.en })
-    for (const name of [navUsers.en, navAudit.en, navAlerts.en, navApps.en]) {
+    for (const name of [
+      navUsers.en,
+      navAudit.en,
+      navAlerts.en,
+      navApps.en,
+      navDomains.en,
+      navTemplates.en,
+    ]) {
       expect(within(nav).queryByRole('link', { name })).toBeNull()
     }
 

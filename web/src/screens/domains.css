@@ -1,0 +1,158 @@
+/* Domains list. */
+
+.domains {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.domains .ui-page-header {
+  margin-bottom: 4px;
+}
+
+.domains__name {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.domains__name strong {
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: 12.5px;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+
+.domains__name span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.domains__muted {
+  color: var(--muted);
+}
+
+.domains__warning {
+  color: var(--warn);
+  font-size: 12.5px;
+}
+
+.domains__empty {
+  padding: 24px 14px;
+  color: var(--muted);
+  text-align: center;
+}
+
+.domains__empty h2 {
+  margin: 0 0 4px;
+  color: var(--ink);
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.domains__empty p {
+  max-width: 46ch;
+  margin: 0 auto 12px;
+}
+
+.domains__error {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid color-mix(in srgb, var(--crit) 40%, var(--line));
+  border-radius: var(--r);
+  background: var(--crit-soft);
+  color: var(--crit);
+}
+
+.domains__error p {
+  flex: 1 1 240px;
+  margin: 0;
+}
+
+.domains__setup {
+  height: 28px;
+  padding: 0 8px;
+  font-size: 12px;
+}
+
+.domains__setup-details {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.domains__setup-target {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  margin: 0;
+  color: var(--muted);
+}
+
+.domains__setup-target code {
+  color: var(--ink-2);
+  font-family: var(--mono);
+  font-size: 12.5px;
+}
+
+.domains__setup-note {
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--sunken);
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.domains__setup-section {
+  display: flex;
+  flex-direction: column;
+}
+
+.domains__setup-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.domains__setup-head h3 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.domains__copy {
+  height: 28px;
+  padding: 0 8px;
+  font-size: 12px;
+}
+
+.domains__code {
+  max-height: 320px;
+  margin: 0;
+  padding: 12px;
+  overflow: auto;
+  border-radius: var(--r);
+  background: var(--code-bg);
+  color: var(--code-ink);
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: pre;
+}
+
+@media (max-width: 480px) {
+  .domains__setup-target {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

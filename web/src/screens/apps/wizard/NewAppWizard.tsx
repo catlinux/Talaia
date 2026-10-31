@@ -18,7 +18,7 @@ import type { Server } from '../../../api/types'
 import { errorMessage } from '../../../auth/AuthGate'
 import { usePermissions } from '../../../auth/permissions'
 import { PageHeader } from '../../../components/ui'
-import { useNavigate } from '../../../router'
+import { useNavigate, useRoute } from '../../../router'
 import './wizard.css'
 
 type Step = 'source' | 'build' | 'target' | 'domain' | 'review'
@@ -112,6 +112,9 @@ function initialForm(): FormState {
 export function NewAppWizard({ api, client }: NewAppWizardProps) {
   const { t, i18n } = useTranslation('apps')
   const navigate = useNavigate()
+  const { query } = useRoute()
+  const requestedTemplate = query.get('template') ?? ''
+  const requestedTemplateApplied = useRef(false)
   const { can } = usePermissions()
   const appsApi = useMemo(() => api ?? createAppsApi(), [api])
   const fleetClient = useMemo(() => client ?? createApiFleetClient(), [client])
@@ -168,6 +171,30 @@ export function NewAppWizard({ api, client }: NewAppWizardProps) {
       void loadServers()
     })
   }, [loadServers, loadTemplates])
+
+  useEffect(() => {
+    if (requestedTemplate === '' || requestedTemplateApplied.current || templates === null) return
+    const template = templates.find((item) => item.id === requestedTemplate)
+    if (template === undefined) return
+    requestedTemplateApplied.current = true
+    queueMicrotask(() => {
+      setForm((current) => ({
+        ...current,
+        source: 'template',
+        templateId: template.id,
+        templateVersion: template.version,
+        image: template.image,
+        service: template.service,
+        port: template.port,
+        autoDeploy: false,
+        pollEnabled: false,
+        zeroDowntime: false,
+        ...(current.stackName === '' ? { stackName: stackNameFrom(template.id) } : {}),
+      }))
+      setStep('build')
+      setErrors({})
+    })
+  }, [requestedTemplate, templates])
 
   useEffect(() => {
     if (form.serverId === '') return

@@ -13,6 +13,12 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.6.42] - 2026-10-31
+
+### Added
+
+- Panel: **Domains** and **Templates** screens and the proxy mode on the server page (phase 6 step 13). Domains lists every domain with its state (handled by your Apache, or the certificate state in managed mode) and a warning when it does not point to the server; **View setup** shows again the Apache and nginx blocks and the certbot steps with a copy button. Templates opens the new-app wizard ready to fill in. The server page shows the proxy mode and offers the managed Caddy only when ports 80 and 443 are free.
+
 ## [0.6.41] - 2026-10-31
 
 ### Added
@@ -951,7 +957,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.6.41...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.6.42...HEAD
+[0.6.42]: https://github.com/catlinux/Talaia/releases/tag/v0.6.42
 [0.6.41]: https://github.com/catlinux/Talaia/releases/tag/v0.6.41
 [0.6.40]: https://github.com/catlinux/Talaia/releases/tag/v0.6.40
 [0.6.39]: https://github.com/catlinux/Talaia/releases/tag/v0.6.39

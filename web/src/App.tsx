@@ -32,11 +32,13 @@ import { Audit } from './screens/Audit'
 import { Alerts } from './screens/Alerts'
 import { Catalog } from './screens/Catalog'
 import { Containers } from './screens/Containers'
+import { Domains } from './screens/Domains'
 import { Overview } from './screens/Overview'
 import { ServerScreen } from './screens/ServerScreen'
 import { Servers } from './screens/Servers'
 import { Stacks } from './screens/Stacks'
 import { Settings } from './screens/Settings'
+import { Templates } from './screens/Templates'
 import { Users } from './screens/Users'
 
 interface AppProps {
@@ -219,6 +221,8 @@ function PanelShell({
   const isContainers = matchRoute('/containers', path) !== null
   const isStacks = matchRoute('/stacks', path) !== null
   const isApps = matchRoute('/apps', path) !== null
+  const isDomains = matchRoute('/domains', path) !== null
+  const isTemplates = matchRoute('/templates', path) !== null
 
   // Tabs and stacks of one server share the screen state; the URL only changes the panel.
   const pageKey = serverID === '' ? path : `server:${serverID}`
@@ -241,6 +245,7 @@ function PanelShell({
         servicesApi={servicesApi}
         journalApi={journalApi}
         serversApi={serversApi}
+        proxyApi={apps}
       />
     )
   } else if (isAlerts) {
@@ -308,6 +313,14 @@ function PanelShell({
     ) : (
       <PanelMessage title={t('shell.noAccess')} />
     )
+  } else if (isDomains) {
+    page = canStacks ? (
+      <Domains api={apps} client={fleetClient} />
+    ) : (
+      <PanelMessage title={t('shell.noAccess')} />
+    )
+  } else if (isTemplates) {
+    page = canStacks ? <Templates api={apps} /> : <PanelMessage title={t('shell.noAccess')} />
   } else {
     page = (
       <PanelMessage

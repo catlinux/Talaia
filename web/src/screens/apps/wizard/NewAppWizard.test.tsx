@@ -132,6 +132,7 @@ function fakeApi(overrides: Partial<WizardApi> = {}): WizardApi {
     rollback: () => Promise.reject(new Error('unexpected rollback')),
     templates: vi.fn(() => Promise.resolve(templates)),
     create: vi.fn(() => Promise.resolve(createdApp())),
+    appDomains: vi.fn(() => Promise.resolve([domain])),
     addDomain: vi.fn(() => Promise.resolve(domain)),
     proxy: vi.fn(() =>
       Promise.resolve({
@@ -149,12 +150,13 @@ function fakeApi(overrides: Partial<WizardApi> = {}): WizardApi {
         ],
       }),
     ),
+    proxyAction: vi.fn(() => Promise.resolve()),
     ...overrides,
   }
 }
 
-function renderWizard(api: WizardApi) {
-  window.history.replaceState({}, '', '/apps/new')
+function renderWizard(api: WizardApi, path = '/apps/new') {
+  window.history.replaceState({}, '', path)
   return render(
     <RouterProvider>
       <PermissionsProvider meApi={meApi()}>
@@ -307,6 +309,21 @@ describe('new app wizard', () => {
     )
     await waitFor(() => expect(api.deploy).toHaveBeenCalledWith('app-1'))
     expect(screen.getByText(/image and template sources/)).toBeTruthy()
+  })
+
+  it('prefills the template selected by the gallery', async () => {
+    const api = fakeApi()
+    renderWizard(api, '/apps/new?template=uptime-kuma')
+
+    expect(await screen.findByRole('heading', { name: 'Build and runtime' })).toBeTruthy()
+    const radio = (await screen.findByRole('radio', {
+      name: /Uptime Kuma/,
+    })) as HTMLInputElement
+    expect(radio.checked).toBe(true)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Continue' }))
+    expect(await screen.findByRole('heading', { name: 'Where should it run?' })).toBeTruthy()
+    expect((screen.getByLabelText('App name') as HTMLInputElement).value).toBe('uptime-kuma')
   })
 
   it('blocks each step until its fields are valid', async () => {

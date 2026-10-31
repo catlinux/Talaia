@@ -125,22 +125,40 @@ describe('api apps client', () => {
     )
   })
 
-  it('adds a domain and reads the external proxy blocks', async () => {
-    const fetchImpl = vi.fn((input: RequestInfo | URL) => {
-      if (String(input).endsWith('/domains')) {
-        return Promise.resolve(
-          json({
-            id: 'domain-1',
-            app_id: 'app-1',
-            hostname: 'shop.example.com',
-            service: 'app',
-            port: 3000,
-            created_at: '2026-10-31T12:00:00Z',
-            warning: 'the hostname does not resolve',
-          }),
-        )
-      }
-      return Promise.resolve(
+  it('adds and lists app domains', async () => {
+    const domain = {
+      id: 'domain-1',
+      app_id: 'app-1',
+      hostname: 'shop.example.com',
+      service: 'app',
+      port: 3000,
+      created_at: '2026-10-31T12:00:00Z',
+      warning: 'the hostname does not resolve',
+    }
+    const fetchImpl = vi.fn((_input: RequestInfo | URL, init?: RequestInit) =>
+      Promise.resolve(init?.method === 'POST' ? json(domain) : json([domain])),
+    )
+    const api = createAppsApi(fetchImpl as unknown as typeof fetch)
+    await expect(
+      api.addDomain('app-1', { hostname: 'shop.example.com', service: 'app', port: 3000 }),
+    ).resolves.toEqual(
+      expect.objectContaining({
+        hostname: 'shop.example.com',
+        warning: 'the hostname does not resolve',
+      }),
+    )
+    await expect(api.appDomains('app-1')).resolves.toEqual(
+      expect.arrayContaining([expect.objectContaining({ hostname: 'shop.example.com' })]),
+    )
+    expect(fetchImpl).toHaveBeenLastCalledWith(
+      '/api/v1/apps/app-1/domains',
+      expect.objectContaining({ method: 'GET' }),
+    )
+  })
+
+  it('reads external proxy blocks', async () => {
+    const fetchImpl = vi.fn(() =>
+      Promise.resolve(
         json({
           mode: 'external',
           domains: [
@@ -154,17 +172,9 @@ describe('api apps client', () => {
             },
           ],
         }),
-      )
-    })
-    const api = createAppsApi(fetchImpl as unknown as typeof fetch)
-    await expect(
-      api.addDomain('app-1', { hostname: 'shop.example.com', service: 'app', port: 3000 }),
-    ).resolves.toEqual(
-      expect.objectContaining({
-        hostname: 'shop.example.com',
-        warning: 'the hostname does not resolve',
-      }),
+      ),
     )
+    const api = createAppsApi(fetchImpl as unknown as typeof fetch)
     await expect(api.proxy('srv-1')).resolves.toEqual({
       mode: 'external',
       domains: [
@@ -176,6 +186,39 @@ describe('api apps client', () => {
       ],
     })
     expect(fetchImpl).toHaveBeenLastCalledWith('/api/v1/servers/srv-1/proxy', expect.any(Object))
+  })
+
+  it('reads proxy port and certificate state and sends actions', async () => {
+    const fetchImpl = vi.fn((input: RequestInfo | URL) => {
+      if (String(input) === '/api/v1/servers/srv-1/proxy') {
+        return Promise.resolve(
+          json({
+            mode: 'managed',
+            domains: [],
+            port_80_free: true,
+            port_443_free: true,
+            caddy_version: '2.8.4',
+            certificates: [{ hostname: 'shop.example.com', state: 'valid' }],
+          }),
+        )
+      }
+      return Promise.resolve(new Response(null, { status: 202 }))
+    })
+    const api = createAppsApi(fetchImpl as unknown as typeof fetch)
+    await expect(api.proxy('srv-1')).resolves.toEqual(
+      expect.objectContaining({
+        mode: 'managed',
+        port80Free: true,
+        port443Free: true,
+        caddyVersion: '2.8.4',
+        certificates: [{ hostname: 'shop.example.com', state: 'valid' }],
+      }),
+    )
+    await api.proxyAction('srv-1', 'apply')
+    expect(fetchImpl).toHaveBeenLastCalledWith(
+      '/api/v1/servers/srv-1/proxy',
+      expect.objectContaining({ method: 'POST', body: JSON.stringify({ action: 'apply' }) }),
+    )
   })
 
   it('maps secret variables without a value', async () => {

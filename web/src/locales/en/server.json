@@ -430,6 +430,28 @@
       "pull": "Pull"
     }
   },
+  "proxy": {
+    "title": "App publishing",
+    "intro": "How the apps of this server reach the internet.",
+    "loading": "Reading the proxy mode…",
+    "error": "The proxy mode could not be read.",
+    "external": "External proxy",
+    "externalHint": "Apps listen on 127.0.0.1 and your own Apache or nginx publishes them. Talaia never edits that web server.",
+    "managed": "Managed proxy (Caddy)",
+    "managedHint": "Caddy publishes apps on ports 80 and 443 with automatic certificates.",
+    "caddyVersion": "Caddy {{version}}",
+    "portsBusy": "Port 80 or 443 is already in use, so managed mode is not available.",
+    "portsUnknown": "The agent has not reported whether ports 80 and 443 are free, so managed mode is not offered.",
+    "install": "Install managed proxy",
+    "apply": "Apply routes",
+    "remove": "Remove managed proxy",
+    "refresh": "Refresh",
+    "queued": "Proxy action queued. Refresh in a moment to see the new mode.",
+    "failed": "The proxy action failed: {{message}}",
+    "removeTitle": "Remove the managed proxy?",
+    "removeBody": "Caddy stops publishing apps on this server. Apps and their data are kept.",
+    "removeYes": "Remove the proxy"
+  },
   "tabs": {
     "label": "Server sections",
     "overview": "Overview",

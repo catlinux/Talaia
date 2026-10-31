@@ -12,8 +12,10 @@ import {
   CloseIcon,
   FleetIcon,
   GearIcon,
+  GlobeIcon,
   LogsIcon,
   OverviewIcon,
+  TemplateIcon,
   UsersIcon,
 } from '../icons'
 import { AlertsBadge } from '../../screens/Alerts'
@@ -101,6 +103,20 @@ export function Sidebar({ alertSummary, mobileOpen, onClose }: SidebarProps) {
       label: t('nav.apps'),
       icon: <AppsIcon />,
       active: isActive('/apps'),
+    })
+  if (canStacks)
+    infrastructure.push({
+      to: '/domains',
+      label: t('nav.domains'),
+      icon: <GlobeIcon />,
+      active: isActive('/domains'),
+    })
+  if (canStacks)
+    infrastructure.push({
+      to: '/templates',
+      label: t('nav.templates'),
+      icon: <TemplateIcon />,
+      active: isActive('/templates'),
     })
 
   const monitoring: NavItem[] = []

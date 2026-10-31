@@ -34,6 +34,10 @@ export function Breadcrumbs({ serverName, appName }: BreadcrumbsProps) {
     crumbs = [{ label: t('nav.group.infrastructure') }, { label: t('nav.stacks') }]
   } else if (routePath === '/apps') {
     crumbs = [{ label: t('nav.group.infrastructure') }, { label: t('nav.apps') }]
+  } else if (routePath === '/domains') {
+    crumbs = [{ label: t('nav.group.infrastructure') }, { label: t('nav.domains') }]
+  } else if (routePath === '/templates') {
+    crumbs = [{ label: t('nav.group.infrastructure') }, { label: t('nav.templates') }]
   } else if (routePath === '/apps/new') {
     crumbs = [
       { label: t('nav.group.infrastructure') },

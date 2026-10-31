@@ -1,0 +1,53 @@
+{
+  "title": "Domains",
+  "subtitle_one": "{{count}} domain · updated at {{time}}",
+  "subtitle_other": "{{count}} domains · updated at {{time}}",
+  "loading": "Loading the domains…",
+  "error": "The domains could not be loaded.",
+  "retry": "Retry",
+  "refresh": "Refresh",
+  "emptyTitle": "No domains yet",
+  "emptyBody": "Add a hostname from an app or from the new-app wizard.",
+  "noResultsTitle": "No domains match these filters",
+  "noResultsBody": "Change or clear the filters to see more domains.",
+  "filters": {
+    "search": "Search by domain, app or server",
+    "server": "Server",
+    "allServers": "All servers",
+    "state": "State",
+    "allStates": "All states",
+    "issues": "Issues",
+    "clear": "Clear filters"
+  },
+  "columns": {
+    "domain": "Domain",
+    "app": "App",
+    "server": "Server",
+    "state": "State",
+    "warning": "Warning",
+    "actions": "Actions"
+  },
+  "setup": {
+    "view": "View setup",
+    "title": "Domain setup",
+    "note": "Talaia never changes Apache or nginx. Paste the block into your web server configuration yourself.",
+    "apache": "Apache",
+    "nginx": "nginx",
+    "steps": "Steps",
+    "copy": "Copy",
+    "copied": "Copied",
+    "empty": "Nothing to copy."
+  },
+  "state": {
+    "external": "Handled by your Apache",
+    "managed": "Managed by Caddy",
+    "valid": "Certificate valid",
+    "pending": "Certificate pending",
+    "failed": "Certificate failed",
+    "unknown": "Unknown"
+  },
+  "warnings": {
+    "noResolve": "The hostname does not resolve.",
+    "mismatch": "The hostname does not point to this server."
+  }
+}

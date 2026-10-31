@@ -155,7 +155,7 @@ Decisiones cerradas el 2026-10-30: proxy externo por defecto (Talaia nunca toca 
 - [ ] Agente: release sin corte, vuelta atrás a una de las tres últimas imágenes y limpieza de imágenes
 - [ ] Core: canalización de despliegue (un despliegue por app, pushes sustituidos, logs) y su API
 - [x] Catálogo de plantillas (15 apps) publicado con el core
-- [ ] Panel: Apps, asistente de nueva app (maqueta 4), Dominios y Plantillas
+- [x] Panel: Apps, asistente de nueva app (maqueta 4), Dominios y Plantillas
 - [ ] Docs EN/ES, revisión de seguridad Opus, prueba real del criterio y cierre en 0.7.0
 
 ## Bloque de operación (decidido el 2026-10-20, antes de cerrar la fase 2)

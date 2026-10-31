@@ -1,0 +1,53 @@
+{
+  "title": "Dominios",
+  "subtitle_one": "{{count}} dominio · actualizado a las {{time}}",
+  "subtitle_other": "{{count}} dominios · actualizados a las {{time}}",
+  "loading": "Cargando los dominios…",
+  "error": "No se han podido cargar los dominios.",
+  "retry": "Reintentar",
+  "refresh": "Actualizar",
+  "emptyTitle": "Todavía no hay dominios",
+  "emptyBody": "Añade un nombre de host desde una app o desde el asistente de nueva app.",
+  "noResultsTitle": "Ningún dominio coincide con estos filtros",
+  "noResultsBody": "Cambia o borra los filtros para ver más dominios.",
+  "filters": {
+    "search": "Busca por dominio, app o servidor",
+    "server": "Servidor",
+    "allServers": "Todos los servidores",
+    "state": "Estado",
+    "allStates": "Todos los estados",
+    "issues": "Problemas",
+    "clear": "Borrar los filtros"
+  },
+  "columns": {
+    "domain": "Dominio",
+    "app": "App",
+    "server": "Servidor",
+    "state": "Estado",
+    "warning": "Aviso",
+    "actions": "Acciones"
+  },
+  "setup": {
+    "view": "Ver la configuración",
+    "title": "Configuración del dominio",
+    "note": "Talaia nunca cambia Apache ni nginx. Pega tú el bloque en la configuración del servidor web.",
+    "apache": "Apache",
+    "nginx": "nginx",
+    "steps": "Pasos",
+    "copy": "Copiar",
+    "copied": "Copiado",
+    "empty": "No hay nada que copiar."
+  },
+  "state": {
+    "external": "Lo gestiona tu Apache",
+    "managed": "Gestionado por Caddy",
+    "valid": "Certificado válido",
+    "pending": "Certificado pendiente",
+    "failed": "Certificado fallido",
+    "unknown": "Desconocido"
+  },
+  "warnings": {
+    "noResolve": "El nombre de host no resuelve.",
+    "mismatch": "El nombre de host no apunta a este servidor."
+  }
+}

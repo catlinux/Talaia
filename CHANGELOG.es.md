@@ -13,6 +13,12 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+## [0.6.42] - 2026-10-31
+
+### Añadido
+
+- Panel: pantallas **Dominios** y **Plantillas** y el modo de proxy en la página del servidor (fase 6, paso 13). Dominios lista cada dominio con su estado (lo gestiona tu Apache, o el estado del certificado en modo gestionado) y un aviso si no apunta al servidor; **Ver la configuración** vuelve a mostrar los bloques de Apache y nginx y los pasos de certbot con botón de copiar. Plantillas abre el asistente de nueva app ya preparado. La página del servidor muestra el modo de proxy y solo ofrece el Caddy gestionado si los puertos 80 y 443 están libres.
+
 ## [0.6.41] - 2026-10-31
 
 ### Añadido
@@ -951,7 +957,8 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
   `.gitattributes` y `.gitignore`.
 - Licencia WNCL-1.0 aplicada: archivo `LICENSE` y sección de créditos en los README.
 
-[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.6.41...HEAD
+[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.6.42...HEAD
+[0.6.42]: https://github.com/catlinux/Talaia/releases/tag/v0.6.42
 [0.6.41]: https://github.com/catlinux/Talaia/releases/tag/v0.6.41
 [0.6.40]: https://github.com/catlinux/Talaia/releases/tag/v0.6.40
 [0.6.39]: https://github.com/catlinux/Talaia/releases/tag/v0.6.39

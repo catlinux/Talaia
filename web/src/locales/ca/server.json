@@ -430,6 +430,28 @@
       "pull": "Actualitza les imatges"
     }
   },
+  "proxy": {
+    "title": "Publicació d'apps",
+    "intro": "Com arriben a internet les apps d'aquest servidor.",
+    "loading": "S'està llegint el mode del proxy…",
+    "error": "No s'ha pogut llegir el mode del proxy.",
+    "external": "Proxy extern",
+    "externalHint": "Les apps escolten a 127.0.0.1 i el teu Apache o nginx les publica. Talaia no edita mai aquest servidor web.",
+    "managed": "Proxy gestionat (Caddy)",
+    "managedHint": "Caddy publica les apps als ports 80 i 443 amb certificats automàtics.",
+    "caddyVersion": "Caddy {{version}}",
+    "portsBusy": "El port 80 o el 443 ja està ocupat, així que el mode gestionat no està disponible.",
+    "portsUnknown": "L'agent no ha informat si els ports 80 i 443 són lliures, així que no s'ofereix el mode gestionat.",
+    "install": "Instal·la el proxy gestionat",
+    "apply": "Aplica les rutes",
+    "remove": "Elimina el proxy gestionat",
+    "refresh": "Actualitza",
+    "queued": "Acció del proxy en cua. Actualitza d'aquí a un moment per veure el mode nou.",
+    "failed": "L'acció del proxy ha fallat: {{message}}",
+    "removeTitle": "Vols eliminar el proxy gestionat?",
+    "removeBody": "Caddy deixa de publicar les apps d'aquest servidor. Les apps i les seves dades es conserven.",
+    "removeYes": "Elimina el proxy"
+  },
   "tabs": {
     "label": "Seccions del servidor",
     "overview": "Resum",
