@@ -300,3 +300,204 @@ func TestDeleteUserStoreErrorCodes(t *testing.T) {
 		})
 	}
 }
+
+// createMFAUser leaves a full session for the new user in its own client.
+func createMFAUser(t *testing.T, panel *testPanel, username string) (store.User, *http.Client, []string) {
+	t.Helper()
+	user := createAdminExtraUser(t, panel, username)
+	client := panel.newClient(t)
+	previous := panel.client
+	panel.client = client
+	defer func() { panel.client = previous }()
+	_, codes := panel.enableTOTP(t, username, testPassword)
+	return user, client, codes
+}
+
+func TestResetTOTPAPI(t *testing.T) {
+	panel := newTestPanel(t)
+	ctx := context.Background()
+	admin := panel.createUser(t, "reset-admin", testPassword)
+	adminSecret, _ := panel.enableTOTP(t, "reset-admin", testPassword)
+	target, targetClient, recoveryCodes := createMFAUser(t, panel, "reset-target")
+	if response := panel.createTrustedDevice(t, targetClient, "laptop"); response.StatusCode != http.StatusCreated {
+		t.Fatalf("create target device status = %d, want 201", response.StatusCode)
+	}
+
+	code := panel.code(adminSecret)
+	response := panel.post(t, "/api/v1/users/"+target.ID+"/reset-2fa", map[string]string{
+		"confirm_username": target.Username,
+		"totp_code":        code,
+	})
+	if response.StatusCode != http.StatusOK {
+		t.Fatalf("reset status = %d, want 200", response.StatusCode)
+	}
+	var result resetTOTPResponse
+	decodeBody(t, response, &result)
+	if result.DevicesRevoked != 1 || result.SessionsRevoked < 1 {
+		t.Fatalf("reset result = %+v, want one device and at least one session", result)
+	}
+
+	updated, err := panel.store.GetUser(ctx, target.ID)
+	if err != nil {
+		t.Fatalf("get reset target: %v", err)
+	}
+	if len(updated.TOTPSecretEnc) != 0 || !updated.TOTPEnabledAt.IsZero() || updated.TOTPLastStep != 0 {
+		t.Fatalf("reset target still has TOTP state: %+v", updated)
+	}
+	devices, err := panel.store.ListTrustedDevices(ctx, target.ID)
+	if err != nil {
+		t.Fatalf("list target devices: %v", err)
+	}
+	if len(devices) != 0 {
+		t.Fatalf("target devices after reset = %+v, want none", devices)
+	}
+	if used, err := panel.store.UseRecoveryCode(ctx, target.ID,
+		auth.HashToken(auth.NormalizeRecoveryCode(recoveryCodes[0]))); err != nil || used {
+		t.Fatalf("recovery code after reset = %v, %v; want missing", used, err)
+	}
+	if response := panel.do(t, targetClient, http.MethodGet, "/api/v1/me", nil); response.StatusCode != http.StatusUnauthorized ||
+		errorCode(t, response) != "session_required" {
+		t.Fatalf("reset target session = %d %q, want 401 session_required", response.StatusCode, errorCode(t, response))
+	}
+
+	entries, err := panel.store.ListAudit(ctx, 200)
+	if err != nil {
+		t.Fatalf("list audit: %v", err)
+	}
+	found := false
+	for _, entry := range entries {
+		if entry.Action != "mfa_reset" || entry.ActorID != admin.ID {
+			continue
+		}
+		found = true
+		if entry.Details["user_id"] != target.ID || entry.Details["username"] != target.Username {
+			t.Errorf("mfa_reset details = %+v", entry.Details)
+		}
+		if got, ok := entry.Details["sessions_revoked"].(float64); !ok || int(got) != result.SessionsRevoked {
+			t.Errorf("audited sessions_revoked = %v, want %d", entry.Details["sessions_revoked"], result.SessionsRevoked)
+		}
+		if got, ok := entry.Details["devices_revoked"].(float64); !ok || int(got) != result.DevicesRevoked {
+			t.Errorf("audited devices_revoked = %v, want %d", entry.Details["devices_revoked"], result.DevicesRevoked)
+		}
+	}
+	if !found {
+		t.Fatal("missing mfa_reset audit event")
+	}
+
+	// The same code has been consumed by the replay guard.
+	other := createAdminExtraUser(t, panel, "reset-other")
+	if response := panel.post(t, "/api/v1/users/"+other.ID+"/reset-2fa", map[string]string{
+		"confirm_username": other.Username, "totp_code": code,
+	}); response.StatusCode != http.StatusForbidden || errorCode(t, response) != "code_invalid" {
+		t.Fatalf("reused code = %d %q, want 403 code_invalid", response.StatusCode, errorCode(t, response))
+	}
+
+	// A disabled target starts again at TOTP setup.
+	login := panel.newClient(t)
+	loginHTTPResponse := panel.do(t, login, http.MethodPost, "/api/v1/auth/login", map[string]string{
+		"username": target.Username, "password": testPassword,
+	})
+	if loginHTTPResponse.StatusCode != http.StatusOK {
+		t.Fatalf("target login status = %d, want 200", loginHTTPResponse.StatusCode)
+	}
+	var loginBody loginResponse
+	decodeBody(t, loginHTTPResponse, &loginBody)
+	if loginBody.Next != "totp_setup" {
+		t.Fatalf("target next step = %q, want totp_setup", loginBody.Next)
+	}
+}
+
+func TestResetTOTPValidation(t *testing.T) {
+	panel := newTestPanel(t)
+	admin := panel.createUser(t, "reset-validation-admin", testPassword)
+	adminSecret, _ := panel.enableTOTP(t, "reset-validation-admin", testPassword)
+	target := createAdminExtraUser(t, panel, "reset-validation-target")
+	unknown := "00000000-0000-0000-0000-000000000099"
+	wrongCode := "000000"
+	if wrongCode == panel.code(adminSecret) {
+		wrongCode = "111111"
+	}
+
+	tests := []struct {
+		name   string
+		userID string
+		body   map[string]string
+		status int
+		code   string
+		field  string
+		reason string
+	}{
+		{"self", admin.ID, nil, http.StatusConflict, "cannot_reset_self", "", ""},
+		{"unknown user", unknown, nil, http.StatusNotFound, "not_found", "", ""},
+		{"missing username", target.ID, map[string]string{}, http.StatusBadRequest, "invalid_request", "confirm_username", "required"},
+		{"wrong username", target.ID, map[string]string{"confirm_username": "other"}, http.StatusBadRequest, "invalid_request", "confirm_username", "invalid_value"},
+		{"missing code", target.ID, map[string]string{"confirm_username": target.Username}, http.StatusForbidden, "code_invalid", "", ""},
+		{"wrong code", target.ID, map[string]string{"confirm_username": target.Username, "totp_code": wrongCode}, http.StatusForbidden, "code_invalid", "", ""},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			response := panel.post(t, "/api/v1/users/"+test.userID+"/reset-2fa", test.body)
+			if response.StatusCode != test.status {
+				t.Fatalf("status = %d, want %d", response.StatusCode, test.status)
+			}
+			var body errorBody
+			decodeBody(t, response, &body)
+			if body.Error.Code != test.code || body.Error.Field != test.field || body.Error.Reason != test.reason {
+				t.Fatalf("error = %+v, want code=%q field=%q reason=%q", body.Error, test.code, test.field, test.reason)
+			}
+		})
+	}
+
+	entries, err := panel.store.ListAudit(context.Background(), 200)
+	if err != nil {
+		t.Fatalf("list audit: %v", err)
+	}
+	denied := 0
+	for _, entry := range entries {
+		if entry.Action == "mfa_reset_denied" && entry.ActorID == admin.ID &&
+			entry.Details["user_id"] == target.ID && entry.Details["reason"] == "code_invalid" {
+			denied++
+		}
+	}
+	if denied < 2 {
+		t.Fatalf("mfa_reset_denied events = %d, want at least 2", denied)
+	}
+}
+
+func TestResetTOTPRateLimit(t *testing.T) {
+	limiter := NewRateLimiterWithClock(50, time.Minute, time.Now)
+	panel := newTestPanel(t, withLimiter(limiter))
+	panel.createUser(t, "reset-limit-admin", testPassword)
+	_, _ = panel.enableTOTP(t, "reset-limit-admin", testPassword)
+	target := createAdminExtraUser(t, panel, "reset-limit-target")
+	for _, ip := range []string{"127.0.0.1", "::1"} {
+		for limiter.Allow(ip) {
+		}
+	}
+	response := panel.post(t, "/api/v1/users/"+target.ID+"/reset-2fa", map[string]string{
+		"confirm_username": target.Username, "totp_code": "000000",
+	})
+	if response.StatusCode != http.StatusTooManyRequests || errorCode(t, response) != "rate_limited" {
+		t.Fatalf("rate-limited reset = %d %q, want 429 rate_limited", response.StatusCode, errorCode(t, response))
+	}
+}
+
+func TestResetTOTPAuthorization(t *testing.T) {
+	panel := newTestPanel(t)
+	target := createAdminExtraUser(t, panel, "reset-authz-target")
+
+	viewerClient, _ := criterionUser(t, panel, "reset-viewer", string(rbac.RoleViewer), store.RoleBinding{
+		ScopeType: store.ScopeOrganization,
+	})
+	if response := panel.do(t, viewerClient, http.MethodPost, "/api/v1/users/"+target.ID+"/reset-2fa",
+		map[string]string{"confirm_username": target.Username, "totp_code": "000000"}); response.StatusCode != http.StatusForbidden {
+		t.Fatalf("viewer reset = %d, want 403", response.StatusCode)
+	}
+
+	owner := panel.createUser(t, "reset-api-owner", testPassword)
+	_, token := directAPIKey(t, panel, owner.ID, nil, time.Now().Add(time.Hour))
+	if response := apiKeyRequest(t, panel, http.MethodPost, "/api/v1/users/"+target.ID+"/reset-2fa", token,
+		map[string]string{"confirm_username": target.Username, "totp_code": "000000"}, false); response.StatusCode != http.StatusForbidden {
+		t.Fatalf("API key reset = %d, want 403", response.StatusCode)
+	}
+}

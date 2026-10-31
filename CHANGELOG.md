@@ -13,6 +13,12 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.6.29] - 2026-10-31
+
+### Added
+
+- Core: an administrator can reset another user's two-factor authentication with POST /api/v1/users/{id}/reset-2fa, confirmed with the user's name and the administrator's own current code; it removes the authenticator, recovery codes and trusted devices, closes all sessions of that user and is audited as mfa_reset.
+
 ## [0.6.28] - 2026-10-31
 
 ### Changed
@@ -873,7 +879,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.6.28...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.6.29...HEAD
+[0.6.29]: https://github.com/catlinux/Talaia/releases/tag/v0.6.29
 [0.6.28]: https://github.com/catlinux/Talaia/releases/tag/v0.6.28
 [0.6.27]: https://github.com/catlinux/Talaia/releases/tag/v0.6.27
 [0.6.26]: https://github.com/catlinux/Talaia/releases/tag/v0.6.26

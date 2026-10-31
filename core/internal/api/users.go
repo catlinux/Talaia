@@ -66,6 +66,16 @@ type deleteUserRequest struct {
 	ConfirmUsername string `json:"confirm_username"`
 }
 
+type resetTOTPRequest struct {
+	ConfirmUsername string `json:"confirm_username"`
+	TOTPCode        string `json:"totp_code"`
+}
+
+type resetTOTPResponse struct {
+	SessionsRevoked int `json:"sessions_revoked"`
+	DevicesRevoked  int `json:"devices_revoked"`
+}
+
 type bindingRequest struct {
 	Role  string     `json:"role"`
 	Scope adminScope `json:"scope"`
@@ -188,6 +198,88 @@ func (h *userAdminHandler) disableUser(w http.ResponseWriter, r *http.Request) {
 	}
 	h.audit(r, "user_disable", userScope(userID), map[string]any{"user_id": userID})
 	w.WriteHeader(http.StatusNoContent)
+}
+
+func (h *userAdminHandler) resetTOTP(w http.ResponseWriter, r *http.Request) {
+	st, ok := h.storeOrError(w)
+	if !ok {
+		return
+	}
+	session, ok := sessionFromContext(r.Context())
+	if !ok {
+		writeError(w, http.StatusUnauthorized, "session_required")
+		return
+	}
+	userID := chi.URLParam(r, "userID")
+	if userID == session.User.ID {
+		writeError(w, http.StatusConflict, "cannot_reset_self")
+		return
+	}
+	user, err := st.GetUser(r.Context(), userID)
+	if err != nil {
+		h.writeStoreError(w, err)
+		return
+	}
+	var request resetTOTPRequest
+	if err := decodeJSON(w, r, &request); err != nil {
+		writeInvalid(w, "", "body")
+		return
+	}
+	if request.ConfirmUsername == "" {
+		writeInvalid(w, "confirm_username", "required")
+		return
+	}
+	if request.ConfirmUsername != user.Username {
+		writeInvalid(w, "confirm_username", "invalid_value")
+		return
+	}
+	if h.deps.Limiter != nil && !h.deps.Limiter.Allow(clientIP(r)) {
+		writeError(w, http.StatusTooManyRequests, "rate_limited")
+		return
+	}
+	if h.deps.TOTP == nil {
+		internal(w, "reset totp without a totp verifier", errors.New("missing totp verifier"))
+		return
+	}
+	if err := h.deps.TOTP.VerifyCode(r.Context(), session.User, request.TOTPCode); err != nil {
+		if errors.Is(err, errInvalidCode) {
+			if h.deps.Audit != nil {
+				_ = h.deps.Audit.AppendAudit(r.Context(), store.AuditEvent{
+					Actor: session.User.Username, ActorID: session.User.ID, Action: "mfa_reset_denied",
+					IP: clientIP(r), Result: "denied", Scope: userScope(userID),
+					Details: map[string]any{
+						"user_id": userID, "username": user.Username, "reason": "code_invalid",
+					},
+				})
+			}
+			writeError(w, http.StatusForbidden, "code_invalid")
+			return
+		}
+		writeValidationError(w, err)
+		return
+	}
+	if err := st.ResetTOTP(r.Context(), userID); err != nil {
+		h.writeStoreError(w, err)
+		return
+	}
+	devicesRevoked, err := st.RevokeUserDevices(r.Context(), userID)
+	if err != nil {
+		h.writeStoreError(w, err)
+		return
+	}
+	sessionsRevoked, err := st.RevokeUserSessions(r.Context(), userID, "")
+	if err != nil {
+		h.writeStoreError(w, err)
+		return
+	}
+	h.audit(r, "mfa_reset", userScope(userID), map[string]any{
+		"user_id": userID, "username": user.Username,
+		"sessions_revoked": sessionsRevoked, "devices_revoked": devicesRevoked,
+	})
+	writeJSON(w, http.StatusOK, resetTOTPResponse{
+		SessionsRevoked: sessionsRevoked,
+		DevicesRevoked:  devicesRevoked,
+	})
 }
 
 func (h *userAdminHandler) deleteUser(w http.ResponseWriter, r *http.Request) {

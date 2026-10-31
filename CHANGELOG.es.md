@@ -13,6 +13,12 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+## [0.6.29] - 2026-10-31
+
+### Añadido
+
+- Core: un administrador puede restablecer la verificación en dos pasos de otro usuario con POST /api/v1/users/{id}/reset-2fa, confirmándolo con el nombre del usuario y su propio código actual; borra el autenticador, los códigos de recuperación y los dispositivos de confianza, cierra todas las sesiones de ese usuario y se audita como mfa_reset.
+
 ## [0.6.28] - 2026-10-31
 
 ### Cambiado
@@ -873,7 +879,8 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
   `.gitattributes` y `.gitignore`.
 - Licencia WNCL-1.0 aplicada: archivo `LICENSE` y sección de créditos en los README.
 
-[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.6.28...HEAD
+[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.6.29...HEAD
+[0.6.29]: https://github.com/catlinux/Talaia/releases/tag/v0.6.29
 [0.6.28]: https://github.com/catlinux/Talaia/releases/tag/v0.6.28
 [0.6.27]: https://github.com/catlinux/Talaia/releases/tag/v0.6.27
 [0.6.26]: https://github.com/catlinux/Talaia/releases/tag/v0.6.26
