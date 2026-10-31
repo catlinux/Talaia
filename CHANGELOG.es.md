@@ -13,6 +13,12 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+## [0.6.28] - 2026-10-31
+
+### Cambiado
+
+- Panel: en el móvil la bandeja de alertas muestra cada alerta como una tarjeta corta (gravedad y mensaje, servidor y hora, menú) con la casilla de selección en la esquina; todas las tablas seleccionables ponen la casilla en la esquina en el móvil.
+
 ## [0.6.27] - 2026-10-31
 
 ### Corregido
@@ -867,7 +873,8 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
   `.gitattributes` y `.gitignore`.
 - Licencia WNCL-1.0 aplicada: archivo `LICENSE` y sección de créditos en los README.
 
-[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.6.27...HEAD
+[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.6.28...HEAD
+[0.6.28]: https://github.com/catlinux/Talaia/releases/tag/v0.6.28
 [0.6.27]: https://github.com/catlinux/Talaia/releases/tag/v0.6.27
 [0.6.26]: https://github.com/catlinux/Talaia/releases/tag/v0.6.26
 [0.6.25]: https://github.com/catlinux/Talaia/releases/tag/v0.6.25

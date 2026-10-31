@@ -180,6 +180,22 @@ describe('DataTable', () => {
     expect(cells[1]?.classList.contains('ui-table__hide-mobile')).toBe(true)
   })
 
+  it('marks selectable rows and mobile primary cells for the card layout', () => {
+    const mobileColumns: DataTableColumn<Row>[] = [
+      ...columns,
+      { id: 'title', header: 'Title', cell: (row) => `Title ${row.id}`, mobilePrimary: true },
+    ]
+    renderTable({ columns: mobileColumns, selectable: true })
+
+    const row = bodyRows()[0]!
+    expect(row.classList.contains('ui-table__row--selectable')).toBe(true)
+    const cells = within(row).getAllByRole('cell')
+    expect(cells[0]?.classList.contains('ui-table__check')).toBe(true)
+    expect(within(cells[0]!).getByRole('checkbox', { name: 'Select row' })).toBeTruthy()
+    expect(cells[3]?.classList.contains('ui-table__mobile-primary')).toBe(true)
+    expect(cells[3]?.getAttribute('data-label')).toBe('Title')
+  })
+
   it('renders group labels before their rows', () => {
     renderTable({
       groupBy: {

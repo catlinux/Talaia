@@ -667,6 +667,11 @@ table td .mono {
   font-weight: 600;
 }
 
+.alerts-inbox__message-severity,
+.alerts-inbox__where-time {
+  display: none;
+}
+
 .alerts-inbox__where {
   display: inline-flex;
   flex-wrap: wrap;
@@ -742,9 +747,51 @@ table td .mono {
   color: var(--ok);
 }
 
-@media (max-width: 640px) {
+@media (max-width: 760px) {
+  .alerts-inbox__message {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0 6px;
+  }
+
+  .alerts-inbox__message-severity {
+    display: inline-flex;
+    flex: none;
+  }
+
+  .alerts-inbox__where {
+    flex-wrap: nowrap;
+    color: var(--muted);
+    font-size: 12.5px;
+  }
+
+  .alerts-inbox__where a {
+    color: inherit;
+  }
+
   .alerts-inbox__where-extra {
     display: none;
+  }
+
+  .alerts-inbox__where-time {
+    display: inline;
+  }
+
+  .alerts-inbox td:has(.alerts-inbox__where) {
+    padding-right: 42px;
+  }
+
+  .alerts-inbox td:has(.alerts-inbox__menu) {
+    position: absolute;
+    right: 9px;
+    bottom: 7px;
+    justify-content: flex-end;
+    width: auto;
+    min-height: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
   }
 }
 

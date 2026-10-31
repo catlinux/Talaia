@@ -322,11 +322,16 @@
   }
 
   .ui-table tbody tr {
+    position: relative;
     margin-bottom: 10px;
     border: 1px solid var(--line);
     border-radius: var(--r);
     background: var(--surface);
     overflow: hidden;
+  }
+
+  .ui-table tbody tr.ui-table__row--selectable td:not(.ui-table__check) {
+    padding-right: 42px;
   }
 
   .ui-table tbody tr:hover td {
@@ -365,6 +370,34 @@
     font-size: 12.5px;
     font-weight: 500;
     text-align: left;
+  }
+
+  .ui-table td.ui-table__mobile-primary {
+    justify-content: flex-start;
+    text-align: left;
+  }
+
+  .ui-table td.ui-table__mobile-primary::before {
+    content: none;
+  }
+
+  .ui-table td.ui-table__check {
+    position: absolute;
+    top: 7px;
+    right: 9px;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: auto;
+    min-height: 0;
+    padding: 0 !important;
+    border: 0;
+    background: transparent;
+  }
+
+  .ui-table td.ui-table__check::before {
+    content: none;
   }
 
   .ui-table__hide-mobile {

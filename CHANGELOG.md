@@ -13,6 +13,12 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.6.28] - 2026-10-31
+
+### Changed
+
+- Panel: on phones the alert inbox shows each alert as a short card (severity and message, server and time, menu) with the selection box in the corner; every selectable table puts its box in the corner on phones.
+
 ## [0.6.27] - 2026-10-31
 
 ### Fixed
@@ -867,7 +873,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.6.27...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.6.28...HEAD
+[0.6.28]: https://github.com/catlinux/Talaia/releases/tag/v0.6.28
 [0.6.27]: https://github.com/catlinux/Talaia/releases/tag/v0.6.27
 [0.6.26]: https://github.com/catlinux/Talaia/releases/tag/v0.6.26
 [0.6.25]: https://github.com/catlinux/Talaia/releases/tag/v0.6.25

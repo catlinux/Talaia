@@ -165,6 +165,36 @@ describe('Inbox', () => {
     )
   })
 
+  it('marks the mobile card layout of each alert', async () => {
+    const { api } = fakeApi()
+    renderInbox(api)
+
+    await screen.findAllByText(/Container web is down/)
+    const row = rows()[0]!
+    expect(row.classList.contains('ui-table__row--selectable')).toBe(true)
+
+    const cells = row.querySelectorAll('td')
+    expect(cells[0]?.classList.contains('ui-table__check')).toBe(true)
+    expect(within(cells[0]!).getByRole('checkbox', { name: 'Select row' })).toBeTruthy()
+
+    const primary = row.querySelectorAll<HTMLElement>('td.ui-table__mobile-primary')
+    expect(primary).toHaveLength(3)
+    expect(primary[0]?.textContent).toContain('Critical')
+    expect(primary[0]?.textContent).toContain('Container web is down')
+    expect(primary[0]?.querySelector('.alerts-inbox__message-severity')?.textContent).toBe(
+      'Critical',
+    )
+    expect(primary[1]?.textContent).toContain('vps-web-01')
+    expect(primary[1]?.querySelector('.alerts-inbox__where-time')?.textContent).not.toBe('')
+    expect(within(row).getByRole('button', { name: 'Actions for web' })).toBeTruthy()
+
+    for (const name of ['Severity', 'Since', 'State']) {
+      expect(
+        screen.getByRole('columnheader', { name }).classList.contains('ui-table__hide-mobile'),
+      ).toBe(true)
+    }
+  })
+
   it('filters through the URL query', async () => {
     window.history.replaceState({}, '', '/alerts?severity=critical&state=new')
     const { api } = fakeApi({

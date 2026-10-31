@@ -24,6 +24,8 @@ export interface DataTableColumn<T> {
   align?: 'left' | 'right' | 'center'
   width?: string | number
   hideOnMobile?: boolean
+  /** On mobile cards, render this cell without its label as a left-aligned line. */
+  mobilePrimary?: boolean
 }
 
 export interface DataTableGroup<T> {
@@ -165,6 +167,7 @@ export function DataTable<T>({
     const id = rowKey(row)
     const className = [
       'ui-table__row',
+      selectable ? 'ui-table__row--selectable' : '',
       onRowClick !== undefined ? 'ui-table__row--clickable' : '',
       selected.has(id) ? 'ui-table__row--selected' : '',
       rowClassName?.(row) ?? '',
@@ -191,6 +194,7 @@ export function DataTable<T>({
             className={[
               column.align === undefined ? '' : `ui-table__align-${column.align}`,
               column.hideOnMobile === true ? 'ui-table__hide-mobile' : '',
+              column.mobilePrimary === true ? 'ui-table__mobile-primary' : '',
             ]
               .filter(Boolean)
               .join(' ')}
@@ -205,13 +209,21 @@ export function DataTable<T>({
   let body: ReactNode
   if (loading) {
     body = Array.from({ length: 5 }, (_, index) => (
-      <tr key={`skeleton-${index}`} className="ui-table__row ui-table__skeleton-row">
+      <tr
+        key={`skeleton-${index}`}
+        className={`ui-table__row ui-table__skeleton-row${selectable ? ' ui-table__row--selectable' : ''}`}
+      >
         {selectable ? <td className="ui-table__check" /> : null}
         {columns.map((column) => (
           <td
             key={column.id}
             data-label={column.header}
-            className={column.hideOnMobile === true ? 'ui-table__hide-mobile' : undefined}
+            className={[
+              column.hideOnMobile === true ? 'ui-table__hide-mobile' : '',
+              column.mobilePrimary === true ? 'ui-table__mobile-primary' : '',
+            ]
+              .filter(Boolean)
+              .join(' ')}
           >
             <span className="ui-table__skeleton" />
           </td>

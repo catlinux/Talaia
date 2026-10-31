@@ -424,15 +424,19 @@ export function Inbox({
     toast[failed > 0 ? 'error' : 'success'](t('bulk.result', { done, failed, skipped }))
   }
 
+  const relativeTime = (value: string) => formatRelativeTime(new Date(value), new Date(), language)
+
   const columns: DataTableColumn<Alert>[] = [
     {
       id: 'severity',
       header: t('columns.severity'),
+      hideOnMobile: true,
       cell: (alert) => <SeverityTag severity={severityOf(alert.severity)} />,
     },
     {
       id: 'what',
       header: t('columns.what'),
+      mobilePrimary: true,
       cell: (alert) => (
         <span
           className={
@@ -441,6 +445,9 @@ export function Inbox({
               : 'alerts-inbox__message'
           }
         >
+          <span className="alerts-inbox__message-severity">
+            <SeverityTag severity={severityOf(alert.severity)} />
+          </span>
           <AlertMessage alert={alert} />
         </span>
       ),
@@ -448,6 +455,7 @@ export function Inbox({
     {
       id: 'where',
       header: t('columns.where'),
+      mobilePrimary: true,
       cell: (alert) => (
         <span className="alerts-inbox__where">
           {alert.serverId ? (
@@ -479,17 +487,24 @@ export function Inbox({
               </>
             ) : null}
           </span>
+          <time
+            className="alerts-inbox__where-time"
+            dateTime={alert.startedAt}
+            title={exactDate(alert.startedAt, language)}
+          >
+            {relativeTime(alert.startedAt)}
+          </time>
         </span>
       ),
     },
     {
       id: 'since',
       header: t('columns.since'),
+      hideOnMobile: true,
       cell: (alert) => {
-        const started = new Date(alert.startedAt)
         return (
           <time dateTime={alert.startedAt} title={exactDate(alert.startedAt, language)}>
-            {formatRelativeTime(started, new Date(), language)}
+            {relativeTime(alert.startedAt)}
           </time>
         )
       },
@@ -497,6 +512,7 @@ export function Inbox({
     {
       id: 'state',
       header: t('columns.state'),
+      hideOnMobile: true,
       cell: (alert) => {
         const state = alertState(alert)
         if (state === 'new') {
@@ -521,6 +537,7 @@ export function Inbox({
     {
       id: 'actions',
       header: t('columns.actions'),
+      mobilePrimary: true,
       align: 'right',
       width: 56,
       cell: (alert) => (
