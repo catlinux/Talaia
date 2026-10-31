@@ -116,8 +116,20 @@ export const catalog: CatalogEntry[] = [
     importance: 'essential',
     unitPatterns: [/^ifup@/],
   },
-  { id: 'rsyslog', kind: 'service', category: 'logs', importance: 'optional', units: ['rsyslog'] },
-  { id: 'chrony', kind: 'service', category: 'time', importance: 'optional', units: ['chrony'] },
+  {
+    id: 'rsyslog',
+    kind: 'service',
+    category: 'logs',
+    importance: 'optional',
+    units: ['rsyslog', 'syslog'],
+  },
+  {
+    id: 'chrony',
+    kind: 'service',
+    category: 'time',
+    importance: 'optional',
+    units: ['chrony', 'chronyd'],
+  },
   {
     id: 'ntp',
     kind: 'service',
@@ -226,7 +238,7 @@ export const catalog: CatalogEntry[] = [
     kind: 'service',
     category: 'security',
     importance: 'important',
-    units: ['iptables', 'netfilter-persistent'],
+    units: ['iptables', 'netfilter-persistent', 'ip6tables', 'ipset'],
   },
   {
     id: 'apparmor',
@@ -285,7 +297,13 @@ export const catalog: CatalogEntry[] = [
     importance: 'optional',
     units: ['avahi-daemon'],
   },
-  { id: 'cups', kind: 'service', category: 'system', importance: 'optional', units: ['cups'] },
+  {
+    id: 'cups',
+    kind: 'service',
+    category: 'system',
+    importance: 'optional',
+    units: ['cups', 'cups-browsed'],
+  },
   {
     id: 'bluetooth',
     kind: 'service',
@@ -442,7 +460,11 @@ export const catalog: CatalogEntry[] = [
     kind: 'service',
     category: 'talaia',
     importance: 'important',
-    units: ['talaia-hostd'],
+    units: ['talaia-update', 'talaia-hostd'],
+    checks: [
+      'systemctl status talaia-update.path',
+      'journalctl -u talaia-update -n 100 --no-pager',
+    ],
   },
   {
     id: 'talaia-core',
@@ -863,6 +885,62 @@ export const catalog: CatalogEntry[] = [
     importance: 'optional',
     units: ['systemd-networkd-wait-online', 'NetworkManager-wait-online'],
   },
+  {
+    id: 'network-manager',
+    kind: 'service',
+    category: 'network',
+    importance: 'essential',
+    units: ['NetworkManager', 'NetworkManager-dispatcher'],
+  },
+  {
+    id: 'connman',
+    kind: 'service',
+    category: 'network',
+    importance: 'important',
+    units: ['connman'],
+  },
+  {
+    id: 'firewalld',
+    kind: 'service',
+    category: 'security',
+    importance: 'important',
+    units: ['firewalld'],
+  },
+  {
+    id: 'openntpd',
+    kind: 'service',
+    category: 'time',
+    importance: 'optional',
+    units: ['openntpd'],
+  },
+  {
+    id: 'nslcd',
+    kind: 'service',
+    category: 'access',
+    importance: 'important',
+    units: ['nslcd'],
+  },
+  {
+    id: 'opendkim',
+    kind: 'service',
+    category: 'mail',
+    importance: 'important',
+    units: ['opendkim'],
+  },
+  {
+    id: 'openvswitch',
+    kind: 'service',
+    category: 'network',
+    importance: 'important',
+    units: ['ovsdb-server', 'ovs-vswitchd', 'openvswitch-switch', 'netplan-ovs-cleanup'],
+  },
+  {
+    id: 'hyperv-daemons',
+    kind: 'service',
+    category: 'system',
+    importance: 'optional',
+    unitPatterns: [/^hv_/, /^hv-/],
+  },
 ]
 
 const docsById: Partial<Record<string, string>> = {
@@ -985,6 +1063,15 @@ const docsById: Partial<Record<string, string>> = {
     'https://www.freedesktop.org/software/systemd/man/latest/systemd-ask-password.html',
   'network-wait-online':
     'https://www.freedesktop.org/software/systemd/man/latest/systemd-networkd-wait-online.service.html',
+  'network-manager': 'https://networkmanager.dev/docs/',
+  connman: 'https://manpages.debian.org/connman.8',
+  firewalld: 'https://firewalld.org/documentation/',
+  openntpd: 'https://www.openntpd.org/',
+  nslcd: 'https://arthurdejong.org/nss-pam-ldapd/',
+  opendkim: 'https://manpages.debian.org/opendkim.conf.5',
+  openvswitch: 'https://docs.openvswitch.org/',
+  'hyperv-daemons':
+    'https://learn.microsoft.com/en-us/windows-server/virtualization/hyper-v/supported-debian-virtual-machines-on-hyper-v',
 }
 
 for (const entry of catalog) {

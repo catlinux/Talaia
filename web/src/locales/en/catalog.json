@@ -164,12 +164,26 @@
     "rsyslog": {
       "name": "Rsyslog",
       "what": "Writes system logs to local files and can forward them to a log server.",
-      "ifFails": "Logs may stop reaching files or the remote collector. Check disk space and the rsyslog configuration before restarting."
+      "ifFails": "Logs may stop reaching files or the remote collector. Check disk space and the rsyslog configuration before restarting.",
+      "details": "Rsyslog collects messages from the system and writes them to files under `/var/log`. It can also forward them to a central server or receive messages from other machines. The `syslog` unit is a compatibility alias used by some software; rsyslog normally owns the socket.",
+      "stop": "Stopping rsyslog stops local log files from being written and may stop forwarding. The kernel and systemd logs can still exist in the journal, but `/var/log/syslog` may stop growing. Keep it running unless another logging service has taken over.",
+      "problems": [
+        "Logs stop appearing in `/var/log/syslog` — check `systemctl status rsyslog` and the configuration in `/etc/rsyslog.conf`.",
+        "The disk is full — rotate or remove old logs and check `/etc/logrotate.d/rsyslog`.",
+        "Remote logs do not arrive — check the forwarding rule, network access and the remote listener."
+      ]
     },
     "chrony": {
       "name": "Chrony time sync",
       "what": "Keeps the clock accurate, including on machines with unstable network access.",
-      "ifFails": "The clock can drift or jump, affecting TLS, logs and schedules. Check the configured time sources before restarting."
+      "ifFails": "The clock can drift or jump, affecting TLS, logs and schedules. Check the configured time sources before restarting.",
+      "details": "Chrony keeps the system clock aligned with NTP servers and can also serve time to other machines. It adjusts the clock gradually instead of jumping, which avoids breaking TLS and logs. The daemon is `chronyd`, and its configuration is `/etc/chrony/chrony.conf`.",
+      "stop": "Stopping chronyd stops automatic time synchronization; the clock keeps running but drifts. Time-sensitive services can fail or reject certificates. Keep one time daemon active; do not run chrony and another NTP client together.",
+      "problems": [
+        "The clock is far off — check `chronyc tracking` and the sources with `chronyc sources -v`.",
+        "No time source is reachable — check UDP port 123 and the servers in `/etc/chrony/chrony.conf`.",
+        "Chrony will not start — read `journalctl -u chrony -n 50 --no-pager` and check for another NTP daemon."
+      ]
     },
     "ntp": {
       "name": "NTP time service",
@@ -264,7 +278,14 @@
     "iptables": {
       "name": "iptables firewall",
       "what": "The legacy Linux firewall and its persistent rule loader.",
-      "ifFails": "Firewall rules may be missing after a restart or reload. Check the saved rules and keep console access before changing them."
+      "ifFails": "Firewall rules may be missing after a restart or reload. Check the saved rules and keep console access before changing them.",
+      "details": "iptables is the traditional Linux packet filter. `netfilter-persistent` loads saved rules at boot, and `ip6tables` applies the IPv6 rules while `ipset` stores large address sets. These units keep the firewall active across reboots; they do not configure the rules for you.",
+      "stop": "Stopping or disabling them can leave the firewall open or drop the saved rules after a reboot. That may expose services or cut off SSH. Keep console access and verify the saved rules before changing anything.",
+      "problems": [
+        "Rules disappear after reboot — check `/etc/iptables/rules.v4` and run `netfilter-persistent save`.",
+        "SSH is blocked after a rule change — use the provider console and check `iptables -L -n -v`.",
+        "IPv6 traffic is not filtered — check `/etc/iptables/rules.v6` and `ip6tables -L`."
+      ]
     },
     "apparmor": {
       "name": "AppArmor",
@@ -314,7 +335,14 @@
     "cups": {
       "name": "CUPS printing",
       "what": "Runs the local printing service and print queues.",
-      "ifFails": "Printing and print queues stop working. It is optional on servers; check the logs if this machine manages printers."
+      "ifFails": "Printing and print queues stop working. It is optional on servers; check the logs if this machine manages printers.",
+      "details": "CUPS runs local print queues and shares printers on the network. `cups-browsed` discovers printers advertised on the local network. Servers rarely need printing, so these units are optional unless the machine manages printers.",
+      "stop": "Stopping CUPS stops print jobs and shared printers. Local documents are not affected. It is safe to disable it on a server that does not print.",
+      "problems": [
+        "Nothing prints — check `systemctl status cups` and the queue with `lpstat -p -d`.",
+        "The printer disappears — check `cups-browsed`, the network and the printer address.",
+        "CUPS fails to start — read `journalctl -u cups -n 50 --no-pager` and check `/etc/cups/cupsd.conf`."
+      ]
     },
     "bluetooth": {
       "name": "Bluetooth service",
@@ -419,17 +447,38 @@
     "talaia-agent": {
       "name": "Talaia agent",
       "what": "Connects this server to Talaia and runs the actions requested from the panel.",
-      "ifFails": "The server appears offline in Talaia and cannot be managed from the panel. Check the agent logs and its connection to the core before restarting."
+      "ifFails": "The server appears offline in Talaia and cannot be managed from the panel. Check the agent logs and its connection to the core before restarting.",
+      "details": "talaia-agent connects outbound to the Talaia core and runs typed actions on this server. It reports inventory and health, and keeps the connection open so the panel can manage the host. It is not needed on the core machine unless that machine is also managed.",
+      "stop": "Stopping talaia-agent makes the server appear offline and stops panel actions on it. Containers and services keep running. Start it again after checking its configuration and the core connection.",
+      "problems": [
+        "The server shows offline — check `systemctl status talaia-agent` and `journalctl -u talaia-agent -n 50 --no-pager`.",
+        "Enrollment fails — check the core URL and CA fingerprint in `/etc/talaia/agent.toml`.",
+        "Actions time out — check the agent-to-core connection and the core logs."
+      ]
     },
     "talaia-hostd": {
-      "name": "Talaia host service",
-      "what": "Runs privileged host operations requested by the Talaia panel.",
-      "ifFails": "Host services, updates and terminal actions from Talaia may fail. Check its logs and the agent connection before restarting."
+      "name": "Talaia update helper",
+      "what": "Runs the root script that lets the Talaia panel update the core safely.",
+      "ifFails": "The panel may not apply updates or may need to be updated from the host.",
+      "details": "talaia-hostd is not a systemd service: it is the root script `/usr/local/sbin/talaia-hostd` installed by the Talaia installer. The core cannot touch Docker; it writes the requested commit to `/var/lib/talaia-host/requests/update.json`, and `talaia-update.path` starts the one-shot `talaia-update.service`, which runs `talaia-hostd update`; progress goes to `/var/lib/talaia-host/status.json` and the panel shows it in Settings > System. That script accepts only a commit on `origin/main` newer than the current one, backs up the database, fast-forwards the clone, rebuilds the Docker stack and waits for `/healthz`; if the new core does not answer, it returns to the previous commit and restores the backup. It exists only on the server that runs `talaia-core`; its configuration is `/etc/talaia/hostd.conf`, and `talaia-update.service` being inactive between updates is normal.",
+      "stop": "Stopping `talaia-update.service` when no update is running is normal and does nothing; the unit is inactive between updates. Stopping or disabling `talaia-update.path` prevents new update requests from being picked up. Keep it enabled on the core server, and use Settings > System to see whether an update is running or failed.",
+      "problems": [
+        "An update stays queued — check `systemctl status talaia-update.path`, make sure it is enabled and look for the request in `/var/lib/talaia-host/requests/update.json`.",
+        "An update failed or was rolled back — read `journalctl -u talaia-update -n 100 --no-pager` and the log in Settings > System.",
+        "The helper is missing — the core may have been installed with `--no-hostd`; reinstall the core without that option or install the helper on the host."
+      ]
     },
     "talaia-core": {
       "name": "Talaia core",
       "what": "The Talaia server that stores data, serves the panel and coordinates agents.",
-      "ifFails": "The panel and agent connections stop working. Check the database and core logs before restarting, and keep a backup of its data."
+      "ifFails": "The panel and agent connections stop working. Check the database and core logs before restarting, and keep a backup of its data.",
+      "details": "talaia-core is the central Talaia service: API, panel, database access, agent hub, jobs and alerts. It is normally run by Docker Compose rather than as a host systemd service, so this unit may not exist on every installation. When present, it starts the core and its dependencies.",
+      "stop": "Stopping talaia-core takes down the panel and cuts agent connections. Agents reconnect and containers keep running, but no management works until it returns. Keep a database backup and use the packaged service manager when possible.",
+      "problems": [
+        "The panel does not open — check `systemctl status talaia-core` and the core logs.",
+        "Agents cannot connect — check the public hostname, ports and the agent port certificate.",
+        "The core fails after an update — check the database migration log and restore the previous version if needed."
+      ]
     },
     "httpd": {
       "name": "Apache HTTP Server image",
@@ -861,6 +910,102 @@
         "Boot waits two minutes for the network — check `systemctl status systemd-networkd-wait-online` and the network configuration.",
         "The service starts before DNS is ready — add an ordering dependency or keep wait-online enabled.",
         "The unit reports offline while the network works — check the interface state and the manager's wait-online options."
+      ]
+    },
+    "network-manager": {
+      "name": "NetworkManager",
+      "what": "Manages network connections and automatically applies their settings.",
+      "ifFails": "The server may lose its network connection after a change or a reboot.",
+      "details": "NetworkManager keeps the wired, Wi-Fi, VPN and bridge connections configured on the machine. It runs a main daemon and a dispatcher that starts scripts when a connection changes. On a server it is common on laptops and desktop systems; a server with static networking may use systemd-networkd instead.",
+      "stop": "Stopping NetworkManager disconnects interfaces it manages, so you can lose SSH access. Disabling it is only safe when another network manager owns the same interfaces. Keep console access before stopping or restarting it.",
+      "problems": [
+        "The network disappears after a change — use the provider console and check `nmcli device status` and `nmcli connection show`.",
+        "A connection does not start at boot — check `systemctl status NetworkManager` and whether the connection is set to autoconnect.",
+        "A dispatcher script fails — check `journalctl -u NetworkManager-dispatcher -n 50 --no-pager`."
+      ]
+    },
+    "connman": {
+      "name": "ConnMan",
+      "what": "A small network connection manager for wired and wireless networks.",
+      "ifFails": "The server may lose its managed network connection.",
+      "details": "ConnMan manages network interfaces and connections with a smaller footprint than NetworkManager. It is common on embedded systems and some minimal Debian installations. It normally runs alongside its own command line tools and is not usually installed with NetworkManager.",
+      "stop": "Stopping ConnMan disconnects the interfaces it manages. Do not stop it while connected through one of them unless you have console access. Disable it only when another network manager takes over.",
+      "problems": [
+        "The connection is down — check `systemctl status connman` and `connmanctl services`.",
+        "Wi-Fi does not connect — check the interface, credentials and `connmanctl` output.",
+        "The service fails at boot — read `journalctl -u connman -n 50 --no-pager`."
+      ]
+    },
+    "firewalld": {
+      "name": "firewalld firewall",
+      "what": "Manages firewall zones and rules while the system is running.",
+      "ifFails": "Firewall rules may be missing or too restrictive, exposing or blocking services.",
+      "details": "firewalld keeps firewall rules in zones and applies them without a full restart. It can change rules at runtime and keep them across reboots. It is an alternative to ufw or plain nftables; use only one firewall manager on the same system.",
+      "stop": "Stopping firewalld can leave the firewall in its last state or remove its rules, depending on the configuration. It may expose services or cut off access. Keep console access and check the zone before restarting or disabling it.",
+      "problems": [
+        "A service is blocked — check `firewall-cmd --list-all` and open the service or port in the right zone.",
+        "Rules disappear after reboot — check `firewall-cmd --runtime-to-permanent` or the saved configuration.",
+        "firewalld cannot start — read `journalctl -u firewalld -n 50 --no-pager` and check for nftables conflicts."
+      ]
+    },
+    "openntpd": {
+      "name": "OpenNTPD",
+      "what": "Keeps the system clock synchronized with NTP servers.",
+      "ifFails": "The clock may drift and affect TLS, logs and scheduled jobs.",
+      "details": "OpenNTPD is a small NTP client and server that adjusts the clock gradually. It is an alternative to chrony or ntp and is not usually installed with them. It reads its servers from `/etc/openntpd/ntpd.conf` on Debian.",
+      "stop": "Stopping it stops automatic time synchronization. The clock keeps running but will drift, and time-sensitive services can fail. Do not disable it unless another time service is active.",
+      "problems": [
+        "The clock is wrong — check `systemctl status openntpd` and the servers in `/etc/openntpd/ntpd.conf`.",
+        "Port 123 is blocked — allow outbound UDP 123 to the configured time servers.",
+        "Another time daemon is running — check `systemctl status chrony ntp openntpd` and keep only one."
+      ]
+    },
+    "nslcd": {
+      "name": "LDAP account lookup",
+      "what": "Looks up users, groups and other directory data in LDAP.",
+      "ifFails": "LDAP users may not be able to log in or resolve their groups.",
+      "details": "nslcd is a local daemon that answers NSS requests for LDAP users and groups. It lets the system use directory accounts without putting the LDAP password in every application. It usually works with the `libnss-ldapd` package and a configuration in `/etc/nslcd.conf`.",
+      "stop": "Stopping nslcd cuts off LDAP lookups, so directory users may disappear from the system and new logins can fail. Existing sessions may continue for a while. Keep a local root or emergency account before disabling it.",
+      "problems": [
+        "An LDAP user cannot log in — check `systemctl status nslcd`, `/etc/nslcd.conf` and the LDAP server connection.",
+        "Groups are missing — check `getent passwd` and `getent group` for that user and the NSS configuration.",
+        "nslcd cannot reach the server — check DNS, network access and the URI in `/etc/nslcd.conf`."
+      ]
+    },
+    "opendkim": {
+      "name": "OpenDKIM",
+      "what": "Signs outgoing mail with DKIM so receivers can verify its domain.",
+      "ifFails": "Outgoing mail may lose its DKIM signature and be treated as spam or rejected.",
+      "details": "OpenDKIM adds a cryptographic DKIM signature to outgoing messages. It can run as a milter called by Postfix or another mail server. The public key is published in DNS, and the private key stays on this machine under `/etc/dkimkeys`.",
+      "stop": "Stopping OpenDKIM stops signing outgoing mail. Messages may still be delivered, but receivers are more likely to mark them as spam. Do not disable it while the domain publishes a DKIM record that expects signatures.",
+      "problems": [
+        "Mail arrives without a signature — check `systemctl status opendkim` and whether Postfix is configured to use the milter.",
+        "Messages are marked as spam — check the DNS TXT record and the selector in `/etc/opendkim.conf`.",
+        "OpenDKIM fails to start — read `journalctl -u opendkim -n 50 --no-pager` and verify the key files and permissions."
+      ]
+    },
+    "openvswitch": {
+      "name": "Open vSwitch",
+      "what": "Provides software-defined network switches and their databases.",
+      "ifFails": "Virtual switches, bridges and some virtual machine networks may stop working.",
+      "details": "Open vSwitch runs a database server and a switch daemon to build bridges, tunnels and virtual networks. It is common with virtualization and cloud platforms, not usually on a simple web server. The switch configuration lives in its own database, not in `/etc/network/interfaces`.",
+      "stop": "Stopping Open vSwitch disconnects its bridges and can cut off virtual machines or the host network. Keep console access and check the bridge configuration before restarting. Do not stop it on a host whose management network uses OVS.",
+      "problems": [
+        "A virtual machine loses its network — check `ovs-vsctl show` and the bridge ports.",
+        "The switch daemon fails — check `systemctl status ovs-vswitchd` and `journalctl -u ovs-vswitchd -n 50 --no-pager`.",
+        "Configuration changes do not appear — check `ovsdb-server` and whether the controller or Netplan applied them."
+      ]
+    },
+    "hyperv-daemons": {
+      "name": "Hyper-V guest integration",
+      "what": "Adds Hyper-V guest integration for time, shutdown and host communication.",
+      "ifFails": "The host may not receive heartbeat data or cannot request a clean shutdown.",
+      "details": "These small daemons run inside a Hyper-V virtual machine and talk to the host. They provide integration services such as time synchronization, shutdown requests and key-value data. They are normally started only when the Linux guest detects Hyper-V.",
+      "stop": "Stopping them is harmless on a physical machine or a non-Hyper-V VM. Inside Hyper-V, the host loses some integration features but the virtual machine keeps running. Do not disable them if you rely on host-requested shutdowns.",
+      "problems": [
+        "The host cannot shut down the VM cleanly — check `systemctl status hv_vss_daemon hv_kvp_daemon`.",
+        "The guest time drifts — check the Hyper-V integration service settings and whether another time daemon is active.",
+        "Daemons fail to start — check `journalctl -u \"hv_*\" -n 50 --no-pager` and whether the VM is running on Hyper-V."
       ]
     }
   },

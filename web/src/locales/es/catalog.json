@@ -164,12 +164,26 @@
     "rsyslog": {
       "name": "Rsyslog",
       "what": "Escribe los registros del sistema en archivos locales y puede enviarlos a un servidor de registros.",
-      "ifFails": "Los registros pueden dejar de llegar a los archivos o al recolector remoto. Comprueba el espacio de disco y la configuración de rsyslog antes de reiniciar."
+      "ifFails": "Los registros pueden dejar de llegar a los archivos o al recolector remoto. Comprueba el espacio de disco y la configuración de rsyslog antes de reiniciar.",
+      "details": "Rsyslog recoge los mensajes del sistema y los escribe en archivos de `/var/log`. También puede enviarlos a un servidor central o recibir mensajes de otras máquinas. La unidad `syslog` es un alias de compatibilidad que usa algún software; normalmente rsyslog controla el socket.",
+      "stop": "Parar rsyslog deja de escribir los archivos locales y puede detener el envío. Los registros del kernel y de systemd pueden seguir en el journal, pero `/var/log/syslog` puede dejar de crecer. Déjalo funcionando salvo que otro servicio de registros se haya hecho cargo.",
+      "problems": [
+        "Los registros dejan de aparecer en `/var/log/syslog` — comprueba `systemctl status rsyslog` y la configuración de `/etc/rsyslog.conf`.",
+        "El disco está lleno — rota o elimina registros antiguos y revisa `/etc/logrotate.d/rsyslog`.",
+        "Los registros remotos no llegan — revisa la regla de envío, el acceso de red y el receptor remoto."
+      ]
     },
     "chrony": {
       "name": "Sincronización horaria con Chrony",
       "what": "Mantiene el reloj preciso, también en máquinas con red inestable.",
-      "ifFails": "El reloj puede desviarse o saltar y afectar a TLS, los registros y las planificaciones. Comprueba las fuentes de tiempo configuradas antes de reiniciar."
+      "ifFails": "El reloj puede desviarse o saltar y afectar a TLS, los registros y las planificaciones. Comprueba las fuentes de tiempo configuradas antes de reiniciar.",
+      "details": "Chrony mantiene el reloj del sistema alineado con servidores NTP y también puede dar hora a otras máquinas. Ajusta el reloj gradualmente en lugar de saltar, lo que evita romper TLS y los registros. El demonio es `chronyd` y su configuración está en `/etc/chrony/chrony.conf`.",
+      "stop": "Parar chronyd detiene la sincronización automática; el reloj sigue funcionando pero se desvía. Los servicios sensibles al tiempo pueden fallar o rechazar certificados. Mantén un solo demonio de hora activo; no ejecutes chrony y otro cliente NTP a la vez.",
+      "problems": [
+        "El reloj está muy desviado — revisa `chronyc tracking` y las fuentes con `chronyc sources -v`.",
+        "No se alcanza ninguna fuente de tiempo — comprueba UDP 123 y los servidores de `/etc/chrony/chrony.conf`.",
+        "Chrony no arranca — lee `journalctl -u chrony -n 50 --no-pager` y comprueba si hay otro demonio NTP."
+      ]
     },
     "ntp": {
       "name": "Servicio de tiempo NTP",
@@ -264,7 +278,14 @@
     "iptables": {
       "name": "Cortafuegos iptables",
       "what": "El cortafuegos clásico de Linux y su cargador de reglas persistentes.",
-      "ifFails": "Pueden faltar reglas de cortafuegos después de reiniciar o recargar. Revisa las reglas guardadas y mantén acceso a la consola antes de cambiarlas."
+      "ifFails": "Pueden faltar reglas de cortafuegos después de reiniciar o recargar. Revisa las reglas guardadas y mantén acceso a la consola antes de cambiarlas.",
+      "details": "iptables es el filtro de paquetes tradicional de Linux. `netfilter-persistent` carga las reglas guardadas al arrancar, `ip6tables` aplica las reglas de IPv6 e `ipset` guarda conjuntos grandes de direcciones. Estas unidades mantienen el cortafuegos activo entre reinicios; no configuran las reglas por ti.",
+      "stop": "Pararlas o desactivarlas puede dejar el cortafuegos abierto o perder las reglas guardadas tras reiniciar. Eso puede exponer servicios o cortar SSH. Mantén acceso a la consola y revisa las reglas guardadas antes de cambiar nada.",
+      "problems": [
+        "Las reglas desaparecen tras reiniciar — revisa `/etc/iptables/rules.v4` y ejecuta `netfilter-persistent save`.",
+        "SSH queda bloqueado tras un cambio — usa la consola del proveedor y revisa `iptables -L -n -v`.",
+        "El tráfico IPv6 no se filtra — revisa `/etc/iptables/rules.v6` y `ip6tables -L`."
+      ]
     },
     "apparmor": {
       "name": "AppArmor",
@@ -314,7 +335,14 @@
     "cups": {
       "name": "Impresión CUPS",
       "what": "Ejecuta el servicio de impresión local y las colas de impresión.",
-      "ifFails": "La impresión y las colas dejan de funcionar. Es opcional en servidores; revisa los registros si esta máquina gestiona impresoras."
+      "ifFails": "La impresión y las colas dejan de funcionar. Es opcional en servidores; revisa los registros si esta máquina gestiona impresoras.",
+      "details": "CUPS gestiona las colas de impresión locales y comparte impresoras en la red. `cups-browsed` descubre impresoras anunciadas en la red local. Los servidores rara vez necesitan imprimir, así que estas unidades son opcionales salvo que la máquina gestione impresoras.",
+      "stop": "Parar CUPS detiene los trabajos de impresión y las impresoras compartidas. Los documentos locales no se ven afectados. Es seguro desactivarlo en un servidor que no imprime.",
+      "problems": [
+        "No se imprime nada — comprueba `systemctl status cups` y la cola con `lpstat -p -d`.",
+        "La impresora desaparece — revisa `cups-browsed`, la red y la dirección de la impresora.",
+        "CUPS no arranca — lee `journalctl -u cups -n 50 --no-pager` y revisa `/etc/cups/cupsd.conf`."
+      ]
     },
     "bluetooth": {
       "name": "Servicio Bluetooth",
@@ -419,17 +447,38 @@
     "talaia-agent": {
       "name": "Agente de Talaia",
       "what": "Conecta este servidor con Talaia y ejecuta las acciones pedidas desde el panel.",
-      "ifFails": "El servidor aparece sin conexión en Talaia y no se puede gestionar desde el panel. Revisa los registros del agente y su conexión con el core antes de reiniciar."
+      "ifFails": "El servidor aparece sin conexión en Talaia y no se puede gestionar desde el panel. Revisa los registros del agente y su conexión con el core antes de reiniciar.",
+      "details": "talaia-agent se conecta hacia fuera con el core de Talaia y ejecuta acciones tipadas en este servidor. Informa del inventario y la salud, y mantiene la conexión abierta para que el panel pueda gestionar el host. No hace falta en la máquina del core salvo que también se gestione desde el panel.",
+      "stop": "Parar talaia-agent hace que el servidor aparezca sin conexión y detiene las acciones del panel sobre él. Los contenedores y servicios siguen funcionando. Vuelve a arrancarlo después de revisar su configuración y la conexión con el core.",
+      "problems": [
+        "El servidor aparece sin conexión — comprueba `systemctl status talaia-agent` y `journalctl -u talaia-agent -n 50 --no-pager`.",
+        "El alta falla — revisa la URL del core y la huella de la CA en `/etc/talaia/agent.toml`.",
+        "Las acciones agotan el tiempo — revisa la conexión del agente con el core y los registros del core."
+      ]
     },
     "talaia-hostd": {
-      "name": "Servicio de anfitrión de Talaia",
-      "what": "Ejecuta operaciones privilegiadas del anfitrión pedidas por el panel Talaia.",
-      "ifFails": "Los servicios del anfitrión, las actualizaciones y las terminales de Talaia pueden fallar. Revisa sus registros y la conexión del agente antes de reiniciar."
+      "name": "Ayudante de actualización de Talaia",
+      "what": "Ejecuta el script de root que permite al panel de Talaia actualizar el core de forma segura.",
+      "ifFails": "El panel puede no aplicar actualizaciones o necesitar que se actualice desde el host.",
+      "details": "talaia-hostd no es un servicio de systemd: es el script de root `/usr/local/sbin/talaia-hostd` que instala el instalador de Talaia. El core no puede tocar Docker; escribe el commit solicitado en `/var/lib/talaia-host/requests/update.json`, y `talaia-update.path` arranca el servicio `talaia-update.service` de tipo oneshot, que ejecuta `talaia-hostd update`; el progreso va a `/var/lib/talaia-host/status.json` y el panel lo muestra en Ajustes > Sistema. Ese script solo acepta un commit de `origin/main` más nuevo que el actual, hace una copia de la base de datos, avanza el clon, reconstruye la pila Docker y espera a `/healthz`; si el core nuevo no responde, vuelve al commit anterior y restaura la copia. Solo existe en el servidor que ejecuta `talaia-core`; su configuración está en `/etc/talaia/hostd.conf` y que `talaia-update.service` esté inactivo entre actualizaciones es normal.",
+      "stop": "Parar `talaia-update.service` cuando no hay ninguna actualización es normal y no hace nada; la unidad está inactiva entre actualizaciones. Parar o desactivar `talaia-update.path` impide que se recojan nuevas solicitudes de actualización. Déjalo activo en el servidor del core y usa Ajustes > Sistema para ver si una actualización está en marcha o ha fallado.",
+      "problems": [
+        "Una actualización se queda en cola — comprueba `systemctl status talaia-update.path`, asegúrate de que está activo y busca la solicitud en `/var/lib/talaia-host/requests/update.json`.",
+        "Una actualización falló o se revirtió — lee `journalctl -u talaia-update -n 100 --no-pager` y el registro de Ajustes > Sistema.",
+        "Falta el ayudante — puede que el core se instalara con `--no-hostd`; reinstala el core sin esa opción o instala el ayudante en el host."
+      ]
     },
     "talaia-core": {
       "name": "Core de Talaia",
       "what": "El servidor Talaia que guarda datos, sirve el panel y coordina los agentes.",
-      "ifFails": "El panel y las conexiones de los agentes dejan de funcionar. Revisa la base de datos y los registros del core antes de reiniciar, y guarda una copia de sus datos."
+      "ifFails": "El panel y las conexiones de los agentes dejan de funcionar. Revisa la base de datos y los registros del core antes de reiniciar, y guarda una copia de sus datos.",
+      "details": "talaia-core es el servicio central de Talaia: API, panel, acceso a la base de datos, hub de agentes, tareas y alertas. Normalmente lo ejecuta Docker Compose en lugar de un servicio systemd del host, así que esta unidad puede no existir en todas las instalaciones. Cuando está, arranca el core y sus dependencias.",
+      "stop": "Parar talaia-core tumba el panel y corta las conexiones de los agentes. Los agentes se reconectan y los contenedores siguen funcionando, pero no se puede gestionar nada hasta que vuelva. Guarda una copia de la base de datos y usa el gestor de servicios empaquetado cuando sea posible.",
+      "problems": [
+        "El panel no abre — comprueba `systemctl status talaia-core` y los registros del core.",
+        "Los agentes no conectan — revisa el nombre público, los puertos y el certificado del puerto de agentes.",
+        "El core falla después de una actualización — revisa el registro de migraciones de la base de datos y vuelve a la versión anterior si hace falta."
+      ]
     },
     "httpd": {
       "name": "Imagen del servidor HTTP Apache",
@@ -861,6 +910,102 @@
         "El arranque espera dos minutos a la red — comprueba `systemctl status systemd-networkd-wait-online` y la configuración de red.",
         "El servicio arranca antes de que haya DNS — añade una dependencia de orden o mantén la espera de red activa.",
         "La unidad dice que no hay red aunque funcione — revisa el estado de la interfaz y las opciones de espera del gestor de red."
+      ]
+    },
+    "network-manager": {
+      "name": "NetworkManager",
+      "what": "Gestiona las conexiones de red y aplica sus ajustes automáticamente.",
+      "ifFails": "El servidor puede perder la conexión de red después de un cambio o un reinicio.",
+      "details": "NetworkManager mantiene las conexiones por cable, Wi-Fi, VPN y puente configuradas en la máquina. Ejecuta un demonio principal y un despachador que lanza scripts cuando cambia una conexión. En un servidor es habitual en portátiles y equipos de escritorio; un servidor con red estática puede usar systemd-networkd en su lugar.",
+      "stop": "Si paras NetworkManager, se desconectan las interfaces que gestiona y puedes perder el acceso SSH. Desactivarlo solo es seguro cuando otro gestor de red controla las mismas interfaces. Mantén acceso a la consola antes de pararlo o reiniciarlo.",
+      "problems": [
+        "La red desaparece después de un cambio — usa la consola del proveedor y comprueba `nmcli device status` y `nmcli connection show`.",
+        "Una conexión no arranca al inicio — revisa `systemctl status NetworkManager` y si la conexión está configurada para conectarse automáticamente.",
+        "Un script del despachador falla — comprueba `journalctl -u NetworkManager-dispatcher -n 50 --no-pager`."
+      ]
+    },
+    "connman": {
+      "name": "ConnMan",
+      "what": "Un gestor pequeño de conexiones de red por cable e inalámbricas.",
+      "ifFails": "El servidor puede perder la conexión de red que gestiona.",
+      "details": "ConnMan gestiona interfaces y conexiones de red con un consumo menor que NetworkManager. Es habitual en sistemas embebidos y algunas instalaciones mínimas de Debian. Normalmente se usa con sus propias herramientas de línea de comandos y no suele estar instalado junto a NetworkManager.",
+      "stop": "Si paras ConnMan, se desconectan las interfaces que gestiona. No lo pares mientras estés conectado por una de ellas salvo que tengas acceso a la consola. Desactívalo solo cuando otro gestor de red se haga cargo.",
+      "problems": [
+        "La conexión está caída — comprueba `systemctl status connman` y `connmanctl services`.",
+        "El Wi-Fi no conecta — revisa la interfaz, las credenciales y la salida de `connmanctl`.",
+        "El servicio falla al arrancar — lee `journalctl -u connman -n 50 --no-pager`."
+      ]
+    },
+    "firewalld": {
+      "name": "Cortafuegos firewalld",
+      "what": "Gestiona zonas y reglas de cortafuegos mientras el sistema está en marcha.",
+      "ifFails": "Pueden faltar reglas de cortafuegos o ser demasiado restrictivas, exponiendo o bloqueando servicios.",
+      "details": "firewalld guarda las reglas de cortafuegos en zonas y las aplica sin reiniciar todo. Puede cambiar reglas en caliente y conservarlas entre reinicios. Es una alternativa a ufw o a nftables directo; usa solo un gestor de cortafuegos en el mismo sistema.",
+      "stop": "Parar firewalld puede dejar el cortafuegos en su último estado o quitar sus reglas, según la configuración. Puede exponer servicios o cortar el acceso. Mantén acceso a la consola y revisa la zona antes de reiniciarlo o desactivarlo.",
+      "problems": [
+        "Un servicio está bloqueado — revisa `firewall-cmd --list-all` y abre el servicio o puerto en la zona correcta.",
+        "Las reglas desaparecen tras reiniciar — comprueba `firewall-cmd --runtime-to-permanent` o la configuración guardada.",
+        "firewalld no arranca — lee `journalctl -u firewalld -n 50 --no-pager` y busca conflictos con nftables."
+      ]
+    },
+    "openntpd": {
+      "name": "OpenNTPD",
+      "what": "Mantiene el reloj del sistema sincronizado con servidores NTP.",
+      "ifFails": "El reloj puede desviarse y afectar a TLS, los registros y las tareas programadas.",
+      "details": "OpenNTPD es un cliente y servidor NTP pequeño que ajusta el reloj gradualmente. Es una alternativa a chrony o ntp y normalmente no se instala junto a ellos. En Debian lee sus servidores de `/etc/openntpd/ntpd.conf`.",
+      "stop": "Si lo paras, dejas de sincronizar la hora automáticamente. El reloj sigue funcionando pero se desviará, y los servicios sensibles al tiempo pueden fallar. No lo desactives salvo que otro servicio de hora esté activo.",
+      "problems": [
+        "El reloj va mal — comprueba `systemctl status openntpd` y los servidores de `/etc/openntpd/ntpd.conf`.",
+        "El puerto 123 está bloqueado — permite UDP 123 de salida hacia los servidores de tiempo configurados.",
+        "Hay otro demonio de hora en marcha — comprueba `systemctl status chrony ntp openntpd` y deja solo uno."
+      ]
+    },
+    "nslcd": {
+      "name": "Consulta de cuentas LDAP",
+      "what": "Busca usuarios, grupos y otros datos del directorio en LDAP.",
+      "ifFails": "Los usuarios LDAP pueden no poder iniciar sesión o resolver sus grupos.",
+      "details": "nslcd es un demonio local que responde a las peticiones NSS de usuarios y grupos LDAP. Permite usar cuentas del directorio sin poner la contraseña LDAP en cada aplicación. Normalmente funciona con el paquete `libnss-ldapd` y una configuración en `/etc/nslcd.conf`.",
+      "stop": "Parar nslcd corta las consultas LDAP, así que los usuarios del directorio pueden desaparecer del sistema y los inicios de sesión nuevos pueden fallar. Las sesiones abiertas pueden seguir un tiempo. Mantén una cuenta local de root o de emergencia antes de desactivarlo.",
+      "problems": [
+        "Un usuario LDAP no puede entrar — comprueba `systemctl status nslcd`, `/etc/nslcd.conf` y la conexión con el servidor LDAP.",
+        "Faltan grupos — revisa `getent passwd` y `getent group` para ese usuario y la configuración de NSS.",
+        "nslcd no llega al servidor — comprueba DNS, el acceso de red y la URI de `/etc/nslcd.conf`."
+      ]
+    },
+    "opendkim": {
+      "name": "OpenDKIM",
+      "what": "Firma el correo saliente con DKIM para que los receptores verifiquen su dominio.",
+      "ifFails": "El correo saliente puede perder la firma DKIM y ser tratado como spam o rechazado.",
+      "details": "OpenDKIM añade una firma criptográfica DKIM a los mensajes salientes. Puede funcionar como milter llamado por Postfix u otro servidor de correo. La clave pública se publica en DNS y la privada se queda en esta máquina, en `/etc/dkimkeys`.",
+      "stop": "Parar OpenDKIM deja de firmar el correo saliente. Los mensajes pueden entregarse igualmente, pero es más probable que los receptores los marquen como spam. No lo desactives mientras el dominio publique un registro DKIM que espere firmas.",
+      "problems": [
+        "El correo llega sin firma — comprueba `systemctl status opendkim` y si Postfix está configurado para usar el milter.",
+        "Los mensajes se marcan como spam — revisa el registro TXT de DNS y el selector de `/etc/opendkim.conf`.",
+        "OpenDKIM no arranca — lee `journalctl -u opendkim -n 50 --no-pager` y verifica las claves y sus permisos."
+      ]
+    },
+    "openvswitch": {
+      "name": "Open vSwitch",
+      "what": "Proporciona conmutadores de red definidos por software y sus bases de datos.",
+      "ifFails": "Los conmutadores virtuales, los puentes y algunas redes de máquinas virtuales pueden dejar de funcionar.",
+      "details": "Open vSwitch ejecuta un servidor de base de datos y un demonio de conmutación para crear puentes, túneles y redes virtuales. Es habitual en virtualización y plataformas cloud, no en un servidor web sencillo. La configuración del conmutador vive en su propia base de datos, no en `/etc/network/interfaces`.",
+      "stop": "Parar Open vSwitch desconecta sus puentes y puede cortar las máquinas virtuales o la red del host. Mantén acceso a la consola y revisa la configuración de los puentes antes de reiniciar. No lo pares en un host cuya red de gestión use OVS.",
+      "problems": [
+        "Una máquina virtual pierde la red — revisa `ovs-vsctl show` y los puertos del puente.",
+        "El demonio de conmutación falla — comprueba `systemctl status ovs-vswitchd` y `journalctl -u ovs-vswitchd -n 50 --no-pager`.",
+        "Los cambios de configuración no aparecen — revisa `ovsdb-server` y si el controlador o Netplan los aplicaron."
+      ]
+    },
+    "hyperv-daemons": {
+      "name": "Integración de invitado Hyper-V",
+      "what": "Añade la integración de Hyper-V para hora, apagado y comunicación con el host.",
+      "ifFails": "El host puede no recibir datos de latido o no poder pedir un apagado limpio.",
+      "details": "Estos demonios pequeños se ejecutan dentro de una máquina virtual Hyper-V y hablan con el host. Ofrecen servicios de integración como sincronización horaria, peticiones de apagado y datos clave-valor. Normalmente solo arrancan cuando el invitado Linux detecta Hyper-V.",
+      "stop": "Pararlos no hace daño en una máquina física o en una VM que no sea Hyper-V. Dentro de Hyper-V, el host pierde algunas funciones de integración pero la máquina virtual sigue funcionando. No los desactives si dependes de que el host pida apagados.",
+      "problems": [
+        "El host no puede apagar la VM limpiamente — comprueba `systemctl status hv_vss_daemon hv_kvp_daemon`.",
+        "La hora del invitado se desvía — revisa la integración horaria de Hyper-V y si hay otro demonio de hora activo.",
+        "Los demonios no arrancan — comprueba `journalctl -u \"hv_*\" -n 50 --no-pager` y si la VM se ejecuta en Hyper-V."
       ]
     }
   },

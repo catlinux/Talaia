@@ -50,6 +50,26 @@ describe('lookupService', () => {
     expect(lookupService('NetworkManager-wait-online.service')?.id).toBe('network-wait-online')
   })
 
+  it('matches the network, security, mail and time units of this batch', () => {
+    expect(lookupService('NetworkManager.service')?.id).toBe('network-manager')
+    expect(lookupService('NetworkManager-dispatcher.service')?.id).toBe('network-manager')
+    expect(lookupService('connman.service')?.id).toBe('connman')
+    expect(lookupService('firewalld.service')?.id).toBe('firewalld')
+    expect(lookupService('openntpd.service')?.id).toBe('openntpd')
+    expect(lookupService('nslcd.service')?.id).toBe('nslcd')
+    expect(lookupService('opendkim.service')?.id).toBe('opendkim')
+    expect(lookupService('ovs-vswitchd.service')?.id).toBe('openvswitch')
+    expect(lookupService('netplan-ovs-cleanup.service')?.id).toBe('openvswitch')
+    expect(lookupService('hv_kvp_daemon.service')?.id).toBe('hyperv-daemons')
+    expect(lookupService('hv-vss-daemon.service')?.id).toBe('hyperv-daemons')
+    expect(lookupService('ip6tables.service')?.id).toBe('iptables')
+    expect(lookupService('ipset.service')?.id).toBe('iptables')
+    expect(lookupService('chronyd.service')?.id).toBe('chrony')
+    expect(lookupService('syslog.service')?.id).toBe('rsyslog')
+    expect(lookupService('cups-browsed.service')?.id).toBe('cups')
+    expect(lookupService('talaia-update.service')?.id).toBe('talaia-hostd')
+  })
+
   it('keeps the exact systemd units of the existing entries', () => {
     for (const id of [
       'systemd-journald',
@@ -155,6 +175,21 @@ describe('catalog translations', () => {
       'systemd-power',
       'systemd-ask-password',
       'network-wait-online',
+      'network-manager',
+      'connman',
+      'firewalld',
+      'openntpd',
+      'nslcd',
+      'opendkim',
+      'openvswitch',
+      'hyperv-daemons',
+      'iptables',
+      'chrony',
+      'rsyslog',
+      'cups',
+      'talaia-hostd',
+      'talaia-agent',
+      'talaia-core',
     ]
     for (const language of ['ca', 'es', 'en']) {
       const t = i18n.getFixedT(language, 'catalog')
@@ -186,5 +221,15 @@ describe('catalog translations', () => {
     expect(certbot?.kind).toBe('both')
     expect(certbot?.units).toEqual(['certbot'])
     expect(certbot?.checks).toEqual(['certbot certificates', 'certbot renew --dry-run'])
+  })
+
+  it('describes the Talaia update helper as the update path and service', () => {
+    const hostd = catalog.find((entry) => entry.id === 'talaia-hostd')
+    expect(hostd?.units).toEqual(['talaia-update', 'talaia-hostd'])
+    expect(hostd?.unitPatterns).toBeUndefined()
+    expect(hostd?.checks).toEqual([
+      'systemctl status talaia-update.path',
+      'journalctl -u talaia-update -n 100 --no-pager',
+    ])
   })
 })
