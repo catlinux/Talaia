@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -15,6 +16,7 @@ import (
 	"github.com/go-chi/chi/v5"
 
 	"github.com/catlinux/Talaia/core/internal/auth"
+	"github.com/catlinux/Talaia/core/internal/deploy"
 	"github.com/catlinux/Talaia/core/internal/hub"
 	"github.com/catlinux/Talaia/core/internal/store"
 	"github.com/catlinux/Talaia/core/internal/templates"
@@ -234,6 +236,31 @@ func (f fakeResolver) LookupHost(_ context.Context, host string) ([]string, erro
 	return addresses, nil
 }
 
+type fakeAppCleaner struct {
+	calls         []string
+	removeErr     error
+	cleanupErr    error
+	proxyErr      error
+	cleanupOutput string
+	proxyRoutes   []*agentv1.ProxyRoute
+}
+
+func (f *fakeAppCleaner) RemoveStack(_ context.Context, _, name string) (string, error) {
+	f.calls = append(f.calls, "remove:"+name)
+	return "stack removed", f.removeErr
+}
+
+func (f *fakeAppCleaner) CleanupApp(_ context.Context, _, name string) (string, error) {
+	f.calls = append(f.calls, "cleanup:"+name)
+	return f.cleanupOutput, f.cleanupErr
+}
+
+func (f *fakeAppCleaner) ApplyProxyRoutes(_ context.Context, _ string, routes []*agentv1.ProxyRoute) (string, error) {
+	f.calls = append(f.calls, "proxy")
+	f.proxyRoutes = append([]*agentv1.ProxyRoute(nil), routes...)
+	return "proxy routes applied", f.proxyErr
+}
+
 func newAppAPI(t *testing.T, state *memAppStore) (AppDeps, *fakeAudit, *auth.SecretBox) {
 	t.Helper()
 	key := make([]byte, 32)
@@ -243,7 +270,7 @@ func newAppAPI(t *testing.T, state *memAppStore) (AppDeps, *fakeAudit, *auth.Sec
 	}
 	audit := &fakeAudit{}
 	deps := AppDeps{
-		Store: state, Box: box, Queue: &fakeQueue{}, Audit: audit,
+		Store: state, Box: box, Queue: &fakeQueue{}, Cleaner: &fakeAppCleaner{}, Audit: audit,
 		Servers: stubServers{byID: map[string]store.Server{"s1": {ID: "s1", Name: "one", GroupID: "g1"}}},
 		Agents:  fakeAgents{agents: []hub.AgentInfo{{ServerID: "s1", Hostname: "vps.example.com"}}},
 		Resolver: fakeResolver{hosts: map[string][]string{
@@ -545,6 +572,227 @@ func TestCreateFromTemplateUsesTemplateSource(t *testing.T) {
 	}
 	if len(audit.events) == 0 || audit.events[0].Action != "app_created" {
 		t.Errorf("audit = %+v", audit.events)
+	}
+}
+
+func TestDeleteAppRequiresTheStackName(t *testing.T) {
+	app := store.App{ID: "app-1", ServerID: "s1", StackName: "shop", Service: "app", Port: 3000}
+	state := newMemAppStore(app)
+	deps, audit, _ := newAppAPI(t, state)
+	cleaner := deps.Cleaner.(*fakeAppCleaner)
+
+	response := serveRoute(t, http.MethodDelete, "/api/v1/apps/{appID}", "/api/v1/apps/app-1",
+		NewAppDeleteHandler(deps), `{"confirm_name":"other"}`)
+	if response.Code != http.StatusBadRequest || errorCodeOf(t, response) != "invalid_request" {
+		t.Fatalf("status = %d, body %s", response.Code, response.Body.String())
+	}
+	if _, ok := state.apps[app.ID]; !ok {
+		t.Error("the app was deleted with a wrong confirmation")
+	}
+	if len(cleaner.calls) != 0 || len(audit.events) != 0 {
+		t.Errorf("calls = %v, audit = %v", cleaner.calls, audit.events)
+	}
+}
+
+func TestDeleteAppRefusesARunningDeploymentAndAnOfflineAgent(t *testing.T) {
+	for _, test := range []struct {
+		name   string
+		setup  func(*memAppStore, *AppDeps)
+		status int
+		code   string
+	}{
+		{
+			name: "building",
+			setup: func(state *memAppStore, _ *AppDeps) {
+				state.deployments["dep-1"] = store.Deployment{ID: "dep-1", AppID: "app-1", State: store.DeploymentBuilding}
+			},
+			status: http.StatusConflict,
+			code:   "deployment_running",
+		},
+		{
+			name: "releasing",
+			setup: func(state *memAppStore, _ *AppDeps) {
+				state.deployments["dep-1"] = store.Deployment{ID: "dep-1", AppID: "app-1", State: store.DeploymentReleasing}
+			},
+			status: http.StatusConflict,
+			code:   "deployment_running",
+		},
+		{
+			name: "offline",
+			setup: func(_ *memAppStore, deps *AppDeps) {
+				deps.Agents = fakeAgents{}
+			},
+			status: http.StatusConflict,
+			code:   "agent_offline",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			app := store.App{ID: "app-1", ServerID: "s1", StackName: "shop", Service: "app", Port: 3000}
+			state := newMemAppStore(app)
+			deps, audit, _ := newAppAPI(t, state)
+			test.setup(state, &deps)
+			cleaner := deps.Cleaner.(*fakeAppCleaner)
+
+			response := serveRoute(t, http.MethodDelete, "/api/v1/apps/{appID}", "/api/v1/apps/app-1",
+				NewAppDeleteHandler(deps), `{"confirm_name":"shop"}`)
+			if response.Code != test.status || errorCodeOf(t, response) != test.code {
+				t.Fatalf("status = %d, body %s", response.Code, response.Body.String())
+			}
+			if _, ok := state.apps[app.ID]; !ok {
+				t.Error("the app was deleted")
+			}
+			if len(cleaner.calls) != 0 || len(audit.events) != 0 {
+				t.Errorf("calls = %v, audit = %v", cleaner.calls, audit.events)
+			}
+		})
+	}
+}
+
+func TestDeleteAppRunsTheServerStepsInOrderAndThenDeletesTheRows(t *testing.T) {
+	app := store.App{ID: "app-1", ServerID: "s1", StackName: "shop", Service: "app", Port: 3000}
+	other := store.App{ID: "app-2", ServerID: "s1", StackName: "blog", Service: "app", Port: 3001}
+	state := newMemAppStore(app, other)
+	state.domains["domain-1"] = store.Domain{ID: "domain-1", AppID: app.ID, Hostname: "shop.example.com", Service: "app", Port: 3000}
+	state.domains["domain-2"] = store.Domain{ID: "domain-2", AppID: other.ID, Hostname: "blog.example.com", Service: "app", Port: 3001}
+	deps, audit, _ := newAppAPI(t, state)
+	deps.Agents = fakeAgents{agents: []hub.AgentInfo{{
+		ServerID: "s1", Hostname: "vps.example.com", ProxyMode: agentv1.ProxyMode_PROXY_MODE_MANAGED,
+	}}}
+	cleaner := deps.Cleaner.(*fakeAppCleaner)
+	cleaner.cleanupOutput = "removed image talaia/shop:abcdef123456\nremoved build workspace /var/lib/talaia/builds/shop"
+
+	response := serveRoute(t, http.MethodDelete, "/api/v1/apps/{appID}", "/api/v1/apps/app-1",
+		NewAppDeleteHandler(deps), `{"confirm_name":"shop"}`)
+	if response.Code != http.StatusOK {
+		t.Fatalf("status = %d, body %s", response.Code, response.Body.String())
+	}
+	if want := []string{"remove:shop", "cleanup:shop", "proxy"}; strings.Join(cleaner.calls, ",") != strings.Join(want, ",") {
+		t.Errorf("calls = %v, want %v", cleaner.calls, want)
+	}
+	if len(cleaner.proxyRoutes) != 1 || cleaner.proxyRoutes[0].GetHostname() != "blog.example.com" {
+		t.Errorf("proxy routes = %v", cleaner.proxyRoutes)
+	}
+	if _, ok := state.apps[app.ID]; ok {
+		t.Error("the app rows were not deleted")
+	}
+	if _, ok := state.apps[other.ID]; !ok {
+		t.Error("another app was deleted")
+	}
+	var body appDeleteResponse
+	if err := json.Unmarshal(response.Body.Bytes(), &body); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(body.Output, "removed image talaia/shop:abcdef123456") ||
+		!strings.Contains(body.Output, "Named volumes were kept.") {
+		t.Errorf("output = %q", body.Output)
+	}
+	if len(audit.events) != 1 || audit.events[0].Action != "app_deleted" {
+		t.Fatalf("audit = %+v", audit.events)
+	}
+	details := audit.events[0].Details
+	if details["stack"] != "shop" || details["volumes_kept"] != true {
+		t.Errorf("audit details = %v", details)
+	}
+	removed, ok := details["removed_images"].([]string)
+	if !ok || len(removed) != 1 || removed[0] != "talaia/shop:abcdef123456" {
+		t.Errorf("removed images = %#v", details["removed_images"])
+	}
+}
+
+func TestDeleteAppKeepsTheRowsWhenAnAgentStepFails(t *testing.T) {
+	for _, test := range []struct {
+		name   string
+		setErr func(*fakeAppCleaner)
+		reason string
+		calls  []string
+	}{
+		{
+			name:   "stack",
+			setErr: func(cleaner *fakeAppCleaner) { cleaner.removeErr = errors.New("agent failed") },
+			reason: "remove the app stack",
+			calls:  []string{"remove:shop"},
+		},
+		{
+			name:   "cleanup",
+			setErr: func(cleaner *fakeAppCleaner) { cleaner.cleanupErr = errors.New("agent failed") },
+			reason: "remove the app images and build workspace",
+			calls:  []string{"remove:shop", "cleanup:shop"},
+		},
+		{
+			name:   "proxy",
+			setErr: func(cleaner *fakeAppCleaner) { cleaner.proxyErr = errors.New("agent failed") },
+			reason: "apply the proxy routes",
+			calls:  []string{"remove:shop", "cleanup:shop", "proxy"},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			app := store.App{ID: "app-1", ServerID: "s1", StackName: "shop", Service: "app", Port: 3000}
+			state := newMemAppStore(app)
+			deps, audit, _ := newAppAPI(t, state)
+			deps.Agents = fakeAgents{agents: []hub.AgentInfo{{
+				ServerID: "s1", Hostname: "vps.example.com", ProxyMode: agentv1.ProxyMode_PROXY_MODE_MANAGED,
+			}}}
+			cleaner := deps.Cleaner.(*fakeAppCleaner)
+			test.setErr(cleaner)
+
+			response := serveRoute(t, http.MethodDelete, "/api/v1/apps/{appID}", "/api/v1/apps/app-1",
+				NewAppDeleteHandler(deps), `{"confirm_name":"shop"}`)
+			if response.Code != http.StatusInternalServerError || errorCodeOf(t, response) != "app_cleanup_failed" {
+				t.Fatalf("status = %d, body %s", response.Code, response.Body.String())
+			}
+			var body errorBody
+			if err := json.Unmarshal(response.Body.Bytes(), &body); err != nil {
+				t.Fatal(err)
+			}
+			if body.Error.Reason != test.reason {
+				t.Errorf("reason = %q, want %q", body.Error.Reason, test.reason)
+			}
+			if strings.Join(cleaner.calls, ",") != strings.Join(test.calls, ",") {
+				t.Errorf("calls = %v, want %v", cleaner.calls, test.calls)
+			}
+			if _, ok := state.apps[app.ID]; !ok {
+				t.Error("the app rows were deleted after a failed step")
+			}
+			if len(audit.events) != 0 {
+				t.Errorf("audit = %v", audit.events)
+			}
+		})
+	}
+}
+
+func TestDeleteAppDoesNotApplyProxyInExternalMode(t *testing.T) {
+	app := store.App{ID: "app-1", ServerID: "s1", StackName: "shop", Service: "app", Port: 3000}
+	state := newMemAppStore(app)
+	deps, _, _ := newAppAPI(t, state)
+	cleaner := deps.Cleaner.(*fakeAppCleaner)
+
+	response := serveRoute(t, http.MethodDelete, "/api/v1/apps/{appID}", "/api/v1/apps/app-1",
+		NewAppDeleteHandler(deps), `{"confirm_name":"shop"}`)
+	if response.Code != http.StatusOK {
+		t.Fatalf("status = %d, body %s", response.Code, response.Body.String())
+	}
+	if strings.Join(cleaner.calls, ",") != "remove:shop,cleanup:shop" {
+		t.Errorf("calls = %v", cleaner.calls)
+	}
+	if len(cleaner.proxyRoutes) != 0 {
+		t.Errorf("proxy routes = %v", cleaner.proxyRoutes)
+	}
+}
+
+func TestDeleteAppIgnoresAMissingStack(t *testing.T) {
+	app := store.App{ID: "app-1", ServerID: "s1", StackName: "shop", Service: "app", Port: 3000}
+	state := newMemAppStore(app)
+	deps, _, _ := newAppAPI(t, state)
+	cleaner := deps.Cleaner.(*fakeAppCleaner)
+	cleaner.removeErr = deploy.ErrStackNotFound
+
+	response := serveRoute(t, http.MethodDelete, "/api/v1/apps/{appID}", "/api/v1/apps/app-1",
+		NewAppDeleteHandler(deps), `{"confirm_name":"shop"}`)
+	if response.Code != http.StatusOK {
+		t.Fatalf("status = %d, body %s", response.Code, response.Body.String())
+	}
+	if _, ok := state.apps[app.ID]; ok {
+		t.Error("the app rows were not deleted")
 	}
 }
 

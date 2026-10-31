@@ -201,21 +201,26 @@ tus sitios de nginx no se tocan.
 
 ## Eliminar una app y su sitio
 
-Esta versión no tiene un botón **Eliminar app** en el panel. Elimina el registro de la app por la API y
-después quita el sitio y el stack en este orden. El id de la app es la última parte de la dirección de su
-ficha, `/apps/<id>`. Con la sesión iniciada en el panel, ejecuta esto en la consola del navegador en la
-pestaña del panel:
+Esta versión no tiene un botón **Eliminar app** en el panel. Elimina la app por la API y después quita su
+sitio web. El id de la app es la última parte de la dirección de su ficha, `/apps/<id>`. Con la sesión
+iniciada en el panel, ejecuta esto en la consola del navegador en la pestaña del panel, con el nombre de la
+app donde pone `<nombre-de-la-app>`:
 
 ```js
 fetch('/api/v1/apps/<app-id>', {
   method: 'DELETE',
   headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ confirm_name: '<nombre-de-la-app>' }),
 })
 ```
 
-Necesita `stack.edit` en la app y usa tu sesión actual; una clave de API no puede eliminar una app. Devuelve
-`204` cuando funciona. Elimina la app, sus variables, su historial de despliegues y sus dominios. **No**
-detiene los contenedores, no elimina el stack Compose ni cambia el sitio web.
+Necesita `stack.edit` en la app y usa tu sesión actual; una clave de API no puede eliminar una app. La
+confirmación debe ser el nombre de la app, que es el nombre del stack Compose. La petición se rechaza con
+`409` si hay un despliegue construyendo o publicando, o si el agente del servidor no está conectado.
+Devuelve `200` con un `output` que resume lo eliminado. Talaia detiene y elimina los contenedores y los
+archivos Compose, borra las imágenes `talaia/<app>:*` y el espacio de construcción, y conserva los
+volúmenes con nombre, así que los datos de la app no se destruyen. En modo gestionado también quita la app
+de las rutas de Caddy.
 
 Elimina el sitio de Apache:
 
@@ -239,19 +244,9 @@ sudo rm /etc/nginx/sites-available/app.example.com
 sudo nginx -t && sudo systemctl reload nginx
 ```
 
-Después elimina el stack. Abre el servidor, ve a **Contenedores**, busca el stack con el nombre de la app
-en **Stacks** y elige **Eliminar**. Confirma el diálogo. Talaia detiene y elimina sus contenedores y borra
-los archivos Compose; conserva los volúmenes, así que los datos de la app no se destruyen.
-
-La acción del stack no elimina las imágenes `talaia/<app>:*`. Si ya no necesitas las copias para volver
-atrás, lístalas y elimínalas en el servidor:
-
-```
-sudo docker image ls talaia/<app>
-sudo docker image rm talaia/<app>:<etiqueta>
-```
-
-El registro DNS puede quedarse si vas a reutilizar el nombre; si no, elimínalo en tu proveedor de DNS.
+La API ya ha eliminado el stack y las imágenes; no hace falta quitarlos desde la página del servidor. Los
+volúmenes con nombre se quedan en el servidor, así que elimínalos aparte si ya no necesitas los datos. El
+registro DNS puede quedarse si vas a reutilizar el nombre; si no, elimínalo en tu proveedor de DNS.
 
 ## Solución de problemas
 

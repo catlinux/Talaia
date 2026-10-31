@@ -13,6 +13,12 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+## [0.6.45] - 2026-10-31
+
+### Cambiado
+
+- Core y agente: eliminar una app (ahora confirmando su nombre) detiene y quita su stack, borra sus imágenes talaia/<app> y su espacio de construcción (nuevo comando AppCleanup), vuelve a aplicar el proxy gestionado sin sus dominios y solo entonces la borra de la base de datos. Los volúmenes con nombre se conservan y no se toca nada más del servidor.
+
 ## [0.6.44] - 2026-10-31
 
 ### Corregido
@@ -969,7 +975,8 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
   `.gitattributes` y `.gitignore`.
 - Licencia WNCL-1.0 aplicada: archivo `LICENSE` y sección de créditos en los README.
 
-[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.6.44...HEAD
+[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.6.45...HEAD
+[0.6.45]: https://github.com/catlinux/Talaia/releases/tag/v0.6.45
 [0.6.44]: https://github.com/catlinux/Talaia/releases/tag/v0.6.44
 [0.6.43]: https://github.com/catlinux/Talaia/releases/tag/v0.6.43
 [0.6.42]: https://github.com/catlinux/Talaia/releases/tag/v0.6.42

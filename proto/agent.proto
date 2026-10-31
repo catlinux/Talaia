@@ -46,6 +46,7 @@ message CoreMsg {
     ProxyInstall proxy_install = 32;
     GitProbe git_probe = 33;
     AppPortPick app_port_pick = 34;
+    AppCleanup app_cleanup = 35;
   }
 }
 
@@ -317,6 +318,13 @@ message AppRelease {
 // AppPortPick asks the agent for a free TCP port on 127.0.0.1 in its app
 // range. The succeeded JobEvent output is the port in decimal.
 message AppPortPick {
+  // Stack name, as in StackWrite.
+  string name = 1;
+}
+
+// AppCleanup removes the images talaia/<name>:* and the build workspace of an
+// app. It never removes volumes, other images or other stacks.
+message AppCleanup {
   // Stack name, as in StackWrite.
   string name = 1;
 }

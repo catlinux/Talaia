@@ -34,6 +34,7 @@ const (
 	releaseTimeout      = 10 * time.Minute
 	proxyInstallTimeout = 10 * time.Minute
 	proxyApplyTimeout   = time.Minute
+	appCleanupTimeout   = 5 * time.Minute
 )
 
 // rememberedJobs is how many finished jobs the executor remembers to answer a
@@ -57,6 +58,9 @@ var errNoRelease = errors.New("the app releaser is not available on this agent")
 
 // errNoPorts is the failure of a port command without the port picker.
 var errNoPorts = errors.New("the app port picker is not available on this agent")
+
+// errNoCleanup is the failure of a cleanup command without the cleaner.
+var errNoCleanup = errors.New("the app cleanup is not available on this agent")
 
 // errNoProxy is the failure of a proxy command without the proxy manager.
 var errNoProxy = errors.New("the proxy manager is not available on this agent")
@@ -98,6 +102,11 @@ type AppReleaser interface {
 	Release(ctx context.Context, app *agentv1.AppRelease) (string, error)
 }
 
+// AppCleaner removes the images and build workspace of an app.
+type AppCleaner interface {
+	Cleanup(ctx context.Context, name string) (string, error)
+}
+
 // PortPicker chooses a free TCP port on 127.0.0.1 for an app.
 type PortPicker interface {
 	Pick(ctx context.Context) (proxy.Port, error)
@@ -120,6 +129,8 @@ type Executor struct {
 	builds AppBuilder
 	// releases is nil until WithRelease sets it.
 	releases AppReleaser
+	// cleanups is nil until WithCleanup sets it.
+	cleanups AppCleaner
 	// ports is nil until WithPorts sets it.
 	ports PortPicker
 	// proxy is nil until WithProxy sets it.
@@ -176,6 +187,12 @@ func (e *Executor) WithRelease(releaser AppReleaser) *Executor {
 	return e
 }
 
+// WithCleanup lets the executor remove the images and build workspace of an app.
+func (e *Executor) WithCleanup(cleaner AppCleaner) *Executor {
+	e.cleanups = cleaner
+	return e
+}
+
 // WithPorts lets the executor pick host ports for apps.
 func (e *Executor) WithPorts(picker PortPicker) *Executor {
 	e.ports = picker
@@ -221,6 +238,7 @@ func (e *Executor) Handle(ctx context.Context, msg *agentv1.CoreMsg, emit func(*
 	appSource, appBuild := msg.GetAppSource(), msg.GetAppBuild()
 	appRelease := msg.GetAppRelease()
 	appPortPick := msg.GetAppPortPick()
+	appCleanup := msg.GetAppCleanup()
 	proxyInstall, proxyApply := msg.GetProxyInstall(), msg.GetProxyApply()
 	list, remove := msg.GetListResources(), msg.GetRemoveResources()
 	updateCommand := msg.GetAgentUpdate()
@@ -228,7 +246,7 @@ func (e *Executor) Handle(ctx context.Context, msg *agentv1.CoreMsg, emit func(*
 	aptUpgrade, hostReboot := msg.GetAptUpgrade(), msg.GetHostReboot()
 	serviceAction := msg.GetServiceAction()
 	readJournal := msg.GetReadJournal()
-	if action == nil && logs == nil && write == nil && stackAction == nil && read == nil && adopt == nil && appSource == nil && appBuild == nil && appRelease == nil && appPortPick == nil && proxyInstall == nil && proxyApply == nil && list == nil && remove == nil && updateCommand == nil && aptStatus == nil && aptUpgrade == nil && hostReboot == nil && serviceAction == nil && readJournal == nil {
+	if action == nil && logs == nil && write == nil && stackAction == nil && read == nil && adopt == nil && appSource == nil && appBuild == nil && appRelease == nil && appPortPick == nil && appCleanup == nil && proxyInstall == nil && proxyApply == nil && list == nil && remove == nil && updateCommand == nil && aptStatus == nil && aptUpgrade == nil && hostReboot == nil && serviceAction == nil && readJournal == nil {
 		return false
 	}
 
@@ -350,6 +368,16 @@ func (e *Executor) Handle(ctx context.Context, msg *agentv1.CoreMsg, emit func(*
 				return "", errors.New("the port picker returned a port outside the app range")
 			}
 			return strconv.Itoa(int(port.Number)), nil
+		})
+	case appCleanup != nil:
+		go e.execute(ctx, jobID, "app cleanup "+appCleanup.GetName(), appCleanupTimeout, emit, func(ctx context.Context) (string, error) {
+			if e.cleanups == nil {
+				return "", errNoCleanup
+			}
+			if !stacks.ValidName(appCleanup.GetName()) {
+				return "", errors.New("invalid stack name")
+			}
+			return e.cleanups.Cleanup(ctx, appCleanup.GetName())
 		})
 	case proxyInstall != nil:
 		go e.execute(ctx, jobID, "proxy install "+proxyInstall.GetAction().String(), proxyInstallTimeout, emit, func(ctx context.Context) (string, error) {

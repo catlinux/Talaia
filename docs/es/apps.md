@@ -318,8 +318,10 @@ que Talaia genera para apps de Git y de imagen no montan el socket de Docker, no
 privilegiados y fijan un límite de 1 CPU y 512 MB de memoria. Quien tiene `stack.edit` puede cambiarlo, y
 por eso el permiso equivale a root. Talaia nunca ejecuta un prune global de Docker.
 
-Eliminar el registro de la app por la API no elimina su stack Compose ni su sitio web; la eliminación se
-explica en [apache.md](apache.md#eliminar-una-app-y-su-sitio).
+Eliminar una app por la API detiene y elimina su stack Compose y sus imágenes, borra su espacio de
+construcción, conserva los volúmenes con nombre y solo después elimina sus filas. El sitio web externo
+sigue siendo tuyo; el procedimiento completo está en
+[apache.md](apache.md#eliminar-una-app-y-su-sitio).
 
 ## Solución de problemas
 

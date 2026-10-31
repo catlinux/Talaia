@@ -199,20 +199,24 @@ your nginx sites are not touched.
 
 ## Remove an app and its site
 
-This version has no **Delete app** button in the panel. Remove the app record through the API, then remove
-the site and the stack in this order. The app id is the last part of the app page address, `/apps/<id>`.
-While signed in to the panel, run this in the browser console on the panel tab:
+This version has no **Delete app** button in the panel. Remove the app through the API, then remove its
+website. The app id is the last part of the app page address, `/apps/<id>`. While signed in to the panel,
+run this in the browser console on the panel tab, with the app name where `<app-name>` is:
 
 ```js
 fetch('/api/v1/apps/<app-id>', {
   method: 'DELETE',
   headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ confirm_name: '<app-name>' }),
 })
 ```
 
-It needs `stack.edit` on the app and uses your current session; an API key cannot delete an app. It
-returns `204` when it succeeds. It deletes the app, its variables, its deployment history and its domains.
-It does **not** stop the containers, remove the Compose stack or change the website.
+It needs `stack.edit` on the app and uses your current session; an API key cannot delete an app. The
+confirmation must be the app name, the Compose stack name. The request is refused with `409` when a
+deployment is building or releasing, or when the server agent is offline. It returns `200` with an
+`output` that summarises what was removed. Talaia stops and removes the containers and the Compose files,
+removes the images `talaia/<app>:*` and the build workspace, and keeps the named volumes, so the app data
+is not destroyed. In managed mode it also removes the app from the Caddy routes.
 
 Remove the Apache site:
 
@@ -236,19 +240,9 @@ sudo rm /etc/nginx/sites-available/app.example.com
 sudo nginx -t && sudo systemctl reload nginx
 ```
 
-Then remove the stack. Open the server, go to **Containers**, find the stack with the app name in
-**Stacks** and choose **Remove**. Confirm the dialog. Talaia stops and removes its containers and deletes
-the Compose files; it keeps the volumes, so the app data is not destroyed.
-
-The images `talaia/<app>:*` are not removed by the stack action. If you no longer need the rollback
-copies, list and remove them on the server:
-
-```
-sudo docker image ls talaia/<app>
-sudo docker image rm talaia/<app>:<tag>
-```
-
-The DNS record can stay if you plan to reuse the name; otherwise remove it at your DNS provider.
+The API already removed the stack and images; you do not need to remove them from the server page. Named
+volumes stay on the server, so remove them separately if you no longer need the data. The DNS record can
+stay if you plan to reuse the name; otherwise remove it at your DNS provider.
 
 ## Troubleshooting
 

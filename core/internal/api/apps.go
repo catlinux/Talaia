@@ -17,9 +17,11 @@ import (
 	"github.com/go-chi/chi/v5"
 	"golang.org/x/crypto/ssh"
 
+	"github.com/catlinux/Talaia/core/internal/deploy"
 	"github.com/catlinux/Talaia/core/internal/rbac"
 	"github.com/catlinux/Talaia/core/internal/store"
 	"github.com/catlinux/Talaia/core/internal/templates"
+	agentv1 "github.com/catlinux/Talaia/proto/gen/go"
 )
 
 // AppStore is the part of the store the app API needs.
@@ -53,6 +55,14 @@ type DeploymentQueue interface {
 	Enqueue(ctx context.Context, appID, trigger, commit string) error
 }
 
+// AppCleaner removes the server resources of an app before its rows are
+// deleted. HubAgent implements it.
+type AppCleaner interface {
+	RemoveStack(ctx context.Context, serverID, name string) (string, error)
+	CleanupApp(ctx context.Context, serverID, name string) (string, error)
+	ApplyProxyRoutes(ctx context.Context, serverID string, routes []*agentv1.ProxyRoute) (string, error)
+}
+
 // HostResolver resolves domain names for the warning of a new domain.
 type HostResolver interface {
 	LookupHost(ctx context.Context, host string) ([]string, error)
@@ -64,6 +74,7 @@ type AppDeps struct {
 	Store     AppStore
 	Box       AppSecretBox
 	Queue     DeploymentQueue
+	Cleaner   AppCleaner
 	Audit     Auditor
 	Servers   ServerLister
 	Agents    LiveAgents
@@ -81,6 +92,20 @@ var (
 	appServiceRe = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,127}$`)
 	appEnvKeyRe  = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]{0,127}$`)
 )
+
+const (
+	appDeleteStackTimeout   = 10 * time.Minute
+	appDeleteCleanupTimeout = 5 * time.Minute
+	appDeleteProxyTimeout   = time.Minute
+)
+
+type appDeleteRequest struct {
+	ConfirmName string `json:"confirm_name"`
+}
+
+type appDeleteResponse struct {
+	Output string `json:"output"`
+}
 
 type AppResponse struct {
 	ID              string    `json:"id"`
@@ -439,12 +464,118 @@ func (h appHandler) delete(w http.ResponseWriter, r *http.Request) {
 		appStoreError(w, err)
 		return
 	}
+
+	var request appDeleteRequest
+	if err := decodeJSON(w, r, &request); err != nil || request.ConfirmName != app.StackName {
+		writeError(w, http.StatusBadRequest, "invalid_request")
+		return
+	}
+
+	deployments, err := h.deps.Store.ListDeployments(r.Context(), app.ID, 500)
+	if err != nil {
+		internal(w, "list app deployments", err)
+		return
+	}
+	for _, deployment := range deployments {
+		if deployment.State == store.DeploymentBuilding || deployment.State == store.DeploymentReleasing {
+			writeError(w, http.StatusConflict, "deployment_running")
+			return
+		}
+	}
+
+	if h.deps.Agents == nil {
+		writeError(w, http.StatusConflict, "agent_offline")
+		return
+	}
+	agent, connected := connectedAgent(h.deps.Agents, app.ServerID)
+	if !connected {
+		writeError(w, http.StatusConflict, "agent_offline")
+		return
+	}
+	if h.deps.Cleaner == nil {
+		writeError(w, http.StatusServiceUnavailable, "app_cleanup_unavailable")
+		return
+	}
+
+	stackCtx, cancel := context.WithTimeout(r.Context(), appDeleteStackTimeout)
+	stackOutput, err := h.deps.Cleaner.RemoveStack(stackCtx, app.ServerID, app.StackName)
+	cancel()
+	if err != nil && !errors.Is(err, deploy.ErrStackNotFound) {
+		appCleanupFailed(w, "remove the app stack", err)
+		return
+	}
+
+	cleanupCtx, cancel := context.WithTimeout(r.Context(), appDeleteCleanupTimeout)
+	cleanupOutput, err := h.deps.Cleaner.CleanupApp(cleanupCtx, app.ServerID, app.StackName)
+	cancel()
+	if err != nil {
+		appCleanupFailed(w, "remove the app images and build workspace", err)
+		return
+	}
+
+	proxyOutput := ""
+	if agent.ProxyMode == agentv1.ProxyMode_PROXY_MODE_MANAGED {
+		routes, err := proxyRoutesExcept(r.Context(), h.deps.Store, app.ServerID, app.ID)
+		if err != nil {
+			internal(w, "build the proxy routes", err)
+			return
+		}
+		proxyCtx, cancel := context.WithTimeout(r.Context(), appDeleteProxyTimeout)
+		proxyOutput, err = h.deps.Cleaner.ApplyProxyRoutes(proxyCtx, app.ServerID, routes)
+		cancel()
+		if err != nil {
+			appCleanupFailed(w, "apply the proxy routes", err)
+			return
+		}
+	}
+
 	if err := h.deps.Store.DeleteApp(r.Context(), app.ID); err != nil {
 		appStoreError(w, err)
 		return
 	}
-	h.audit(r, "app_deleted", map[string]any{"app_id": app.ID, "server_id": app.ServerID, "stack": app.StackName})
-	w.WriteHeader(http.StatusNoContent)
+	h.audit(r, "app_deleted", map[string]any{
+		"app_id": app.ID, "server_id": app.ServerID, "stack": app.StackName,
+		"removed_images": removedImageRefs(cleanupOutput), "volumes_kept": true,
+	})
+
+	output := appDeleteOutput(stackOutput, cleanupOutput, proxyOutput)
+	writeJSON(w, http.StatusOK, appDeleteResponse{Output: output})
+}
+
+// appCleanupFailed reports which agent or server step failed without exposing
+// the command output, which may contain app data.
+func appCleanupFailed(w http.ResponseWriter, step string, err error) {
+	slog.Error("app cleanup failed", "step", step, "error", err)
+	writeJSON(w, http.StatusInternalServerError, errorBody{Error: errorDetail{
+		Code: "app_cleanup_failed", Reason: step,
+	}})
+}
+
+func appDeleteOutput(stackOutput, cleanupOutput, proxyOutput string) string {
+	parts := make([]string, 0, 3)
+	for _, output := range []string{stackOutput, cleanupOutput, proxyOutput} {
+		if output = strings.TrimSpace(output); output != "" {
+			parts = append(parts, output)
+		}
+	}
+	if len(parts) == 0 {
+		parts = append(parts, "the app was removed")
+	}
+	parts = append(parts, "Named volumes were kept.")
+	return strings.Join(parts, "\n")
+}
+
+// removedImageRefs extracts the image references from the cleanup output for
+// the audit details. The output stays in the response.
+func removedImageRefs(output string) []string {
+	refs := make([]string, 0)
+	for _, line := range strings.Split(output, "\n") {
+		line = strings.TrimSpace(line)
+		if ref, ok := strings.CutPrefix(line, "removed image "); ok && ref != "" {
+			refs = append(refs, ref)
+		}
+	}
+	return refs
 }
 
 func applyAppUpdate(app *store.App, request appUpdateRequest) {

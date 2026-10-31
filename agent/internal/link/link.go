@@ -638,8 +638,8 @@ func jitter(backoff time.Duration) time.Duration {
 }
 
 // newExecutor builds the executor of a real agent: container actions, stacks,
-// app source, builds, releases and host ports, the proxy, Docker resources,
-// agent updates, apt and host operations, and the journal.
+// app source, builds, releases, cleanup and host ports, the proxy, Docker
+// resources, agent updates, apt and host operations, and the journal.
 func newExecutor(cfg config.Config, identity *enroll.Identity, checker *apt.Checker, aptOps jobs.AptOperations, proxyManager *proxy.Manager) *jobs.Executor {
 	docker := jobs.NewDockerActions()
 	return jobs.New(docker).
@@ -647,6 +647,7 @@ func newExecutor(cfg config.Config, identity *enroll.Identity, checker *apt.Chec
 		WithSource(source.NewDefault()).
 		WithBuild(appbuild.NewDefault()).
 		WithRelease(release.NewDefault()).
+		WithCleanup(jobs.NewAppCleanup()).
 		WithPorts(proxy.NewDefaultPicker()).
 		WithProxy(proxyManager).
 		WithResources(docker).

@@ -414,9 +414,10 @@ func serve() error {
 		panel.Containers = &api.ContainerDeps{Agents: agentHub, Dispatcher: agentHub, Jobs: st, Audit: st, Servers: st, Alerts: engine}
 
 		templateCatalog := loadTemplates(logger)
+		agentClient := deploy.NewHubAgent(deploy.HubAgentOptions{Dispatcher: agentHub, Jobs: st})
 		deployer := deploy.New(deploy.Options{
 			Store:     st,
-			Agent:     deploy.NewHubAgent(deploy.HubAgentOptions{Dispatcher: agentHub, Jobs: st}),
+			Agent:     agentClient,
 			Box:       box,
 			Modes:     agentHub,
 			Templates: templateCatalog,
@@ -440,7 +441,7 @@ func serve() error {
 			publicURL = cfg.AllowedOrigins[0]
 		}
 		appDeps := &api.AppDeps{
-			Store: st, Box: box, Queue: deployer, Audit: st, Servers: st, Agents: agentHub,
+			Store: st, Box: box, Queue: deployer, Cleaner: agentClient, Audit: st, Servers: st, Agents: agentHub,
 			Resolver: net.DefaultResolver, PublicURL: publicURL, Templates: templateCatalog,
 		}
 		panel.Apps = appDeps

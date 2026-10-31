@@ -2,6 +2,7 @@ package deploy
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -111,5 +112,61 @@ func TestHubAgentPicksAPort(t *testing.T) {
 	}
 	if len(dispatcher.messages) != 1 || dispatcher.messages[0].GetAppPortPick().GetName() != "shop" {
 		t.Errorf("messages = %v", dispatcher.messages)
+	}
+}
+
+func TestHubAgentRemoveStackAndCleanUp(t *testing.T) {
+	jobs := newFakeJobs()
+	jobs.outputs["job-1"] = []store.Job{{ID: "job-1", State: store.JobSucceeded, Output: "removed"}}
+	dispatcher := &fakeDispatcher{}
+	agent := NewHubAgent(HubAgentOptions{Dispatcher: dispatcher, Jobs: jobs, PollInterval: time.Millisecond})
+
+	output, err := agent.RemoveStack(context.Background(), "server-1", "shop")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if output != "removed" || len(dispatcher.messages) != 1 {
+		t.Fatalf("output = %q, messages = %v", output, dispatcher.messages)
+	}
+	action := dispatcher.messages[0].GetStackAction()
+	if action.GetName() != "shop" || action.GetAction() != agentv1.StackActionType_STACK_ACTION_TYPE_REMOVE {
+		t.Errorf("remove command = %v", action)
+	}
+
+	jobs.outputs["job-1"] = []store.Job{{ID: "job-1", State: store.JobSucceeded, Output: "cleaned"}}
+	output, err = agent.CleanupApp(context.Background(), "server-1", "shop")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if output != "cleaned" || dispatcher.messages[1].GetAppCleanup().GetName() != "shop" {
+		t.Errorf("cleanup output = %q, messages = %v", output, dispatcher.messages)
+	}
+}
+
+func TestHubAgentTreatsAMissingStackAsRemoved(t *testing.T) {
+	jobs := newFakeJobs()
+	jobs.outputs["job-1"] = []store.Job{{ID: "job-1", State: store.JobFailed, Message: "the stack does not exist"}}
+	agent := NewHubAgent(HubAgentOptions{Dispatcher: &fakeDispatcher{}, Jobs: jobs, PollInterval: time.Millisecond})
+	if _, err := agent.RemoveStack(context.Background(), "server-1", "shop"); !errors.Is(err, ErrStackNotFound) {
+		t.Fatalf("RemoveStack error = %v, want ErrStackNotFound", err)
+	}
+}
+
+func TestHubAgentAppliesProxyRoutes(t *testing.T) {
+	jobs := newFakeJobs()
+	jobs.outputs["job-1"] = []store.Job{{ID: "job-1", State: store.JobSucceeded, Output: "applied"}}
+	dispatcher := &fakeDispatcher{}
+	agent := NewHubAgent(HubAgentOptions{Dispatcher: dispatcher, Jobs: jobs, PollInterval: time.Millisecond})
+	routes := []*agentv1.ProxyRoute{{Hostname: "app.example.com", UpstreamService: "app", UpstreamPort: 3000}}
+	output, err := agent.ApplyProxyRoutes(context.Background(), "server-1", routes)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if output != "applied" || len(dispatcher.messages) != 1 {
+		t.Fatalf("output = %q, messages = %v", output, dispatcher.messages)
+	}
+	applied := dispatcher.messages[0].GetProxyApply().GetRoutes()
+	if len(applied) != 1 || applied[0].GetHostname() != "app.example.com" {
+		t.Errorf("routes = %v", applied)
 	}
 }

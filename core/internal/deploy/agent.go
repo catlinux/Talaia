@@ -20,6 +20,9 @@ const (
 	jobKindRead    = "deploy_stack_read"
 	jobKindWrite   = "deploy_stack_write"
 	jobKindUp      = "deploy_stack_up"
+	jobKindRemove  = "deploy_stack_remove"
+	jobKindCleanup = "deploy_app_cleanup"
+	jobKindProxy   = "deploy_proxy_apply"
 	jobKindPort    = "deploy_port_pick"
 
 	defaultPollInterval = time.Second
@@ -131,6 +134,48 @@ func (a *HubAgent) UpStack(ctx context.Context, serverID, name string) (string, 
 	job, err := a.runJob(ctx, serverID, jobKindUp, func(jobID string) *agentv1.CoreMsg {
 		return &agentv1.CoreMsg{JobId: jobID, Cmd: &agentv1.CoreMsg_StackAction{
 			StackAction: &agentv1.StackAction{Name: name, Action: agentv1.StackActionType_STACK_ACTION_TYPE_UP},
+		}}
+	})
+	if err != nil {
+		return job.Output, err
+	}
+	return job.Output, nil
+}
+
+// RemoveStack stops and removes the app stack, keeping its named volumes.
+func (a *HubAgent) RemoveStack(ctx context.Context, serverID, name string) (string, error) {
+	job, err := a.runJob(ctx, serverID, jobKindRemove, func(jobID string) *agentv1.CoreMsg {
+		return &agentv1.CoreMsg{JobId: jobID, Cmd: &agentv1.CoreMsg_StackAction{
+			StackAction: &agentv1.StackAction{Name: name, Action: agentv1.StackActionType_STACK_ACTION_TYPE_REMOVE},
+		}}
+	})
+	if err != nil {
+		if strings.Contains(strings.ToLower(err.Error()), "stack does not exist") {
+			return job.Output, ErrStackNotFound
+		}
+		return job.Output, err
+	}
+	return job.Output, nil
+}
+
+// CleanupApp removes the images and build workspace of an app.
+func (a *HubAgent) CleanupApp(ctx context.Context, serverID, name string) (string, error) {
+	job, err := a.runJob(ctx, serverID, jobKindCleanup, func(jobID string) *agentv1.CoreMsg {
+		return &agentv1.CoreMsg{JobId: jobID, Cmd: &agentv1.CoreMsg_AppCleanup{
+			AppCleanup: &agentv1.AppCleanup{Name: name},
+		}}
+	})
+	if err != nil {
+		return job.Output, err
+	}
+	return job.Output, nil
+}
+
+// ApplyProxyRoutes replaces the managed proxy configuration of a server.
+func (a *HubAgent) ApplyProxyRoutes(ctx context.Context, serverID string, routes []*agentv1.ProxyRoute) (string, error) {
+	job, err := a.runJob(ctx, serverID, jobKindProxy, func(jobID string) *agentv1.CoreMsg {
+		return &agentv1.CoreMsg{JobId: jobID, Cmd: &agentv1.CoreMsg_ProxyApply{
+			ProxyApply: &agentv1.ProxyApply{Routes: routes},
 		}}
 	})
 	if err != nil {

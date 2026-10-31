@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -143,11 +144,18 @@ func NewProxyActionHandler(deps ProxyDeps) http.Handler {
 }
 
 func proxyRoutes(r *http.Request, state AppStore, serverID string) ([]*agentv1.ProxyRoute, error) {
-	domains, err := state.ListDomains(r.Context())
+	return proxyRoutesExcept(r.Context(), state, serverID, "")
+}
+
+// proxyRoutesExcept builds the routes of a server, leaving out the domains of
+// one app. The delete flow uses it to apply the proxy without the app it is
+// removing, before the app rows are deleted.
+func proxyRoutesExcept(ctx context.Context, state AppStore, serverID, excludeAppID string) ([]*agentv1.ProxyRoute, error) {
+	domains, err := state.ListDomains(ctx)
 	if err != nil {
 		return nil, err
 	}
-	apps, err := state.ListApps(r.Context())
+	apps, err := state.ListApps(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -158,7 +166,7 @@ func proxyRoutes(r *http.Request, state AppStore, serverID string) ([]*agentv1.P
 	routes := make([]*agentv1.ProxyRoute, 0, len(domains))
 	for _, domain := range domains {
 		app, ok := byID[domain.AppID]
-		if !ok || app.ServerID != serverID {
+		if !ok || app.ServerID != serverID || app.ID == excludeAppID {
 			continue
 		}
 		service := domain.Service
