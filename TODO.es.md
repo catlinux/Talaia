@@ -152,11 +152,17 @@ Decisiones cerradas el 2026-10-30: proxy externo por defecto (Talaia nunca toca 
 - [x] Core: webhooks de push firmados de GitHub y sondeo de la rama
 - [x] Agente: builds con Dockerfile, uno a la vez por servidor
 - [x] Agente: proxy externo por defecto (app en un puerto libre de `127.0.0.1`, bloque de Apache/nginx en el panel) y Caddy gestionado opcional solo si 80/443 están libres
-- [ ] Agente: release sin corte, vuelta atrás a una de las tres últimas imágenes y limpieza de imágenes
-- [ ] Core: canalización de despliegue (un despliegue por app, pushes sustituidos, logs) y su API
+- [x] Agente: release sin corte, vuelta atrás a una de las tres últimas imágenes y limpieza de imágenes
+- [x] Core: canalización de despliegue (un despliegue por app, pushes sustituidos, logs) y su API
 - [x] Catálogo de plantillas (15 apps) publicado con el core
 - [x] Panel: Apps, asistente de nueva app (maqueta 4), Dominios y Plantillas
 - [ ] Docs EN/ES, revisión de seguridad Opus, prueba real del criterio y cierre en 0.7.0
+  - [x] Docs EN/ES (guías de apps y de Apache) y revisión Opus de los pasos 5-13 (encontrado y corregido: puerto del anfitrión, variables en ejecución, borrado de apps, formato de la clave de despliegue, bloque de Apache)
+  - [ ] Actualizar las versiones de imagen fijadas de las plantillas a las estables actuales (son de finales de 2024)
+  - [ ] Plantillas en modo gestionado (unirlas a la red `talaia-proxy`) o declararlas solo para modo externo
+  - [ ] Mostrar una vez la contraseña generada de una app de plantilla, para las apps que la piden en el primer acceso
+  - [ ] Prueba e2e del modo gestionado con Docker (equipo Debian de pruebas o CI; el PC con Windows no tiene Docker)
+  - [ ] Licencias de las imágenes de plantillas y de Caddy en `CREDITS.md` (script del mantenedor)
 
 ## Bloque de operación (decidido el 2026-10-20, antes de cerrar la fase 2)
 

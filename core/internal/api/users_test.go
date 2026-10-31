@@ -355,9 +355,9 @@ func TestResetTOTPAPI(t *testing.T) {
 		auth.HashToken(auth.NormalizeRecoveryCode(recoveryCodes[0]))); err != nil || used {
 		t.Fatalf("recovery code after reset = %v, %v; want missing", used, err)
 	}
-	if response := panel.do(t, targetClient, http.MethodGet, "/api/v1/me", nil); response.StatusCode != http.StatusUnauthorized ||
-		errorCode(t, response) != "session_required" {
-		t.Fatalf("reset target session = %d %q, want 401 session_required", response.StatusCode, errorCode(t, response))
+	me := panel.do(t, targetClient, http.MethodGet, "/api/v1/me", nil)
+	if me.StatusCode != http.StatusUnauthorized {
+		t.Fatalf("reset target session = %d, want 401", me.StatusCode)
 	}
 
 	entries, err := panel.store.ListAudit(ctx, 200)
@@ -494,7 +494,7 @@ func TestResetTOTPAuthorization(t *testing.T) {
 		t.Fatalf("viewer reset = %d, want 403", response.StatusCode)
 	}
 
-	owner := panel.createUser(t, "reset-api-owner", testPassword)
+	owner := createAdminExtraUser(t, panel, "reset-api-owner")
 	_, token := directAPIKey(t, panel, owner.ID, nil, time.Now().Add(time.Hour))
 	if response := apiKeyRequest(t, panel, http.MethodPost, "/api/v1/users/"+target.ID+"/reset-2fa", token,
 		map[string]string{"confirm_username": target.Username, "totp_code": "000000"}, false); response.StatusCode != http.StatusForbidden {

@@ -152,11 +152,17 @@ Decisions closed on 2026-10-30: external proxy by default (Talaia never touches 
 - [x] Core: signed GitHub push webhooks and branch polling
 - [x] Agent: builds with a Dockerfile, one at a time per server
 - [x] Agent: external proxy by default (app on a free `127.0.0.1` port, Apache/nginx block shown in the panel) and optional managed Caddy only when 80/443 are free
-- [ ] Agent: zero-downtime release, rollback to one of the last three images and image cleanup
-- [ ] Core: deploy pipeline (one deploy per app, superseded pushes, logs) and its API
+- [x] Agent: zero-downtime release, rollback to one of the last three images and image cleanup
+- [x] Core: deploy pipeline (one deploy per app, superseded pushes, logs) and its API
 - [x] Template catalog (15 apps) shipped with the core
 - [x] Panel: Apps, new app wizard (mockup 4), Domains and Templates
 - [ ] Docs EN/ES, Opus security review, real test of the criterion and close at 0.7.0
+  - [x] Docs EN/ES (apps and Apache guides) and Opus review of steps 5-13 (found and fixed: host port, variables at runtime, app deletion, deploy key format, Apache block)
+  - [ ] Update the pinned image versions of the templates to current stable ones (they are from late 2024)
+  - [ ] Templates in managed mode (join the `talaia-proxy` network) or declare them external-only
+  - [ ] Show the generated password of a template app once, for apps that need it at first login
+  - [ ] End-to-end test of the managed mode with Docker (Debian test machine or CI; the Windows PC has no Docker)
+  - [ ] Licences of the template images and Caddy in `CREDITS.md` (maintainer's script)
 
 ## Operations block (decided 2026-10-20, before closing phase 2)
 

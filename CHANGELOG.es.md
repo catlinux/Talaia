@@ -13,6 +13,12 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+## [0.6.47] - 2026-10-31
+
+### Corregido
+
+- Usuarios: restablecer la verificación en dos pasos informa ahora de los dispositivos de confianza que ha quitado (un disparador de la base de datos los revocaba antes y el recuento siempre era cero); se corrigen dos pruebas que solo se ejecutan con base de datos. El TODO lista lo que falta para cerrar la fase 6.
+
 ## [0.6.46] - 2026-10-31
 
 ### Añadido
@@ -981,7 +987,8 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
   `.gitattributes` y `.gitignore`.
 - Licencia WNCL-1.0 aplicada: archivo `LICENSE` y sección de créditos en los README.
 
-[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.6.46...HEAD
+[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.6.47...HEAD
+[0.6.47]: https://github.com/catlinux/Talaia/releases/tag/v0.6.47
 [0.6.46]: https://github.com/catlinux/Talaia/releases/tag/v0.6.46
 [0.6.45]: https://github.com/catlinux/Talaia/releases/tag/v0.6.45
 [0.6.44]: https://github.com/catlinux/Talaia/releases/tag/v0.6.44

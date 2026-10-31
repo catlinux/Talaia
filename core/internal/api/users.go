@@ -258,12 +258,14 @@ func (h *userAdminHandler) resetTOTP(w http.ResponseWriter, r *http.Request) {
 		writeValidationError(w, err)
 		return
 	}
-	if err := st.ResetTOTP(r.Context(), userID); err != nil {
+	// Devices first: the database trigger on totp_secret_enc would revoke them
+	// during ResetTOTP and leave nothing to count.
+	devicesRevoked, err := st.RevokeUserDevices(r.Context(), userID)
+	if err != nil {
 		h.writeStoreError(w, err)
 		return
 	}
-	devicesRevoked, err := st.RevokeUserDevices(r.Context(), userID)
-	if err != nil {
+	if err := st.ResetTOTP(r.Context(), userID); err != nil {
 		h.writeStoreError(w, err)
 		return
 	}

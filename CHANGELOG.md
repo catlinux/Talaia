@@ -13,6 +13,12 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.6.47] - 2026-10-31
+
+### Fixed
+
+- Users: resetting two-factor authentication now reports the trusted devices it removed (a database trigger revoked them first and the count was always zero); two tests that only run with a database are fixed. TODO lists what is left before closing phase 6.
+
 ## [0.6.46] - 2026-10-31
 
 ### Added
@@ -981,7 +987,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.6.46...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.6.47...HEAD
+[0.6.47]: https://github.com/catlinux/Talaia/releases/tag/v0.6.47
 [0.6.46]: https://github.com/catlinux/Talaia/releases/tag/v0.6.46
 [0.6.45]: https://github.com/catlinux/Talaia/releases/tag/v0.6.45
 [0.6.44]: https://github.com/catlinux/Talaia/releases/tag/v0.6.44
