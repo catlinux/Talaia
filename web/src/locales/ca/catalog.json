@@ -952,72 +952,170 @@
     "cadvisor": {
       "name": "cAdvisor",
       "what": "Recull mètriques d'ús de recursos dels contenidors Docker.",
-      "ifFails": "Les mètriques dels contenidors desapareixen dels quadres i alertes. Revisa els registres i l'accés al socket de Docker abans de reiniciar."
+      "ifFails": "Les mètriques dels contenidors desapareixen dels quadres i alertes. Revisa els registres i l'accés al socket de Docker abans de reiniciar.",
+      "details": "cAdvisor recopila mètriques d’ús de recursos i rendiment dels contenidors Docker. Les exposa en format Prometheus, normalment al port 8080, i necessita accés al socket de Docker i als sistemes de fitxers de l’amfitrió. Sol consultar-les Prometheus i mostrar-les a Grafana. No desa mètriques a llarg termini.",
+      "stop": "Aturar el contenidor elimina les mètriques de contenidors de Prometheus; els contenidors continuen funcionant. No es perden dades d’aplicacions. Torna a arrencar-lo i revisa el muntatge del socket de Docker si desapareixen les mètriques.",
+      "problems": [
+        "No hi ha mètriques de contenidors — revisa els registres del contenidor i que `/var/run/docker.sock` i `/sys` estiguin muntats.",
+        "Prometheus diu que l’objectiu està caigut — revisa el port publicat i l’URL de consulta.",
+        "Les mètriques són incompletes — revisa els muntatges de l’amfitrió per a `/var/lib/docker` i `/sys/fs/cgroup`."
+      ]
     },
     "loki": {
       "name": "Grafana Loki",
       "what": "Desa i consulta registres en un magatzem compacte basat en etiquetes.",
-      "ifFails": "La cerca de registres i les alertes basades en registres deixen de funcionar; els registres nous es poden descartar. Comprova l'espai de disc i la configuració abans de reiniciar."
+      "ifFails": "La cerca de registres i les alertes basades en registres deixen de funcionar; els registres nous es poden descartar. Comprova l'espai de disc i la configuració abans de reiniciar.",
+      "details": "Grafana Loki emmagatzema i consulta registres usant etiquetes en lloc d’un índex de text complet. Les aplicacions o Promtail li envien registres, i Grafana els consulta. Desa les dades en un directori d’emmagatzematge o en un magatzem d’objectes, segons la configuració. No és una base de dades general i està pensat per a volums grans de registres amb poc cost.",
+      "stop": "Aturar el contenidor atura la ingesta i les consultes de registres. Les dades existents continuen al seu volum o magatzem d’objectes, però els registres nous es poden perdre si els clients no poden guardar-los en memòria intermèdia. Conserva el volum de dades i revisa la configuració abans de reiniciar.",
+      "problems": [
+        "Grafana no pot consultar registres — revisa els registres del contenidor de Loki i l’URL de la font de dades.",
+        "No arriben registres nous — revisa la configuració de Promtail o del client i l’endpoint d’enviament de Loki.",
+        "El disc creix ràpid — revisa la retenció i la mida del directori de dades de Loki."
+      ]
     },
     "promtail": {
       "name": "Grafana Promtail",
       "what": "Envia registres de l'amfitrió o dels contenidors a Grafana Loki.",
-      "ifFails": "Els registres nous deixen d'arribar a Loki, però les aplicacions continuen funcionant. Revisa la configuració i la connexió amb Loki abans de reiniciar."
+      "ifFails": "Els registres nous deixen d'arribar a Loki, però les aplicacions continuen funcionant. Revisa la configuració i la connexió amb Loki abans de reiniciar.",
+      "details": "Promtail llegeix fitxers de registre i registres de contenidors i els envia a Grafana Loki. Descobreix objectius a partir de fitxers de configuració i afegeix etiquetes per poder cercar els registres. S’executa com un agent petit a cada amfitrió o com a contenidor. No desa registres per si mateix; els desa Loki.",
+      "stop": "Aturar el contenidor atura l’enviament de registres nous a Loki; les aplicacions i els seus fitxers de registre continuen funcionant. Els registres es poden perdre si els fitxers roten mentre Promtail està aturat. Torna a arrencar-lo i revisa la connexió amb Loki.",
+      "problems": [
+        "Falten registres a Loki — revisa els registres de Promtail i la configuració de lectura.",
+        "Promtail no arriba a Loki — revisa l’URL de Loki i l’accés de xarxa.",
+        "Les etiquetes són incorrectes — revisa les regles de reetiquetatge i el fitxer de posicions."
+      ]
     },
     "wordpress": {
       "name": "WordPress",
       "what": "Publica llocs i blocs i en desa el contingut en una base de dades.",
-      "ifFails": "El lloc dóna errors o deixa de carregar-se. Revisa els registres del contenidor, la connexió a la base de dades i l'espai de disc abans de reiniciar."
+      "ifFails": "El lloc dóna errors o deixa de carregar-se. Revisa els registres del contenidor, la connexió a la base de dades i l'espai de disc abans de reiniciar.",
+      "details": "WordPress és una plataforma de publicació per a llocs web i blogs. Aquesta imatge executa WordPress amb PHP i necessita una base de dades MySQL o MariaDB a part. Els fitxers pujats i els temes viuen a `/var/www/html`, que hauria d’estar en un volum. La base de dades desa entrades, usuaris i ajustos.",
+      "stop": "Aturar el contenidor deixa el lloc fora de línia. La base de dades i els fitxers pujats continuen als seus volums. Atura’l durant el manteniment o quan un altre servidor web ocupi el port; revisa els registres i la base de dades abans de reiniciar.",
+      "problems": [
+        "El lloc mostra un error de base de dades — revisa l’amfitrió, el nom, l’usuari i la contrasenya de la base de dades.",
+        "Fallen les pujades — revisa els permisos i l’espai lliure del volum de WordPress.",
+        "El lloc va lent o retorna 500 — revisa els registres del contenidor i el límit de memòria de PHP."
+      ]
     },
     "nextcloud": {
       "name": "Nextcloud",
       "what": "Ofereix sincronització, compartició i col·laboració de fitxers privada.",
-      "ifFails": "Els usuaris no poden sincronitzar ni obrir fitxers. Revisa la base de dades, el volum de dades i els registres abans de reiniciar; no esborris el volum de dades."
+      "ifFails": "Els usuaris no poden sincronitzar ni obrir fitxers. Revisa la base de dades, el volum de dades i els registres abans de reiniciar; no esborris el volum de dades.",
+      "details": "Nextcloud ofereix sincronització privada de fitxers, compartició, calendaris i col·laboració. Aquesta imatge executa el servidor Nextcloud i necessita una base de dades i un volum de dades persistent. Els fitxers dels usuaris solen viure a `/var/www/html/data`, i la configuració a `/var/www/html/config`. No és una còpia de seguretat per si mateix; desa còpies a part.",
+      "stop": "Aturar el contenidor deixa inaccessibles la interfície web i els clients de sincronització. Els fitxers i la base de dades continuen als seus volums. Atura la base de dades després de Nextcloud, no abans, i revisa els registres abans de reiniciar.",
+      "problems": [
+        "Els usuaris no poden iniciar sessió ni sincronitzar — revisa els registres del contenidor, la connexió amb la base de dades i els dominis de confiança.",
+        "Falten fitxers — revisa el muntatge del volum de dades i el directori de dades de Nextcloud.",
+        "La instància està en mode de manteniment — revisa els registres i executa les ordres de manteniment només després d’una còpia."
+      ]
     },
     "gitea": {
       "name": "Gitea",
       "what": "Un servei Git autoallotjat per a repositoris, incidències i sol·licituds d'incorporació.",
-      "ifFails": "L'accés Git i la interfície web deixen de funcionar. Revisa la base de dades, el volum de repositoris i els registres abans de reiniciar."
+      "ifFails": "L'accés Git i la interfície web deixen de funcionar. Revisa la base de dades, el volum de repositoris i els registres abans de reiniciar.",
+      "details": "Gitea és un servei Git autoallotjat amb repositoris, incidències, pull requests i interfície web. Aquesta imatge necessita una base de dades i un volum persistent per a repositoris, avatars i configuració. Git per SSH i per HTTP depenen que el contenidor sigui accessible. És més lleuger que una instal·lació completa de GitLab.",
+      "stop": "Aturar el contenidor atura l’accés Git i la interfície web. Els repositoris i la base de dades continuen als seus volums. Atura’l durant el manteniment; revisa els registres i la base de dades abans de reiniciar.",
+      "problems": [
+        "La interfície web no carrega — revisa els registres del contenidor i la connexió amb la base de dades.",
+        "Falla el clone o el push de Git — revisa el port SSH, l’URL HTTP i el volum de repositoris.",
+        "Falten repositoris — revisa el muntatge del volum de dades i la configuració de Gitea."
+      ]
     },
     "vaultwarden": {
       "name": "Vaultwarden",
       "what": "Un servidor de gestor de contrasenyes lleuger compatible amb Bitwarden.",
-      "ifFails": "Els clients de contrasenyes no poden sincronitzar ni iniciar sessió. Revisa la base de dades i els registres abans de reiniciar; desa una còpia del volum de dades."
+      "ifFails": "Els clients de contrasenyes no poden sincronitzar ni iniciar sessió. Revisa la base de dades i els registres abans de reiniciar; desa una còpia del volum de dades.",
+      "details": "Vaultwarden és un servidor lleuger compatible amb els clients de Bitwarden. Desa contrasenyes i altres elements de la caixa forta en una base de dades SQLite, normalment a `/data`. Els clients sincronitzen per HTTPS, així que normalment s’usa un proxy invers amb un certificat vàlid. No és el servidor oficial de Bitwarden, però parla el mateix protocol.",
+      "stop": "Aturar el contenidor atura la sincronització i l’inici de sessió dels clients. La base de dades de la caixa forta continua al seu volum. Desa una còpia i no esborris el volum de dades; torna a arrencar-lo i revisa els registres si els clients no connecten.",
+      "problems": [
+        "Els clients no sincronitzen — revisa els registres del contenidor, l’URL HTTPS i el proxy invers.",
+        "La pàgina d’administració està desactivada — revisa l’opció `ADMIN_TOKEN` i reinicia el contenidor.",
+        "Falten dades — restaura el volum `/data` des d’una còpia; no recrees el contenidor sense ell."
+      ]
     },
     "minio": {
       "name": "MinIO",
       "what": "Un servidor d'emmagatzematge d'objectes compatible amb S3 per a fitxers i còpies.",
-      "ifFails": "Les aplicacions i còpies no poden llegir ni escriure objectes. Comprova l'espai de disc, els volums de dades i la salut del clúster abans de reiniciar."
+      "ifFails": "Les aplicacions i còpies no poden llegir ni escriure objectes. Comprova l'espai de disc, els volums de dades i la salut del clúster abans de reiniciar.",
+      "details": "MinIO és un servidor d’emmagatzematge d’objectes compatible amb S3. Les aplicacions el fan servir per desar fitxers, còpies i altres objectes mitjançant l’API S3. Les dades viuen en un o més directoris o discs, i la consola sol usar el port 9001. Pot executar-se com a node únic o com a clúster distribuït.",
+      "stop": "Aturar el contenidor atura l’accés S3 per a totes les aplicacions que l’usen. Les dades continuen als seus volums, però les escriptures en curs poden fallar. Conserva els volums i revisa l’espai de disc i la salut del clúster abans de reiniciar.",
+      "problems": [
+        "Les aplicacions no accedeixen als objectes — revisa els registres del contenidor, l’endpoint S3 i les credencials.",
+        "La consola no carrega — revisa el port de la consola i els ports publicats.",
+        "Un disc és ple o està desconnectat — revisa `mc admin info` i els registres de MinIO."
+      ]
     },
     "adminer": {
       "name": "Adminer",
       "what": "Una petita interfície web per gestionar bases de dades SQL.",
-      "ifFails": "La interfície web de bases de dades no està disponible, però les bases de dades continuen funcionant. Revisa els registres i l'accés a la xarxa abans de reiniciar."
+      "ifFails": "La interfície web de bases de dades no està disponible, però les bases de dades continuen funcionant. Revisa els registres i l'accés a la xarxa abans de reiniciar.",
+      "details": "Adminer és una interfície web petita per gestionar bases de dades SQL. Es connecta a MySQL, MariaDB, PostgreSQL i altres bases de dades amb un sol fitxer PHP. Aquesta imatge l’executa darrere d’un servidor web; tries el servidor de base de dades a la pàgina d’accés. És més lleuger que phpMyAdmin, però continua oferint eines potents.",
+      "stop": "Aturar el contenidor només elimina la interfície web; les bases de dades continuen funcionant. Adminer no desa dades de bases de dades. Torna a arrencar-lo i revisa els registres si la pàgina d’accés no carrega.",
+      "problems": [
+        "La pàgina d’accés no carrega — revisa els registres del contenidor i el port publicat.",
+        "No connecta amb la base de dades — revisa l’amfitrió, el port, l’usuari i si la base de dades accepta connexions remotes.",
+        "La pàgina és en blanc o dona un error de PHP — revisa els registres del contenidor i la versió de PHP."
+      ]
     },
     "phpmyadmin": {
       "name": "phpMyAdmin",
       "what": "Una interfície web per gestionar bases de dades MySQL i MariaDB.",
-      "ifFails": "La interfície web de bases de dades no està disponible, però les bases de dades continuen funcionant. Revisa el servidor web, PHP i la connexió a la base de dades abans de reiniciar."
+      "ifFails": "La interfície web de bases de dades no està disponible, però les bases de dades continuen funcionant. Revisa el servidor web, PHP i la connexió a la base de dades abans de reiniciar.",
+      "details": "phpMyAdmin és una interfície web per gestionar bases de dades MySQL i MariaDB. Aquesta imatge inclou un servidor web i PHP, i es connecta a un servidor de base de dades a part. La configuració pot venir de variables d’entorn o de `/etc/phpmyadmin/config.user.inc.php`. És potent, així que protegeix-lo amb HTTPS i regles d’accés estrictes.",
+      "stop": "Aturar el contenidor elimina la interfície web; les bases de dades continuen funcionant. phpMyAdmin no desa dades de bases de dades. Torna a arrencar-lo i revisa els registres i la connexió amb la base de dades si la interfície no està disponible.",
+      "problems": [
+        "La pàgina d’accés no carrega — revisa els registres del contenidor i el port publicat.",
+        "No pots iniciar sessió — revisa l’amfitrió, l’usuari i la contrasenya de la base de dades i si es permet l’accés remot.",
+        "La pàgina mostra un error de PHP o de sessió — revisa els registres del contenidor i la configuració de PHP."
+      ]
     },
     "pgadmin": {
       "name": "pgAdmin",
       "what": "Una interfície web per gestionar bases de dades PostgreSQL.",
-      "ifFails": "La interfície web de PostgreSQL no està disponible, però les bases de dades continuen funcionant. Revisa el volum de dades i la connexió a la base de dades abans de reiniciar."
+      "ifFails": "La interfície web de PostgreSQL no està disponible, però les bases de dades continuen funcionant. Revisa el volum de dades i la connexió a la base de dades abans de reiniciar.",
+      "details": "pgAdmin és una interfície web per gestionar bases de dades PostgreSQL. Aquesta imatge executa el servidor pgAdmin i desa els seus ajustos i connexions a `/var/lib/pgadmin`. Es connecta a un o més servidors PostgreSQL per la xarxa. No desa les bases de dades en si.",
+      "stop": "Aturar el contenidor elimina la interfície web; PostgreSQL continua funcionant. Els ajustos de pgAdmin continuen al seu volum. Torna a arrencar-lo i revisa els registres i les connexions amb la base de dades si la interfície no està disponible.",
+      "problems": [
+        "La pàgina d’accés no carrega — revisa els registres del contenidor i el port publicat.",
+        "No connecta amb PostgreSQL — revisa l’amfitrió, el port, l’usuari i les regles de `pg_hba.conf` del servidor de base de dades.",
+        "Falten ajustos o servidors desats — revisa el volum `/var/lib/pgadmin` i els seus permisos."
+      ]
     },
     "uptime-kuma": {
       "name": "Uptime Kuma",
       "what": "Monitoritza llocs i serveis i envia avisos quan estan caiguts.",
-      "ifFails": "El monitoratge i els avisos de caiguda s'aturen. Revisa el volum de dades i els registres; les comprovacions es reprenen quan torna a iniciar-se."
+      "ifFails": "El monitoratge i els avisos de caiguda s'aturen. Revisa el volum de dades i els registres; les comprovacions es reprenen quan torna a iniciar-se.",
+      "details": "Uptime Kuma vigila llocs web, ports i serveis i envia notificacions quan deixen de respondre. Desa monitors, historial i ajustos en una base de dades SQLite a `/app/data`. S’executa com a aplicació web, normalment al port 3001. És una eina de monitorització, no un substitut de les còpies ni d’un sistema complet de mètriques.",
+      "stop": "Aturar el contenidor atura les comprovacions i les notificacions. L’historial existent continua al seu volum, però el temps de caiguda durant l’aturada no es registra. Conserva el volum de dades i torna a arrencar-lo; els monitors es reprenen automàticament.",
+      "problems": [
+        "La interfície web no carrega — revisa els registres del contenidor i el port publicat.",
+        "No arriben notificacions — revisa la configuració de notificacions i l’estat del monitor.",
+        "Falta l’historial — revisa el volum `/app/data` i els seus permisos."
+      ]
     },
     "pihole": {
       "name": "Pi-hole",
       "what": "Un forat DNS i servidor DNS local que bloqueja dominis de publicitat.",
-      "ifFails": "Els clients que l'usen perden DNS i poden perdre l'accés a internet. Revisa la configuració i el DNS superior; mantén un altre resolutor disponible si pots."
+      "ifFails": "Els clients que l'usen perden DNS i poden perdre l'accés a internet. Revisa la configuració i el DNS superior; mantén un altre resolutor disponible si pots.",
+      "details": "Pi-hole és un embornal DNS que bloqueja dominis de publicitat i seguiment per als dispositius que el fan servir com a servidor DNS. També ofereix un resolutor DNS local i un panell web amb estadístiques de consultes. Desa configuració i registres a `/etc/pihole` i `/var/log/pihole`, normalment en volums. Si cau, els clients que en depenen perden el DNS.",
+      "stop": "Aturar el contenidor elimina el DNS de tots els clients que l’usen, cosa que pot semblar una caiguda total d’internet. Mantén un segon resolutor configurat o prepara’t per canviar el DNS. La configuració i els registres continuen als seus volums.",
+      "problems": [
+        "Els clients perden internet — revisa els registres del contenidor, el port DNS i els servidors DNS upstream.",
+        "El panell no carrega — revisa el port web publicat i l’estat del contenidor.",
+        "El bloqueig no funciona — revisa les llistes de bloqueig i el registre de consultes del panell."
+      ]
     },
     "adguard": {
       "name": "AdGuard Home",
       "what": "Un servidor DNS que filtra publicitat i seguiment a la xarxa local.",
-      "ifFails": "Els clients que l'usen perden DNS i poden perdre l'accés a internet. Revisa la configuració i el DNS superior; mantén un altre resolutor disponible si pots."
+      "ifFails": "Els clients que l'usen perden DNS i poden perdre l'accés a internet. Revisa la configuració i el DNS superior; mantén un altre resolutor disponible si pots.",
+      "details": "AdGuard Home és un servidor DNS que filtra publicitat i seguiment per a la xarxa local. També ofereix un panell web, estadístiques de consultes i control parental. Desa configuració i dades a `/opt/adguardhome`, normalment en volums. Els clients l’han de fer servir com a servidor DNS perquè el filtratge s’apliqui.",
+      "stop": "Aturar el contenidor elimina el DNS de tots els clients que l’usen. Mantén un altre resolutor disponible i prepara’t per canviar el DNS dels clients. La configuració i les estadístiques continuen als seus volums.",
+      "problems": [
+        "Els clients no resolen noms — revisa els registres del contenidor, el port DNS i els servidors upstream.",
+        "El panell no carrega — revisa els ports publicats i l’estat del contenidor.",
+        "El filtratge no s’aplica — revisa la configuració DNS dels clients i els filtres actius."
+      ]
     },
     "certbot": {
       "name": "Certbot",
@@ -1034,7 +1132,14 @@
     "registry": {
       "name": "Registre Docker",
       "what": "Desa i serveix imatges Docker per a descàrregues i pujades.",
-      "ifFails": "Les descàrregues i pujades d'imatges fallen, i els desplegaments que necessiten imatges noves s'aturen. Comprova l'espai de disc, l'autenticació i el backend d'emmagatzematge abans de reiniciar."
+      "ifFails": "Les descàrregues i pujades d'imatges fallen, i els desplegaments que necessiten imatges noves s'aturen. Comprova l'espai de disc, l'autenticació i el backend d'emmagatzematge abans de reiniciar.",
+      "details": "El registre de Docker és un servidor que emmagatzema i serveix imatges de contenidors per descarregar i pujar. Aquesta imatge executa el registre amb un sistema de fitxers local o un magatzem d’objectes. Els clients han de confiar-hi i autenticar-s’hi si és privat. No és el mateix que un compte d’un registre públic.",
+      "stop": "Aturar el contenidor fa que fallin les descàrregues i pujades d’imatges, i les implementacions que necessiten imatges noves s’aturen. Les imatges desades continuen al volum o magatzem d’objectes. Conserva l’emmagatzematge i la configuració abans de reiniciar.",
+      "problems": [
+        "Docker no pot pujar ni descarregar — revisa els registres del registre, el port publicat i el certificat TLS.",
+        "Falla l’autenticació — revisa el fitxer htpasswd i l’inici de sessió del client.",
+        "Les imatges desapareixen en recrear el contenidor — munta el directori d’emmagatzematge a `/var/lib/registry`."
+      ]
     },
     "anacron": {
       "name": "Anacron",

@@ -952,72 +952,170 @@
     "cadvisor": {
       "name": "cAdvisor",
       "what": "Recoge métricas de uso de recursos de los contenedores Docker.",
-      "ifFails": "Las métricas de los contenedores desaparecen de los paneles y alertas. Revisa sus registros y el acceso al socket de Docker antes de reiniciar."
+      "ifFails": "Las métricas de los contenedores desaparecen de los paneles y alertas. Revisa sus registros y el acceso al socket de Docker antes de reiniciar.",
+      "details": "cAdvisor recopila métricas de uso de recursos y rendimiento de los contenedores Docker. Las expone en formato Prometheus, normalmente en el puerto 8080, y necesita acceso al socket de Docker y a los sistemas de archivos del host. Suele consultarlo Prometheus y mostrarse en Grafana. No guarda métricas a largo plazo.",
+      "stop": "Parar el contenedor elimina las métricas de contenedores de Prometheus; los contenedores siguen funcionando. No se pierden datos de aplicaciones. Vuelve a arrancarlo y revisa el montaje del socket de Docker si desaparecen las métricas.",
+      "problems": [
+        "No hay métricas de contenedores — revisa los registros del contenedor y que `/var/run/docker.sock` y `/sys` estén montados.",
+        "Prometheus dice que el objetivo está caído — revisa el puerto publicado y la URL de consulta.",
+        "Las métricas están incompletas — revisa los montajes del host para `/var/lib/docker` y `/sys/fs/cgroup`."
+      ]
     },
     "loki": {
       "name": "Grafana Loki",
       "what": "Guarda y consulta registros en un almacén compacto basado en etiquetas.",
-      "ifFails": "La búsqueda de registros y las alertas basadas en registros dejan de funcionar; los registros nuevos pueden descartarse. Comprueba el espacio de disco y su configuración antes de reiniciar."
+      "ifFails": "La búsqueda de registros y las alertas basadas en registros dejan de funcionar; los registros nuevos pueden descartarse. Comprueba el espacio de disco y su configuración antes de reiniciar.",
+      "details": "Grafana Loki almacena y consulta registros usando etiquetas en lugar de un índice de texto completo. Las aplicaciones o Promtail le envían registros, y Grafana los consulta. Guarda los datos en un directorio de almacenamiento o en un almacén de objetos, según la configuración. No es una base de datos general y está pensado para volúmenes grandes de registros con bajo coste.",
+      "stop": "Parar el contenedor detiene la ingesta y las consultas de registros. Los datos existentes siguen en su volumen o almacén de objetos, pero los registros nuevos pueden perderse si los clientes no pueden guardarlos en búfer. Conserva el volumen de datos y revisa la configuración antes de reiniciar.",
+      "problems": [
+        "Grafana no puede consultar registros — revisa los registros del contenedor de Loki y la URL de la fuente de datos.",
+        "No llegan registros nuevos — revisa la configuración de Promtail o del cliente y el endpoint de envío de Loki.",
+        "El disco crece rápido — revisa la retención y el tamaño del directorio de datos de Loki."
+      ]
     },
     "promtail": {
       "name": "Grafana Promtail",
       "what": "Envía registros del anfitrión o de los contenedores a Grafana Loki.",
-      "ifFails": "Los registros nuevos dejan de llegar a Loki, pero las aplicaciones siguen funcionando. Revisa su configuración y su conexión con Loki antes de reiniciar."
+      "ifFails": "Los registros nuevos dejan de llegar a Loki, pero las aplicaciones siguen funcionando. Revisa su configuración y su conexión con Loki antes de reiniciar.",
+      "details": "Promtail lee archivos de registro y registros de contenedores y los envía a Grafana Loki. Descubre objetivos a partir de archivos de configuración y añade etiquetas para poder buscar los registros. Se ejecuta como un agente pequeño en cada host o como contenedor. No guarda registros por sí mismo; los guarda Loki.",
+      "stop": "Parar el contenedor detiene el envío de registros nuevos a Loki; las aplicaciones y sus archivos de registro siguen funcionando. Los registros pueden perderse si los archivos rotan mientras Promtail está parado. Vuelve a arrancarlo y revisa la conexión con Loki.",
+      "problems": [
+        "Faltan registros en Loki — revisa los registros de Promtail y la configuración de lectura.",
+        "Promtail no llega a Loki — revisa la URL de Loki y el acceso de red.",
+        "Las etiquetas son incorrectas — revisa las reglas de reetiquetado y el archivo de posiciones."
+      ]
     },
     "wordpress": {
       "name": "WordPress",
       "what": "Publica sitios y blogs y guarda su contenido en una base de datos.",
-      "ifFails": "El sitio devuelve errores o deja de cargarse. Revisa los registros del contenedor, la conexión a la base de datos y el espacio de disco antes de reiniciar."
+      "ifFails": "El sitio devuelve errores o deja de cargarse. Revisa los registros del contenedor, la conexión a la base de datos y el espacio de disco antes de reiniciar.",
+      "details": "WordPress es una plataforma de publicación para sitios web y blogs. Esta imagen ejecuta WordPress con PHP y necesita una base de datos MySQL o MariaDB aparte. Los archivos subidos y los temas viven en `/var/www/html`, que debería estar en un volumen. La base de datos guarda entradas, usuarios y ajustes.",
+      "stop": "Parar el contenedor deja el sitio fuera de línea. La base de datos y los archivos subidos siguen en sus volúmenes. Páralo durante el mantenimiento o cuando otro servidor web ocupe el puerto; revisa los registros y la base de datos antes de reiniciar.",
+      "problems": [
+        "El sitio muestra un error de base de datos — revisa el host, el nombre, el usuario y la contraseña de la base de datos.",
+        "Fallan las subidas — revisa los permisos y el espacio libre del volumen de WordPress.",
+        "El sitio va lento o devuelve 500 — revisa los registros del contenedor y el límite de memoria de PHP."
+      ]
     },
     "nextcloud": {
       "name": "Nextcloud",
       "what": "Ofrece sincronización, compartición y colaboración de archivos privada.",
-      "ifFails": "Los usuarios no pueden sincronizar ni abrir archivos. Revisa la base de datos, el volumen de datos y los registros antes de reiniciar; no borres el volumen de datos."
+      "ifFails": "Los usuarios no pueden sincronizar ni abrir archivos. Revisa la base de datos, el volumen de datos y los registros antes de reiniciar; no borres el volumen de datos.",
+      "details": "Nextcloud ofrece sincronización privada de archivos, compartición, calendarios y colaboración. Esta imagen ejecuta el servidor Nextcloud y necesita una base de datos y un volumen de datos persistente. Los archivos de los usuarios suelen vivir en `/var/www/html/data`, y la configuración en `/var/www/html/config`. No es una copia de seguridad por sí mismo; guarda copias aparte.",
+      "stop": "Parar el contenedor deja inaccesibles la interfaz web y los clientes de sincronización. Los archivos y la base de datos siguen en sus volúmenes. Para la base de datos después de Nextcloud, no antes, y revisa los registros antes de reiniciar.",
+      "problems": [
+        "Los usuarios no pueden iniciar sesión ni sincronizar — revisa los registros del contenedor, la conexión con la base de datos y los dominios de confianza.",
+        "Faltan archivos — revisa el montaje del volumen de datos y el directorio de datos de Nextcloud.",
+        "La instancia está en modo de mantenimiento — revisa los registros y ejecuta las órdenes de mantenimiento solo después de una copia."
+      ]
     },
     "gitea": {
       "name": "Gitea",
       "what": "Un servicio Git autoalojado para repositorios, incidencias y solicitudes de incorporación.",
-      "ifFails": "El acceso Git y la interfaz web dejan de funcionar. Revisa su base de datos, el volumen de repositorios y los registros antes de reiniciar."
+      "ifFails": "El acceso Git y la interfaz web dejan de funcionar. Revisa su base de datos, el volumen de repositorios y los registros antes de reiniciar.",
+      "details": "Gitea es un servicio Git autoalojado con repositorios, incidencias, pull requests e interfaz web. Esta imagen necesita una base de datos y un volumen persistente para repositorios, avatares y configuración. Git por SSH y por HTTP dependen de que el contenedor sea accesible. Es más ligero que una instalación completa de GitLab.",
+      "stop": "Parar el contenedor detiene el acceso Git y la interfaz web. Los repositorios y la base de datos siguen en sus volúmenes. Páralo durante el mantenimiento; revisa los registros y la base de datos antes de reiniciar.",
+      "problems": [
+        "La interfaz web no carga — revisa los registros del contenedor y la conexión con la base de datos.",
+        "Falla el clone o el push de Git — revisa el puerto SSH, la URL HTTP y el volumen de repositorios.",
+        "Faltan repositorios — revisa el montaje del volumen de datos y la configuración de Gitea."
+      ]
     },
     "vaultwarden": {
       "name": "Vaultwarden",
       "what": "Un servidor de gestor de contraseñas ligero compatible con Bitwarden.",
-      "ifFails": "Los clientes de contraseñas no pueden sincronizar ni iniciar sesión. Revisa su base de datos y sus registros antes de reiniciar; guarda una copia del volumen de datos."
+      "ifFails": "Los clientes de contraseñas no pueden sincronizar ni iniciar sesión. Revisa su base de datos y sus registros antes de reiniciar; guarda una copia del volumen de datos.",
+      "details": "Vaultwarden es un servidor ligero compatible con los clientes de Bitwarden. Guarda contraseñas y otros elementos de la bóveda en una base de datos SQLite, normalmente en `/data`. Los clientes sincronizan por HTTPS, así que normalmente se usa un proxy inverso con un certificado válido. No es el servidor oficial de Bitwarden, pero habla el mismo protocolo.",
+      "stop": "Parar el contenedor detiene la sincronización y el inicio de sesión de los clientes. La base de datos de la bóveda sigue en su volumen. Guarda una copia y no borres el volumen de datos; vuelve a arrancarlo y revisa los registros si los clientes no conectan.",
+      "problems": [
+        "Los clientes no sincronizan — revisa los registros del contenedor, la URL HTTPS y el proxy inverso.",
+        "La página de administración está desactivada — revisa la opción `ADMIN_TOKEN` y reinicia el contenedor.",
+        "Faltan datos — restaura el volumen `/data` desde una copia; no recrees el contenedor sin él."
+      ]
     },
     "minio": {
       "name": "MinIO",
       "what": "Un servidor de almacenamiento de objetos compatible con S3 para archivos y copias.",
-      "ifFails": "Las aplicaciones y copias no pueden leer ni escribir objetos. Comprueba el espacio de disco, los volúmenes de datos y la salud del clúster antes de reiniciar."
+      "ifFails": "Las aplicaciones y copias no pueden leer ni escribir objetos. Comprueba el espacio de disco, los volúmenes de datos y la salud del clúster antes de reiniciar.",
+      "details": "MinIO es un servidor de almacenamiento de objetos compatible con S3. Las aplicaciones lo usan para guardar archivos, copias y otros objetos mediante la API S3. Los datos viven en uno o varios directorios o discos, y la consola suele usar el puerto 9001. Puede ejecutarse como nodo único o como clúster distribuido.",
+      "stop": "Parar el contenedor detiene el acceso S3 para todas las aplicaciones que lo usan. Los datos siguen en sus volúmenes, pero las escrituras en curso pueden fallar. Conserva los volúmenes y revisa el espacio en disco y la salud del clúster antes de reiniciar.",
+      "problems": [
+        "Las aplicaciones no acceden a los objetos — revisa los registros del contenedor, el endpoint S3 y las credenciales.",
+        "La consola no carga — revisa el puerto de la consola y los puertos publicados.",
+        "Un disco está lleno o desconectado — revisa `mc admin info` y los registros de MinIO."
+      ]
     },
     "adminer": {
       "name": "Adminer",
       "what": "Una pequeña interfaz web para gestionar bases de datos SQL.",
-      "ifFails": "La interfaz web de bases de datos no está disponible, pero las bases de datos siguen funcionando. Revisa sus registros y el acceso a la red antes de reiniciar."
+      "ifFails": "La interfaz web de bases de datos no está disponible, pero las bases de datos siguen funcionando. Revisa sus registros y el acceso a la red antes de reiniciar.",
+      "details": "Adminer es una interfaz web pequeña para gestionar bases de datos SQL. Se conecta a MySQL, MariaDB, PostgreSQL y otras bases de datos con un solo archivo PHP. Esta imagen lo ejecuta detrás de un servidor web; eliges el servidor de base de datos en la página de acceso. Es más ligero que phpMyAdmin, pero sigue ofreciendo herramientas potentes.",
+      "stop": "Parar el contenedor solo elimina la interfaz web; las bases de datos siguen funcionando. Adminer no guarda datos de bases de datos. Vuelve a arrancarlo y revisa los registros si la página de acceso no carga.",
+      "problems": [
+        "La página de acceso no carga — revisa los registros del contenedor y el puerto publicado.",
+        "No conecta con la base de datos — revisa el host, el puerto, el usuario y si la base de datos acepta conexiones remotas.",
+        "La página está en blanco o da un error de PHP — revisa los registros del contenedor y la versión de PHP."
+      ]
     },
     "phpmyadmin": {
       "name": "phpMyAdmin",
       "what": "Una interfaz web para gestionar bases de datos MySQL y MariaDB.",
-      "ifFails": "La interfaz web de bases de datos no está disponible, pero las bases de datos siguen funcionando. Revisa su servidor web, PHP y la conexión a la base de datos antes de reiniciar."
+      "ifFails": "La interfaz web de bases de datos no está disponible, pero las bases de datos siguen funcionando. Revisa su servidor web, PHP y la conexión a la base de datos antes de reiniciar.",
+      "details": "phpMyAdmin es una interfaz web para gestionar bases de datos MySQL y MariaDB. Esta imagen incluye un servidor web y PHP, y se conecta a un servidor de base de datos aparte. La configuración puede venir de variables de entorno o de `/etc/phpmyadmin/config.user.inc.php`. Es potente, así que protégelo con HTTPS y reglas de acceso estrictas.",
+      "stop": "Parar el contenedor elimina la interfaz web; las bases de datos siguen funcionando. phpMyAdmin no guarda datos de bases de datos. Vuelve a arrancarlo y revisa los registros y la conexión con la base de datos si la interfaz no está disponible.",
+      "problems": [
+        "La página de acceso no carga — revisa los registros del contenedor y el puerto publicado.",
+        "No puedes iniciar sesión — revisa el host, el usuario y la contraseña de la base de datos y si se permite el acceso remoto.",
+        "La página muestra un error de PHP o de sesión — revisa los registros del contenedor y la configuración de PHP."
+      ]
     },
     "pgadmin": {
       "name": "pgAdmin",
       "what": "Una interfaz web para gestionar bases de datos PostgreSQL.",
-      "ifFails": "La interfaz web de PostgreSQL no está disponible, pero las bases de datos siguen funcionando. Revisa su volumen de datos y la conexión a la base de datos antes de reiniciar."
+      "ifFails": "La interfaz web de PostgreSQL no está disponible, pero las bases de datos siguen funcionando. Revisa su volumen de datos y la conexión a la base de datos antes de reiniciar.",
+      "details": "pgAdmin es una interfaz web para gestionar bases de datos PostgreSQL. Esta imagen ejecuta el servidor pgAdmin y guarda sus ajustes y conexiones en `/var/lib/pgadmin`. Se conecta a uno o varios servidores PostgreSQL por la red. No guarda las bases de datos en sí.",
+      "stop": "Parar el contenedor elimina la interfaz web; PostgreSQL sigue funcionando. Los ajustes de pgAdmin siguen en su volumen. Vuelve a arrancarlo y revisa los registros y las conexiones con la base de datos si la interfaz no está disponible.",
+      "problems": [
+        "La página de acceso no carga — revisa los registros del contenedor y el puerto publicado.",
+        "No conecta con PostgreSQL — revisa el host, el puerto, el usuario y las reglas de `pg_hba.conf` del servidor de base de datos.",
+        "Faltan ajustes o servidores guardados — revisa el volumen `/var/lib/pgadmin` y sus permisos."
+      ]
     },
     "uptime-kuma": {
       "name": "Uptime Kuma",
       "what": "Monitoriza sitios y servicios y envía avisos cuando están caídos.",
-      "ifFails": "La monitorización y los avisos de caída se detienen. Revisa su volumen de datos y sus registros; las comprobaciones se reanudan cuando vuelve a iniciarse."
+      "ifFails": "La monitorización y los avisos de caída se detienen. Revisa su volumen de datos y sus registros; las comprobaciones se reanudan cuando vuelve a iniciarse.",
+      "details": "Uptime Kuma vigila sitios web, puertos y servicios y envía notificaciones cuando dejan de responder. Guarda monitores, historial y ajustes en una base de datos SQLite en `/app/data`. Se ejecuta como aplicación web, normalmente en el puerto 3001. Es una herramienta de monitorización, no un sustituto de las copias ni de un sistema completo de métricas.",
+      "stop": "Parar el contenedor detiene las comprobaciones y las notificaciones. El historial existente sigue en su volumen, pero el tiempo de caída durante la parada no se registra. Conserva el volumen de datos y vuelve a arrancarlo; los monitores se reanudan automáticamente.",
+      "problems": [
+        "La interfaz web no carga — revisa los registros del contenedor y el puerto publicado.",
+        "No llegan notificaciones — revisa la configuración de notificaciones y el estado del monitor.",
+        "Falta el historial — revisa el volumen `/app/data` y sus permisos."
+      ]
     },
     "pihole": {
       "name": "Pi-hole",
       "what": "Un sumidero DNS y servidor DNS local que bloquea dominios de publicidad.",
-      "ifFails": "Los clientes que lo usan pierden DNS y pueden perder el acceso a internet. Revisa su configuración y su DNS superior; mantén otro resolutor disponible si puedes."
+      "ifFails": "Los clientes que lo usan pierden DNS y pueden perder el acceso a internet. Revisa su configuración y su DNS superior; mantén otro resolutor disponible si puedes.",
+      "details": "Pi-hole es un sumidero DNS que bloquea dominios de publicidad y seguimiento para los dispositivos que lo usan como servidor DNS. También ofrece un resolutor DNS local y un panel web con estadísticas de consultas. Guarda configuración y registros en `/etc/pihole` y `/var/log/pihole`, normalmente en volúmenes. Si cae, los clientes que dependen de él pierden el DNS.",
+      "stop": "Parar el contenedor elimina el DNS de todos los clientes que lo usan, lo que puede parecer una caída total de internet. Mantén un segundo resolutor configurado o prepárate para cambiar el DNS. La configuración y los registros siguen en sus volúmenes.",
+      "problems": [
+        "Los clientes pierden internet — revisa los registros del contenedor, el puerto DNS y los servidores DNS upstream.",
+        "El panel no carga — revisa el puerto web publicado y el estado del contenedor.",
+        "El bloqueo no funciona — revisa las listas de bloqueo y el registro de consultas del panel."
+      ]
     },
     "adguard": {
       "name": "AdGuard Home",
       "what": "Un servidor DNS que filtra publicidad y seguimiento en la red local.",
-      "ifFails": "Los clientes que lo usan pierden DNS y pueden perder el acceso a internet. Revisa su configuración y su DNS superior; mantén otro resolutor disponible si puedes."
+      "ifFails": "Los clientes que lo usan pierden DNS y pueden perder el acceso a internet. Revisa su configuración y su DNS superior; mantén otro resolutor disponible si puedes.",
+      "details": "AdGuard Home es un servidor DNS que filtra publicidad y seguimiento para la red local. También ofrece un panel web, estadísticas de consultas y control parental. Guarda configuración y datos en `/opt/adguardhome`, normalmente en volúmenes. Los clientes deben usarlo como servidor DNS para que el filtrado se aplique.",
+      "stop": "Parar el contenedor elimina el DNS de todos los clientes que lo usan. Mantén otro resolutor disponible y prepárate para cambiar el DNS de los clientes. La configuración y las estadísticas siguen en sus volúmenes.",
+      "problems": [
+        "Los clientes no resuelven nombres — revisa los registros del contenedor, el puerto DNS y los servidores upstream.",
+        "El panel no carga — revisa los puertos publicados y el estado del contenedor.",
+        "El filtrado no se aplica — revisa la configuración DNS de los clientes y los filtros activos."
+      ]
     },
     "certbot": {
       "name": "Certbot",
@@ -1034,7 +1132,14 @@
     "registry": {
       "name": "Registro Docker",
       "what": "Guarda y sirve imágenes Docker para descargas y subidas.",
-      "ifFails": "Las descargas y subidas de imágenes fallan, y los despliegues que necesitan imágenes nuevas se detienen. Comprueba el espacio de disco, la autenticación y el backend de almacenamiento antes de reiniciar."
+      "ifFails": "Las descargas y subidas de imágenes fallan, y los despliegues que necesitan imágenes nuevas se detienen. Comprueba el espacio de disco, la autenticación y el backend de almacenamiento antes de reiniciar.",
+      "details": "El registro de Docker es un servidor que almacena y sirve imágenes de contenedores para descargar y subir. Esta imagen ejecuta el registro con un sistema de archivos local o un almacén de objetos. Los clientes deben confiar en él y autenticarse si es privado. No es lo mismo que una cuenta de un registro público.",
+      "stop": "Parar el contenedor hace que fallen las descargas y subidas de imágenes, y las implementaciones que necesitan imágenes nuevas se detienen. Las imágenes guardadas siguen en el volumen o almacén de objetos. Conserva el almacenamiento y la configuración antes de reiniciar.",
+      "problems": [
+        "Docker no puede subir ni descargar — revisa los registros del registro, el puerto publicado y el certificado TLS.",
+        "Falla la autenticación — revisa el archivo htpasswd y el inicio de sesión del cliente.",
+        "Las imágenes desaparecen al recrear el contenedor — monta el directorio de almacenamiento en `/var/lib/registry`."
+      ]
     },
     "anacron": {
       "name": "Anacron",

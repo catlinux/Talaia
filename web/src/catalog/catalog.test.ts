@@ -299,6 +299,21 @@ describe('catalog translations', () => {
       'grafana',
       'prometheus',
       'node-exporter',
+      'cadvisor',
+      'loki',
+      'promtail',
+      'wordpress',
+      'nextcloud',
+      'gitea',
+      'vaultwarden',
+      'minio',
+      'adminer',
+      'phpmyadmin',
+      'pgadmin',
+      'uptime-kuma',
+      'pihole',
+      'adguard',
+      'registry',
     ]
     for (const language of ['ca', 'es', 'en']) {
       const t = i18n.getFixedT(language, 'catalog')

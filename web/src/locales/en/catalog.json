@@ -952,72 +952,170 @@
     "cadvisor": {
       "name": "cAdvisor",
       "what": "Collects resource usage metrics from Docker containers.",
-      "ifFails": "Container metrics disappear from dashboards and alerts. Check its logs and access to the Docker socket before restarting."
+      "ifFails": "Container metrics disappear from dashboards and alerts. Check its logs and access to the Docker socket before restarting.",
+      "details": "cAdvisor collects resource usage and performance metrics from Docker containers. It exposes them in Prometheus format, usually on port 8080, and needs access to the Docker socket and host filesystems. It is commonly scraped by Prometheus and shown in Grafana. It does not store long-term metrics.",
+      "stop": "Stopping the container removes container metrics from Prometheus; the containers themselves keep running. No application data is lost. Restart it and check the Docker socket mount if metrics disappear.",
+      "problems": [
+        "No container metrics — check the container logs and that `/var/run/docker.sock` and `/sys` are mounted.",
+        "Prometheus says the target is down — check the published port and the scrape URL.",
+        "Metrics are incomplete — check the host mounts for `/var/lib/docker` and `/sys/fs/cgroup`."
+      ]
     },
     "loki": {
       "name": "Grafana Loki",
       "what": "Stores and queries logs in a compact, label-based store.",
-      "ifFails": "Log search and log-based alerts stop working; new logs may be dropped. Check disk space and its configuration before restarting."
+      "ifFails": "Log search and log-based alerts stop working; new logs may be dropped. Check disk space and its configuration before restarting.",
+      "details": "Grafana Loki stores and queries logs using labels instead of a full-text index. Applications or Promtail send logs to it, and Grafana queries them. It keeps data in a storage directory or object store, depending on the configuration. It is not a general database and is designed to be cheap for large log volumes.",
+      "stop": "Stopping the container stops log ingestion and queries. Existing log data remains in its volume or object store, but new logs may be lost if the clients cannot buffer them. Keep the data volume and check the configuration before restarting.",
+      "problems": [
+        "Grafana cannot query logs — check the Loki container logs and the data source URL.",
+        "New logs do not arrive — check the Promtail or client configuration and the Loki push endpoint.",
+        "Disk use grows quickly — check the retention settings and the size of the Loki data directory."
+      ]
     },
     "promtail": {
       "name": "Grafana Promtail",
       "what": "Ships logs from the host or containers to Grafana Loki.",
-      "ifFails": "New logs stop reaching Loki, but the applications keep running. Check its configuration and connection to Loki before restarting."
+      "ifFails": "New logs stop reaching Loki, but the applications keep running. Check its configuration and connection to Loki before restarting.",
+      "details": "Promtail reads log files and container logs and sends them to Grafana Loki. It discovers targets from configuration files and adds labels so logs can be searched. It runs as a small agent on each host or as a container. It does not store logs itself; Loki does.",
+      "stop": "Stopping the container stops new logs from reaching Loki; the applications and their log files keep working. Logs may be lost if the files rotate while Promtail is down. Restart it and check the Loki connection.",
+      "problems": [
+        "Logs are missing in Loki — check the Promtail logs and the scrape configuration.",
+        "Promtail cannot reach Loki — check the Loki URL and network access.",
+        "Labels are wrong — check the relabeling rules and the positions file."
+      ]
     },
     "wordpress": {
       "name": "WordPress",
       "what": "Publishes websites and blogs and stores their content in a database.",
-      "ifFails": "The site returns errors or stops loading. Check the container logs, database connection and disk space before restarting."
+      "ifFails": "The site returns errors or stops loading. Check the container logs, database connection and disk space before restarting.",
+      "details": "WordPress is a publishing platform for websites and blogs. This image runs WordPress with PHP and needs a separate MySQL or MariaDB database. Uploaded files and themes live in `/var/www/html`, which should be on a volume. The database stores posts, users and settings.",
+      "stop": "Stopping the container takes the site offline. The database and the uploaded files remain in their volumes. Stop it during maintenance or when another web server takes over; check the logs and database before restarting.",
+      "problems": [
+        "The site shows a database error — check the database host, name, user and password.",
+        "Uploads fail — check the permissions and free space of the WordPress volume.",
+        "The site is slow or returns 500 — check the container logs and the PHP memory limit."
+      ]
     },
     "nextcloud": {
       "name": "Nextcloud",
       "what": "Provides private file sync, sharing and collaboration.",
-      "ifFails": "Users cannot sync or open files. Check the database, data volume and logs before restarting; do not delete the data volume."
+      "ifFails": "Users cannot sync or open files. Check the database, data volume and logs before restarting; do not delete the data volume.",
+      "details": "Nextcloud provides private file sync, sharing, calendars and collaboration. This image runs the Nextcloud server and needs a database and a persistent data volume. User files usually live in `/var/www/html/data`, and configuration in `/var/www/html/config`. It is not a backup by itself; keep separate backups.",
+      "stop": "Stopping the container makes the web interface and sync clients unavailable. Files and database data remain in their volumes. Stop the database after Nextcloud, not before, and check the logs before restarting.",
+      "problems": [
+        "Users cannot log in or sync — check the container logs, database connection and trusted domains.",
+        "Files are missing — check the data volume mount and the Nextcloud data directory.",
+        "The instance is in maintenance mode — check the logs and run the maintenance commands only after a backup."
+      ]
     },
     "gitea": {
       "name": "Gitea",
       "what": "A self-hosted Git service for repositories, issues and pull requests.",
-      "ifFails": "Git access and the web interface stop working. Check its database, repositories volume and logs before restarting."
+      "ifFails": "Git access and the web interface stop working. Check its database, repositories volume and logs before restarting.",
+      "details": "Gitea is a self-hosted Git service with repositories, issues, pull requests and a web interface. This image needs a database and a persistent data volume for repositories, avatars and configuration. Git over SSH and HTTP both depend on the container being reachable. It is lighter than a full GitLab installation.",
+      "stop": "Stopping the container stops Git access and the web interface. Repositories and database data remain in their volumes. Stop it during maintenance; check the logs and database before restarting.",
+      "problems": [
+        "The web interface does not load — check the container logs and the database connection.",
+        "Git clone or push fails — check the SSH port, the HTTP URL and the repository volume.",
+        "Repositories are missing — check the data volume mount and the Gitea configuration."
+      ]
     },
     "vaultwarden": {
       "name": "Vaultwarden",
       "what": "A lightweight Bitwarden-compatible password manager server.",
-      "ifFails": "Password clients cannot sync or log in. Check its database and logs before restarting; keep a backup of the data volume."
+      "ifFails": "Password clients cannot sync or log in. Check its database and logs before restarting; keep a backup of the data volume.",
+      "details": "Vaultwarden is a lightweight server compatible with Bitwarden clients. It stores passwords and other vault items in a SQLite database, usually under `/data`. Clients sync over HTTPS, so a reverse proxy with a valid certificate is normally used. It is not an official Bitwarden server, but it speaks the same protocol.",
+      "stop": "Stopping the container stops client sync and login. The vault database remains in its volume. Keep a backup and do not delete the data volume; restart it and check the logs if clients cannot connect.",
+      "problems": [
+        "Clients cannot sync — check the container logs, the HTTPS URL and the reverse proxy.",
+        "The admin page is disabled — check the `ADMIN_TOKEN` setting and restart the container.",
+        "Data is missing — restore the `/data` volume from a backup; do not recreate the container without it."
+      ]
     },
     "minio": {
       "name": "MinIO",
       "what": "An S3-compatible object storage server for files and backups.",
-      "ifFails": "Applications and backups cannot read or write objects. Check disk space, the data volumes and cluster health before restarting."
+      "ifFails": "Applications and backups cannot read or write objects. Check disk space, the data volumes and cluster health before restarting.",
+      "details": "MinIO is an S3-compatible object storage server. Applications use it to store files, backups and other objects through the S3 API. Data lives in one or more directories or disks, and the console usually runs on port 9001. It can run as a single node or a distributed cluster.",
+      "stop": "Stopping the container stops S3 access for every application using it. Data remains on its volumes, but writes in progress may fail. Keep the volumes and check disk space and cluster health before restarting.",
+      "problems": [
+        "Applications cannot access objects — check the container logs, the S3 endpoint and the credentials.",
+        "The console does not load — check the console port and the published ports.",
+        "A disk is full or a drive is offline — check `mc admin info` and the MinIO logs."
+      ]
     },
     "adminer": {
       "name": "Adminer",
       "what": "A small web interface for managing SQL databases.",
-      "ifFails": "The database web interface is unavailable, but the databases keep running. Check its logs and network access before restarting."
+      "ifFails": "The database web interface is unavailable, but the databases keep running. Check its logs and network access before restarting.",
+      "details": "Adminer is a small web interface for managing SQL databases. It connects to MySQL, MariaDB, PostgreSQL and other databases with a single PHP file. This image runs it behind a web server; you choose the database server on the login page. It is lighter than phpMyAdmin but still exposes powerful database tools.",
+      "stop": "Stopping the container only removes the web interface; the databases keep running. No database data is stored by Adminer. Restart it and check the logs if the login page does not load.",
+      "problems": [
+        "The login page does not load — check the container logs and the published port.",
+        "Cannot connect to the database — check the host, port, user and whether the database accepts remote connections.",
+        "The page is blank or returns a PHP error — check the container logs and the PHP version."
+      ]
     },
     "phpmyadmin": {
       "name": "phpMyAdmin",
       "what": "A web interface for managing MySQL and MariaDB databases.",
-      "ifFails": "The database web interface is unavailable, but the databases keep running. Check its web server, PHP and database connection before restarting."
+      "ifFails": "The database web interface is unavailable, but the databases keep running. Check its web server, PHP and database connection before restarting.",
+      "details": "phpMyAdmin is a web interface for managing MySQL and MariaDB databases. This image includes a web server and PHP, and connects to a separate database server. Configuration can come from environment variables or `/etc/phpmyadmin/config.user.inc.php`. It is powerful, so protect it with HTTPS and strong access rules.",
+      "stop": "Stopping the container removes the web interface; the databases keep running. No database data is stored by phpMyAdmin. Restart it and check the logs and database connection if the interface is unavailable.",
+      "problems": [
+        "The login page does not load — check the container logs and the published port.",
+        "Cannot log in — check the database host, user and password and whether remote access is allowed.",
+        "The page shows a PHP or session error — check the container logs and the PHP configuration."
+      ]
     },
     "pgadmin": {
       "name": "pgAdmin",
       "what": "A web interface for managing PostgreSQL databases.",
-      "ifFails": "The PostgreSQL web interface is unavailable, but the databases keep running. Check its data volume and database connection before restarting."
+      "ifFails": "The PostgreSQL web interface is unavailable, but the databases keep running. Check its data volume and database connection before restarting.",
+      "details": "pgAdmin is a web interface for managing PostgreSQL databases. This image runs the pgAdmin server and stores its settings and connections in `/var/lib/pgadmin`. It connects to one or more PostgreSQL servers over the network. It does not store the databases themselves.",
+      "stop": "Stopping the container removes the web interface; PostgreSQL keeps running. The pgAdmin settings remain in their volume. Restart it and check the logs and database connections if the interface is unavailable.",
+      "problems": [
+        "The login page does not load — check the container logs and the published port.",
+        "Cannot connect to PostgreSQL — check the host, port, user and pg_hba.conf rules on the database server.",
+        "Settings or saved servers are missing — check the `/var/lib/pgadmin` volume and its permissions."
+      ]
     },
     "uptime-kuma": {
       "name": "Uptime Kuma",
       "what": "Monitors websites and services and sends downtime notifications.",
-      "ifFails": "Monitoring and downtime alerts stop. Check its data volume and logs; uptime checks resume when it starts again."
+      "ifFails": "Monitoring and downtime alerts stop. Check its data volume and logs; uptime checks resume when it starts again.",
+      "details": "Uptime Kuma monitors websites, ports and services and sends notifications when they go down. It stores monitors, history and settings in a SQLite database under `/app/data`. It runs as a web application, usually on port 3001. It is a monitoring tool, not a replacement for backups or a full metrics system.",
+      "stop": "Stopping the container stops checks and notifications. Existing history stays in its volume, but downtime during the stop is not recorded. Keep the data volume and restart it; monitors resume automatically.",
+      "problems": [
+        "The web interface does not load — check the container logs and the published port.",
+        "Notifications do not arrive — check the notification settings and the monitor status.",
+        "History is missing — check the `/app/data` volume and its permissions."
+      ]
     },
     "pihole": {
       "name": "Pi-hole",
       "what": "A DNS sinkhole and local DNS server that blocks advertising domains.",
-      "ifFails": "Clients using it lose DNS and may lose internet access. Check its configuration and upstream DNS; keep another resolver available if possible."
+      "ifFails": "Clients using it lose DNS and may lose internet access. Check its configuration and upstream DNS; keep another resolver available if possible.",
+      "details": "Pi-hole is a DNS sinkhole that blocks advertising and tracking domains for devices using it as their DNS server. It also provides a local DNS resolver and a web dashboard with query statistics. It stores configuration and logs in `/etc/pihole` and `/var/log/pihole`, usually on volumes. If it goes down, clients that rely on it lose DNS.",
+      "stop": "Stopping the container removes DNS for every client that uses it, which can look like a total internet outage. Keep a second resolver configured or be ready to change the DNS settings. The configuration and logs remain in their volumes.",
+      "problems": [
+        "Clients lose internet access — check the container logs, the DNS port and the upstream DNS servers.",
+        "The dashboard does not load — check the published web port and the container status.",
+        "Blocking does not work — check the blocklists and the query log in the dashboard."
+      ]
     },
     "adguard": {
       "name": "AdGuard Home",
       "what": "A DNS server that filters ads and tracking for the local network.",
-      "ifFails": "Clients using it lose DNS and may lose internet access. Check its configuration and upstream DNS; keep another resolver available if possible."
+      "ifFails": "Clients using it lose DNS and may lose internet access. Check its configuration and upstream DNS; keep another resolver available if possible.",
+      "details": "AdGuard Home is a DNS server that filters ads and tracking for the local network. It also provides a web dashboard, query statistics and parental controls. It stores configuration and data under `/opt/adguardhome`, usually on volumes. Clients must use it as their DNS server for filtering to apply.",
+      "stop": "Stopping the container removes DNS for every client using it. Keep another resolver available and be ready to change client DNS settings. Configuration and statistics stay in their volumes.",
+      "problems": [
+        "Clients cannot resolve names — check the container logs, the DNS port and the upstream servers.",
+        "The dashboard does not load — check the published ports and the container status.",
+        "Filtering does not apply — check the DNS settings on the clients and the enabled filters."
+      ]
     },
     "certbot": {
       "name": "Certbot",
@@ -1034,7 +1132,14 @@
     "registry": {
       "name": "Docker registry",
       "what": "Stores and serves Docker images for pulls and pushes.",
-      "ifFails": "Image pulls and pushes fail, and deployments that need new images stop. Check disk space, authentication and the storage backend before restarting."
+      "ifFails": "Image pulls and pushes fail, and deployments that need new images stop. Check disk space, authentication and the storage backend before restarting.",
+      "details": "The Docker registry is a server that stores and serves container images for pull and push. This image runs the registry with a local filesystem or an object storage backend. Clients must be configured to trust it and authenticate if it is private. It is not the same as a public registry account.",
+      "stop": "Stopping the container makes image pulls and pushes fail, and deployments that need new images stop. Stored images remain on the volume or object store. Keep the storage and configuration before restarting.",
+      "problems": [
+        "Docker cannot push or pull — check the registry logs, the published port and the TLS certificate.",
+        "Authentication fails — check the htpasswd file and the client login.",
+        "Images disappear after recreation — mount the storage directory at `/var/lib/registry`."
+      ]
     },
     "anacron": {
       "name": "Anacron",
