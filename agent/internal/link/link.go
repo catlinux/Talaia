@@ -23,11 +23,13 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/catlinux/Talaia/agent/internal/apt"
+	appbuild "github.com/catlinux/Talaia/agent/internal/build"
 	"github.com/catlinux/Talaia/agent/internal/collect"
 	"github.com/catlinux/Talaia/agent/internal/config"
 	"github.com/catlinux/Talaia/agent/internal/enroll"
 	"github.com/catlinux/Talaia/agent/internal/inventory"
 	"github.com/catlinux/Talaia/agent/internal/jobs"
+	"github.com/catlinux/Talaia/agent/internal/source"
 	"github.com/catlinux/Talaia/agent/internal/stacks"
 	"github.com/catlinux/Talaia/agent/internal/terminal"
 	"github.com/catlinux/Talaia/agent/internal/update"
@@ -632,6 +634,8 @@ func newExecutor(cfg config.Config, identity *enroll.Identity, checker *apt.Chec
 	docker := jobs.NewDockerActions()
 	return jobs.New(docker).
 		WithStacks(stacks.NewDefault().WithProjects(inventory.NewDocker())).
+		WithSource(source.NewDefault()).
+		WithBuild(appbuild.NewDefault()).
 		WithResources(docker).
 		WithUpdates(update.New(update.Options{CoreURL: cfg.CoreURL, Identity: identity})).
 		WithApt(checker).

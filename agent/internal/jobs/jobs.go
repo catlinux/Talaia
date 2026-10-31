@@ -5,6 +5,7 @@ package jobs
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -14,6 +15,8 @@ import (
 
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	appbuild "github.com/catlinux/Talaia/agent/internal/build"
+	"github.com/catlinux/Talaia/agent/internal/source"
 	agentv1 "github.com/catlinux/Talaia/proto/gen/go"
 )
 
@@ -24,6 +27,7 @@ const (
 	stackActionTimeout = 10 * time.Minute
 	stackWriteTimeout  = 2 * time.Minute
 	resourceTimeout    = 5 * time.Minute
+	sourceTimeout      = 5 * time.Minute
 )
 
 // rememberedJobs is how many finished jobs the executor remembers to answer a
@@ -35,6 +39,12 @@ var errNoStacks = errors.New("stacks are not available on this agent")
 
 // errNoResources is the failure of a resource command on an executor without them.
 var errNoResources = errors.New("resources are not available on this agent")
+
+// errNoSource is the failure of an app source command without the git fetcher.
+var errNoSource = errors.New("the git source is not available on this agent")
+
+// errNoBuild is the failure of an app build command without the builder.
+var errNoBuild = errors.New("the image builder is not available on this agent")
 
 // Actions are the container operations the executor can run.
 type Actions interface {
@@ -58,11 +68,25 @@ type ResourceManager interface {
 	RemoveResources(ctx context.Context, items []*agentv1.ResourceRef) (string, error)
 }
 
+// SourceFetcher checks out the source of an app into its build workspace.
+type SourceFetcher interface {
+	Fetch(ctx context.Context, app *agentv1.AppSource) (source.Result, error)
+}
+
+// AppBuilder builds the image of an app from its workspace.
+type AppBuilder interface {
+	Build(ctx context.Context, app *agentv1.AppBuild) (string, error)
+}
+
 // Executor runs commands. Every command carries a job id; running the same id
 // twice does not repeat the effect, the executor sends the first outcome again.
 type Executor struct {
 	actions Actions
 	stacks  StackManager
+	// sources is nil until WithSource sets it.
+	sources SourceFetcher
+	// builds is nil until WithBuild sets it.
+	builds AppBuilder
 	// resources is nil until WithResources sets it.
 	resources ResourceManager
 	// updates is nil until WithUpdates sets it.
@@ -97,6 +121,18 @@ func (e *Executor) WithStacks(manager StackManager) *Executor {
 	return e
 }
 
+// WithSource lets the executor fetch the git source of an app.
+func (e *Executor) WithSource(fetcher SourceFetcher) *Executor {
+	e.sources = fetcher
+	return e
+}
+
+// WithBuild lets the executor build the image of an app.
+func (e *Executor) WithBuild(builder AppBuilder) *Executor {
+	e.builds = builder
+	return e
+}
+
 // WithResources lets the executor list and remove Docker resources.
 func (e *Executor) WithResources(manager ResourceManager) *Executor {
 	e.resources = manager
@@ -127,13 +163,14 @@ func (e *Executor) WithJournal(reader JournalReader) *Executor {
 func (e *Executor) Handle(ctx context.Context, msg *agentv1.CoreMsg, emit func(*agentv1.AgentMsg)) bool {
 	action, logs := msg.GetContainerAction(), msg.GetReadLogs()
 	write, stackAction, read, adopt := msg.GetStackWrite(), msg.GetStackAction(), msg.GetStackRead(), msg.GetStackAdopt()
+	appSource, appBuild := msg.GetAppSource(), msg.GetAppBuild()
 	list, remove := msg.GetListResources(), msg.GetRemoveResources()
 	updateCommand := msg.GetAgentUpdate()
 	aptStatus := msg.GetAptStatus()
 	aptUpgrade, hostReboot := msg.GetAptUpgrade(), msg.GetHostReboot()
 	serviceAction := msg.GetServiceAction()
 	readJournal := msg.GetReadJournal()
-	if action == nil && logs == nil && write == nil && stackAction == nil && read == nil && adopt == nil && list == nil && remove == nil && updateCommand == nil && aptStatus == nil && aptUpgrade == nil && hostReboot == nil && serviceAction == nil && readJournal == nil {
+	if action == nil && logs == nil && write == nil && stackAction == nil && read == nil && adopt == nil && appSource == nil && appBuild == nil && list == nil && remove == nil && updateCommand == nil && aptStatus == nil && aptUpgrade == nil && hostReboot == nil && serviceAction == nil && readJournal == nil {
 		return false
 	}
 
@@ -209,6 +246,28 @@ func (e *Executor) Handle(ctx context.Context, msg *agentv1.CoreMsg, emit func(*
 				return "", errNoStacks
 			}
 			return e.stacks.Adopt(ctx, adopt.GetName())
+		})
+	case appSource != nil:
+		go e.execute(ctx, jobID, "app source", sourceTimeout, emit, func(ctx context.Context) (string, error) {
+			if e.sources == nil {
+				return "", errNoSource
+			}
+			result, err := e.sources.Fetch(ctx, appSource)
+			if err != nil {
+				return "", err
+			}
+			encoded, err := json.Marshal(result)
+			if err != nil {
+				return "", fmt.Errorf("encode the source result: %w", err)
+			}
+			return string(encoded), nil
+		})
+	case appBuild != nil:
+		go e.execute(ctx, jobID, "app build "+appBuild.GetName(), appbuild.Timeout, emit, func(ctx context.Context) (string, error) {
+			if e.builds == nil {
+				return "", errNoBuild
+			}
+			return e.builds.Build(ctx, appBuild)
 		})
 	case updateCommand != nil:
 		go e.execute(ctx, jobID, "agent update", updateTimeout, emit, func(ctx context.Context) (string, error) {

@@ -150,7 +150,7 @@ Decisions closed on 2026-10-30: external proxy by default (Talaia never touches 
 - [x] Apps, environment variables, deployments and domains in the database; `server.proxy` permission
 - [x] Agent: hardened Git fetch from GitHub with per-app deploy keys and a pinned host key
 - [x] Core: signed GitHub push webhooks and branch polling
-- [ ] Agent: builds with a Dockerfile, one at a time per server
+- [x] Agent: builds with a Dockerfile, one at a time per server
 - [ ] Agent: external proxy by default (app on a free `127.0.0.1` port, Apache/nginx block shown in the panel) and optional managed Caddy only when 80/443 are free
 - [ ] Agent: zero-downtime release, rollback to one of the last three images and image cleanup
 - [ ] Core: deploy pipeline (one deploy per app, superseded pushes, logs) and its API

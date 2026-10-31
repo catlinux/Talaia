@@ -13,6 +13,12 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.6.33] - 2026-10-31
+
+### Added
+
+- Agent: builds the image of an app from its Dockerfile (talaia/<stack>:<commit>), with --pull, one build at a time per server, refused with less than 2 GiB free, 30 minute limit, only variables marked for the build as build arguments, and the workspace removed afterwards (phase 6 step 5).
+
 ## [0.6.32] - 2026-10-31
 
 ### Added
@@ -897,7 +903,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.6.32...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.6.33...HEAD
+[0.6.33]: https://github.com/catlinux/Talaia/releases/tag/v0.6.33
 [0.6.32]: https://github.com/catlinux/Talaia/releases/tag/v0.6.32
 [0.6.31]: https://github.com/catlinux/Talaia/releases/tag/v0.6.31
 [0.6.30]: https://github.com/catlinux/Talaia/releases/tag/v0.6.30
