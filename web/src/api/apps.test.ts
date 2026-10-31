@@ -49,6 +49,135 @@ describe('api apps client', () => {
     expect(fetchImpl).toHaveBeenCalledWith('/api/v1/apps', expect.any(Object))
   })
 
+  it('maps the template catalog', async () => {
+    const fetchImpl = vi.fn(() =>
+      Promise.resolve(
+        json([
+          {
+            id: 'uptime-kuma',
+            version: '1.0.0',
+            names: { en: 'Uptime Kuma' },
+            descriptions: { en: 'Monitor' },
+            image: 'louislam/uptime-kuma:1.23.16',
+            service: 'app',
+            port: 3001,
+            ram_mb: 512,
+          },
+        ]),
+      ),
+    )
+    const api = createAppsApi(fetchImpl as unknown as typeof fetch)
+    await expect(api.templates()).resolves.toEqual([
+      expect.objectContaining({ id: 'uptime-kuma', port: 3001, ramMB: 512 }),
+    ])
+    expect(fetchImpl).toHaveBeenCalledWith('/api/v1/templates', expect.any(Object))
+  })
+
+  it('creates an app with one-time Git secrets', async () => {
+    const fetchImpl = vi.fn(() =>
+      Promise.resolve(
+        json({
+          ...app,
+          deploy_key_public: 'ssh-ed25519 AAAA example',
+          webhook_secret: 'hook-secret',
+          webhook_url: 'https://panel.example.com/api/v1/hooks/git/app-1',
+        }),
+      ),
+    )
+    const api = createAppsApi(fetchImpl as unknown as typeof fetch)
+    const created = await api.create('srv-1', {
+      stackName: 'shop',
+      source: 'git',
+      repoUrl: 'https://github.com/example/shop.git',
+      branch: 'main',
+      build: 'dockerfile',
+      dockerfilePath: 'Dockerfile',
+      buildContext: '.',
+      image: '',
+      service: 'app',
+      port: 3000,
+      autoDeploy: true,
+      pollEnabled: false,
+      zeroDowntime: true,
+      templateId: '',
+      templateVersion: '',
+    })
+    expect(created).toEqual(
+      expect.objectContaining({
+        id: 'app-1',
+        deployKeyPublic: 'ssh-ed25519 AAAA example',
+        webhookSecret: 'hook-secret',
+        webhookUrl: 'https://panel.example.com/api/v1/hooks/git/app-1',
+      }),
+    )
+    expect(fetchImpl).toHaveBeenLastCalledWith(
+      '/api/v1/servers/srv-1/apps',
+      expect.objectContaining({
+        method: 'POST',
+        body: expect.stringContaining('"stack_name":"shop"'),
+      }),
+    )
+    expect(fetchImpl).toHaveBeenLastCalledWith(
+      '/api/v1/servers/srv-1/apps',
+      expect.objectContaining({
+        body: expect.stringContaining('"repo_url":"https://github.com/example/shop.git"'),
+      }),
+    )
+  })
+
+  it('adds a domain and reads the external proxy blocks', async () => {
+    const fetchImpl = vi.fn((input: RequestInfo | URL) => {
+      if (String(input).endsWith('/domains')) {
+        return Promise.resolve(
+          json({
+            id: 'domain-1',
+            app_id: 'app-1',
+            hostname: 'shop.example.com',
+            service: 'app',
+            port: 3000,
+            created_at: '2026-10-31T12:00:00Z',
+            warning: 'the hostname does not resolve',
+          }),
+        )
+      }
+      return Promise.resolve(
+        json({
+          mode: 'external',
+          domains: [
+            {
+              hostname: 'shop.example.com',
+              app_id: 'app-1',
+              host_port: 23456,
+              apache: '<VirtualHost *:80>',
+              nginx: 'server {}',
+              certbot: 'certbot --apache',
+            },
+          ],
+        }),
+      )
+    })
+    const api = createAppsApi(fetchImpl as unknown as typeof fetch)
+    await expect(
+      api.addDomain('app-1', { hostname: 'shop.example.com', service: 'app', port: 3000 }),
+    ).resolves.toEqual(
+      expect.objectContaining({
+        hostname: 'shop.example.com',
+        warning: 'the hostname does not resolve',
+      }),
+    )
+    await expect(api.proxy('srv-1')).resolves.toEqual({
+      mode: 'external',
+      domains: [
+        expect.objectContaining({
+          hostname: 'shop.example.com',
+          hostPort: 23456,
+          apache: '<VirtualHost *:80>',
+        }),
+      ],
+    })
+    expect(fetchImpl).toHaveBeenLastCalledWith('/api/v1/servers/srv-1/proxy', expect.any(Object))
+  })
+
   it('maps secret variables without a value', async () => {
     const fetchImpl = vi.fn(() =>
       Promise.resolve(

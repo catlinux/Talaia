@@ -13,6 +13,12 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.6.41] - 2026-10-31
+
+### Added
+
+- Panel: **New app** wizard (phase 6 step 12) in five steps (Source, Build, Target, Domain, Review) from a GitHub repository, a template or an existing image, with a side summary, the app name prefilled from the source, and at the end the deploy public key and the webhook URL and secret, shown once. Behind your own Apache the Domain step shows the site block to paste.
+
 ## [0.6.40] - 2026-10-31
 
 ### Added
@@ -945,7 +951,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.6.40...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.6.41...HEAD
+[0.6.41]: https://github.com/catlinux/Talaia/releases/tag/v0.6.41
 [0.6.40]: https://github.com/catlinux/Talaia/releases/tag/v0.6.40
 [0.6.39]: https://github.com/catlinux/Talaia/releases/tag/v0.6.39
 [0.6.38]: https://github.com/catlinux/Talaia/releases/tag/v0.6.38

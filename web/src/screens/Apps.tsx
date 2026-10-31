@@ -43,7 +43,7 @@ export function Apps({ api, client, refreshMs = appsRefreshMs }: AppsListProps) 
   const { query } = useRoute()
   const setQuery = useSetQuery()
   const navigate = useNavigate()
-  const { canSeeStacks, loading: permissionsLoading } = usePermissions()
+  const { canAnywhere, canSeeStacks, loading: permissionsLoading } = usePermissions()
   const appsApi = useMemo(() => api ?? createAppsApi(), [api])
   const fleetClient = useMemo(() => client ?? createApiFleetClient(), [client])
   const language = i18n.resolvedLanguage ?? i18n.language
@@ -235,6 +235,17 @@ export function Apps({ api, client, refreshMs = appsRefreshMs }: AppsListProps) 
           count: visibleApps.length,
           time: loadedAt === null ? '' : formatTime(loadedAt, language),
         })}
+        actions={
+          canAnywhere('stack.edit') ? (
+            <button
+              type="button"
+              className="ui-btn ui-btn--primary"
+              onClick={() => navigate('/apps/new')}
+            >
+              {t('list.newApp')}
+            </button>
+          ) : undefined
+        }
       />
 
       <FilterBar

@@ -5,7 +5,7 @@ import { App } from './App'
 import { AuthGate } from './auth/AuthGate'
 import type { AptApi } from './api/apt'
 import type { AlertsApi } from './api/alerts'
-import type { App as AppModel, AppsApi } from './api/apps'
+import type { App as AppModel, WizardApi } from './api/apps'
 import type { AuditApi } from './api/audit'
 import type { AuthApi } from './api/auth'
 import { createMockFleetClient, type FleetClient } from './api/client'
@@ -270,7 +270,7 @@ interface RenderOptions {
   journalApi?: JournalApi
   systemApi?: SystemApi
   auditApi?: AuditApi
-  appsApi?: AppsApi
+  appsApi?: WizardApi
   alertsApi?: AlertsApi
   usersApi?: UsersApi
   teamsApi?: TeamsApi
@@ -317,7 +317,7 @@ async function openSidebarLink(name: string) {
   fireEvent.click(within(nav).getByRole('link', { name }))
 }
 
-function emptyAppsApi(): AppsApi {
+function emptyAppsApi(): WizardApi {
   const unexpected = () => Promise.reject(new Error('unexpected apps call'))
   return {
     list: () => Promise.resolve([]),
@@ -330,10 +330,14 @@ function emptyAppsApi(): AppsApi {
     deployment: unexpected,
     deploy: unexpected,
     rollback: unexpected,
+    templates: () => Promise.resolve([]),
+    create: unexpected,
+    addDomain: unexpected,
+    proxy: () => Promise.resolve({ mode: 'external', domains: [] }),
   }
 }
 
-function appsApiWithApp(): AppsApi {
+function appsApiWithApp(): WizardApi {
   const item: AppModel = {
     id: 'app-1',
     serverId: 'srv-1',
@@ -598,6 +602,16 @@ describe('App', () => {
 
     expect(await screen.findByRole('heading', { level: 1, name: serversTitles.en })).toBeTruthy()
     expect(window.location.pathname).toBe('/servers')
+  })
+
+  it('opens the new app wizard and its breadcrumb', async () => {
+    window.history.replaceState({}, '', '/apps/new')
+    renderApp({ appsApi: emptyAppsApi() })
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'New app' })).toBeTruthy()
+    const crumbs = await screen.findByRole('navigation', { name: 'Breadcrumb' })
+    expect(within(crumbs).getByRole('link', { name: 'Apps' }).getAttribute('href')).toBe('/apps')
+    expect(within(crumbs).getByText('New app')).toBeTruthy()
   })
 
   it('shows the app name in the breadcrumb and the app page', async () => {

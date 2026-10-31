@@ -20,6 +20,7 @@ export type ApiErrorCode =
   | 'weak_password'
   | 'rate_limited'
   | 'name_taken'
+  | 'app_exists'
   | 'confirmation_required'
   | 'agent_offline'
   | 'agent_busy'
@@ -63,6 +64,7 @@ const knownCodes: readonly ApiErrorCode[] = [
   'weak_password',
   'rate_limited',
   'name_taken',
+  'app_exists',
   'confirmation_required',
   'agent_offline',
   'agent_busy',

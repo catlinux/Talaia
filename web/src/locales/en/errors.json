@@ -7,6 +7,7 @@
   "weakPassword": "The password is too weak.",
   "rateLimited": "Too many attempts in a row. Wait a few minutes and try again.",
   "nameTaken": "A server or a pending token with that name already exists.",
+  "appExists": "An app with that name already exists on this server.",
   "network": "The panel could not reach the server.",
   "generic": "Something went wrong. Try again.",
   "confirmationRequired": "This action needs to be confirmed.",

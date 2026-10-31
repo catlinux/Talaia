@@ -13,6 +13,12 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+## [0.6.41] - 2026-10-31
+
+### Añadido
+
+- Panel: asistente **Nueva app** (fase 6, paso 12) en cinco pasos (Origen, Construcción, Destino, Dominio y Revisión) desde un repositorio de GitHub, una plantilla o una imagen existente, con resumen lateral, el nombre de la app sugerido a partir del origen y, al final, la clave pública de despliegue y la URL y el secreto del webhook, que se muestran una sola vez. Detrás de tu propio Apache, el paso Dominio muestra el bloque del sitio para pegar.
+
 ## [0.6.40] - 2026-10-31
 
 ### Añadido
@@ -945,7 +951,8 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
   `.gitattributes` y `.gitignore`.
 - Licencia WNCL-1.0 aplicada: archivo `LICENSE` y sección de créditos en los README.
 
-[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.6.40...HEAD
+[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.6.41...HEAD
+[0.6.41]: https://github.com/catlinux/Talaia/releases/tag/v0.6.41
 [0.6.40]: https://github.com/catlinux/Talaia/releases/tag/v0.6.40
 [0.6.39]: https://github.com/catlinux/Talaia/releases/tag/v0.6.39
 [0.6.38]: https://github.com/catlinux/Talaia/releases/tag/v0.6.38

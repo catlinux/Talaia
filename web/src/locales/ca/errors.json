@@ -7,6 +7,7 @@
   "weakPassword": "La contrasenya és massa feble.",
   "rateLimited": "Massa intents seguits. Espera uns minuts i torna-ho a provar.",
   "nameTaken": "Ja hi ha un servidor o un token pendent amb aquest nom.",
+  "appExists": "Ja existeix una app amb aquest nom en aquest servidor.",
   "network": "No s'ha pogut contactar amb el servidor.",
   "generic": "Alguna cosa ha fallat. Torna-ho a provar.",
   "confirmationRequired": "Cal confirmar aquesta acció.",

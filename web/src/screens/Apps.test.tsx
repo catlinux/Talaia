@@ -203,6 +203,16 @@ describe('apps list', () => {
     expect(await screen.findByText('No apps match these filters')).toBeTruthy()
   })
 
+  it('offers the new-app wizard to app editors', async () => {
+    const api = fakeApi()
+    renderWithPermissions(
+      meApi(organization('stack.view', 'stack.edit')),
+      <Apps api={api} client={fleet()} refreshMs={0} />,
+    )
+
+    expect(await screen.findByRole('button', { name: 'New app' })).toBeTruthy()
+  })
+
   it('hides the screen data from users without stack.view anywhere', async () => {
     const api = fakeApi()
     renderWithPermissions(

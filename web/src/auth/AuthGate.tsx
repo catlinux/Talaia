@@ -39,6 +39,7 @@ const errorKeys: Record<ApiErrorCode, string> = {
   weak_password: 'weakPassword',
   rate_limited: 'rateLimited',
   name_taken: 'nameTaken',
+  app_exists: 'appExists',
   confirmation_required: 'confirmationRequired',
   agent_offline: 'agentOffline',
   agent_busy: 'agentBusy',

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import { useTranslation } from 'react-i18next'
 
 import type { AptApi } from './api/apt'
-import { createAppsApi, type AppsApi } from './api/apps'
+import { createAppsApi, type WizardApi } from './api/apps'
 import type { AuditApi } from './api/audit'
 import { createAlertsApi, type AlertsApi, type AlertSummary } from './api/alerts'
 import { createAlertsAdminApi, type AlertsAdminApi } from './api/alertsAdmin'
@@ -27,6 +27,7 @@ import { Link, matchRoute, RouterProvider, useNavigate, useRoute } from './route
 import { About } from './screens/About'
 import { Apps } from './screens/Apps'
 import { AppDetail } from './screens/apps/AppDetail'
+import { NewAppWizard } from './screens/apps/wizard/NewAppWizard'
 import { Audit } from './screens/Audit'
 import { Alerts } from './screens/Alerts'
 import { Catalog } from './screens/Catalog'
@@ -54,7 +55,7 @@ interface AppProps {
   /** Audit API of the audit screen. Tests inject their own. */
   auditApi?: AuditApi
   /** Apps API of the apps screens. Tests inject their own. */
-  appsApi?: AppsApi
+  appsApi?: WizardApi
   alertsApi?: AlertsApi
   alertsAdminApi?: AlertsAdminApi
   metricsApi?: MetricsApi
@@ -107,6 +108,7 @@ function PanelShell({
   const canAlerts = canAnywhere('alerts.view')
   const canContainers = canAnywhere('container.view')
   const canStacks = canAnywhere('stack.view')
+  const canEditApps = canAnywhere('stack.edit')
 
   const alerts = alertsApi ?? defaultAlertsApi
   const alertsAdmin = alertsAdminApi ?? defaultAlertsAdminApi
@@ -148,8 +150,9 @@ function PanelShell({
   const requestedAppNames = useRef(new Set<string>())
   const serverMatch = matchRoute('/servers/:id/*', path)
   const serverID = serverMatch?.params.id ?? ''
+  const newApp = matchRoute('/apps/new', path) !== null
   const appMatch = matchRoute('/apps/:id', path)
-  const appID = appMatch?.params.id ?? ''
+  const appID = newApp ? '' : (appMatch?.params.id ?? '')
   const serverName = serverID === '' ? undefined : serverNames[serverID]
   const serverDetail = serverID === '' ? undefined : serverDetails[serverID]
   const appName = appID === '' ? undefined : appNames[appID]
@@ -284,6 +287,12 @@ function PanelShell({
   } else if (isStacks) {
     page = canStacks ? (
       <Stacks client={fleetClient} containersApi={containersApi} />
+    ) : (
+      <PanelMessage title={t('shell.noAccess')} />
+    )
+  } else if (newApp) {
+    page = canEditApps ? (
+      <NewAppWizard api={apps} client={fleetClient} />
     ) : (
       <PanelMessage title={t('shell.noAccess')} />
     )
