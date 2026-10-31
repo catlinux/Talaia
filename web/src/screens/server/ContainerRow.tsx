@@ -85,7 +85,7 @@ export function ContainerRow({
         <div className="container__head">
           <h3 className="container__name">{container.name}</h3>
           <InfoTip>
-            <WhatIsThis target={{ kind: 'container', container }} />
+            <WhatIsThis target={{ kind: 'container', container, serverId }} />
           </InfoTip>
           <span className={`status status--${isRunning ? 'online' : 'offline'}`}>
             {t(`state.${container.state}`, { defaultValue: container.state })}

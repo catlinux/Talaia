@@ -370,7 +370,7 @@ export function ServicesSection({ api, serverId, pollMs, onLoaded }: ServicesSec
                     <div className="services__headline">
                       <h3 className="services__name">{service.name}</h3>
                       <InfoTip>
-                        <WhatIsThis target={{ kind: 'service', unit: service }} />
+                        <WhatIsThis target={{ kind: 'service', unit: service, serverId }} />
                       </InfoTip>
                       <span className={`status status--${stateTone(service.activeState)}`}>
                         {service.activeState

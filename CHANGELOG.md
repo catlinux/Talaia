@@ -13,6 +13,12 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.6.32] - 2026-10-31
+
+### Added
+
+- Panel: the full card of a container, stack or service shows **Your note** for that server, with author and date, and lets users with the control permission add or edit it (up to 500 characters).
+
 ## [0.6.31] - 2026-10-31
 
 ### Added
@@ -891,7 +897,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.6.31...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.6.32...HEAD
+[0.6.32]: https://github.com/catlinux/Talaia/releases/tag/v0.6.32
 [0.6.31]: https://github.com/catlinux/Talaia/releases/tag/v0.6.31
 [0.6.30]: https://github.com/catlinux/Talaia/releases/tag/v0.6.30
 [0.6.29]: https://github.com/catlinux/Talaia/releases/tag/v0.6.29

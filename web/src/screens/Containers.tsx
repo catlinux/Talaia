@@ -476,7 +476,9 @@ export function Containers({
           <span className="fleetwide__name-line">
             <strong>{row.container.name}</strong>
             <InfoTip>
-              <WhatIsThis target={{ kind: 'container', container: row.container }} />
+              <WhatIsThis
+                target={{ kind: 'container', container: row.container, serverId: row.serverId }}
+              />
             </InfoTip>
           </span>
           {row.container.composeService !== '' ? (

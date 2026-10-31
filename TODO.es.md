@@ -181,8 +181,6 @@ Decisiones cerradas el 2026-10-30: proxy externo por defecto (Talaia nunca toca 
 
 Apunta aquí las ideas nuevas en lugar de añadirlas a la fase actual.
 
-- Notas propias por contenedor o servicio (por ejemplo «web de la tienda, no tocar en horario comercial»), guardadas en el core
-- Restablecer la verificación en dos pasos de un usuario desde Usuarios (necesita un endpoint en el core y una acción auditada y confirmada)
 - Builds sin Dockerfile (Nixpacks/Railpack), webhooks de GitLab y Gitea/Forgejo, y escribir la configuración de Apache/nginx automáticamente (fuera de la fase 6 desde el 2026-10-30)
 - App móvil (PWA) con notificaciones push
 - Integración con Tailscale/Headscale para crear la red privada automáticamente

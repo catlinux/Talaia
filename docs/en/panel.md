@@ -101,6 +101,10 @@ it**, **If it fails** with its **Common problems** and how to fix them, **How to
 commands you can copy (`systemctl status`, `journalctl` or `docker logs`, plus specific tools such as
 `certbot certificates`), the origin and a link to the official documentation.
 
+On a container, stack or service page, the full card also shows **Your note** for that server and
+resource. People with control permission can add or edit a note (up to 500 characters); anyone who can
+see the resource can read it.
+
 ## Catalogue
 
 **Catalogue**, under Administration, lists every service and container image Talaia recognises,

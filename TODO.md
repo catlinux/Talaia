@@ -181,8 +181,6 @@ Decisions closed on 2026-10-30: external proxy by default (Talaia never touches 
 
 Write new ideas here instead of adding them to the current phase.
 
-- Own notes per container or service (for example "shop website, do not touch during opening hours"), stored in the core
-- Reset a user's two-factor authentication from Users (needs a core endpoint and an audited, confirmed action)
 - Builds without a Dockerfile (Nixpacks/Railpack), GitLab and Gitea/Forgejo webhooks, and writing the Apache/nginx configuration automatically (left out of phase 6 on 2026-10-30)
 - Mobile app (PWA) with push notifications
 - Integration with Tailscale/Headscale to create the private network automatically

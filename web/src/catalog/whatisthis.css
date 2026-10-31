@@ -189,6 +189,93 @@
   overflow-wrap: anywhere;
 }
 
+.whatisthis__note-text {
+  margin: 0;
+  color: var(--ink-2);
+  font-size: 14px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.whatisthis__note-meta,
+.whatisthis__note-empty,
+.whatisthis__note-counter {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.whatisthis__note-action {
+  align-self: flex-start;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: left;
+}
+
+.whatisthis__note-action:hover {
+  text-decoration: underline;
+}
+
+.whatisthis__note-action:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.whatisthis__note-form {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.whatisthis__note-input {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 96px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+  line-height: 1.45;
+  resize: vertical;
+}
+
+.whatisthis__note-input:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.whatisthis__note-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.whatisthis__note-actions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.whatisthis__note-error {
+  margin: 0;
+  color: var(--crit);
+  font-size: 12.5px;
+  line-height: 1.4;
+}
+
 .whatisthis__section .whatisthis__what,
 .whatisthis__section .whatisthis__fail,
 .whatisthis__section .whatisthis__origin {

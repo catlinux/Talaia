@@ -381,7 +381,14 @@ export function Stacks({
             {row.stack}
           </Link>
           <InfoTip>
-            <WhatIsThis target={{ kind: 'stack', name: row.stack, containers: row.containers }} />
+            <WhatIsThis
+              target={{
+                kind: 'stack',
+                name: row.stack,
+                containers: row.containers,
+                serverId: row.serverId,
+              }}
+            />
           </InfoTip>
         </span>
       ),

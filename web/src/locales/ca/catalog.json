@@ -1782,5 +1782,19 @@
     "service": "Servei",
     "image": "Imatge",
     "both": "Tots dos"
+  },
+  "note": {
+    "label": "La teva nota",
+    "loading": "S’està carregant la nota…",
+    "empty": "Encara no hi ha cap nota.",
+    "by": "per {{user}}, {{date}}",
+    "add": "Afegeix una nota",
+    "edit": "Edita",
+    "save": "Desa",
+    "cancel": "Cancel·la",
+    "saving": "S’està desant…",
+    "counter": "{{count}}/500 caràcters",
+    "saved": "Nota desada.",
+    "removed": "Nota eliminada."
   }
 }

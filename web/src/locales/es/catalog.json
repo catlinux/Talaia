@@ -1782,5 +1782,19 @@
     "service": "Servicio",
     "image": "Imagen",
     "both": "Ambos"
+  },
+  "note": {
+    "label": "Tu nota",
+    "loading": "Cargando la nota…",
+    "empty": "Todavía no hay nota.",
+    "by": "por {{user}}, {{date}}",
+    "add": "Añadir nota",
+    "edit": "Editar",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "saving": "Guardando…",
+    "counter": "{{count}}/500 caracteres",
+    "saved": "Nota guardada.",
+    "removed": "Nota eliminada."
   }
 }

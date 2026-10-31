@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 
 import type { Container } from '../api/containers'
 import type { ServiceUnit } from '../api/services'
+import { usePermissions } from '../auth/permissions'
 import i18n from '../i18n'
 import {
   catalog,
@@ -14,6 +15,7 @@ import {
   type CatalogImportance,
 } from './catalog'
 import { useCatalogDrawer } from './CatalogDrawer'
+import { ResourceNote } from './ResourceNote'
 import './whatisthis.css'
 
 export type DescriptionImportance = CatalogImportance | 'unknown'
@@ -234,9 +236,9 @@ function CatalogText({ value }: { value: string }) {
 }
 
 export type WhatIsThisTarget =
-  | { kind: 'service'; unit: ServiceUnit }
-  | { kind: 'container'; container: Container }
-  | { kind: 'stack'; name: string; containers: Container[] }
+  | { kind: 'service'; unit: ServiceUnit; serverId?: string }
+  | { kind: 'container'; container: Container; serverId?: string }
+  | { kind: 'stack'; name: string; containers: Container[]; serverId?: string }
   | { kind: 'entry'; id: string }
 
 interface WhatIsThisProps {
@@ -248,6 +250,7 @@ interface WhatIsThisProps {
 export function WhatIsThis({ target, variant = 'compact' }: WhatIsThisProps) {
   const { t } = useTranslation('catalog')
   const drawer = useCatalogDrawer()
+  const permissions = usePermissions()
   const [copiedCommand, setCopiedCommand] = useState<string | null>(null)
   const description =
     target.kind === 'service'
@@ -258,6 +261,32 @@ export function WhatIsThis({ target, variant = 'compact' }: WhatIsThisProps) {
           ? describeEntry(target.id)
           : describeStack(target.name, target.containers)
   const full = variant === 'full'
+  const noteTarget =
+    full && target.kind !== 'entry' && target.serverId !== undefined
+      ? target.kind === 'service'
+        ? {
+            kind: 'services' as const,
+            name: target.unit.name,
+            serverId: target.serverId,
+            permission: 'host.services.control' as const,
+            scope: { serverId: target.serverId },
+          }
+        : target.kind === 'container'
+          ? {
+              kind: 'containers' as const,
+              name: target.container.name,
+              serverId: target.serverId,
+              permission: 'container.control' as const,
+              scope: { serverId: target.serverId, container: target.container.name },
+            }
+          : {
+              kind: 'stacks' as const,
+              name: target.name,
+              serverId: target.serverId,
+              permission: 'stack.deploy' as const,
+              scope: { serverId: target.serverId, stack: target.name },
+            }
+      : null
 
   const copy = (command: string) => {
     const clipboard = navigator.clipboard
@@ -283,6 +312,17 @@ export function WhatIsThis({ target, variant = 'compact' }: WhatIsThisProps) {
           </span>
         </span>
       </div>
+
+      {noteTarget !== null ? (
+        <ResourceNote
+          key={`${noteTarget.serverId}:${noteTarget.kind}:${noteTarget.name}`}
+          serverId={noteTarget.serverId}
+          kind={noteTarget.kind}
+          name={noteTarget.name}
+          canEdit={permissions.can(noteTarget.permission, noteTarget.scope)}
+          username={permissions.user?.username}
+        />
+      ) : null}
 
       {full ? (
         <>

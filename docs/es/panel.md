@@ -111,6 +111,10 @@ comprobarlo** con órdenes que puedes copiar (`systemctl status`, `journalctl` o
 de herramientas concretas como `certbot certificates`), el origen y un enlace a la documentación
 oficial.
 
+En un contenedor, stack o servicio, la ficha completa también muestra **Tu nota** para ese servidor y
+recurso. Quien tenga permiso de control puede añadir o editar una nota (hasta 500 caracteres);
+cualquiera que pueda ver el recurso puede leerla.
+
 ## Catálogo
 
 **Catálogo**, en Administración, lista todos los servicios e imágenes de contenedor que Talaia

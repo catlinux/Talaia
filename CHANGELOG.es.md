@@ -13,6 +13,12 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+## [0.6.32] - 2026-10-31
+
+### Añadido
+
+- Panel: la ficha completa de un contenedor, stack o servicio muestra **Tu nota** de ese servidor, con autor y fecha, y deja añadirla o editarla a quien tiene el permiso de control (hasta 500 caracteres).
+
 ## [0.6.31] - 2026-10-31
 
 ### Añadido
@@ -891,7 +897,8 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
   `.gitattributes` y `.gitignore`.
 - Licencia WNCL-1.0 aplicada: archivo `LICENSE` y sección de créditos en los README.
 
-[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.6.31...HEAD
+[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.6.32...HEAD
+[0.6.32]: https://github.com/catlinux/Talaia/releases/tag/v0.6.32
 [0.6.31]: https://github.com/catlinux/Talaia/releases/tag/v0.6.31
 [0.6.30]: https://github.com/catlinux/Talaia/releases/tag/v0.6.30
 [0.6.29]: https://github.com/catlinux/Talaia/releases/tag/v0.6.29
