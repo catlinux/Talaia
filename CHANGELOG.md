@@ -18,6 +18,12 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.6.21] - 2026-10-31
+
+### Fixed
+
+- Panel: the Servers table fits a 1440 px screen, Overview has its own icon, links in tables are only underlined on hover and the audit table is easier to read.
+
 ## [0.6.20] - 2026-10-31
 
 ### Fixed
@@ -822,7 +828,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.6.20...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.6.21...HEAD
+[0.6.21]: https://github.com/catlinux/Talaia/releases/tag/v0.6.21
 [0.6.20]: https://github.com/catlinux/Talaia/releases/tag/v0.6.20
 [0.6.19]: https://github.com/catlinux/Talaia/releases/tag/v0.6.19
 [0.6.18]: https://github.com/catlinux/Talaia/releases/tag/v0.6.18

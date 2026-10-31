@@ -35,6 +35,17 @@ export function FleetIcon({ className }: IconProps) {
   )
 }
 
+export function OverviewIcon({ className }: IconProps) {
+  return (
+    <Icon className={className}>
+      <rect x="3" y="3" width="7.5" height="7.5" rx="1.6" />
+      <rect x="13.5" y="3" width="7.5" height="7.5" rx="1.6" />
+      <rect x="3" y="13.5" width="7.5" height="7.5" rx="1.6" />
+      <rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.6" />
+    </Icon>
+  )
+}
+
 export function UsersIcon({ className }: IconProps) {
   return (
     <Icon className={className}>

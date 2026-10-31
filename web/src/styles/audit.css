@@ -32,7 +32,7 @@
 
 .audit__muted {
   color: var(--muted);
-  font-size: 0.75rem;
+  font-size: inherit;
 }
 
 .audit__details {

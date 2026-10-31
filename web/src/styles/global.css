@@ -32,6 +32,15 @@ a {
   color: var(--accent);
 }
 
+.ui-table a {
+  text-decoration: none;
+}
+
+.ui-table a:not(.ui-btn):hover,
+.ui-table a:not(.ui-btn):focus-visible {
+  text-decoration: underline;
+}
+
 h1,
 h2,
 h3 {

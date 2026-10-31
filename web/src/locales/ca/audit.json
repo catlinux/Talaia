@@ -30,8 +30,7 @@
     "result": "Resultat",
     "server": "Servidor",
     "details": "Detalls",
-    "target": "Destí",
-    "targetValue": "Destí: {{value}}"
+    "target": "Destí"
   },
   "result": {
     "success": "Correcte",

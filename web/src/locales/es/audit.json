@@ -30,8 +30,7 @@
     "result": "Resultado",
     "server": "Servidor",
     "details": "Detalles",
-    "target": "Destino",
-    "targetValue": "Destino: {{value}}"
+    "target": "Destino"
   },
   "result": {
     "success": "Correcto",

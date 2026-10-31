@@ -4,7 +4,16 @@ import { useTranslation } from 'react-i18next'
 import type { AlertSummary } from '../../api/alerts'
 import { usePermissions } from '../../auth/permissions'
 import { Logo } from '../Logo'
-import { AlertIcon, AuditIcon, CloseIcon, FleetIcon, GearIcon, LogsIcon, UsersIcon } from '../icons'
+import {
+  AlertIcon,
+  AuditIcon,
+  CloseIcon,
+  FleetIcon,
+  GearIcon,
+  LogsIcon,
+  OverviewIcon,
+  UsersIcon,
+} from '../icons'
 import { AlertsBadge } from '../../screens/Alerts'
 import { Link, useRoute } from '../../router'
 
@@ -169,7 +178,7 @@ export function Sidebar({ alertSummary, mobileOpen, onClose }: SidebarProps) {
             aria-current={path === '/' ? 'page' : undefined}
             onClick={closeAfterNavigate}
           >
-            <FleetIcon />
+            <OverviewIcon />
             <span className="shell__nav-label">{t('nav.overview')}</span>
           </Link>
 

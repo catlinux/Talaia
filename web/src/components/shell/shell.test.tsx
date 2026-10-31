@@ -106,6 +106,9 @@ describe('Sidebar', () => {
     expect(within(nav).getByRole('link', { name: 'Overview' }).getAttribute('aria-current')).toBe(
       'page',
     )
+    expect(
+      within(nav).getByRole('link', { name: 'Overview' }).querySelector('svg')?.innerHTML,
+    ).not.toBe(within(nav).getByRole('link', { name: 'Servers' }).querySelector('svg')?.innerHTML)
 
     fireEvent.click(within(nav).getByRole('link', { name: 'Servers' }))
 

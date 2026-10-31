@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -95,9 +95,13 @@ describe('Audit', () => {
     expect(screen.getByText('Failure')).toBeTruthy()
     expect(screen.getByText('vps-web-01')).toBeTruthy()
     expect(screen.getByText('No server')).toBeTruthy()
-
-    fireEvent.click(screen.getByRole('button', { name: 'Details' }))
+    expect(screen.queryByText('Target: <b>web</b>')).toBeNull()
     expect(screen.getByText('<b>web</b>')).toBeTruthy()
+
+    const detailsButton = screen.getByRole('button', { name: 'Details' })
+    expect(detailsButton.className).toBe('ui-btn')
+    fireEvent.click(detailsButton)
+    expect(within(screen.getByRole('dialog')).getByText('<b>web</b>')).toBeTruthy()
     expect(document.querySelector('b')).toBeNull()
     expect(screen.getByText('bash')).toBeTruthy()
   })

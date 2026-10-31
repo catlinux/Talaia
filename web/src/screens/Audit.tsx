@@ -287,7 +287,7 @@ export function Audit({ api = defaultApi, limit = 50, serverNames, recordingsApi
       header: t('table.target'),
       cell: (entry) => {
         const target = detailTarget(entry.details)
-        return target === '' ? '—' : t('table.targetValue', { value: target })
+        return target === '' ? '—' : target
       },
     },
     {
@@ -317,7 +317,7 @@ export function Audit({ api = defaultApi, limit = 50, serverNames, recordingsApi
       header: t('table.details'),
       cell: (entry) =>
         entry.details !== null && Object.keys(entry.details).length > 0 ? (
-          <button type="button" className="ui-btn ui-btn--ghost" onClick={() => setDetails(entry)}>
+          <button type="button" className="ui-btn" onClick={() => setDetails(entry)}>
             {t('details.show')}
           </button>
         ) : (

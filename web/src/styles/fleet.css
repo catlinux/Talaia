@@ -977,3 +977,14 @@
     order: 2;
   }
 }
+
+/* With the sidebar open, 1440px leaves about 1160px for the table. Hide the
+   secondary OS and updates columns below 1600px; Agent and the row menu stay. */
+@media (max-width: 1599px) {
+  .servers__table .ui-table th:nth-child(3),
+  .servers__table .ui-table td:nth-child(3),
+  .servers__table .ui-table th:nth-child(9),
+  .servers__table .ui-table td:nth-child(9) {
+    display: none;
+  }
+}

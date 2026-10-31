@@ -487,6 +487,7 @@ function columnsFor(context: ColumnsContext): DataTableColumn<Server>[] {
     {
       id: 'status',
       header: t('servers.columns.status'),
+      width: 82,
       sortValue: sortable,
       cell: (server) => (
         <StatusBadge status={statusByServer[server.status]} label={detailLabel(server)} />
@@ -495,6 +496,7 @@ function columnsFor(context: ColumnsContext): DataTableColumn<Server>[] {
     {
       id: 'name',
       header: t('servers.columns.name'),
+      width: 180,
       sortValue: sortable,
       cell: (server) => (
         <span className="servers__name">
@@ -511,6 +513,7 @@ function columnsFor(context: ColumnsContext): DataTableColumn<Server>[] {
     {
       id: 'os',
       header: t('servers.columns.os'),
+      width: 160,
       hideOnMobile: true,
       sortValue: sortable,
       cell: (server) =>
@@ -521,6 +524,7 @@ function columnsFor(context: ColumnsContext): DataTableColumn<Server>[] {
     {
       id: 'cpu',
       header: t('servers.columns.cpu'),
+      width: 100,
       sortValue: sortable,
       cell: (server) =>
         server.limited ? (
@@ -532,6 +536,7 @@ function columnsFor(context: ColumnsContext): DataTableColumn<Server>[] {
     {
       id: 'ram',
       header: t('servers.columns.ram'),
+      width: 100,
       sortValue: sortable,
       cell: (server) =>
         server.limited ? (
@@ -543,6 +548,7 @@ function columnsFor(context: ColumnsContext): DataTableColumn<Server>[] {
     {
       id: 'disk',
       header: t('servers.columns.disk'),
+      width: 100,
       sortValue: sortable,
       cell: (server) =>
         server.limited ? (
@@ -554,6 +560,7 @@ function columnsFor(context: ColumnsContext): DataTableColumn<Server>[] {
     {
       id: 'containers',
       header: t('servers.columns.containers'),
+      width: 76,
       sortValue: sortable,
       align: 'right',
       cell: (server) =>
@@ -564,6 +571,7 @@ function columnsFor(context: ColumnsContext): DataTableColumn<Server>[] {
     {
       id: 'alerts',
       header: t('servers.columns.alerts'),
+      width: 60,
       sortValue: sortable,
       align: 'right',
       cell: (server) => {
@@ -588,6 +596,7 @@ function columnsFor(context: ColumnsContext): DataTableColumn<Server>[] {
     {
       id: 'updates',
       header: t('servers.columns.updates'),
+      width: 140,
       hideOnMobile: true,
       sortValue: sortable,
       cell: (server) => {
@@ -616,6 +625,7 @@ function columnsFor(context: ColumnsContext): DataTableColumn<Server>[] {
     {
       id: 'agent',
       header: t('servers.columns.agent'),
+      width: 160,
       hideOnMobile: true,
       sortValue: sortable,
       cell: (server) => {
@@ -636,6 +646,7 @@ function columnsFor(context: ColumnsContext): DataTableColumn<Server>[] {
     {
       id: 'actions',
       header: '',
+      width: 52,
       align: 'right',
       cell: (server) => (server.limited ? dash : <RowMenu server={server} canAlerts={canAlerts} />),
     },

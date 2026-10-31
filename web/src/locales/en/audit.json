@@ -30,8 +30,7 @@
     "result": "Result",
     "server": "Server",
     "details": "Details",
-    "target": "Target",
-    "targetValue": "Target: {{value}}"
+    "target": "Target"
   },
   "result": {
     "success": "Success",
