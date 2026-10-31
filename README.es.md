@@ -258,7 +258,7 @@ modelo de seguridad y qué se graba están en [docs/es/seguridad.md](docs/es/seg
 | Agente | Go 1.26 · Docker SDK · go-systemd (D-Bus) · sdjournal · gopsutil · creack/pty |
 | Núcleo | Go · chi · connect-go (gRPC) · sqlc · River (cola de tareas) |
 | Base de datos | PostgreSQL 16 con la extensión TimescaleDB (obligatoria) |
-| Panel web | React · TypeScript · Vite · TanStack Query/Router · Tailwind · xterm.js · Monaco · uPlot |
+| Panel web | React · TypeScript · Vite · i18next · xterm.js · CSS plano |
 | i18n | i18next (web) · go-i18n (núcleo, agente, CLI) |
 | Proxy inverso | Caddy (gestionado mediante su API de administración) |
 | Copias | restic |
@@ -284,6 +284,7 @@ La **documentación** del proyecto se escribe en **inglés y castellano**. Algun
 también están en **catalán**.
 
 - Monitorización, alertas y comprobaciones: [docs/es/monitorizacion.md](docs/es/monitorizacion.md)
+- Guía del panel web: [docs/es/panel.md](docs/es/panel.md)
 
 ## Estructura del repositorio
 

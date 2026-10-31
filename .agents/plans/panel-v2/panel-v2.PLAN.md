@@ -98,7 +98,7 @@ y hace las capturas (arnés temporal: memoria `handoff.md`, «Capturas»). Cada 
 | 10 ✅ | Mudar Reglas, Canales y Comprobaciones de Ajustes a Alertas (pestañas por permiso); Ajustes queda con cuenta, servidores, integraciones y sistema | `web/src/screens/alerts/**`, `web/src/screens/Settings.tsx`, `web/src/screens/settings/SettingsTabs.tsx`, locales | sin pérdida de funciones; tests movidos y verdes | AgentRelay · medio |
 | 11 ✅ | Paleta de comandos (`Ctrl+K`): ir a servidor/contenedor/stack/pantalla y acciones frecuentes | `web/src/components/shell/CommandPalette*.tsx`, locales | tests de búsqueda y teclado | AgentRelay · medio |
 | 12 ✅ (12a Usuarios 0.6.17, 12b Auditoría 0.6.18, 12c Ajustes 0.6.19) | Usuarios, Auditoría y Ajustes con los componentes nuevos (tablas, cabeceras, diálogos) | `web/src/screens/{Users,Audit,Settings}*.tsx` y subcarpetas | capturas; tests verdes | AgentRelay · medio |
-| 13 | Repaso móvil y accesibilidad, capturas finales, docs EN+ES (guía del panel), revisión Opus del bloque | `docs/{en,es}/**`, ajustes menores | 390 px sin desbordes; revisión hecha | Opus |
+| 13 ✅ (13a 0.6.20, 13b 0.6.21, 13c 0.6.22) | Repaso móvil y accesibilidad, capturas finales, docs EN+ES (guía del panel), revisión Opus del bloque | `docs/{en,es}/**`, ajustes menores | 390 px sin desbordes; revisión hecha | Opus |
 
 Orden: 0 → 1 → 2 → 3, luego 4-12 en cualquier orden salvo 7b tras 7, 9 tras 8 y 10 tras 8. Después se retoma la fase 6 en su
 paso 5.

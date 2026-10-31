@@ -40,7 +40,7 @@ ni a un operador de app.
 La base es la contraseña del administrador más TOTP, con los códigos de recuperación como vía de vuelta. Hay dos
 métodos opcionales que hacen más rápido el acceso habitual:
 
-- **Un PIN en un dispositivo de confianza.** Desde **Ajustes > Acceso**, un navegador con sesión iniciada se
+- **Un PIN en un dispositivo de confianza.** Desde **Ajustes > Cuenta**, un navegador con sesión iniciada se
   convierte en un dispositivo de confianza con un PIN de 6 a 12 dígitos y la contraseña actual. El núcleo le
   envía una cookie `__Host-talaia_device` de 180 días y guarda solo su hash; el PIN no sirve sin esa cookie y se
   guarda con hash. Cinco PIN erróneos desactivan el dispositivo. El TOTP se vuelve a pedir cuando se cierra el

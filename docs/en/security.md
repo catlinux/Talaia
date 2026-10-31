@@ -37,7 +37,7 @@ terminals remain root-equivalent and are never granted to a viewer or an app ope
 The base is the administrator password plus TOTP, with the recovery codes as the way back in. Two optional
 methods make regular sign-in faster:
 
-- **A PIN on a trusted device.** From **Settings > Access**, a signed-in browser becomes a trusted device with a
+- **A PIN on a trusted device.** From **Settings > Account**, a signed-in browser becomes a trusted device with a
   6-12 digit PIN and the current password. The core sends it a 180-day `__Host-talaia_device` cookie and stores
   only its hash; the PIN is useless without that cookie and is stored hashed. Five wrong PINs disable the
   device. TOTP is asked again when the browser is closed or after `device_mfa_hours` (default 12, range 1-168),

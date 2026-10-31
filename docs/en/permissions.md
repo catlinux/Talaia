@@ -140,7 +140,8 @@ account, its access, API keys and team memberships go, and the audit history kee
 API keys are for scripts and CI. They use their own role assignments and are always capped by the
 owner's current permissions.
 
-- **Create:** **Settings > API keys**, choose a name, lifetime and access, and type a fresh TOTP code.
+- **Create:** **Settings > Integrations > API keys**, choose a name, lifetime and access, and type a
+  fresh TOTP code.
 - **Format:** `tlk_<12-character key id>_<32-character secret>`.
 - **Shown once:** only a hash of the secret is stored. Copy it when the dialog appears; it cannot be
   recovered.
@@ -169,7 +170,8 @@ shell command that other users can read.
 
 Talaia supports one generic OpenID Connect provider.
 
-1. In **Settings > Single sign-on**, enter the issuer URL, client ID, client secret and button label.
+1. In **Settings > Integrations > Single sign-on**, enter the issuer URL, client ID, client secret
+   and button label.
 2. Register the redirect URL shown in the panel at the provider. It is normally
    `https://panel.example.com:8443/api/v1/auth/oidc/callback`; use the exact value shown.
 3. Enable and save. Saving checks discovery; a bad issuer or unreachable provider returns

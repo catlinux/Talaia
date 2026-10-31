@@ -45,7 +45,7 @@ tener como máximo 10 dispositivos de confianza activos.
 ### Configurarlo
 
 1. Entra con la contraseña y TOTP.
-2. Abre **Ajustes > Acceso**.
+2. Abre **Ajustes > Cuenta**.
 3. En **Dispositivos de confianza**, rellena **Nombre del dispositivo** (por ejemplo, el nombre del portátil),
    **Contraseña actual**, **PIN** y **Confirmar PIN**.
 4. Pulsa **Confiar en este dispositivo**.
@@ -66,7 +66,7 @@ pulsa **Entra con PIN**:
 
 ### Quitarlo
 
-Abre **Ajustes > Acceso > Dispositivos de confianza** y pulsa **Elimina** junto al dispositivo. Si es el
+Abre **Ajustes > Cuenta > Dispositivos de confianza** y pulsa **Elimina** junto al dispositivo. Si es el
 navegador actual, el panel también olvida el nombre local del dispositivo; el siguiente acceso empieza por la
 contraseña.
 
@@ -111,7 +111,7 @@ el dispositivo o instala el panel con un certificado en el que confíe el navega
 ### Configurarlas
 
 1. Entra con la contraseña y TOTP.
-2. Abre **Ajustes > Acceso**.
+2. Abre **Ajustes > Cuenta**.
 3. En **Claves de acceso**, pulsa **Añadir una clave de acceso**.
 4. Escribe un **Nombre de la clave de acceso** y tu **Contraseña actual**.
 5. Confirma el aviso del navegador con la huella, la cara o el PIN del dispositivo.
@@ -127,7 +127,7 @@ error; el formulario de contraseña sigue ahí.
 
 ### Quitarlas
 
-Abre **Ajustes > Acceso > Claves de acceso** y pulsa **Elimina** junto a la clave. La clave privada se queda en
+Abre **Ajustes > Cuenta > Claves de acceso** y pulsa **Elimina** junto a la clave. La clave privada se queda en
 el autenticador; eliminar la clave solo borra el registro de clave pública de Talaia, así que el mismo
 autenticador se puede volver a registrar más adelante. Elimina una clave que ya no controles antes de añadir su
 sustituta.
@@ -156,7 +156,7 @@ recuperación; después añade una clave nueva desde Ajustes.
 | No aparece el botón de la clave de acceso | El navegador no tiene WebAuthn, el despliegue no tiene un nombre DNS HTTPS en `public_hostnames` o se eliminó la clave. Usa contraseña + TOTP y revisa los requisitos de arriba. |
 | El aviso de la clave falla o el navegador no confía en el panel | Con la CA propia, algunos navegadores rechazan las claves. Confía en la CA en el dispositivo o usa un certificado en el que confíe el navegador, y vuelve a probar. |
 | Una clave de acceso dejó de funcionar | Puede que el autenticador haya informado de un contador de firmas menor que el guardado y Talaia la haya desactivado. Revisa el dispositivo y vuelve a añadir la clave. |
-| Se pierde el dispositivo o el autenticador | Usa la contraseña, el TOTP y los códigos de recuperación. Cuando vuelvas a entrar, elimina el dispositivo o la clave perdidos en **Ajustes > Acceso**. |
+| Se pierde el dispositivo o el autenticador | Usa la contraseña, el TOTP y los códigos de recuperación. Cuando vuelvas a entrar, elimina el dispositivo o la clave perdidos en **Ajustes > Cuenta**. |
 
 ## Véase también
 

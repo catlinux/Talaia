@@ -255,7 +255,7 @@ and what is recorded are in [docs/en/security.md](docs/en/security.md).
 | Agent | Go 1.26 · Docker SDK · go-systemd (D-Bus) · sdjournal · gopsutil · creack/pty |
 | Core | Go · chi · connect-go (gRPC) · sqlc · River (job queue) |
 | Database | PostgreSQL 16 with the TimescaleDB extension (required) |
-| Web panel | React · TypeScript · Vite · TanStack Query/Router · Tailwind · xterm.js · Monaco · uPlot |
+| Web panel | React · TypeScript · Vite · i18next · xterm.js · plain CSS |
 | i18n | i18next (web) · go-i18n (core, agent, CLI) |
 | Reverse proxy | Caddy (managed through its admin API) |
 | Backups | restic |
@@ -281,6 +281,7 @@ Project **documentation** is written in **English and Spanish**. Some guides, su
 also available in **Catalan**.
 
 - Monitoring, alerts and checks: [docs/en/monitoring.md](docs/en/monitoring.md)
+- Web panel guide: [docs/en/panel.md](docs/en/panel.md)
 
 ## Repository layout
 

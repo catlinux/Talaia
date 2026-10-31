@@ -142,8 +142,8 @@ API y sus pertenencias a equipos, y el historial de auditoría conserva el nombr
 Las claves de API son para scripts y CI. Tienen sus propias asignaciones de rol y siempre están
 limitadas por los permisos actuales de su dueño.
 
-- **Crear:** **Ajustes > Claves de API**, elige un nombre, duración y acceso, y escribe un código TOTP
-  reciente.
+- **Crear:** **Ajustes > Integraciones > Claves de API**, elige un nombre, duración y acceso, y escribe un
+  código TOTP reciente.
 - **Formato:** `tlk_<id de clave de 12 caracteres>_<secreto de 32 caracteres>`.
 - **Se muestra una vez:** solo se guarda el hash del secreto. Cópiala cuando aparezca el diálogo; no se
   puede recuperar.
@@ -173,8 +173,8 @@ de shell que puedan leer otros usuarios.
 
 Talaia admite un proveedor genérico de OpenID Connect.
 
-1. En **Ajustes > Inicio de sesión único**, escribe la URL del emisor, el ID de cliente, el secreto de
-   cliente y el texto del botón.
+1. En **Ajustes > Integraciones > Inicio de sesión único**, escribe la URL del emisor, el ID de cliente,
+   el secreto de cliente y el texto del botón.
 2. Registra en el proveedor la URL de redirección que muestra el panel. Normalmente es
    `https://panel.example.com:8443/api/v1/auth/oidc/callback`; usa el valor exacto que aparezca.
 3. Activa y guarda. Al guardar se comprueba el descubrimiento; un emisor incorrecto o un proveedor

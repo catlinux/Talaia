@@ -140,7 +140,7 @@ of the current phase and the next one.
 - [x] "What is this?" catalogue: description, importance and what to do if it fails for common Debian services and Docker images, as a tooltip in the tables
 - [x] Alerts inbox: filters, grouping, new/seen/silenced, bulk actions, detail drawer with actions on the cause
 - [x] Alert rules, channels and checks moved from Settings to Alerts
-- [ ] Command palette (Ctrl+K); Users, Audit and Settings on the new components; mobile pass and docs
+- [x] Command palette (Ctrl+K); Users, Audit and Settings on the new components; mobile pass and docs
 
 ## Phase 6 · Deploys, domains and templates (0.7.0, see `.agents/plans/fase6/fase6.PLAN.md`)
 
@@ -182,6 +182,7 @@ Decisions closed on 2026-10-30: external proxy by default (Talaia never touches 
 Write new ideas here instead of adding them to the current phase.
 
 - Own notes per container or service (for example "shop website, do not touch during opening hours"), stored in the core
+- Reset a user's two-factor authentication from Users (needs a core endpoint and an audited, confirmed action)
 - Builds without a Dockerfile (Nixpacks/Railpack), GitLab and Gitea/Forgejo webhooks, and writing the Apache/nginx configuration automatically (left out of phase 6 on 2026-10-30)
 - Mobile app (PWA) with push notifications
 - Integration with Tailscale/Headscale to create the private network automatically

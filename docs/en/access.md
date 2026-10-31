@@ -43,7 +43,7 @@ Five wrong PINs disable the device: its PIN is cleared and it has to be added ag
 ### Set up
 
 1. Sign in with the password and TOTP.
-2. Open **Settings > Access**.
+2. Open **Settings > Account**.
 3. Under **Trusted devices**, fill in **Device name** (for example, the name of the laptop), **Current
    password**, **PIN** and **Confirm PIN**.
 4. Select **Trust this device**.
@@ -64,7 +64,7 @@ The next time you open the panel in that browser, the PIN form is the primary fo
 
 ### Remove it
 
-Open **Settings > Access > Trusted devices** and select **Remove** next to the device. If it is the current
+Open **Settings > Account > Trusted devices** and select **Remove** next to the device. If it is the current
 browser, the panel also forgets the local device name; the next sign-in starts from the password.
 
 Clearing the browser's cookies or site data also removes the device cookie from that browser, but it does not
@@ -108,7 +108,7 @@ panel with a certificate the browser trusts.
 ### Set up
 
 1. Sign in with the password and TOTP.
-2. Open **Settings > Access**.
+2. Open **Settings > Account**.
 3. Under **Passkeys**, select **Add a passkey**.
 4. Type a **Passkey name** and your **Current password**.
 5. Confirm the browser prompt with the fingerprint, the face or the device PIN.
@@ -124,7 +124,7 @@ no error; the password form is still there.
 
 ### Remove it
 
-Open **Settings > Access > Passkeys** and select **Remove** next to the passkey. The private key stays on the
+Open **Settings > Account > Passkeys** and select **Remove** next to the passkey. The private key stays on the
 authenticator; removing the passkey only deletes Talaia's public-key record, so the same authenticator can be
 registered again later. Remove a passkey you no longer control before adding its replacement.
 
@@ -151,7 +151,7 @@ passkey from Settings.
 | The passkey button does not appear | The browser lacks WebAuthn, the deployment has no HTTPS DNS name in `public_hostnames`, or the passkey was removed. Use password + TOTP; check the passkey requirements above. |
 | The passkey prompt fails or the browser does not trust the panel | With the own CA, some browsers refuse passkeys. Trust the CA on the device or use a certificate the browser trusts, then try again. |
 | A passkey stopped working | The authenticator may have reported a signature counter below the stored one, so Talaia disabled it. Check the device and add the passkey again. |
-| The device or the authenticator is lost | Use the password, TOTP and recovery codes. Remove the lost device or passkey in **Settings > Access** once you are back in. |
+| The device or the authenticator is lost | Use the password, TOTP and recovery codes. Remove the lost device or passkey in **Settings > Account** once you are back in. |
 
 ## See also
 

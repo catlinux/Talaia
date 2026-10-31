@@ -18,6 +18,12 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.6.22] - 2026-10-31
+
+### Added
+
+- Docs: web panel guide (docs/en/panel.md) covering navigation, servers, containers and stacks, alerts, the command palette and administration.
+
 ## [0.6.21] - 2026-10-31
 
 ### Fixed
@@ -828,7 +834,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.6.21...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.6.22...HEAD
+[0.6.22]: https://github.com/catlinux/Talaia/releases/tag/v0.6.22
 [0.6.21]: https://github.com/catlinux/Talaia/releases/tag/v0.6.21
 [0.6.20]: https://github.com/catlinux/Talaia/releases/tag/v0.6.20
 [0.6.19]: https://github.com/catlinux/Talaia/releases/tag/v0.6.19

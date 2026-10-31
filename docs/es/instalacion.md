@@ -143,7 +143,7 @@ las métricas: [monitorizacion.md](monitorizacion.md).
 4. Escribe el código de seis cifras de la aplicación. El panel muestra tus **códigos de recuperación**:
    guárdalos en un sitio seguro, solo se muestran una vez.
 
-Más adelante puedes añadir un PIN en este navegador o una clave de acceso desde **Ajustes > Acceso**: véase
+Más adelante puedes añadir un PIN en este navegador o una clave de acceso desde **Ajustes > Cuenta**: véase
 [acceso.md](acceso.md).
 
 **Confiar en la CA (quita el aviso del navegador).** Descarga `https://<dirección>:<puerto>/ca.pem`, guárdalo
@@ -153,7 +153,7 @@ la CA (está en el volumen `core-data`) podría suplantar sitios para ese equipo
 
 ## 4. Añadir un servidor
 
-En el panel, abre **Flota** y pulsa **Añadir servidor**: escribe un nombre, pulsa **Crear token** y copia la orden
+En el panel, abre **Servidores** y pulsa **Añadir servidor**: escribe un nombre, pulsa **Crear token** y copia la orden
 que muestra. El token se crea para ese nombre y la orden es la que se describe más abajo.
 
 Desde la consola de la máquina del núcleo se puede hacer lo mismo:
@@ -190,7 +190,7 @@ sudo journalctl -u talaia-agent -n 20 --no-pager
 ```
 
 El registro debe decir `enrolled with the core` y `connected to core`. El servidor aparece entonces en la
-pantalla **Flota** del panel con su CPU, memoria, disco y contenedores.
+pantalla **Servidores** del panel con su CPU, memoria, disco y contenedores.
 
 ### Volver a dar de alta un agente
 

@@ -138,7 +138,7 @@ metrics setup: [monitoring.md](monitoring.md).
 4. Type the six-digit code of the app. The panel shows your **recovery codes**: keep them somewhere safe, they
    are shown only once.
 
-You can add a PIN on this browser or a passkey later from **Settings > Access**: see [access.md](access.md).
+You can add a PIN on this browser or a passkey later from **Settings > Account**: see [access.md](access.md).
 
 **Trusting the CA (removes the browser warning).** Download `https://<address>:<port>/ca.pem`, save it as
 `talaia-ca.crt` and install it as a trusted root authority (on Windows: double click → Install certificate →
@@ -147,7 +147,7 @@ the `core-data` volume) could impersonate sites for it.
 
 ## 4. Add a server
 
-In the panel, open **Fleet** and press **Add server**: type a name, press **Create token** and copy the command it
+In the panel, open **Servers** and press **Add server**: type a name, press **Create token** and copy the command it
 shows. The token is created for that name and the command is the one described below.
 
 From the console of the core machine you can do the same:
@@ -184,7 +184,7 @@ sudo journalctl -u talaia-agent -n 20 --no-pager
 ```
 
 The log must say `enrolled with the core` and `connected to core`. The server then appears in the panel's
-**Fleet** screen with its CPU, memory, disk and containers.
+**Servers** screen with its CPU, memory, disk and containers.
 
 ### Re-enrolling an agent
 
