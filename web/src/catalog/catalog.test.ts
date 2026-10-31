@@ -17,6 +17,21 @@ describe('lookupService', () => {
     expect(lookupService('certbot.timer')?.id).toBe('certbot')
   })
 
+  it('matches the maintenance, boot and host-key units of this batch', () => {
+    expect(lookupService('anacron.timer')?.id).toBe('anacron')
+    expect(lookupService('logrotate.timer')?.id).toBe('logrotate')
+    expect(lookupService('e2scrub_all.timer')?.id).toBe('e2scrub')
+    expect(lookupService('getty-static.service')?.id).toBe('getty')
+    expect(lookupService('serial-getty@ttyS0.service')?.id).toBe('getty')
+    expect(lookupService('sshd@session-1.service')?.id).toBe('ssh')
+    expect(lookupService('sshd-keygen.service')?.id).toBe('sshd-keygen')
+    expect(lookupService('grub-common.service')?.id).toBe('grub')
+    expect(lookupService('initrd-switch-root.service')?.id).toBe('initrd')
+    expect(lookupService('rescue.service')?.id).toBe('rescue-mode')
+    expect(lookupService('user@1000.service')?.id).toBe('user-session')
+    expect(lookupService('user-runtime-dir@1000.service')?.id).toBe('user-session')
+  })
+
   it('prefers an exact unit over a pattern', () => {
     expect(lookupService('mysql.service')?.id).toBe('mariadb')
     expect(lookupService('docker.service')?.id).toBe('docker')
@@ -77,6 +92,39 @@ describe('catalog translations', () => {
           t(`importanceHelp.${importance}`),
           `${language} importance help ${importance}`,
         ).not.toBe(`importanceHelp.${importance}`)
+      }
+    }
+  })
+
+  it('has the detailed fields for the maintenance and boot entries', () => {
+    const ids = [
+      'anacron',
+      'logrotate',
+      'man-db',
+      'dpkg-db-backup',
+      'e2scrub',
+      'fstrim',
+      'phpsessionclean',
+      'sshd-keygen',
+      'uuidd',
+      'rc-local',
+      'grub',
+      'rescue-mode',
+      'initrd',
+      'plymouth',
+      'user-session',
+      'getty',
+    ]
+    for (const language of ['ca', 'es', 'en']) {
+      const t = i18n.getFixedT(language, 'catalog')
+      for (const id of ids) {
+        for (const field of ['name', 'what', 'ifFails', 'details', 'stop']) {
+          const key = `entries.${id}.${field}`
+          expect(t(key), `${language} ${key}`).not.toBe(key)
+        }
+        const problems = t(`entries.${id}.problems`, { returnObjects: true }) as unknown
+        expect(Array.isArray(problems), `${language} ${id} problems`).toBe(true)
+        expect((problems as string[]).length).toBeGreaterThanOrEqual(2)
       }
     }
   })

@@ -142,7 +142,14 @@
     "getty": {
       "name": "Accés a la consola",
       "what": "Mostra un inici de sessió de text en una consola local o línia sèrie.",
-      "ifFails": "Pots perdre l'accés a la consola local. Normalment no passa res en un servidor remot; revisa la configuració de consola o sèrie si el necessites."
+      "ifFails": "Pots perdre l'accés a la consola local. Normalment no passa res en un servidor remot; revisa la configuració de consola o sèrie si el necessites.",
+      "details": "Getty mostra l’inici de sessió de text en una consola local o línia sèrie. És la manera d’entrar quan no hi ha una sessió gràfica, i el getty sèrie sovint es fa servir en servidors amb consola remota. En un servidor normal administrat per SSH potser no el faràs servir mai.",
+      "stop": "Si atures getty, tanques aquell inici de sessió de consola. Les sessions SSH existents no es veuen afectades i normalment no passa res en un servidor remot. Mantén almenys una consola o una via de recuperació del proveïdor abans de desactivar tots els getty.",
+      "problems": [
+        "No apareix l’inici de sessió a la consola — comprova `systemctl status getty@tty1` i la unitat sèrie `serial-getty@`.",
+        "La consola sèrie no mostra res — verifica la velocitat i el cablejat, i revisa el registre de la unitat.",
+        "Un getty es reinicia en bucle — llegeix `journalctl -u getty@tty1 -n 50 --no-pager` per si falla el terminal o el dispositiu."
+      ]
     },
     "networking": {
       "name": "Xarxa de Debian",
@@ -555,6 +562,186 @@
       "name": "Registre Docker",
       "what": "Desa i serveix imatges Docker per a descàrregues i pujades.",
       "ifFails": "Les descàrregues i pujades d'imatges fallen, i els desplegaments que necessiten imatges noves s'aturen. Comprova l'espai de disc, l'autenticació i el backend d'emmagatzematge abans de reiniciar."
+    },
+    "anacron": {
+      "name": "Anacron",
+      "what": "Executa les tasques diàries, setmanals i mensuals en equips que no estan sempre encesos.",
+      "ifFails": "Les tasques de manteniment es poden perdre després d'un apagat. Revisa els registres si deixen de fer-se còpies, rotacions o neteges.",
+      "details": "Anacron complementa cron: recorda quan es van executar per última vegada les tasques diàries, setmanals o mensuals i les llança després de l'arrencada si se n'ha perdut l'hora. En un servidor sol executar els treballs de `/etc/cron.daily`, `/etc/cron.weekly` i `/etc/cron.monthly`. És útil en portàtils i en servidors que no estan encesos tot el temps.",
+      "stop": "Si atures anacron, les tasques perdudes no es recuperen després d'una arrencada. Les tasques de cron segueixen executant-se mentre la màquina està encesa, però les diàries es poden endarrerir. Normalment només és segur si cron i un altre planificador cobreixen la mateixa feina.",
+      "problems": [
+        "Una tasca de manteniment no es va executar — revisa les dates de l'última execució a `/var/spool/anacron` i el registre de la unitat amb `journalctl -u anacron -n 50 --no-pager`.",
+        "La tasca s'executa a una hora estranya — anacron arrenca després de l'inici i espera un retard configurat; revisa `/etc/anacrontab` i la programació de la tasca.",
+        "El servei està emmascarat o desactivat — comprova `systemctl status anacron` i torna a activar-lo si depens de les tasques de recuperació."
+      ]
+    },
+    "logrotate": {
+      "name": "Logrotate",
+      "what": "Rota, comprimeix i elimina fitxers de registre antics perquè els discs no s'omplin.",
+      "ifFails": "Els fitxers de registre continuen creixent i poden omplir el disc; alguns serveis poden deixar d'escriure o el servidor es pot tornar inestable.",
+      "details": "Logrotate revisa la seva configuració amb regularitat, sovint mitjançant un temporitzador de systemd, i canvia el nom o comprimeix els registres quan arriben a un límit de mida o antiguitat. També pot demanar a un servei que torni a obrir el seu fitxer de registre després de la rotació. La configuració és a `/etc/logrotate.conf` i `/etc/logrotate.d`.",
+      "stop": "Si atures logrotate, els registres antics es queden on són i les línies noves continuen engreixant els mateixos fitxers. Un disc ple pot trencar serveis i el panell. Deixa'l funcionant i corregeix els errors de configuració en lloc de desactivar-lo.",
+      "problems": [
+        "Els registres no roten — executa `logrotate --debug /etc/logrotate.conf` i comprova el temporitzador amb `systemctl status logrotate.timer`.",
+        "Un registre és enorme o el disc és ple — revisa les regles de `/etc/logrotate.d` per a aquell servei i força una rotació amb `logrotate -f /etc/logrotate.conf`.",
+        "Un servei continua escrivint al fitxer antic — afegeix l'ordre `postrotate` correcta perquè torni a obrir el registre i prova-ho amb `logrotate --debug`."
+      ]
+    },
+    "man-db": {
+      "name": "Índex de pàgines de manual",
+      "what": "Construeix l’índex i la memòria cau que fa servir l’ordre `man`.",
+      "ifFails": "Les pàgines de manual poden faltar a les cerques o `man` pot mostrar una versió antiga després de canviar paquets.",
+      "details": "El servei man-db executa `mandb` per reconstruir l’índex de pàgines de manual quan s’instal·len o s’eliminen documents. El llança un temporitzador o els propis paquets, així que normalment treballa en segon pla. Sense ell, `man` encara pot obrir una pàgina per ruta, però les cerques i la base de dades de `whatis` poden estar desactualitzades.",
+      "stop": "Si l’atures, només saltes les actualitzacions de l’índex; les pàgines existents segueixen disponibles. És segur deixar-lo aturat un temps, però després d’instal·lar o treure paquets `man -k` pot no trobar pàgines. Executa `mandb` a mà una vegada si necessites l’índex.",
+      "problems": [
+        "`man -k` no troba res — executa `mandb` i comprova `systemctl status man-db` i el seu temporitzador.",
+        "Falta una pàgina de manual — confirma que el paquet va instal·lar la pàgina a `/usr/share/man` i reconstrueix l’índex amb `mandb`.",
+        "El servei falla amb errors de permisos — comprova l’espai lliure i el registre amb `journalctl -u man-db -n 50 --no-pager`."
+      ]
+    },
+    "dpkg-db-backup": {
+      "name": "Còpia de la base de dades de paquets",
+      "what": "Guarda cada dia una còpia de la base de dades de paquets de dpkg.",
+      "ifFails": "Una base de dades de paquets malmesa no es podrà restaurar des d’una còpia automàtica recent.",
+      "details": "El servei copia els fitxers que registren els paquets instal·lats, les versions i l’estat a `/var/backups`. S’executa una vegada al dia i conserva diverses còpies recents, per poder reparar el gestor de paquets si la base de dades es malmet. No fa còpia de seguretat de les dades de les aplicacions.",
+      "stop": "Si l’atures, només deixes de fer aquestes còpies de la base de dades de paquets; el programari instal·lat segueix funcionant. És segur durant un temps, però perds un punt de recuperació senzill per a dpkg. Deixa’l actiu en servidors normals.",
+      "problems": [
+        "No hi ha cap còpia recent — comprova `systemctl status dpkg-db-backup` i el temporitzador, i busca fitxers `dpkg.*` a `/var/backups`.",
+        "El disc és ple — elimina còpies antigues que ja no necessitis, però conserva almenys l’última.",
+        "El servei falla — revisa `journalctl -u dpkg-db-backup -n 50 --no-pager` per errors de permisos o de disc."
+      ]
+    },
+    "e2scrub": {
+      "name": "Comprovació d’ext4 en línia",
+      "what": "Comprova si hi ha errors de metadades en sistemes de fitxers ext4 mentre estan muntats.",
+      "ifFails": "Els errors del sistema de fitxers poden passar desapercebuts fins que provoquen pèrdua de dades.",
+      "details": "e2scrub s’executa en sistemes ext4 sobre LVM i revisa una instantània de només lectura a la recerca de problemes de metadades. És una comprovació lleugera, no substitueix un `fsck` complet amb el sistema desmuntat. Un temporitzador el llança amb regularitat, normalment una vegada per setmana.",
+      "stop": "Si l’atures, deixes de fer aquestes comprovacions en línia; el sistema de fitxers segueix funcionant amb normalitat. És segur desactivar-lo en màquines sense ext4 sobre LVM, però llavors els errors només apareixeran en una revisió manual. No executis un `fsck` complet sobre un sistema muntat.",
+      "problems": [
+        "El temporitzador falla — comprova `systemctl status e2scrub_all.timer` i `journalctl -u e2scrub_all -n 50 --no-pager`.",
+        "No es crea la instantània — e2scrub necessita espai lliure a LVM; revisa `lvs` i els extents lliures del grup de volums.",
+        "S’informen errors — no els ignoris; planifica un `e2fsck -f` sense muntar el sistema de fitxers."
+      ]
+    },
+    "fstrim": {
+      "name": "TRIM del SSD",
+      "what": "Indica a un SSD quins blocs ja no s’utilitzen.",
+      "ifFails": "El SSD pot trigar més a esborrar blocs i empitjorar el rendiment o la vida útil.",
+      "details": "fstrim envia sol·licituds TRIM dels blocs lliures dels sistemes de fitxers muntats. Un temporitzador l’executa cada setmana en SSD compatibles, perquè la unitat pugui esborrar blocs no usats per endavant. No esborra els fitxers i no s’executa en sistemes de fitxers que no admeten TRIM.",
+      "stop": "Si atures el temporitzador, només deixes de fer el TRIM automàtic; les dades i els muntatges no es veuen afectats. Pots executar `fstrim --all` a mà més endavant. Normalment és segur desactivar-lo en discs virtuals que no admeten discard.",
+      "problems": [
+        "Falta el temporitzador — comprova `systemctl status fstrim.timer` i activa’l si el disc admet TRIM.",
+        "fstrim diu que l’operació discard no està disponible — el sistema de fitxers o el disc virtual no admeten discard; no cal fer res llevat que el proveïdor ho permeti.",
+        "El TRIM triga massa — revisa la salut del disc i evita executar-lo en hores de feina."
+      ]
+    },
+    "phpsessionclean": {
+      "name": "Neteja de sessions PHP",
+      "what": "Elimina els fitxers de sessió PHP antics del directori de sessions.",
+      "ifFails": "Els fitxers de sessió antics poden omplir el disc i les sessions caducades es conserven més del previst.",
+      "details": "PHP guarda les sessions en un directori com `/var/lib/php/sessions`, i no totes les peticions eliminen els fitxers antics. Aquest temporitzador executa un script de neteja que esborra les sessions caducades segons la configuració de PHP. Només importa en servidors que executen aplicacions PHP amb sessions en fitxers.",
+      "stop": "Si l’atures, els fitxers de sessió caducats es queden al disc; les sessions actives no es veuen afectades. És segur durant un temps, però el directori pot créixer i omplir el disc. Executa el script de neteja a mà si el desactives.",
+      "problems": [
+        "El directori de sessions creix — revisa `session.save_path` a `php.ini` i el temporitzador de neteja, i esborra només fitxers clarament caducats.",
+        "Els usuaris es desconnecten abans d’hora — revisa `session.gc_maxlifetime`; la neteja pot esborrar sessions abans del que espera l’aplicació.",
+        "El temporitzador falla — comprova `systemctl status phpsessionclean.timer` i el registre del servei."
+      ]
+    },
+    "sshd-keygen": {
+      "name": "Generador de claus de host SSH",
+      "what": "Crea les claus de host SSH que el servidor fa servir en el primer arrencament.",
+      "ifFails": "Els clients SSH poden rebutjar la identitat del servidor o negar-se a connectar, sobretot si s’han esborrat les claus de host.",
+      "details": "El servei crea els parells de claus de host que falten a `/etc/ssh` durant el primer arrencament d’un sistema Debian. Aquestes claus identifiquen el servidor davant dels clients i no són les claus personals amb què inicies sessió. S’executa una vegada i no fa res si les claus ja existeixen.",
+      "stop": "Si l’atures, no s’esborren les claus de host existents ni es tallen les connexions SSH obertes. És segur quan les claus ja existeixen, però una màquina nova es pot quedar sense SSH si mai no s’han generat. Genera les claus amb `ssh-keygen -A` si cal.",
+      "problems": [
+        "SSH rebutja les connexions després de reconstruir el servidor — comprova que existeixen les claus de host a `/etc/ssh` i executa `ssh-keygen -A`.",
+        "El client avisa que ha canviat la clau del host — pot ser normal després de reinstal·lar; verifica la nova empremta abans d’acceptar-la.",
+        "El servei falla en arrencar — revisa `systemctl status sshd-keygen` i els registres; els permisos o un disc ple poden impedir crear les claus."
+      ]
+    },
+    "uuidd": {
+      "name": "Dimoni d’UUID",
+      "what": "Genera UUID per als programes que necessiten identificadors únics.",
+      "ifFails": "Algunes aplicacions poden recórrer a una generació d’UUID més lenta o menys fiable.",
+      "details": "uuidd és un petit dimoni que produeix identificadors únics universals quan els demanen. Existeix perquè molts processos obtinguin UUID sense generar-ne cadascun des de la mateixa font aleatòria. La majoria de servidors només el fan servir quan algun paquet el necessita.",
+      "stop": "Aturar uuidd sol ser inofensiu: els programes que necessiten un UUID poden generar-lo ells mateixos. Pot afectar aplicacions que exigeixen explícitament el servei. És segur deixar-lo aturat si res del servidor no el fa servir.",
+      "problems": [
+        "Un servei no pot obtenir un UUID — comprova `systemctl status uuidd` i arrenca’l.",
+        "Falta el socket — comprova `systemctl status uuidd.socket`; systemd sol iniciar el dimoni quan cal.",
+        "El dimoni falla després de reiniciar — revisa `journalctl -u uuidd -n 50 --no-pager` i el sistema de fitxers `/run`."
+      ]
+    },
+    "rc-local": {
+      "name": "Ordres locals d’arrencada",
+      "what": "Executa les ordres de `/etc/rc.local` durant l’arrencada.",
+      "ifFails": "Les ordres personalitzades d’aquell fitxer no s’executen després de reiniciar.",
+      "details": "rc-local és una unitat de compatibilitat per a qui encara fa servir `/etc/rc.local` en lloc d’un servei natiu de systemd. A Debian sol executar-se al final de l’arrencada, quan la xarxa i els sistemes de fitxers locals ja estan a punt. Només importa si aquell fitxer existeix i conté ordres.",
+      "stop": "Si l’atures o el desactives, `/etc/rc.local` no s’executa en arrencar. La resta del sistema segueix funcionant amb normalitat. És segur si ja no fas servir aquell fitxer o has mogut les ordres a un servei propi.",
+      "problems": [
+        "Les ordres de `/etc/rc.local` no s’executen — assegura’t que el fitxer és executable i comprova `systemctl status rc-local`.",
+        "L’arrencada s’espera o falla — llegeix `journalctl -u rc-local -b` i fes que les ordres acabin correctament.",
+        "La unitat està emmascarada — comprova `systemctl status rc-local`; activa-la només si depens d’aquell fitxer."
+      ]
+    },
+    "grub": {
+      "name": "Carregador d’arrencada GRUB",
+      "what": "Actualitza la configuració del gestor d’arrencada i manté a punt el menú de GRUB.",
+      "ifFails": "El servidor pot no arrencar o arrencar un nucli antic després d’un canvi de nucli o de configuració.",
+      "details": "La unitat grub-common executa `update-grub` quan canvien el nucli o la configuració d’arrencada, perquè el menú mostri els nuclis correctes. No instal·la nuclis per si mateixa. Si l’actualització falla, el menú pot quedar desactualitzat, així que revisa’l després d’actualitzar el nucli.",
+      "stop": "Si la atures, només impedeixes regenerar el menú automàticament; el menú existent segueix funcionant. Pot ser que el següent nucli no aparegui en arrencar. Genera’l a mà amb `update-grub` si l’has desactivat.",
+      "problems": [
+        "El servidor arrenca un nucli antic — executa `update-grub` i comprova que hi ha espai lliure a `/boot`.",
+        "La unitat falla — llegeix `journalctl -u grub-common -n 50 --no-pager` i corregeix la configuració que indiqui.",
+        "Falta una entrada al menú d’arrencada — confirma que el paquet del nucli està instal·lat i torna a generar el menú."
+      ]
+    },
+    "rescue-mode": {
+      "name": "Mode de rescat",
+      "what": "Proporciona els objectius d’emergència i rescat per reparar un sistema que no arrenca.",
+      "ifFails": "Un problema greu d’arrencada et pot deixar sense la shell mínima de recuperació.",
+      "details": "Els objectius emergency i rescue són estats especials de systemd que es fan servir quan falla l’arrencada normal. El mode rescat inicia un sistema petit amb els sistemes de fitxers locals i una shell de root; el mode emergència inicia encara menys. No estan pensats per funcionar durant l’operació normal.",
+      "stop": "Normalment no pots aturar aquests objectius en una sessió sana; es trien en arrencar. Desactivar-los o emmascarar-los elimina una via de recuperació, així que no ho facis. Fes-los servir només quan l’arrencada normal no pugui acabar.",
+      "problems": [
+        "El servidor es queda en mode rescat — revisa el registre d’arrencada amb `journalctl -xb` i corregeix el muntatge o servei que falla.",
+        "El mode rescat demana la contrasenya de root — usa la contrasenya de root o arrenca des de la consola o la imatge de rescat del proveïdor.",
+        "El sistema no arriba ni al mode emergència — usa la consola de recuperació del proveïdor o una imatge live."
+      ]
+    },
+    "initrd": {
+      "name": "Disc RAM inicial",
+      "what": "Genera la imatge initramfs temporal que es fa servir durant l’arrencada inicial.",
+      "ifFails": "El servidor pot no muntar el seu sistema de fitxers arrel o no carregar els controladors necessaris per arrencar.",
+      "details": "Les unitats initrd regeneren la imatge initramfs quan canvien el nucli o els controladors d’emmagatzematge. La initramfs conté els mòduls i scripts necessaris abans de muntar el sistema de fitxers arrel real. Debian ho fa automàticament en actualitzar paquets del nucli.",
+      "stop": "Si atures el generador, no afecta l’arrencada actual ni una initramfs existent. Un nucli posterior pot arrencar sense els controladors adequats. Regenera la imatge amb `update-initramfs -u` després de corregir la causa.",
+      "problems": [
+        "El servidor falla al principi de l’arrencada — arrenca un nucli anterior o una consola de recuperació i executa `update-initramfs -u -k all`.",
+        "La initramfs no inclou un mòdul — revisa `/etc/initramfs-tools/modules` i torna a generar la imatge.",
+        "El disc és ple — allibera espai a `/boot` i executa de nou el generador."
+      ]
+    },
+    "plymouth": {
+      "name": "Pantalla d’arrencada",
+      "what": "Mostra l’animació gràfica mentre el sistema arrenca.",
+      "ifFails": "Pots perdre la pantalla gràfica d’arrencada, però el servidor pot seguir arrencant amb normalitat.",
+      "details": "Plymouth dibuixa el logotip i l’animació de progrés durant l’arrencada en sistemes amb consola gràfica. És sobretot cosmètic i pot amagar els missatges d’arrencada. Un servidor pot funcionar sense ell i mostrar text normal.",
+      "stop": "Si l’atures o el desactives, només canvia el que veus durant l’arrencada; els serveis i la xarxa no es veuen afectats. És segur desactivar-lo en un servidor. Llavors veuràs els missatges normals del nucli i dels serveis.",
+      "problems": [
+        "La pantalla d’arrencada es queda bloquejada — canvia a una consola de text o arrenca amb `plymouth.enable=0` per veure l’error real.",
+        "L’animació parpelleja o mostra un tema equivocat — revisa el tema de Plymouth i el controlador gràfic.",
+        "El servidor sembla congelat — espera una mica i fes servir la consola; Plymouth pot estar amagant una arrencada lenta."
+      ]
+    },
+    "user-session": {
+      "name": "Gestor de serveis d’usuari",
+      "what": "Inicia un gestor de systemd per usuari per als seus serveis i sessions.",
+      "ifFails": "Els serveis i temporitzadors de l’usuari poden no arrencar, encara que els serveis del sistema i els accessos SSH segueixen funcionant.",
+      "details": "user@.service inicia una instància petita de systemd per a cada usuari, i user-runtime-dir@.service prepara el seu directori d’execució. Permet que cada usuari executi els seus propis serveis i temporitzadors sense ser root. La majoria de servidors només el fan servir quan algú inicia sessió o activa lingering.",
+      "stop": "Si atures el gestor d’un usuari, acabes els serveis d’aquell usuari a la sessió actual. No atura els serveis del sistema ni els d’altres usuaris. Evita aturar-lo mentre depenguis de les tasques d’aquell usuari; fes servir `loginctl` per revisar les sessions primer.",
+      "problems": [
+        "Un temporitzador d’usuari no es va executar — comprova `systemctl --user status` com aquell usuari i si lingering està actiu amb `loginctl show-user <usuari>`.",
+        "El gestor d’usuari es reinicia una i altra vegada — llegeix `journalctl --user -n 50 --no-pager` com aquell usuari.",
+        "Falta el directori d’execució — comprova `/run/user/<uid>` i la unitat `user-runtime-dir@`."
+      ]
     }
   },
   "screen": {

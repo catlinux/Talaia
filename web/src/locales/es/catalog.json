@@ -142,7 +142,14 @@
     "getty": {
       "name": "Acceso a la consola",
       "what": "Muestra un inicio de sesión de texto en una consola local o línea serie.",
-      "ifFails": "Puedes perder el acceso a la consola local. Normalmente no pasa nada en un servidor remoto; revisa la configuración de consola o serie si lo necesitas."
+      "ifFails": "Puedes perder el acceso a la consola local. Normalmente no pasa nada en un servidor remoto; revisa la configuración de consola o serie si lo necesitas.",
+      "details": "Getty muestra el inicio de sesión de texto en una consola local o línea serie. Es la forma de entrar cuando no hay una sesión gráfica, y el getty serie se usa a menudo en servidores con consola remota. En un servidor normal administrado por SSH puede que nunca lo uses.",
+      "stop": "Si paras getty, cierras ese inicio de sesión de consola. Las sesiones SSH existentes no se ven afectadas y normalmente no pasa nada en un servidor remoto. Mantén al menos una consola o una vía de recuperación del proveedor antes de desactivar todos los getty.",
+      "problems": [
+        "No aparece el inicio de sesión en la consola — comprueba `systemctl status getty@tty1` y la unidad serie `serial-getty@`.",
+        "La consola serie no muestra nada — verifica la velocidad y el cableado, y revisa el registro de la unidad.",
+        "Un getty se reinicia en bucle — lee `journalctl -u getty@tty1 -n 50 --no-pager` por si falla el terminal o el dispositivo."
+      ]
     },
     "networking": {
       "name": "Red de Debian",
@@ -555,6 +562,186 @@
       "name": "Registro Docker",
       "what": "Guarda y sirve imágenes Docker para descargas y subidas.",
       "ifFails": "Las descargas y subidas de imágenes fallan, y los despliegues que necesitan imágenes nuevas se detienen. Comprueba el espacio de disco, la autenticación y el backend de almacenamiento antes de reiniciar."
+    },
+    "anacron": {
+      "name": "Anacron",
+      "what": "Ejecuta las tareas diarias, semanales y mensuales en equipos que no están siempre encendidos.",
+      "ifFails": "Las tareas de mantenimiento pueden no recuperarse después de un apagado. Revisa sus registros si dejan de hacerse copias, rotaciones o limpiezas.",
+      "details": "Anacron complementa a cron: recuerda cuándo se ejecutaron por última vez las tareas diarias, semanales o mensuales y las lanza después del arranque si se perdió su hora. En un servidor suele ejecutar los trabajos de `/etc/cron.daily`, `/etc/cron.weekly` y `/etc/cron.monthly`. Es útil en portátiles y en servidores que no están encendidos todo el tiempo.",
+      "stop": "Si paras anacron, las tareas perdidas no se recuperan después de un arranque. Las tareas de cron siguen ejecutándose mientras la máquina está encendida, pero las diarias pueden retrasarse. Normalmente solo es seguro si cron y otro planificador cubren el mismo trabajo.",
+      "problems": [
+        "Una tarea de mantenimiento no se ejecutó — revisa las fechas de la última ejecución en `/var/spool/anacron` y el registro de la unidad con `journalctl -u anacron -n 50 --no-pager`.",
+        "La tarea se ejecuta a una hora rara — anacron arranca tras el inicio y espera un retraso configurado; revisa `/etc/anacrontab` y la programación de la propia tarea.",
+        "El servicio está enmascarado o desactivado — comprueba `systemctl status anacron` y vuelve a activarlo si dependes de las tareas de recuperación."
+      ]
+    },
+    "logrotate": {
+      "name": "Logrotate",
+      "what": "Rota, comprime y elimina archivos de registro antiguos para que los discos no se llenen.",
+      "ifFails": "Los archivos de registro siguen creciendo y pueden llenar el disco; algunos servicios pueden dejar de escribir o el servidor puede volverse inestable.",
+      "details": "Logrotate revisa su configuración con regularidad, a menudo mediante un temporizador de systemd, y cambia el nombre o comprime los registros cuando alcanzan un límite de tamaño o antigüedad. También puede pedir a un servicio que vuelva a abrir su archivo de registro después de la rotación. La configuración está en `/etc/logrotate.conf` y `/etc/logrotate.d`.",
+      "stop": "Si paras logrotate, los registros antiguos se quedan donde están y las líneas nuevas siguen engordando los mismos archivos. Un disco lleno puede romper servicios y el panel. Déjalo funcionando y corrige los errores de configuración en lugar de desactivarlo.",
+      "problems": [
+        "Los registros no rotan — ejecuta `logrotate --debug /etc/logrotate.conf` y comprueba el temporizador con `systemctl status logrotate.timer`.",
+        "Un registro es enorme o el disco está lleno — revisa las reglas de `/etc/logrotate.d` para ese servicio y fuerza una rotación con `logrotate -f /etc/logrotate.conf`.",
+        "Un servicio sigue escribiendo en el archivo antiguo — añade la orden `postrotate` correcta para que vuelva a abrir su registro y pruébalo con `logrotate --debug`."
+      ]
+    },
+    "man-db": {
+      "name": "Índice de páginas de manual",
+      "what": "Construye el índice y la caché que usa el comando `man`.",
+      "ifFails": "Las páginas de manual pueden faltar en las búsquedas o `man` puede mostrar una versión antigua después de cambiar paquetes.",
+      "details": "El servicio man-db ejecuta `mandb` para reconstruir el índice de páginas de manual cuando se instalan o eliminan documentos. Lo lanza un temporizador o los propios paquetes, así que normalmente trabaja en segundo plano. Sin él, `man` todavía puede abrir una página por ruta, pero las búsquedas y la base de datos de `whatis` pueden estar desactualizadas.",
+      "stop": "Si lo paras, solo se saltan las actualizaciones del índice; las páginas existentes siguen disponibles. Es seguro dejarlo parado un tiempo, pero después de instalar o quitar paquetes `man -k` puede no encontrar páginas. Ejecuta `mandb` a mano una vez si necesitas el índice.",
+      "problems": [
+        "`man -k` no encuentra nada — ejecuta `mandb` y comprueba `systemctl status man-db` y su temporizador.",
+        "Falta una página de manual — confirma que el paquete instaló su página bajo `/usr/share/man` y reconstruye el índice con `mandb`.",
+        "El servicio falla con errores de permisos — comprueba el espacio libre y el registro con `journalctl -u man-db -n 50 --no-pager`."
+      ]
+    },
+    "dpkg-db-backup": {
+      "name": "Copia de la base de datos de paquetes",
+      "what": "Guarda cada día una copia de la base de datos de paquetes de dpkg.",
+      "ifFails": "Una base de datos de paquetes dañada no se podrá restaurar desde una copia automática reciente.",
+      "details": "El servicio copia los archivos que registran los paquetes instalados, sus versiones y su estado a `/var/backups`. Se ejecuta una vez al día y conserva varias copias recientes, para poder reparar el gestor de paquetes si su base de datos se daña. No hace copia de seguridad de los datos de tus aplicaciones.",
+      "stop": "Si lo paras, solo dejas de hacer esas copias de la base de datos de paquetes; el software instalado sigue funcionando. Es seguro durante un tiempo, pero pierdes un punto de recuperación sencillo para dpkg. Déjalo activo en servidores normales.",
+      "problems": [
+        "No hay una copia reciente — comprueba `systemctl status dpkg-db-backup` y su temporizador, y busca archivos `dpkg.*` en `/var/backups`.",
+        "El disco está lleno — elimina copias antiguas que ya no necesites, pero conserva al menos la última.",
+        "El servicio falla — revisa `journalctl -u dpkg-db-backup -n 50 --no-pager` por errores de permisos o de disco."
+      ]
+    },
+    "e2scrub": {
+      "name": "Comprobación de ext4 en línea",
+      "what": "Comprueba si hay errores de metadatos en sistemas de archivos ext4 mientras están montados.",
+      "ifFails": "Los errores del sistema de archivos pueden pasar desapercibidos hasta que provocan pérdida de datos.",
+      "details": "e2scrub se ejecuta en sistemas ext4 sobre LVM y revisa una instantánea de solo lectura en busca de problemas de metadatos. Es una comprobación ligera, no sustituye a un `fsck` completo con el sistema desmontado. Un temporizador lo lanza con regularidad, normalmente una vez por semana.",
+      "stop": "Si lo paras, dejas de hacer estas comprobaciones en línea; el sistema de archivos sigue funcionando con normalidad. Es seguro desactivarlo en máquinas sin ext4 sobre LVM, pero entonces los errores solo aparecerán en una revisión manual. No ejecutes un `fsck` completo sobre un sistema montado.",
+      "problems": [
+        "El temporizador falla — comprueba `systemctl status e2scrub_all.timer` y `journalctl -u e2scrub_all -n 50 --no-pager`.",
+        "No se crea la instantánea — e2scrub necesita espacio libre en LVM; revisa `lvs` y los extents libres del grupo de volúmenes.",
+        "Se notifican errores — no los ignores; planifica un `e2fsck -f` sin montar el sistema de archivos."
+      ]
+    },
+    "fstrim": {
+      "name": "TRIM del SSD",
+      "what": "Indica a un SSD qué bloques ya no se usan.",
+      "ifFails": "El SSD puede tardar más en borrar bloques y empeorar el rendimiento o la vida útil.",
+      "details": "fstrim envía solicitudes TRIM de los bloques libres de los sistemas de archivos montados. Un temporizador lo ejecuta cada semana en SSD compatibles, para que la unidad pueda borrar bloques no usados de antemano. No borra tus archivos y no se ejecuta en sistemas de archivos que no admiten TRIM.",
+      "stop": "Si paras el temporizador, solo dejas de hacer el TRIM automático; los datos y los montajes no se ven afectados. Puedes ejecutar `fstrim --all` a mano más adelante. Normalmente es seguro desactivarlo en discos virtuales que no admiten discard.",
+      "problems": [
+        "Falta el temporizador — comprueba `systemctl status fstrim.timer` y actívalo si el disco admite TRIM.",
+        "fstrim dice que la operación discard no está disponible — el sistema de archivos o el disco virtual no admiten discard; no hace falta hacer nada salvo que el proveedor lo permita.",
+        "El TRIM tarda demasiado — revisa la salud del disco y evita ejecutarlo en horas de trabajo."
+      ]
+    },
+    "phpsessionclean": {
+      "name": "Limpieza de sesiones PHP",
+      "what": "Elimina los archivos de sesión PHP antiguos del directorio de sesiones.",
+      "ifFails": "Los archivos de sesión antiguos pueden llenar el disco y las sesiones caducadas se conservan más de lo previsto.",
+      "details": "PHP guarda las sesiones en un directorio como `/var/lib/php/sessions`, y no todas las peticiones eliminan los archivos antiguos. Este temporizador ejecuta un script de limpieza que borra las sesiones caducadas según la configuración de PHP. Solo importa en servidores que ejecutan aplicaciones PHP con sesiones en archivos.",
+      "stop": "Si lo paras, los archivos de sesión caducados se quedan en el disco; las sesiones activas no se ven afectadas. Es seguro durante un tiempo, pero el directorio puede crecer y llenar el disco. Ejecuta el script de limpieza a mano si lo desactivas.",
+      "problems": [
+        "El directorio de sesiones crece — revisa `session.save_path` en `php.ini` y el temporizador de limpieza, y borra solo archivos claramente caducados.",
+        "Los usuarios se desconectan antes de tiempo — revisa `session.gc_maxlifetime`; la limpieza puede borrar sesiones antes de lo que espera la aplicación.",
+        "El temporizador falla — comprueba `systemctl status phpsessionclean.timer` y el registro del servicio."
+      ]
+    },
+    "sshd-keygen": {
+      "name": "Generador de claves de host SSH",
+      "what": "Crea las claves de host SSH que el servidor usa en el primer arranque.",
+      "ifFails": "Los clientes SSH pueden rechazar la identidad del servidor o negarse a conectar, sobre todo si se borraron las claves de host.",
+      "details": "El servicio crea los pares de claves de host que faltan en `/etc/ssh` durante el primer arranque de un sistema Debian. Estas claves identifican al servidor ante los clientes y no son las claves personales con las que inicias sesión. Se ejecuta una vez y no hace nada si las claves ya existen.",
+      "stop": "Si lo paras, no se borran las claves de host existentes ni se cortan las conexiones SSH abiertas. Es seguro cuando las claves ya existen, pero una máquina nueva puede quedarse sin SSH si nunca se generaron. Genera las claves con `ssh-keygen -A` si hace falta.",
+      "problems": [
+        "SSH rechaza las conexiones después de reconstruir el servidor — comprueba que existen las claves de host en `/etc/ssh` y ejecuta `ssh-keygen -A`.",
+        "El cliente avisa de que cambió la clave del host — puede ser normal después de reinstalar; verifica la nueva huella antes de aceptarla.",
+        "El servicio falla al arrancar — revisa `systemctl status sshd-keygen` y los registros; los permisos o un disco lleno pueden impedir crear las claves."
+      ]
+    },
+    "uuidd": {
+      "name": "Demonio de UUID",
+      "what": "Genera UUID para los programas que necesitan identificadores únicos.",
+      "ifFails": "Algunas aplicaciones pueden recurrir a una generación de UUID más lenta o menos fiable.",
+      "details": "uuidd es un pequeño demonio que produce identificadores únicos universales cuando se los piden. Existe para que muchos procesos obtengan UUID sin generar cada uno desde la misma fuente aleatoria. La mayoría de servidores solo lo usan cuando algún paquete lo necesita.",
+      "stop": "Parar uuidd suele ser inofensivo: los programas que necesitan un UUID pueden generarlo ellos mismos. Puede afectar a aplicaciones que exigen explícitamente el servicio. Es seguro dejarlo parado si nada en el servidor lo usa.",
+      "problems": [
+        "Un servicio no puede obtener un UUID — comprueba `systemctl status uuidd` y arráncalo.",
+        "Falta el socket — comprueba `systemctl status uuidd.socket`; systemd suele iniciar el demonio cuando hace falta.",
+        "El demonio falla después de reiniciar — revisa `journalctl -u uuidd -n 50 --no-pager` y el sistema de archivos `/run`."
+      ]
+    },
+    "rc-local": {
+      "name": "Órdenes locales de arranque",
+      "what": "Ejecuta las órdenes de `/etc/rc.local` durante el arranque.",
+      "ifFails": "Las órdenes personalizadas de ese archivo no se ejecutan después de reiniciar.",
+      "details": "rc-local es una unidad de compatibilidad para quien todavía usa `/etc/rc.local` en lugar de un servicio nativo de systemd. En Debian suele ejecutarse al final del arranque, cuando la red y los sistemas de archivos locales ya están listos. Solo importa si ese archivo existe y contiene órdenes.",
+      "stop": "Si lo paras o lo desactivas, `/etc/rc.local` no se ejecuta al arrancar. El resto del sistema sigue funcionando con normalidad. Es seguro si ya no usas ese archivo o has movido sus órdenes a un servicio propio.",
+      "problems": [
+        "Las órdenes de `/etc/rc.local` no se ejecutan — asegúrate de que el archivo es ejecutable y comprueba `systemctl status rc-local`.",
+        "El arranque se queda esperando o falla — lee `journalctl -u rc-local -b` y haz que las órdenes terminen correctamente.",
+        "La unidad está enmascarada — comprueba `systemctl status rc-local`; actívala solo si dependes de ese archivo."
+      ]
+    },
+    "grub": {
+      "name": "Cargador de arranque GRUB",
+      "what": "Actualiza la configuración del gestor de arranque y mantiene listo el menú de GRUB.",
+      "ifFails": "El servidor puede no arrancar o arrancar un kernel antiguo después de un cambio de kernel o de configuración.",
+      "details": "La unidad grub-common ejecuta `update-grub` cuando cambian el kernel o la configuración de arranque, para que el menú de arranque muestre los kernels correctos. No instala kernels por sí misma. Si la actualización falla, el menú puede quedar desactualizado, así que revísalo tras actualizar el kernel.",
+      "stop": "Si lo paras, solo se impide regenerar el menú automáticamente; el menú existente sigue funcionando. Puede que el siguiente kernel no aparezca al arrancar. Genéralo a mano con `update-grub` si lo has desactivado.",
+      "problems": [
+        "El servidor arranca un kernel antiguo — ejecuta `update-grub` y comprueba que hay espacio libre en `/boot`.",
+        "La unidad falla — lee `journalctl -u grub-common -n 50 --no-pager` y corrige la configuración que indique.",
+        "Falta una entrada en el menú de arranque — confirma que el paquete del kernel está instalado y vuelve a generar el menú."
+      ]
+    },
+    "rescue-mode": {
+      "name": "Modo de rescate",
+      "what": "Proporciona los objetivos de emergencia y rescate para reparar un sistema que no arranca.",
+      "ifFails": "Un problema grave de arranque puede dejarte sin la shell mínima de recuperación.",
+      "details": "Los objetivos emergency y rescue son estados especiales de systemd que se usan cuando falla el arranque normal. El modo rescate inicia un sistema pequeño con los sistemas de archivos locales y una shell de root; el modo emergencia inicia aún menos. No están pensados para funcionar durante la operación normal.",
+      "stop": "Normalmente no puedes parar estos objetivos en una sesión sana; se eligen al arrancar. Desactivarlos o enmascararlos elimina una vía de recuperación, así que no lo hagas. Úsalos solo cuando el arranque normal no pueda terminar.",
+      "problems": [
+        "El servidor se queda en modo rescate — revisa el registro de arranque con `journalctl -xb` y corrige el montaje o servicio que falla.",
+        "El modo rescate pide la contraseña de root — usa la contraseña de root o arranca desde la consola o la imagen de rescate del proveedor.",
+        "El sistema no llega ni al modo emergencia — usa la consola de recuperación del proveedor o una imagen live."
+      ]
+    },
+    "initrd": {
+      "name": "Disco RAM inicial",
+      "what": "Genera la imagen initramfs temporal que se usa durante el arranque inicial.",
+      "ifFails": "El servidor puede no montar su sistema de archivos raíz o no cargar los controladores necesarios para arrancar.",
+      "details": "Las unidades initrd regeneran la imagen initramfs cuando cambian el kernel o los controladores de almacenamiento. La initramfs contiene los módulos y scripts necesarios antes de montar el sistema de archivos raíz real. Debian lo hace automáticamente al actualizar paquetes del kernel.",
+      "stop": "Si paras el generador, no afecta al arranque actual ni a una initramfs existente. Un kernel posterior puede arrancar sin los controladores adecuados. Regenera la imagen con `update-initramfs -u` después de corregir la causa.",
+      "problems": [
+        "El servidor falla al principio del arranque — arranca un kernel anterior o una consola de recuperación y ejecuta `update-initramfs -u -k all`.",
+        "La initramfs no incluye un módulo — revisa `/etc/initramfs-tools/modules` y vuelve a generar la imagen.",
+        "El disco está lleno — libera espacio en `/boot` y ejecuta de nuevo el generador."
+      ]
+    },
+    "plymouth": {
+      "name": "Pantalla de arranque",
+      "what": "Muestra la animación gráfica mientras el sistema arranca.",
+      "ifFails": "Puedes perder la pantalla gráfica de arranque, pero el servidor puede seguir arrancando con normalidad.",
+      "details": "Plymouth dibuja el logotipo y la animación de progreso durante el arranque en sistemas con consola gráfica. Es sobre todo cosmético y puede ocultar los mensajes de arranque. Un servidor puede funcionar sin él y mostrar texto normal.",
+      "stop": "Si lo paras o lo desactivas, solo cambia lo que ves durante el arranque; los servicios y la red no se ven afectados. Es seguro desactivarlo en un servidor. Entonces verás los mensajes normales del kernel y de los servicios.",
+      "problems": [
+        "La pantalla de arranque se queda bloqueada — cambia a una consola de texto o arranca con `plymouth.enable=0` para ver el error real.",
+        "La animación parpadea o muestra un tema equivocado — revisa el tema de Plymouth y el controlador gráfico.",
+        "El servidor parece congelado — espera un poco y usa la consola; Plymouth puede estar ocultando un arranque lento."
+      ]
+    },
+    "user-session": {
+      "name": "Gestor de servicios de usuario",
+      "what": "Inicia un gestor de systemd por usuario para sus servicios y sesiones.",
+      "ifFails": "Los servicios y temporizadores del usuario pueden no arrancar, aunque los servicios del sistema y los accesos SSH siguen funcionando.",
+      "details": "user@.service inicia una instancia pequeña de systemd para cada usuario, y user-runtime-dir@.service prepara su directorio de ejecución. Permite que cada usuario ejecute sus propios servicios y temporizadores sin ser root. La mayoría de servidores solo lo usan cuando alguien inicia sesión o activa lingering.",
+      "stop": "Si paras el gestor de un usuario, terminas los servicios de ese usuario en la sesión actual. No detiene los servicios del sistema ni los de otros usuarios. Evita pararlo mientras dependas de las tareas de ese usuario; usa `loginctl` para revisar las sesiones primero.",
+      "problems": [
+        "Un temporizador de usuario no se ejecutó — comprueba `systemctl --user status` como ese usuario y si lingering está activo con `loginctl show-user <usuario>`.",
+        "El gestor de usuario se reinicia una y otra vez — lee `journalctl --user -n 50 --no-pager` como ese usuario.",
+        "Falta el directorio de ejecución — comprueba `/run/user/<uid>` y la unidad `user-runtime-dir@`."
+      ]
     }
   },
   "screen": {

@@ -142,7 +142,14 @@
     "getty": {
       "name": "Console login",
       "what": "Shows a text login prompt on a local console or serial line.",
-      "ifFails": "You may lose the local console login. This is usually harmless on a remote server; check the serial or console configuration if you need it."
+      "ifFails": "You may lose the local console login. This is usually harmless on a remote server; check the serial or console configuration if you need it.",
+      "details": "Getty shows the text login prompt on a local console or serial line. It is how you sign in when there is no graphical session, and serial getty is often used on servers with remote console access. On a normal SSH-managed server you may never use it.",
+      "stop": "Stopping getty closes that console login prompt. Existing SSH sessions are not affected, and it is usually harmless on a remote server. Keep at least one console or provider recovery path before disabling all getty instances.",
+      "problems": [
+        "No login prompt appears on the console — check `systemctl status getty@tty1` and the serial `serial-getty@` unit.",
+        "The serial console shows nothing — verify the baud rate and cabling, then check the unit log.",
+        "A getty restarts in a loop — read `journalctl -u getty@tty1 -n 50 --no-pager` for a failing terminal or device."
+      ]
     },
     "networking": {
       "name": "Debian networking",
@@ -555,6 +562,186 @@
       "name": "Docker registry",
       "what": "Stores and serves Docker images for pulls and pushes.",
       "ifFails": "Image pulls and pushes fail, and deployments that need new images stop. Check disk space, authentication and the storage backend before restarting."
+    },
+    "anacron": {
+      "name": "Anacron",
+      "what": "Runs daily, weekly and monthly maintenance jobs on machines that are not always on.",
+      "ifFails": "Scheduled maintenance jobs may not run after the server has been off. Check its logs if backups, log rotation or cleanup stop happening.",
+      "details": "Anacron complements cron: it remembers when daily, weekly or monthly jobs last ran and starts them after boot if their time was missed. On a server it usually runs the jobs in `/etc/cron.daily`, `/etc/cron.weekly` and `/etc/cron.monthly`. It is useful on laptops and on servers that are not powered all the time.",
+      "stop": "Stopping anacron means missed maintenance jobs are not caught up after boot. The jobs run by cron may still run while the machine is on, but daily tasks can be delayed. It is usually safe only if cron and another scheduler cover the same work.",
+      "problems": [
+        "A maintenance job did not run — check `/var/spool/anacron` for the last-run timestamps and read the unit log with `journalctl -u anacron -n 50 --no-pager`.",
+        "A job runs at the wrong time — anacron starts after boot and then waits for its configured delay; check `/etc/anacrontab` and the job's own schedule.",
+        "The service is masked or disabled — check `systemctl status anacron` and enable it again if you rely on catch-up jobs."
+      ]
+    },
+    "logrotate": {
+      "name": "Logrotate",
+      "what": "Rotates, compresses and removes old log files so disks do not fill up.",
+      "ifFails": "Log files keep growing and can fill the disk; some services may stop writing or the server may become unstable.",
+      "details": "Logrotate checks its configuration regularly, often through a systemd timer, and renames or compresses logs when they reach a size or age limit. It can also tell a service to reopen its log file after rotation. Configuration lives in `/etc/logrotate.conf` and `/etc/logrotate.d`.",
+      "stop": "Stopping logrotate leaves old logs in place and new entries keep growing the same files. A full disk can then break services and the panel. Keep it running and fix configuration errors instead of disabling it.",
+      "problems": [
+        "Logs are not rotating — run `logrotate --debug /etc/logrotate.conf` and check the timer with `systemctl status logrotate.timer`.",
+        "A log is huge or the disk is full — inspect `/etc/logrotate.d` for the service's rules and rotate that file manually with `logrotate -f /etc/logrotate.conf`.",
+        "A service keeps writing to the old file — add the correct `postrotate` command to make the service reopen its log, then test with `logrotate --debug`."
+      ]
+    },
+    "man-db": {
+      "name": "Manual page index",
+      "what": "Builds the index and cache used by the `man` command.",
+      "ifFails": "Manual pages may be missing from searches or `man` may show an old version after packages change.",
+      "details": "The man-db service runs `mandb` to rebuild the manual page index after packages install or remove documentation. It uses a systemd timer or package triggers, so it normally works in the background. Without it, `man` can still open a page by path but searches and the whatis database may be stale.",
+      "stop": "Stopping it only skips index updates; existing manual pages remain available. It is safe to leave it off for a while, but after installing or removing packages `man -k` may miss pages. Run `mandb` by hand once if you need the index.",
+      "problems": [
+        "`man -k` finds nothing — run `mandb` and check `systemctl status man-db` and its timer.",
+        "A manual page is missing — confirm the package installed its man page under `/usr/share/man` and rebuild the index with `mandb`.",
+        "The service fails with permission errors — check free disk space and the log with `journalctl -u man-db -n 50 --no-pager`."
+      ]
+    },
+    "dpkg-db-backup": {
+      "name": "Package database backup",
+      "what": "Saves a daily backup of the dpkg package database.",
+      "ifFails": "A damaged package database cannot be restored from a recent automatic copy.",
+      "details": "The service copies the files that record installed packages, versions and package status to `/var/backups`. It runs once a day and keeps a few recent copies, so the package manager can be repaired if its database is damaged. It does not back up your application data.",
+      "stop": "Stopping it only stops these package-database copies; installed software keeps working. It is safe for a short time, but you lose a simple recovery point for dpkg. Keep it enabled on normal servers.",
+      "problems": [
+        "No recent backup exists — check `systemctl status dpkg-db-backup` and the timer, and inspect `/var/backups` for `dpkg.*` files.",
+        "The disk is full — remove old backups you no longer need, but keep at least the latest copy.",
+        "The service fails — check `journalctl -u dpkg-db-backup -n 50 --no-pager` for permission or disk errors."
+      ]
+    },
+    "e2scrub": {
+      "name": "ext4 online check",
+      "what": "Checks ext4 filesystems for metadata errors while they are online.",
+      "ifFails": "Filesystem errors may go unnoticed until they cause data loss.",
+      "details": "e2scrub runs on ext4 filesystems that use LVM and checks a read-only snapshot for metadata problems. It is a light check, not a replacement for a full offline fsck. A timer runs it regularly, usually once a week.",
+      "stop": "Stopping it stops these online checks; the filesystem continues working normally. It is safe to disable on machines without LVM ext4 filesystems, but errors may then be found only by a manual check. Do not run a full fsck on a mounted filesystem.",
+      "problems": [
+        "The timer fails — check `systemctl status e2scrub_all.timer` and `journalctl -u e2scrub_all -n 50 --no-pager`.",
+        "No snapshot is created — e2scrub needs LVM free space; check `lvs` and free extents in the volume group.",
+        "Errors are reported — do not ignore them; plan an offline `e2fsck -f` after unmounting the filesystem."
+      ]
+    },
+    "fstrim": {
+      "name": "SSD trim",
+      "what": "Tells an SSD which blocks are no longer used.",
+      "ifFails": "The SSD may keep erased blocks longer and write performance or lifetime can suffer.",
+      "details": "fstrim sends TRIM requests for free blocks on mounted filesystems. A timer runs it weekly on supported SSDs, so the drive can erase unused blocks in advance. It does not delete your files and does not run on filesystems that do not support TRIM.",
+      "stop": "Stopping the timer only skips the automatic TRIM; data and mounts are unaffected. You can run `fstrim --all` by hand later. It is usually safe to disable on virtual disks that do not support discard.",
+      "problems": [
+        "The timer is missing — check `systemctl status fstrim.timer` and enable it if the disk supports TRIM.",
+        "fstrim reports `discard operation not supported` — the filesystem or virtual disk does not support discard; no action is needed unless the provider supports it.",
+        "TRIM takes too long — check the disk health and avoid running it during busy hours."
+      ]
+    },
+    "phpsessionclean": {
+      "name": "PHP session cleanup",
+      "what": "Deletes old PHP session files from the session directory.",
+      "ifFails": "Old session files can fill the disk, and expired sessions may be kept longer than intended.",
+      "details": "PHP stores sessions in a directory such as `/var/lib/php/sessions`, and old files are not removed by every request. This timer runs a cleanup script that removes expired sessions according to the PHP settings. It matters only on servers that run PHP applications with file-based sessions.",
+      "stop": "Stopping it leaves expired session files on disk; active sessions are not affected. It is safe for a short time, but the directory can grow and fill the disk. Run the cleanup script by hand if you disable it.",
+      "problems": [
+        "The sessions directory grows — inspect `session.save_path` in `php.ini` and the cleanup timer, and remove only files that are clearly expired.",
+        "Users are logged out unexpectedly — check the PHP `session.gc_maxlifetime` setting; cleanup may be removing sessions earlier than the application expects.",
+        "The timer fails — check `systemctl status phpsessionclean.timer` and the service log."
+      ]
+    },
+    "sshd-keygen": {
+      "name": "SSH host key generator",
+      "what": "Creates the SSH host keys the server uses on its first boot.",
+      "ifFails": "SSH clients may reject the server identity or refuse to connect, especially after the host keys were removed.",
+      "details": "The service creates missing SSH host key pairs in `/etc/ssh` during the first boot of a Debian system. These keys identify the server to clients and are not the same as your personal login keys. It runs once and does nothing when the keys already exist.",
+      "stop": "Stopping it does not remove existing host keys and does not affect running SSH connections. It is safe when the keys already exist, but a fresh machine can fail to start SSH if the keys were never generated. Generate them with `ssh-keygen -A` if needed.",
+      "problems": [
+        "SSH refuses connections after a rebuild — check that host keys exist in `/etc/ssh` and run `ssh-keygen -A`.",
+        "Clients warn that the host key changed — this can be expected after reinstalling; verify the new fingerprint before accepting it.",
+        "The service fails at boot — check `systemctl status sshd-keygen` and the logs; permissions or a full disk may prevent key creation."
+      ]
+    },
+    "uuidd": {
+      "name": "UUID daemon",
+      "what": "Generates UUIDs for programs that need unique identifiers.",
+      "ifFails": "Some applications may fall back to slower or less reliable UUID generation.",
+      "details": "uuidd is a small daemon that produces universally unique identifiers on request. It exists so many processes can get UUIDs without each one generating them from the same random source. Most servers only use it when a package asks for it.",
+      "stop": "Stopping uuidd is usually harmless: programs that need a UUID can generate one themselves. It may affect applications that explicitly require the service. It is safe to leave stopped if nothing on the server uses it.",
+      "problems": [
+        "A service cannot get a UUID — check `systemctl status uuidd` and start it.",
+        "The socket is missing — check `systemctl status uuidd.socket`; systemd usually starts the daemon on demand.",
+        "The daemon fails after a reboot — check `journalctl -u uuidd -n 50 --no-pager` and the `/run` filesystem."
+      ]
+    },
+    "rc-local": {
+      "name": "Local boot commands",
+      "what": "Runs the commands in `/etc/rc.local` during boot.",
+      "ifFails": "Custom startup commands in that file do not run after a reboot.",
+      "details": "rc-local is a compatibility unit for administrators who still use `/etc/rc.local` instead of a native systemd service. On Debian it usually runs late in the boot, after the network and local filesystems are ready. It only matters if that file exists and contains commands.",
+      "stop": "Stopping or disabling it means `/etc/rc.local` is not executed at boot. The rest of the system continues normally. It is safe if you no longer use that file or have moved its commands to a proper service.",
+      "problems": [
+        "Commands in `/etc/rc.local` do not run — make sure the file is executable and check `systemctl status rc-local`.",
+        "Boot waits or fails — read `journalctl -u rc-local -b` and make the commands exit successfully.",
+        "The unit is masked — check `systemctl status rc-local`; enable it only if you rely on that file."
+      ]
+    },
+    "grub": {
+      "name": "GRUB bootloader",
+      "what": "Updates the bootloader configuration and keeps the GRUB boot menu ready.",
+      "ifFails": "The server may fail to boot or boot an old kernel after a kernel or configuration change.",
+      "details": "The grub-common unit runs `update-grub` when the kernel or boot configuration changes, so the boot menu lists the right kernels. It does not install kernels itself. A failed update can leave the boot menu stale, so check it after kernel upgrades.",
+      "stop": "Stopping it only prevents automatic menu regeneration; an existing menu keeps working. The next kernel update may not appear at boot. Generate it manually with `update-grub` if you have disabled it.",
+      "problems": [
+        "The server boots an old kernel — run `update-grub` and check `/boot` for free space.",
+        "The unit fails — read `journalctl -u grub-common -n 50 --no-pager` and fix the reported configuration.",
+        "The boot menu is missing an entry — confirm the kernel package is installed and regenerate the menu."
+      ]
+    },
+    "rescue-mode": {
+      "name": "Rescue mode",
+      "what": "Provides the emergency and rescue boot targets for repairing a broken system.",
+      "ifFails": "A serious boot problem may leave you without the minimal recovery shell.",
+      "details": "The emergency and rescue targets are special systemd states used when normal boot fails. Rescue mode starts a small system with local filesystems and a root shell; emergency mode starts even less. They are not meant to run during normal operation.",
+      "stop": "You cannot normally stop these targets in a healthy session; they are selected at boot. Disabling or masking them removes a recovery path, so do not do it. Use them only when the normal boot cannot complete.",
+      "problems": [
+        "The server drops into rescue mode — check the boot log with `journalctl -xb` and fix the failed mount or service.",
+        "Rescue mode asks for the root password — use the root password or boot from the provider's console or rescue image.",
+        "The system cannot reach emergency mode — use the provider recovery console or a live image."
+      ]
+    },
+    "initrd": {
+      "name": "Initial RAM disk",
+      "what": "Builds the temporary initramfs image used during early boot.",
+      "ifFails": "The server may fail to mount its root filesystem or load the drivers needed to boot.",
+      "details": "initrd units regenerate the initramfs after kernel or storage driver changes. The initramfs contains the modules and scripts needed before the real root filesystem is mounted. Debian runs this automatically after kernel package updates.",
+      "stop": "Stopping the generator does not affect the current boot or an existing initramfs. A later kernel may boot without the right drivers. Regenerate it with `update-initramfs -u` after fixing the cause.",
+      "problems": [
+        "The server fails early in boot — boot an older kernel or a recovery console and run `update-initramfs -u -k all`.",
+        "The initramfs is missing a module — check `/etc/initramfs-tools/modules` and regenerate the image.",
+        "The disk is full — free space in `/boot` and run the generator again."
+      ]
+    },
+    "plymouth": {
+      "name": "Boot splash",
+      "what": "Shows the graphical boot splash while the system starts.",
+      "ifFails": "You may lose the graphical boot screen, but the server can still boot normally.",
+      "details": "Plymouth draws the logo and progress animation during boot on systems with a graphical console. It is mostly cosmetic and can hide boot messages. Servers can run without it and show plain text instead.",
+      "stop": "Stopping or disabling Plymouth only changes what you see during boot; services and networking are unaffected. It is safe to disable on a server. You may then see the normal kernel and service messages.",
+      "problems": [
+        "The boot screen is stuck — switch to a text console or boot with `plymouth.enable=0` to see the real error.",
+        "The splash flickers or shows the wrong theme — check the Plymouth theme and the graphics driver.",
+        "The server appears frozen — wait a little, then use the console; Plymouth may be hiding a slow boot."
+      ]
+    },
+    "user-session": {
+      "name": "User service manager",
+      "what": "Starts a per-user systemd manager for user services and sessions.",
+      "ifFails": "User services and per-user timers may not start, although system services and SSH logins keep working.",
+      "details": "user@.service starts a small systemd instance for each user, and user-runtime-dir@.service prepares that user runtime directory. It lets users run their own services and timers without root. Most servers only use it when someone logs in or enables lingering.",
+      "stop": "Stopping a user manager ends that user's services for the current session. It does not stop system-wide services or other users. Avoid stopping it while you depend on that user's jobs; use `loginctl` to inspect sessions first.",
+      "problems": [
+        "A user timer did not run — check `systemctl --user status` as that user and whether lingering is enabled with `loginctl show-user <user>`.",
+        "The user manager keeps restarting — read `journalctl --user -n 50 --no-pager` as that user.",
+        "The runtime directory is missing — check `/run/user/<uid>` and the `user-runtime-dir@` unit."
+      ]
     }
   },
   "screen": {
