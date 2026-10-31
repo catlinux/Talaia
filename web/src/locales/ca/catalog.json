@@ -350,37 +350,88 @@
     "haproxy": {
       "name": "HAProxy",
       "what": "Reparteix el trànsit entre servidors de fons i pot acabar TLS.",
-      "ifFails": "Els clients no poden arribar als serveis que hi ha darrere d'HAProxy. Revisa la configuració i les estadístiques, i recarrega amb cura; una configuració dolenta el pot deixar aturat."
+      "ifFails": "Els clients no poden arribar als serveis que hi ha darrere d'HAProxy. Revisa la configuració i les estadístiques, i recarrega amb cura; una configuració dolenta el pot deixar aturat.",
+      "details": "HAProxy és un balancejador de càrrega i proxy invers TCP i HTTP. Accepta connexions als frontends configurats i les reenvia a un o més servidors backend, comprovant-ne l’estat. També pot terminar TLS, afegir capçaleres i mostrar una pàgina d’estadístiques. En un servidor sol col·locar-se davant d’aplicacions web o bases de dades.",
+      "stop": "Aturar HAProxy tanca tots els frontends que serveix, així que els clients no poden arribar a les aplicacions que hi ha darrere. Les connexions existents s’acaben i les comprovacions d’estat s’aturen. Recarregar és més segur per canviar la configuració; una aturada completa és per a manteniment o quan un altre proxy ocupa els ports.",
+      "problems": [
+        "HAProxy no arrenca — executa `haproxy -c -f /etc/haproxy/haproxy.cfg` i corregeix la línia indicada.",
+        "Els clients reben un 503 — tots els backends estan marcats com a caiguts; revisa l’estat i les línies `server`.",
+        "Els canvis no s’apliquen — valida la configuració i recarrega HAProxy; un reinici complet talla les connexions.",
+        "TLS falla — revisa les rutes i els permisos dels certificats i les línies `bind ... ssl`."
+      ]
     },
     "postfix": {
       "name": "Postfix",
       "what": "Servidor de correu SMTP que envia i rep correu.",
-      "ifFails": "L'enviament i la recepció de correu s'aturen, i els missatges es poden encuar o rebutjar. Revisa la cua i els registres abans de reiniciar."
+      "ifFails": "L'enviament i la recepció de correu s'aturen, i els missatges es poden encuar o rebutjar. Revisa la cua i els registres abans de reiniciar.",
+      "details": "Postfix és un agent de transferència de correu (MTA): accepta correu de programes locals i de servidors remots i el lliura a bústies locals o a altres servidors. Fa servir `/etc/postfix/main.cf` i `master.cf`, i desa els missatges en cua a `/var/spool/postfix`. En un servidor web sol enviar notificacions i correu de formularis de contacte.",
+      "stop": "Aturar Postfix atura el lliurament i la recepció de correu; els missatges de programes locals poden quedar en cua o fallar. El correu que ja és a la cua continua al disc. Reinicia només després de revisar la cua i els registres; els remitents remots poden reintentar més tard.",
+      "problems": [
+        "El correu no es lliura — executa `postqueue -p` i llegeix `/var/log/mail.log`.",
+        "Postfix no arrenca — executa `postfix check` i corregeix el fitxer de configuració indicat.",
+        "Els missatges queden diferits — revisa el DNS, la configuració del relay i si el servidor de destinació és accessible.",
+        "Falla el correu local de cron o d’aplicacions web — revisa `myhostname` i `mydestination` a `/etc/postfix/main.cf`."
+      ]
     },
     "exim4": {
       "name": "Servidor de correu Exim",
       "what": "L'agent de transport de correu per defecte de Debian per al correu local i sortint.",
-      "ifFails": "El lliurament local o l'enviament de correu pot fallar i els missatges es poden encuar. Revisa els registres i la cua abans de reiniciar."
+      "ifFails": "El lliurament local o l'enviament de correu pot fallar i els missatges es poden encuar. Revisa els registres i la cua abans de reiniciar.",
+      "details": "Exim és l’agent de transferència de correu predeterminat en moltes instal·lacions de Debian. Accepta correu local i remot i el lliura directament o a través d’un smarthost (servidor de reenviament). Debian reparteix la seva configuració a `/etc/exim4/` i genera la configuració final a partir d’aquests fitxers. Sovint només s’usa per enviar correu des de cron i aplicacions web.",
+      "stop": "Aturar Exim atura el lliurament de correu local i sortint; els missatges poden quedar en cua o fallar. La cua roman al disc. Revisa els registres i la cua abans de reiniciar, i tingues en compte que els remitents remots poden reintentar.",
+      "problems": [
+        "El correu no s’envia — executa `exim4 -bpc` per veure la cua i llegeix `/var/log/exim4/mainlog`.",
+        "Exim no arrenca — executa `exim4 -bV` i revisa els fitxers de `/etc/exim4/`.",
+        "Els missatges es rebutgen o es difereixen — revisa el smarthost i el DNS; `exim4 -bt <adreça>` prova l’encaminament."
+      ]
     },
     "dovecot": {
       "name": "Dovecot",
       "what": "Proporciona accés IMAP i POP3 als bústies de correu.",
-      "ifFails": "Els clients de correu no poden descarregar el correu. Els lliuraments existents es poden encuar; revisa els registres i la configuració d'autenticació abans de reiniciar."
+      "ifFails": "Els clients de correu no poden descarregar el correu. Els lliuraments existents es poden encuar; revisa els registres i la configuració d'autenticació abans de reiniciar.",
+      "details": "Dovecot proporciona serveis IMAP i POP3 perquè els clients de correu llegeixin les bústies desades al servidor. També gestiona l’autenticació i pot usar usuaris locals o una base de dades. La seva configuració és a `/etc/dovecot/`, i el correu sol desar-se a `/var/mail` o `/home`. No envia ni rep correu per si mateix; d’això s’encarreguen Postfix o Exim.",
+      "stop": "Aturar Dovecot tanca l’accés IMAP i POP3, així que els clients no poden descarregar ni sincronitzar el correu. L’agent de transferència pot continuar lliurant correu al disc. Reiniciar sol ser segur després de revisar els registres; els clients actius es reconnecten.",
+      "problems": [
+        "Els clients de correu no poden iniciar sessió — revisa `dovecot -n`, l’autenticació i `/var/log/mail.log`.",
+        "Les bústies són buides o falten — revisa `mail_location` i els permisos del directori de correu.",
+        "Dovecot no arrenca — llegeix `journalctl -u dovecot -n 50 --no-pager` i revisa la configuració."
+      ]
     },
     "fail2ban": {
       "name": "Fail2ban",
       "what": "Bloqueja adreces IP que fallen repetidament l'autenticació als serveis.",
-      "ifFails": "La protecció contra atacs de força bruta s'atura i els atacs repetits poden no bloquejar-se. Revisa la configuració de les presons i dels registres abans de reiniciar."
+      "ifFails": "La protecció contra atacs de força bruta s'atura i els atacs repetits poden no bloquejar-se. Revisa la configuració de les presons i dels registres abans de reiniciar.",
+      "details": "Fail2ban vigila fitxers de registre a la recerca de fallades d’autenticació repetides i afegeix bloquejos temporals al tallafoc per a les adreces d’origen. Usa jails definits a `/etc/fail2ban/jail.d/` i `/etc/fail2ban/jail.local`, i pot protegir SSH, inicis de sessió web i correu. Els bloquejos s’apliquen mitjançant iptables, nftables o una altra acció.",
+      "stop": "Aturar Fail2ban elimina els bloquejos actius i deixa d’afegir-ne de nous. Els serveis que protegeix continuen funcionant, però els intents de força bruta ja no es bloquegen. En tornar-lo a arrencar es recarreguen els jails; revisa la configuració abans de desactivar-lo.",
+      "problems": [
+        "Una IP està bloquejada per error — executa `fail2ban-client status <jail>` i desbloqueja-la amb `fail2ban-client set <jail> unbanip <ip>`.",
+        "Fail2ban no bloqueja els atacs — revisa `fail2ban-client status` i la ruta i el filtre del registre del jail.",
+        "El servei no arrenca — executa `fail2ban-client -t` i llegeix l’error de configuració indicat."
+      ]
     },
     "ufw": {
       "name": "Tallafocs UFW",
       "what": "Gestiona un conjunt simple de regles de tallafocs amb iptables o nftables.",
-      "ifFails": "Les regles de tallafocs poden no carregar-se o no canviar. Revisa les regles i mantén accés a la consola; un conjunt dolent et pot tallar l'accés remot."
+      "ifFails": "Les regles de tallafocs poden no carregar-se o no canviar. Revisa les regles i mantén accés a la consola; un conjunt dolent et pot tallar l'accés remot.",
+      "details": "UFW és una interfície per a iptables o nftables que facilita gestionar les regles del tallafoc. Desa les regles i l’estat a `/etc/ufw/`, i les aplica en arrencar. És habitual a Ubuntu i es pot instal·lar a Debian. Només controla el tallafoc del host, no el tallafoc extern del proveïdor.",
+      "stop": "Aturar UFW no elimina necessàriament les regles ja carregades al nucli; desactivar-lo amb `ufw disable` sí que ho fa. En qualsevol cas, el servidor pot quedar exposat o inaccessible segons les regles actuals. Tingues accés a la consola i revisa les regles abans de canviar el tallafoc.",
+      "problems": [
+        "Un servei no és accessible — executa `ufw status verbose` i permet el port si falta.",
+        "Et quedes fora en activar el tallafoc — usa la consola del proveïdor i permet SSH abans de tornar a activar UFW.",
+        "Les regles no sobreviuen a un reinici — comprova que UFW està actiu i que la seva configuració s’ha desat."
+      ]
     },
     "nftables": {
       "name": "Tallafocs nftables",
       "what": "El filtre de paquets modern de Linux que s'usa per a les regles de tallafocs.",
-      "ifFails": "Les regles de tallafocs poden desaparèixer o no carregar-se, deixant serveis exposats o inaccessibles. Revisa el conjunt de regles i mantén accés a la consola."
+      "ifFails": "Les regles de tallafocs poden desaparèixer o no carregar-se, deixant serveis exposats o inaccessibles. Revisa el conjunt de regles i mantén accés a la consola.",
+      "details": "nftables és el filtre de paquets modern de Linux i el sistema de tallafoc predeterminat a les versions actuals de Debian. Llegeix les regles de `/etc/nftables.conf` i les aplica amb l’ordre `nft`. Pot filtrar, traduir adreces i comptar trànsit. UFW i Docker poden afegir les seves pròpies regles al costat de les teves.",
+      "stop": "Aturar nftables no buida les regles ja carregades al nucli tret que l’ordre d’aturada de la unitat ho faci. Una recàrrega torna a aplicar el fitxer, i un conjunt de regles incorrecte pot tallar l’accés remot. Tingues accés a la consola i valida les regles abans de recarregar.",
+      "problems": [
+        "El conjunt de regles és buit després d’arrencar — revisa `/etc/nftables.conf` i si `nftables.service` està actiu.",
+        "El servidor no és accessible després d’un canvi — usa la consola i revisa la cadena d’entrada i el port SSH.",
+        "Les regles de Docker i nftables entren en conflicte — revisa `nft list ruleset` i la integració de Docker abans d’afegir regles."
+      ]
     },
     "iptables": {
       "name": "Tallafocs iptables",
@@ -397,42 +448,98 @@
     "apparmor": {
       "name": "AppArmor",
       "what": "Limita què poden accedir els programes amb perfils de seguretat per aplicació.",
-      "ifFails": "Els perfils nous d'AppArmor poden no carregar-se i les aplicacions confinades poden no iniciar-se. Revisa el registre del nucli i els perfils abans de reiniciar."
+      "ifFails": "Els perfils nous d'AppArmor poden no carregar-se i les aplicacions confinades poden no iniciar-se. Revisa el registre del nucli i els perfils abans de reiniciar.",
+      "details": "AppArmor confina els programes amb perfils que limiten els fitxers i les capacitats que poden usar. S’activa en arrencar i els perfils es carreguen des de `/etc/apparmor.d/`. A Debian sol protegir serveis com servidors web i bases de dades. Un perfil pot estar en mode complain, que registra les violacions sense bloquejar-les.",
+      "stop": "Desactivar AppArmor en arrencar, o descarregar els perfils amb `aa-teardown`, elimina el confinament, així que els programes poden accedir a tot el que permetin els permisos del seu usuari. Els serveis continuen funcionant, però la protecció addicional desapareix. Recarrega els perfils en lloc de desactivar el servei quan els canviïs.",
+      "problems": [
+        "Un servei confinat falla després d’una actualització — revisa `aa-status` i el registre del nucli a la recerca de línies `DENIED`, i actualitza o desactiva el perfil.",
+        "Un perfil no es carrega — executa `apparmor_parser -r /etc/apparmor.d/<perfil>` i llegeix l’error.",
+        "AppArmor no aplica les regles — revisa `aa-status` i si la línia d’arrencada del nucli el va desactivar."
+      ]
     },
     "auditd": {
       "name": "Dimoni d'auditoria de Linux",
       "what": "Registra esdeveniments del sistema rellevants per a la seguretat i l'auditoria.",
-      "ifFails": "Els esdeveniments de seguretat deixen de registrar-se. Comprova l'espai de disc i les regles d'auditoria abans de reiniciar; les fallades d'auditoria poden afectar el compliment normatiu."
+      "ifFails": "Els esdeveniments de seguretat deixen de registrar-se. Comprova l'espai de disc i les regles d'auditoria abans de reiniciar; les fallades d'auditoria poden afectar el compliment normatiu.",
+      "details": "auditd registra esdeveniments rellevants per a la seguretat, com inicis de sessió, accessos a fitxers i canvis de privilegis, segons les regles de `/etc/audit/rules.d/`. Escriu els registres a `/var/log/audit/audit.log` i els pot reenviar a un altre sistema. S’usa per complir normatives i investigar incidents. No substitueix els registres de les aplicacions.",
+      "stop": "Aturar auditd atura l’escriptura de nous registres d’auditoria; el nucli pot continuar generant esdeveniments que es perden. Els registres existents es conserven. No el deixis aturat en un sistema que exigeixi auditoria; revisa l’espai de disc i les regles abans de reiniciar-lo.",
+      "problems": [
+        "No s’escriuen registres d’auditoria — revisa `systemctl status auditd`, `auditctl -s` i l’espai lliure a `/var/log/audit`.",
+        "El servei d’auditoria no arrenca — revisa `journalctl -u auditd -n 50 --no-pager` i les regles de `/etc/audit/rules.d/`.",
+        "El registre omple el disc — revisa `auditctl -s`, rota `/var/log/audit/audit.log` i revisa les regles."
+      ]
     },
     "polkit": {
       "name": "PolicyKit",
       "what": "Controla si usuaris i serveis poden fer accions privilegiades del sistema.",
-      "ifFails": "Les eines gràfiques o de servei poden no poder autoritzar operacions privilegiades. Revisa els registres; reiniciar-lo pot interrompre sessions actives."
+      "ifFails": "Les eines gràfiques o de servei poden no poder autoritzar operacions privilegiades. Revisa els registres; reiniciar-lo pot interrompre sessions actives.",
+      "details": "PolicyKit, ara sovint anomenat polkit, decideix si un usuari o servei pot fer una acció privilegiada. Les aplicacions pregunten a polkit en lloc d’executar-se com a root, i polkit comprova les regles de l’acció i la sessió de l’usuari. Les seves regles són a `/usr/share/polkit-1/actions/` i `/etc/polkit-1/rules.d/`. És habitual en escriptoris i en servidors gestionats amb eines gràfiques o D-Bus.",
+      "stop": "Aturar polkit impedeix respondre a noves sol·licituds d’autorització, així que les eines que el necessiten poden fallar. Els processos existents continuen funcionant. Reiniciar-lo pot interrompre sessions actives; revisa els registres i les regles abans de canviar-lo.",
+      "problems": [
+        "Una eina diu que l’autorització no està disponible — revisa `systemctl status polkit` i `journalctl -u polkit -n 50 --no-pager`.",
+        "Un usuari no pot fer una acció — revisa l’ID de l’acció amb `pkaction` i les regles de `/etc/polkit-1/rules.d/`.",
+        "Polkit no arrenca — revisa el bus del sistema D-Bus i els registres de polkit."
+      ]
     },
     "qemu-guest-agent": {
       "name": "Agent convidat de QEMU",
       "what": "Permet que l'amfitrió de la màquina virtual consulti i controli aquest convidat.",
-      "ifFails": "L'amfitrió no pot consultar el convidat ni executar aturades ordenades o instantànies. Comprova el canal virtio; la majoria de serveis no el necessiten."
+      "ifFails": "L'amfitrió no pot consultar el convidat ni executar aturades ordenades o instantànies. Comprova el canal virtio; la majoria de serveis no el necessiten.",
+      "details": "L’agent convidat de QEMU s’executa dins d’una màquina virtual i parla amb l’amfitrió mitjançant un canal sèrie virtio. Permet a l’amfitrió consultar el convidat, congelar sistemes de fitxers per a instantànies i sol·licitar un apagat ordenat. Només és útil en una màquina virtual gestionada per QEMU/KVM o una plataforma que ho admeti. No afecta els serveis normals del convidat.",
+      "stop": "Aturar l’agent elimina aquests controls de l’amfitrió, però el convidat continua funcionant amb normalitat. Les sol·licituds d’instantània i apagat de l’amfitrió poden fallar o acabar en un apagat forçat. És segur aturar-lo si no uses la gestió del convidat des de l’amfitrió.",
+      "problems": [
+        "L’amfitrió diu que l’agent no està en marxa — revisa `systemctl status qemu-guest-agent` i que existeixi el dispositiu sèrie virtio.",
+        "Fallen les ordres d’apagat o instantània — revisa els registres de l’agent i la configuració de l’agent a l’amfitrió.",
+        "L’agent no està instal·lat — instal·la `qemu-guest-agent` al convidat; és diferent dels paquets de l’amfitrió QEMU."
+      ]
     },
     "cloud-init": {
       "name": "Cloud-init",
       "what": "Configura una instància al núvol en el primer arrencada, incloent usuaris, claus SSH i xarxa.",
-      "ifFails": "El proveïment o passos de configuració posteriors poden fallar en la propera arrencada. Revisa els registres i la configuració; no el tornis a executar a cegues en un servidor en producció."
+      "ifFails": "El proveïment o passos de configuració posteriors poden fallar en la propera arrencada. Revisa els registres i la configuració; no el tornis a executar a cegues en un servidor en producció.",
+      "details": "Cloud-init configura una instància cloud durant el primer arrencament: usuaris, claus SSH, xarxa, paquets i fitxers. Llegeix metadades del proveïdor i configuració de `/etc/cloud/` i `/var/lib/cloud/`. Normalment s’executa una vegada per etapa d’arrencament i després marca la instància com a configurada. En arrencaments posteriors encara pot executar scripts d’user-data (scripts de personalització proporcionats pel proveïdor o l’administrador) si es configura.",
+      "stop": "Aturar cloud-init no desfà la configuració ja aplicada. Pot impedir que s’executin etapes posteriors o scripts d’user-data, així que un reinici podria deixar la instància a mig configurar. Desactiva mòduls o orígens de dades concrets en lloc d’aturar-lo sense més.",
+      "problems": [
+        "Una instància nova no té clau SSH ni usuari — revisa `cloud-init status --long` i l’user-data i les metadades del proveïdor.",
+        "Cloud-init falla en arrencar — llegeix `/var/log/cloud-init.log` i `/var/log/cloud-init-output.log`.",
+        "Cloud-init s’executa una altra vegada i canvia el sistema — revisa `/var/lib/cloud/` i la configuració de mòduls repetits."
+      ]
     },
     "snapd": {
       "name": "Dimoni Snap",
       "what": "Instal·la i actualitza paquets snap i els seus serveis.",
-      "ifFails": "Les aplicacions snap poden deixar d'actualitzar-se o iniciar-se. Revisa els registres de snapd; si no uses snaps, pot quedar aturat."
+      "ifFails": "Les aplicacions snap poden deixar d'actualitzar-se o iniciar-se. Revisa els registres de snapd; si no uses snaps, pot quedar aturat.",
+      "details": "snapd instal·la, actualitza i executa paquets snap. Munta imatges squashfs, gestiona els serveis snap i els actualitza automàticament. Les dades dels snaps són a `/var/snap/`, i els paquets es munten a `/snap/`. És opcional a Debian; els servidors que no usen snaps poden funcionar sense ell.",
+      "stop": "Aturar snapd atura les actualitzacions automàtiques i pot afectar els serveis snap en marxa, encara que les aplicacions ja iniciades poden continuar una estona. Les ordres snap fallen fins que torni. Si no uses snaps, és segur deixar-lo desactivat.",
+      "problems": [
+        "Una aplicació snap no arrenca — revisa `systemctl status snapd` i `snap version`.",
+        "Els snaps no s’actualitzen — revisa `snap refresh --time` i el registre de snapd.",
+        "Snapd ocupa massa disc — executa `snap list --all` i elimina revisions antigues amb `snap set system refresh.retain=2`."
+      ]
     },
     "modemmanager": {
       "name": "ModemManager",
       "what": "Detecta i gestiona mòdems de banda ampla mòbil.",
-      "ifFails": "Les connexions de banda ampla mòbil poden no configurar-se o reconnectar-se. És opcional en servidors sense mòdem."
+      "ifFails": "Les connexions de banda ampla mòbil poden no configurar-se o reconnectar-se. És opcional en servidors sense mòdem.",
+      "details": "ModemManager detecta mòdems de banda ampla mòbil i els exposa a NetworkManager o altres eines de connexió. Gestiona l’estat de la SIM, la informació de senyal i la configuració de la connexió. És útil en portàtils i routers amb mòdem mòbil; la majoria de servidors no en tenen. No gestiona Ethernet ni Wi-Fi.",
+      "stop": "Aturar ModemManager deixa les connexions de mòdem existents una estona, però impedeix configurar o reconnectar-ne de noves. És segur desactivar-lo en un servidor sense mòdem mòbil. Comprova si NetworkManager l’espera abans de treure’l.",
+      "problems": [
+        "No es detecta un mòdem — executa `mmcli -L` i revisa `journalctl -u modemmanager -n 50 --no-pager`.",
+        "La connexió no s’aixeca — revisa l’estat de la SIM amb `mmcli -m 0` i el perfil de connexió de NetworkManager.",
+        "ModemManager entra en conflicte amb una altra eina — revisa quin servei gestiona el mòdem i desactiva el que no usis."
+      ]
     },
     "wpa-supplicant": {
       "name": "Suplicant WPA",
       "what": "Connecta la màquina a xarxes Wi-Fi protegides.",
-      "ifFails": "La connexió Wi-Fi pot caure o no reconnectar-se. Mantén accés per cable o consola; revisa la configuració Wi-Fi abans de reiniciar."
+      "ifFails": "La connexió Wi-Fi pot caure o no reconnectar-se. Mantén accés per cable o consola; revisa la configuració Wi-Fi abans de reiniciar.",
+      "details": "wpa_supplicant connecta una interfície Wi-Fi a xarxes WPA/WPA2/WPA3. Llegeix la configuració de `/etc/wpa_supplicant/` i sovint l’inicien ifupdown, NetworkManager o una unitat systemd. Gestiona l’autenticació i l’itinerància, però no les adreces IP. Els servidors solen usar Ethernet i no el necessiten.",
+      "stop": "Aturar wpa_supplicant desconnecta la interfície Wi-Fi que gestiona, i l’accés remot per aquest enllaç s’acaba. Les altres interfícies continuen funcionant. Tingues accés a la consola i revisa la configuració abans de reiniciar; NetworkManager pot tornar a iniciar-lo automàticament.",
+      "problems": [
+        "El Wi-Fi no connecta — executa `wpa_cli status` i revisa el bloc de xarxa a `/etc/wpa_supplicant/wpa_supplicant.conf`.",
+        "La connexió cau repetidament — revisa la intensitat de senyal amb `iw dev` i el registre del supplicant al journal.",
+        "La contrasenya o la clau són incorrectes — actualitza el bloc de xarxa amb `wpa_passphrase` i recarrega la interfície."
+      ]
     },
     "avahi": {
       "name": "Avahi",

@@ -218,6 +218,7 @@ export const catalog: CatalogEntry[] = [
     importance: 'important',
     units: ['haproxy'],
     images: ['haproxy'],
+    checks: ['haproxy -c -f /etc/haproxy/haproxy.cfg'],
   },
   {
     id: 'postfix',
@@ -225,6 +226,7 @@ export const catalog: CatalogEntry[] = [
     category: 'mail',
     importance: 'important',
     units: ['postfix'],
+    checks: ['postfix check', 'postqueue -p'],
   },
   {
     id: 'exim4',
@@ -232,6 +234,7 @@ export const catalog: CatalogEntry[] = [
     category: 'mail',
     importance: 'important',
     units: ['exim4'],
+    checks: ['exim4 -bV', 'exim4 -bpc'],
   },
   {
     id: 'dovecot',
@@ -239,6 +242,7 @@ export const catalog: CatalogEntry[] = [
     category: 'mail',
     importance: 'important',
     units: ['dovecot'],
+    checks: ['dovecot -n'],
   },
   {
     id: 'fail2ban',
@@ -277,6 +281,7 @@ export const catalog: CatalogEntry[] = [
     category: 'security',
     importance: 'important',
     units: ['apparmor'],
+    checks: ['aa-status'],
   },
   {
     id: 'auditd',
@@ -284,6 +289,7 @@ export const catalog: CatalogEntry[] = [
     category: 'security',
     importance: 'important',
     units: ['auditd'],
+    checks: ['auditctl -s'],
   },
   {
     id: 'polkit',
@@ -291,6 +297,7 @@ export const catalog: CatalogEntry[] = [
     category: 'security',
     importance: 'important',
     units: ['polkit'],
+    checks: ['pkaction'],
   },
   {
     id: 'qemu-guest-agent',
@@ -305,14 +312,23 @@ export const catalog: CatalogEntry[] = [
     category: 'system',
     importance: 'important',
     unitPatterns: [/^cloud-/],
+    checks: ['cloud-init status --long'],
   },
-  { id: 'snapd', kind: 'service', category: 'system', importance: 'optional', units: ['snapd'] },
+  {
+    id: 'snapd',
+    kind: 'service',
+    category: 'system',
+    importance: 'optional',
+    units: ['snapd'],
+    checks: ['snap version'],
+  },
   {
     id: 'modemmanager',
     kind: 'service',
     category: 'network',
     importance: 'optional',
     units: ['modemmanager'],
+    checks: ['mmcli -L'],
   },
   {
     id: 'wpa-supplicant',
@@ -320,6 +336,7 @@ export const catalog: CatalogEntry[] = [
     category: 'network',
     importance: 'optional',
     units: ['wpa_supplicant'],
+    checks: ['wpa_cli status'],
   },
   {
     id: 'avahi',

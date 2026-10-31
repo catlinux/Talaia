@@ -350,37 +350,88 @@
     "haproxy": {
       "name": "HAProxy",
       "what": "Balances traffic between backend servers and can terminate TLS.",
-      "ifFails": "Clients cannot reach the services behind HAProxy. Check the configuration and stats, then reload carefully; a bad configuration can keep it down."
+      "ifFails": "Clients cannot reach the services behind HAProxy. Check the configuration and stats, then reload carefully; a bad configuration can keep it down.",
+      "details": "HAProxy is a TCP and HTTP load balancer and reverse proxy. It accepts connections on configured frontends and forwards them to one or more backend servers, checking their health. It can also terminate TLS, add headers and expose a stats page. On a server it usually sits in front of web applications or databases.",
+      "stop": "Stopping HAProxy closes every frontend it serves, so clients cannot reach the applications behind it. Existing connections end and health checks stop. Reloading is safer for configuration changes; a full stop is for maintenance or when another proxy takes over the ports.",
+      "problems": [
+        "HAProxy will not start — run `haproxy -c -f /etc/haproxy/haproxy.cfg` and fix the reported line.",
+        "Clients get a 503 — all backends are marked down; check the backend health and the `server` lines.",
+        "Changes do not apply — validate the configuration and reload HAProxy; a full restart drops connections.",
+        "TLS fails — check the certificate paths and permissions and the `bind ... ssl` lines."
+      ]
     },
     "postfix": {
       "name": "Postfix",
       "what": "An SMTP mail server that sends and receives email.",
-      "ifFails": "Email delivery and reception stop, and messages may be queued or rejected. Check the mail queue and logs before restarting."
+      "ifFails": "Email delivery and reception stop, and messages may be queued or rejected. Check the mail queue and logs before restarting.",
+      "details": "Postfix is a mail transfer agent (MTA): it accepts mail from local programs and remote servers and delivers it to local mailboxes or other mail servers. It uses `/etc/postfix/main.cf` and `master.cf`, and keeps queued messages under `/var/spool/postfix`. On a web server it often sends notifications and contact-form mail.",
+      "stop": "Stopping Postfix stops mail delivery and reception; messages from local programs may queue or fail. Mail already in the queue stays on disk. Restart only after checking the queue and logs; remote senders may retry later.",
+      "problems": [
+        "Mail is not delivered — run `postqueue -p` and read `/var/log/mail.log`.",
+        "Postfix will not start — run `postfix check` and fix the reported configuration file.",
+        "Messages are deferred — check DNS, relay settings and whether the destination server is reachable.",
+        "Local mail from cron or web apps fails — check the `myhostname` and `mydestination` settings in `/etc/postfix/main.cf`."
+      ]
     },
     "exim4": {
       "name": "Exim mail server",
       "what": "The default Debian mail transfer agent for local and outgoing email.",
-      "ifFails": "Local mail delivery or outgoing email can fail and messages may queue. Check the logs and queue before restarting."
+      "ifFails": "Local mail delivery or outgoing email can fail and messages may queue. Check the logs and queue before restarting.",
+      "details": "Exim is Debian's default mail transfer agent for many installations. It accepts local and remote mail and delivers it directly or through a smarthost (a relay server). Debian splits its configuration across `/etc/exim4/` and generates the final configuration from those files. It is often used only to send mail from cron and web applications.",
+      "stop": "Stopping Exim stops local and outgoing mail delivery; messages may queue or fail. The queue remains on disk. Check the logs and queue before restarting, and remember that remote senders may retry.",
+      "problems": [
+        "Mail is not sent — run `exim4 -bpc` to see the queue and read `/var/log/exim4/mainlog`.",
+        "Exim will not start — run `exim4 -bV` and check the configuration files under `/etc/exim4/`.",
+        "Messages are rejected or deferred — check the smarthost settings and DNS; `exim4 -bt <address>` tests routing."
+      ]
     },
     "dovecot": {
       "name": "Dovecot",
       "what": "Provides IMAP and POP3 access to mailboxes.",
-      "ifFails": "Mail clients cannot fetch mail. Existing deliveries may queue; check the logs and authentication configuration before restarting."
+      "ifFails": "Mail clients cannot fetch mail. Existing deliveries may queue; check the logs and authentication configuration before restarting.",
+      "details": "Dovecot provides IMAP and POP3 services so mail clients can read mailboxes stored on the server. It also handles authentication and can use local system users or a database. Its configuration is in `/etc/dovecot/`, and mail is usually stored under `/var/mail` or `/home`. It does not send or receive mail itself; Postfix or Exim does that.",
+      "stop": "Stopping Dovecot closes IMAP and POP3 access, so mail clients cannot fetch or synchronize mail. Incoming mail can still be delivered to disk by the mail transfer agent. Restarting is usually safe after checking the logs; active clients reconnect.",
+      "problems": [
+        "Mail clients cannot log in — check `dovecot -n`, the authentication settings and `/var/log/mail.log`.",
+        "Mailboxes are empty or missing — check `mail_location` and the permissions of the mail directory.",
+        "Dovecot will not start — read `journalctl -u dovecot -n 50 --no-pager` and check the configuration files."
+      ]
     },
     "fail2ban": {
       "name": "Fail2ban",
       "what": "Bans IP addresses that repeatedly fail to authenticate to services.",
-      "ifFails": "Brute-force protection stops and repeated attacks may not be blocked. Check its jail and log configuration before restarting."
+      "ifFails": "Brute-force protection stops and repeated attacks may not be blocked. Check its jail and log configuration before restarting.",
+      "details": "Fail2ban watches log files for repeated authentication failures and adds temporary firewall bans for the source addresses. It uses jails defined in `/etc/fail2ban/jail.d/` and `/etc/fail2ban/jail.local`, and can protect SSH, web logins and mail. Bans are enforced through iptables, nftables or another action.",
+      "stop": "Stopping Fail2ban removes its active bans and stops new ones from being added. The services it protects keep running, but brute-force attempts are no longer blocked. Starting it again reloads the jails; check the configuration before disabling it.",
+      "problems": [
+        "An IP is banned by mistake — run `fail2ban-client status <jail>` and unban it with `fail2ban-client set <jail> unbanip <ip>`.",
+        "Fail2ban does not block attacks — check `fail2ban-client status` and the jail log path and filter.",
+        "The service will not start — run `fail2ban-client -t` and read the reported configuration error."
+      ]
     },
     "ufw": {
       "name": "Uncomplicated Firewall",
       "what": "Manages a simple set of firewall rules with iptables or nftables.",
-      "ifFails": "Firewall rules may not load or change. Check the rules and keep console access; a bad rule set can cut off remote access."
+      "ifFails": "Firewall rules may not load or change. Check the rules and keep console access; a bad rule set can cut off remote access.",
+      "details": "UFW is a front-end for iptables or nftables that makes firewall rules easier to manage. It stores its rules and enabled state in `/etc/ufw/`, and its rules are applied at boot. It is common on Ubuntu and can be installed on Debian. It only controls the host firewall, not the provider's external firewall.",
+      "stop": "Stopping UFW does not necessarily remove the rules already loaded in the kernel; disabling it with `ufw disable` does. Either way, the server can become exposed or unreachable depending on the current rules. Keep console access and review the rules before changing the firewall.",
+      "problems": [
+        "A service is unreachable — run `ufw status verbose` and allow the port if it is missing.",
+        "You are locked out after enabling the firewall — use the provider console and allow SSH before re-enabling UFW.",
+        "Rules do not survive a reboot — check that UFW is enabled and that its configuration was saved."
+      ]
     },
     "nftables": {
       "name": "nftables firewall",
       "what": "The modern Linux packet filter used for firewall rules.",
-      "ifFails": "Firewall rules may disappear or fail to load, leaving services exposed or unreachable. Check the ruleset and keep console access."
+      "ifFails": "Firewall rules may disappear or fail to load, leaving services exposed or unreachable. Check the ruleset and keep console access.",
+      "details": "nftables is the modern Linux packet filter and the default firewall framework on current Debian releases. It reads rules from `/etc/nftables.conf` and applies them with the `nft` command. It can filter, translate addresses and count traffic. UFW and Docker may add their own rules alongside yours.",
+      "stop": "Stopping nftables does not flush the rules already loaded in the kernel unless the unit's stop command does so. A reload applies the file again, and a bad ruleset can cut off remote access. Keep console access and validate the rules before reloading.",
+      "problems": [
+        "The ruleset is empty after boot — check `/etc/nftables.conf` and whether `nftables.service` is enabled.",
+        "The server is unreachable after a change — use the console and check the input chain and SSH port.",
+        "Docker and nftables rules conflict — check `nft list ruleset` and Docker's firewall integration before adding rules."
+      ]
     },
     "iptables": {
       "name": "iptables firewall",
@@ -397,42 +448,98 @@
     "apparmor": {
       "name": "AppArmor",
       "what": "Restricts what programs can access with per-application security profiles.",
-      "ifFails": "New AppArmor profiles may not load and confined applications may fail to start. Check the kernel log and profiles before restarting."
+      "ifFails": "New AppArmor profiles may not load and confined applications may fail to start. Check the kernel log and profiles before restarting.",
+      "details": "AppArmor confines programs with profiles that limit the files and capabilities they can use. It is enabled at boot and profiles are loaded from `/etc/apparmor.d/`. On Debian it often protects services such as web servers and databases. A profile can be in complain mode, which logs violations without blocking them.",
+      "stop": "Disabling AppArmor at boot, or unloading the profiles with `aa-teardown`, removes the confinement, so programs can access anything their user permissions allow. Services keep running, but the extra protection is gone. Reload profiles instead of disabling the service when you change them.",
+      "problems": [
+        "A confined service fails after an update — check `aa-status` and the kernel log for `DENIED` lines, then update or disable the profile.",
+        "A profile will not load — run `apparmor_parser -r /etc/apparmor.d/<profile>` and read the error.",
+        "AppArmor is not enforcing — check `aa-status` and whether the kernel command line disabled it."
+      ]
     },
     "auditd": {
       "name": "Linux audit daemon",
       "what": "Records security-relevant system events for auditing.",
-      "ifFails": "Security events stop being recorded. Check disk space and the audit rules before restarting; audit failures can affect compliance."
+      "ifFails": "Security events stop being recorded. Check disk space and the audit rules before restarting; audit failures can affect compliance.",
+      "details": "auditd records security-relevant events such as logins, file access and privilege changes according to rules in `/etc/audit/rules.d/`. It writes audit records to `/var/log/audit/audit.log` and can forward them to another system. It is used for compliance and incident investigation. It does not replace application logs.",
+      "stop": "Stopping auditd stops new audit records from being written; the kernel may still generate events that are dropped. Existing logs remain. Do not leave it stopped on a system that requires auditing; check disk space and rules before restarting.",
+      "problems": [
+        "Audit logs are not written — check `systemctl status auditd`, `auditctl -s` and free space in `/var/log/audit`.",
+        "The audit service will not start — check `journalctl -u auditd -n 50 --no-pager` and the rules in `/etc/audit/rules.d/`.",
+        "The log fills the disk — check `auditctl -s`, rotate `/var/log/audit/audit.log` and review the rules."
+      ]
     },
     "polkit": {
       "name": "PolicyKit",
       "what": "Controls whether users and services may perform privileged system actions.",
-      "ifFails": "Graphical or service tools may be unable to authorize privileged operations. Check the logs; restarting can interrupt active sessions."
+      "ifFails": "Graphical or service tools may be unable to authorize privileged operations. Check the logs; restarting can interrupt active sessions.",
+      "details": "PolicyKit, now often called polkit, decides whether a user or service may perform a privileged action. Applications ask polkit instead of running as root, and polkit checks the action rules and the user's session. Its rules live in `/usr/share/polkit-1/actions/` and `/etc/polkit-1/rules.d/`. It is common on desktops and on servers managed through graphical or D-Bus tools.",
+      "stop": "Stopping polkit prevents new authorization requests from being answered, so tools that need it may fail. Existing processes keep running. Restarting can interrupt active sessions; check the logs and the rules before changing it.",
+      "problems": [
+        "A tool says authorization is not available — check `systemctl status polkit` and `journalctl -u polkit -n 50 --no-pager`.",
+        "A user cannot perform an action — check the action ID with `pkaction` and the rules in `/etc/polkit-1/rules.d/`.",
+        "Polkit does not start — check the D-Bus system bus and the polkit logs."
+      ]
     },
     "qemu-guest-agent": {
       "name": "QEMU guest agent",
       "what": "Lets the virtual machine host query and control this guest.",
-      "ifFails": "The host cannot query the guest or run graceful shutdown and snapshot commands. Check the virtio channel; it is not needed by most services."
+      "ifFails": "The host cannot query the guest or run graceful shutdown and snapshot commands. Check the virtio channel; it is not needed by most services.",
+      "details": "The QEMU guest agent runs inside a virtual machine and talks to the host over a virtio serial channel. It lets the host query the guest, freeze filesystems for snapshots and request a graceful shutdown. It is useful only in a virtual machine managed by QEMU/KVM or a platform that supports it. It does not affect normal services on the guest.",
+      "stop": "Stopping the agent removes those host controls, but the guest keeps running normally. Snapshot and shutdown requests from the host may fail or fall back to a hard power-off. It is safe to stop if you do not use host-side guest management.",
+      "problems": [
+        "The host says the agent is not running — check `systemctl status qemu-guest-agent` and that the virtio serial device exists.",
+        "Shutdown or snapshot commands fail — check the agent logs and the host's guest agent configuration.",
+        "The agent is not installed — install `qemu-guest-agent` in the guest; it is separate from the QEMU host packages."
+      ]
     },
     "cloud-init": {
       "name": "Cloud-init",
       "what": "Configures a cloud instance on first boot, including users, SSH keys and networking.",
-      "ifFails": "Provisioning or later configuration steps can fail on the next boot. Check its logs and configuration; avoid rerunning it blindly on a live server."
+      "ifFails": "Provisioning or later configuration steps can fail on the next boot. Check its logs and configuration; avoid rerunning it blindly on a live server.",
+      "details": "Cloud-init configures a cloud instance during first boot: users, SSH keys, networking, packages and files. It reads metadata from the provider and configuration from `/etc/cloud/` and `/var/lib/cloud/`. It normally runs once per boot stage and then marks the instance as configured. Later boots can still run user-data scripts (customisation scripts supplied by the provider or administrator) if configured.",
+      "stop": "Stopping cloud-init does not undo the configuration already applied. It may prevent later stages or user-data scripts from running, so a reboot could leave the instance partially configured. Disable specific modules or data sources instead of stopping it blindly.",
+      "problems": [
+        "A new instance has no SSH key or user — check `cloud-init status --long` and the provider's user-data and metadata.",
+        "Cloud-init fails on boot — read `/var/log/cloud-init.log` and `/var/log/cloud-init-output.log`.",
+        "Cloud-init runs again and changes the system — check `/var/lib/cloud/` and the cloud-init configuration for repeated modules."
+      ]
     },
     "snapd": {
       "name": "Snap daemon",
       "what": "Installs and updates snap packages and their services.",
-      "ifFails": "Snap applications may stop updating or start. Check the snapd logs; if you do not use snaps, it can stay stopped."
+      "ifFails": "Snap applications may stop updating or start. Check the snapd logs; if you do not use snaps, it can stay stopped.",
+      "details": "snapd installs, updates and runs snap packages. It mounts squashfs images, manages snap services and refreshes them automatically. Snap data lives under `/var/snap/`, and the packages are mounted under `/snap/`. It is optional on Debian; servers that do not use snaps can run without it.",
+      "stop": "Stopping snapd stops automatic refreshes and may affect running snap services, though already running applications can continue for a while. Snap commands fail until it returns. If you do not use snaps, it is safe to leave it disabled.",
+      "problems": [
+        "A snap application does not start — check `systemctl status snapd` and `snap version`.",
+        "Snaps do not update — check `snap refresh --time` and the snapd log.",
+        "Snapd uses too much disk — run `snap list --all` and remove old revisions with `snap set system refresh.retain=2`."
+      ]
     },
     "modemmanager": {
       "name": "ModemManager",
       "what": "Detects and manages mobile broadband modems.",
-      "ifFails": "Mobile broadband connections may not be configured or reconnected. It is optional on servers without a modem."
+      "ifFails": "Mobile broadband connections may not be configured or reconnected. It is optional on servers without a modem.",
+      "details": "ModemManager detects mobile broadband modems and exposes them to NetworkManager or other connection tools. It handles SIM state, signal information and connection setup. It is useful on laptops and routers with a cellular modem; most servers do not have one. It does not manage Ethernet or Wi-Fi.",
+      "stop": "Stopping ModemManager leaves existing modem connections alone for a while but prevents new ones from being configured or reconnected. It is safe to disable on a server without a cellular modem. Check whether NetworkManager expects it before removing it.",
+      "problems": [
+        "A modem is not detected — run `mmcli -L` and check `journalctl -u modemmanager -n 50 --no-pager`.",
+        "The connection does not come up — check the SIM state with `mmcli -m 0` and the NetworkManager connection profile.",
+        "ModemManager conflicts with another tool — check which service manages the modem and disable the one you do not use."
+      ]
     },
     "wpa-supplicant": {
       "name": "WPA supplicant",
       "what": "Connects the machine to protected Wi-Fi networks.",
-      "ifFails": "A Wi-Fi connection may drop or fail to reconnect. Keep wired or console access; check the Wi-Fi configuration before restarting."
+      "ifFails": "A Wi-Fi connection may drop or fail to reconnect. Keep wired or console access; check the Wi-Fi configuration before restarting.",
+      "details": "wpa_supplicant connects a Wi-Fi interface to WPA/WPA2/WPA3 networks. It reads configuration from `/etc/wpa_supplicant/` and is often started by ifupdown, NetworkManager or a systemd unit. It handles authentication and roaming, but not IP addresses. Servers usually use Ethernet and do not need it.",
+      "stop": "Stopping wpa_supplicant disconnects the Wi-Fi interface it manages, and remote access over that link ends. Other interfaces keep working. Keep console access and check the configuration before restarting; NetworkManager may restart it automatically.",
+      "problems": [
+        "Wi-Fi does not connect — run `wpa_cli status` and check the network block in `/etc/wpa_supplicant/wpa_supplicant.conf`.",
+        "The connection drops repeatedly — check signal strength with `iw dev` and the supplicant log in the journal.",
+        "Wrong password or key — update the network block with `wpa_passphrase` and reload the interface."
+      ]
     },
     "avahi": {
       "name": "Avahi",

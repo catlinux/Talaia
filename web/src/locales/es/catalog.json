@@ -350,37 +350,88 @@
     "haproxy": {
       "name": "HAProxy",
       "what": "Reparte el tráfico entre servidores de fondo y puede terminar TLS.",
-      "ifFails": "Los clientes no pueden llegar a los servicios que hay detrás de HAProxy. Revisa la configuración y las estadísticas, y recarga con cuidado; una configuración mala puede dejarlo detenido."
+      "ifFails": "Los clientes no pueden llegar a los servicios que hay detrás de HAProxy. Revisa la configuración y las estadísticas, y recarga con cuidado; una configuración mala puede dejarlo detenido.",
+      "details": "HAProxy es un balanceador de carga y proxy inverso TCP y HTTP. Acepta conexiones en los frontends configurados y las reenvía a uno o varios servidores backend, comprobando su estado. También puede terminar TLS, añadir cabeceras y mostrar una página de estadísticas. En un servidor suele colocarse delante de aplicaciones web o bases de datos.",
+      "stop": "Parar HAProxy cierra todos los frontends que sirve, así que los clientes no pueden llegar a las aplicaciones que hay detrás. Las conexiones existentes terminan y las comprobaciones de estado se detienen. Recargar es más seguro para cambiar la configuración; una parada completa es para mantenimiento o cuando otro proxy ocupa los puertos.",
+      "problems": [
+        "HAProxy no arranca — ejecuta `haproxy -c -f /etc/haproxy/haproxy.cfg` y corrige la línea indicada.",
+        "Los clientes reciben un 503 — todos los backends están marcados como caídos; revisa el estado y las líneas `server`.",
+        "Los cambios no se aplican — valida la configuración y recarga HAProxy; un reinicio completo corta las conexiones.",
+        "TLS falla — revisa las rutas y permisos de los certificados y las líneas `bind ... ssl`."
+      ]
     },
     "postfix": {
       "name": "Postfix",
       "what": "Servidor de correo SMTP que envía y recibe correo.",
-      "ifFails": "El envío y la recepción de correo se detienen, y los mensajes pueden quedar en cola o rechazarse. Revisa la cola y los registros antes de reiniciar."
+      "ifFails": "El envío y la recepción de correo se detienen, y los mensajes pueden quedar en cola o rechazarse. Revisa la cola y los registros antes de reiniciar.",
+      "details": "Postfix es un agente de transferencia de correo (MTA): acepta correo de programas locales y de servidores remotos y lo entrega en buzones locales o en otros servidores. Usa `/etc/postfix/main.cf` y `master.cf`, y guarda los mensajes en cola en `/var/spool/postfix`. En un servidor web suele enviar notificaciones y correo de formularios de contacto.",
+      "stop": "Parar Postfix detiene la entrega y recepción de correo; los mensajes de programas locales pueden quedar en cola o fallar. El correo que ya está en la cola sigue en disco. Reinicia solo después de revisar la cola y los registros; los remitentes remotos pueden reintentar más tarde.",
+      "problems": [
+        "El correo no se entrega — ejecuta `postqueue -p` y lee `/var/log/mail.log`.",
+        "Postfix no arranca — ejecuta `postfix check` y corrige el archivo de configuración indicado.",
+        "Los mensajes quedan diferidos — revisa el DNS, la configuración del relay y si el servidor de destino es accesible.",
+        "Falla el correo local de cron o de aplicaciones web — revisa `myhostname` y `mydestination` en `/etc/postfix/main.cf`."
+      ]
     },
     "exim4": {
       "name": "Servidor de correo Exim",
       "what": "El agente de transporte de correo por defecto de Debian para el correo local y saliente.",
-      "ifFails": "La entrega local o el envío de correo puede fallar y los mensajes pueden quedar en cola. Revisa los registros y la cola antes de reiniciar."
+      "ifFails": "La entrega local o el envío de correo puede fallar y los mensajes pueden quedar en cola. Revisa los registros y la cola antes de reiniciar.",
+      "details": "Exim es el agente de transferencia de correo predeterminado en muchas instalaciones de Debian. Acepta correo local y remoto y lo entrega directamente o a través de un smarthost (servidor de reenvío). Debian reparte su configuración en `/etc/exim4/` y genera la configuración final a partir de esos archivos. A menudo solo se usa para enviar correo desde cron y aplicaciones web.",
+      "stop": "Parar Exim detiene la entrega de correo local y saliente; los mensajes pueden quedar en cola o fallar. La cola permanece en disco. Revisa los registros y la cola antes de reiniciar, y ten en cuenta que los remitentes remotos pueden reintentar.",
+      "problems": [
+        "El correo no se envía — ejecuta `exim4 -bpc` para ver la cola y lee `/var/log/exim4/mainlog`.",
+        "Exim no arranca — ejecuta `exim4 -bV` y revisa los archivos de `/etc/exim4/`.",
+        "Los mensajes se rechazan o se difieren — revisa el smarthost y el DNS; `exim4 -bt <dirección>` prueba el enrutado."
+      ]
     },
     "dovecot": {
       "name": "Dovecot",
       "what": "Proporciona acceso IMAP y POP3 a los buzones de correo.",
-      "ifFails": "Los clientes de correo no pueden descargar el correo. Las entregas existentes pueden quedar en cola; revisa los registros y la configuración de autenticación antes de reiniciar."
+      "ifFails": "Los clientes de correo no pueden descargar el correo. Las entregas existentes pueden quedar en cola; revisa los registros y la configuración de autenticación antes de reiniciar.",
+      "details": "Dovecot proporciona servicios IMAP y POP3 para que los clientes de correo lean los buzones guardados en el servidor. También gestiona la autenticación y puede usar usuarios locales o una base de datos. Su configuración está en `/etc/dovecot/`, y el correo suele guardarse en `/var/mail` o `/home`. No envía ni recibe correo por sí mismo; de eso se encargan Postfix o Exim.",
+      "stop": "Parar Dovecot cierra el acceso IMAP y POP3, así que los clientes no pueden descargar ni sincronizar el correo. El agente de transferencia puede seguir entregando correo en disco. Reiniciar suele ser seguro después de revisar los registros; los clientes activos se reconectan.",
+      "problems": [
+        "Los clientes de correo no pueden iniciar sesión — revisa `dovecot -n`, la autenticación y `/var/log/mail.log`.",
+        "Los buzones están vacíos o faltan — revisa `mail_location` y los permisos del directorio de correo.",
+        "Dovecot no arranca — lee `journalctl -u dovecot -n 50 --no-pager` y revisa la configuración."
+      ]
     },
     "fail2ban": {
       "name": "Fail2ban",
       "what": "Bloquea direcciones IP que fallan repetidamente la autenticación en los servicios.",
-      "ifFails": "La protección contra ataques de fuerza bruta se detiene y los ataques repetidos pueden no bloquearse. Revisa la configuración de las cárceles y los registros antes de reiniciar."
+      "ifFails": "La protección contra ataques de fuerza bruta se detiene y los ataques repetidos pueden no bloquearse. Revisa la configuración de las cárceles y los registros antes de reiniciar.",
+      "details": "Fail2ban vigila archivos de registro en busca de fallos de autenticación repetidos y añade bloqueos temporales en el cortafuegos para las direcciones de origen. Usa jails definidos en `/etc/fail2ban/jail.d/` y `/etc/fail2ban/jail.local`, y puede proteger SSH, inicios de sesión web y correo. Los bloqueos se aplican mediante iptables, nftables u otra acción.",
+      "stop": "Parar Fail2ban elimina sus bloqueos activos y deja de añadir nuevos. Los servicios que protege siguen funcionando, pero los intentos de fuerza bruta ya no se bloquean. Al volver a arrancarlo se recargan los jails; revisa la configuración antes de desactivarlo.",
+      "problems": [
+        "Una IP está bloqueada por error — ejecuta `fail2ban-client status <jail>` y desbloquéala con `fail2ban-client set <jail> unbanip <ip>`.",
+        "Fail2ban no bloquea los ataques — revisa `fail2ban-client status` y la ruta y el filtro del registro del jail.",
+        "El servicio no arranca — ejecuta `fail2ban-client -t` y lee el error de configuración indicado."
+      ]
     },
     "ufw": {
       "name": "Cortafuegos UFW",
       "what": "Gestiona un conjunto simple de reglas de cortafuegos con iptables o nftables.",
-      "ifFails": "Las reglas de cortafuegos pueden no cargarse o no cambiar. Revisa las reglas y mantén acceso a la consola; un conjunto malo puede cortarte el acceso remoto."
+      "ifFails": "Las reglas de cortafuegos pueden no cargarse o no cambiar. Revisa las reglas y mantén acceso a la consola; un conjunto malo puede cortarte el acceso remoto.",
+      "details": "UFW es una interfaz para iptables o nftables que facilita gestionar las reglas del cortafuegos. Guarda sus reglas y su estado en `/etc/ufw/`, y las aplica al arrancar. Es habitual en Ubuntu y se puede instalar en Debian. Solo controla el cortafuegos del host, no el cortafuegos externo del proveedor.",
+      "stop": "Parar UFW no elimina necesariamente las reglas ya cargadas en el kernel; desactivarlo con `ufw disable` sí lo hace. En cualquier caso, el servidor puede quedar expuesto o inaccesible según las reglas actuales. Ten acceso a la consola y revisa las reglas antes de cambiar el cortafuegos.",
+      "problems": [
+        "Un servicio no es accesible — ejecuta `ufw status verbose` y permite el puerto si falta.",
+        "Te quedas fuera al activar el cortafuegos — usa la consola del proveedor y permite SSH antes de volver a activar UFW.",
+        "Las reglas no sobreviven a un reinicio — comprueba que UFW está activo y que su configuración se guardó."
+      ]
     },
     "nftables": {
       "name": "Cortafuegos nftables",
       "what": "El filtro de paquetes moderno de Linux que se usa para las reglas de cortafuegos.",
-      "ifFails": "Las reglas de cortafuegos pueden desaparecer o no cargarse, dejando servicios expuestos o inaccesibles. Revisa el conjunto de reglas y mantén acceso a la consola."
+      "ifFails": "Las reglas de cortafuegos pueden desaparecer o no cargarse, dejando servicios expuestos o inaccesibles. Revisa el conjunto de reglas y mantén acceso a la consola.",
+      "details": "nftables es el filtro de paquetes moderno de Linux y el sistema de cortafuegos predeterminado en las versiones actuales de Debian. Lee las reglas de `/etc/nftables.conf` y las aplica con la orden `nft`. Puede filtrar, traducir direcciones y contar tráfico. UFW y Docker pueden añadir sus propias reglas junto a las tuyas.",
+      "stop": "Parar nftables no vacía las reglas ya cargadas en el kernel salvo que la orden de parada de la unidad lo haga. Una recarga vuelve a aplicar el archivo, y un conjunto de reglas incorrecto puede cortar el acceso remoto. Ten acceso a la consola y valida las reglas antes de recargar.",
+      "problems": [
+        "El conjunto de reglas está vacío tras arrancar — revisa `/etc/nftables.conf` y si `nftables.service` está activo.",
+        "El servidor no es accesible tras un cambio — usa la consola y revisa la cadena de entrada y el puerto SSH.",
+        "Las reglas de Docker y nftables entran en conflicto — revisa `nft list ruleset` y la integración de Docker antes de añadir reglas."
+      ]
     },
     "iptables": {
       "name": "Cortafuegos iptables",
@@ -397,42 +448,98 @@
     "apparmor": {
       "name": "AppArmor",
       "what": "Limita a qué pueden acceder los programas con perfiles de seguridad por aplicación.",
-      "ifFails": "Los perfiles nuevos de AppArmor pueden no cargarse y las aplicaciones confinadas pueden no iniciarse. Revisa el registro del núcleo y los perfiles antes de reiniciar."
+      "ifFails": "Los perfiles nuevos de AppArmor pueden no cargarse y las aplicaciones confinadas pueden no iniciarse. Revisa el registro del núcleo y los perfiles antes de reiniciar.",
+      "details": "AppArmor confina los programas con perfiles que limitan los archivos y capacidades que pueden usar. Se activa al arrancar y los perfiles se cargan desde `/etc/apparmor.d/`. En Debian suele proteger servicios como servidores web y bases de datos. Un perfil puede estar en modo complain, que registra las violaciones sin bloquearlas.",
+      "stop": "Desactivar AppArmor al arrancar, o quitar los perfiles con `aa-teardown`, elimina el confinamiento, así que los programas pueden acceder a todo lo que permitan los permisos de su usuario. Los servicios siguen funcionando, pero la protección adicional desaparece. Recarga los perfiles en lugar de desactivar el servicio cuando los cambies.",
+      "problems": [
+        "Un servicio confinado falla tras una actualización — revisa `aa-status` y el registro del kernel en busca de líneas `DENIED`, y actualiza o desactiva el perfil.",
+        "Un perfil no se carga — ejecuta `apparmor_parser -r /etc/apparmor.d/<perfil>` y lee el error.",
+        "AppArmor no está aplicando las reglas — revisa `aa-status` y si la línea de arranque del kernel lo desactivó."
+      ]
     },
     "auditd": {
       "name": "Demonio de auditoría de Linux",
       "what": "Registra eventos del sistema relevantes para la seguridad y la auditoría.",
-      "ifFails": "Los eventos de seguridad dejan de registrarse. Comprueba el espacio de disco y las reglas de auditoría antes de reiniciar; los fallos de auditoría pueden afectar al cumplimiento normativo."
+      "ifFails": "Los eventos de seguridad dejan de registrarse. Comprueba el espacio de disco y las reglas de auditoría antes de reiniciar; los fallos de auditoría pueden afectar al cumplimiento normativo.",
+      "details": "auditd registra eventos relevantes para la seguridad, como inicios de sesión, accesos a archivos y cambios de privilegios, según las reglas de `/etc/audit/rules.d/`. Escribe los registros en `/var/log/audit/audit.log` y puede reenviarlos a otro sistema. Se usa para cumplimiento e investigación de incidentes. No sustituye los registros de las aplicaciones.",
+      "stop": "Parar auditd detiene la escritura de nuevos registros de auditoría; el kernel puede seguir generando eventos que se pierden. Los registros existentes se conservan. No lo dejes parado en un sistema que exija auditoría; revisa el espacio en disco y las reglas antes de reiniciarlo.",
+      "problems": [
+        "No se escriben registros de auditoría — revisa `systemctl status auditd`, `auditctl -s` y el espacio libre en `/var/log/audit`.",
+        "El servicio de auditoría no arranca — revisa `journalctl -u auditd -n 50 --no-pager` y las reglas de `/etc/audit/rules.d/`.",
+        "El registro llena el disco — revisa `auditctl -s`, rota `/var/log/audit/audit.log` y revisa las reglas."
+      ]
     },
     "polkit": {
       "name": "PolicyKit",
       "what": "Controla si usuarios y servicios pueden realizar acciones privilegiadas del sistema.",
-      "ifFails": "Las herramientas gráficas o de servicio pueden no poder autorizar operaciones privilegiadas. Revisa los registros; reiniciarlo puede interrumpir sesiones activas."
+      "ifFails": "Las herramientas gráficas o de servicio pueden no poder autorizar operaciones privilegiadas. Revisa los registros; reiniciarlo puede interrumpir sesiones activas.",
+      "details": "PolicyKit, ahora llamado a menudo polkit, decide si un usuario o servicio puede realizar una acción privilegiada. Las aplicaciones preguntan a polkit en lugar de ejecutarse como root, y polkit comprueba las reglas de la acción y la sesión del usuario. Sus reglas están en `/usr/share/polkit-1/actions/` y `/etc/polkit-1/rules.d/`. Es habitual en escritorios y en servidores gestionados con herramientas gráficas o D-Bus.",
+      "stop": "Parar polkit impide responder a nuevas solicitudes de autorización, así que las herramientas que lo necesitan pueden fallar. Los procesos existentes siguen funcionando. Reiniciarlo puede interrumpir sesiones activas; revisa los registros y las reglas antes de cambiarlo.",
+      "problems": [
+        "Una herramienta dice que la autorización no está disponible — revisa `systemctl status polkit` y `journalctl -u polkit -n 50 --no-pager`.",
+        "Un usuario no puede realizar una acción — revisa el ID de la acción con `pkaction` y las reglas de `/etc/polkit-1/rules.d/`.",
+        "Polkit no arranca — revisa el bus del sistema D-Bus y los registros de polkit."
+      ]
     },
     "qemu-guest-agent": {
       "name": "Agente invitado de QEMU",
       "what": "Permite que el anfitrión de la máquina virtual consulte y controle este invitado.",
-      "ifFails": "El anfitrión no puede consultar el invitado ni ejecutar apagados ordenados o instantáneas. Comprueba el canal virtio; la mayoría de servicios no lo necesitan."
+      "ifFails": "El anfitrión no puede consultar el invitado ni ejecutar apagados ordenados o instantáneas. Comprueba el canal virtio; la mayoría de servicios no lo necesitan.",
+      "details": "El agente invitado de QEMU se ejecuta dentro de una máquina virtual y habla con el host mediante un canal serie virtio. Permite al host consultar el invitado, congelar sistemas de archivos para instantáneas y solicitar un apagado ordenado. Solo es útil en una máquina virtual gestionada por QEMU/KVM o una plataforma que lo soporte. No afecta a los servicios normales del invitado.",
+      "stop": "Parar el agente elimina esos controles del host, pero el invitado sigue funcionando con normalidad. Las solicitudes de instantánea y apagado del host pueden fallar o acabar en un apagado forzado. Es seguro pararlo si no usas la gestión del invitado desde el host.",
+      "problems": [
+        "El host dice que el agente no está en marcha — revisa `systemctl status qemu-guest-agent` y que exista el dispositivo serie virtio.",
+        "Fallan las órdenes de apagado o instantánea — revisa los registros del agente y la configuración del agente en el host.",
+        "El agente no está instalado — instala `qemu-guest-agent` en el invitado; es distinto de los paquetes del host QEMU."
+      ]
     },
     "cloud-init": {
       "name": "Cloud-init",
       "what": "Configura una instancia en la nube en el primer arranque, incluyendo usuarios, claves SSH y red.",
-      "ifFails": "El aprovisionamiento o pasos de configuración posteriores pueden fallar en el próximo arranque. Revisa sus registros y su configuración; no lo vuelvas a ejecutar a ciegas en un servidor en producción."
+      "ifFails": "El aprovisionamiento o pasos de configuración posteriores pueden fallar en el próximo arranque. Revisa sus registros y su configuración; no lo vuelvas a ejecutar a ciegas en un servidor en producción.",
+      "details": "Cloud-init configura una instancia cloud durante el primer arranque: usuarios, claves SSH, red, paquetes y archivos. Lee metadatos del proveedor y configuración de `/etc/cloud/` y `/var/lib/cloud/`. Normalmente se ejecuta una vez por etapa de arranque y después marca la instancia como configurada. En arranques posteriores aún puede ejecutar scripts de user-data (scripts de personalización proporcionados por el proveedor o el administrador) si se configura.",
+      "stop": "Parar cloud-init no deshace la configuración ya aplicada. Puede impedir que se ejecuten etapas posteriores o scripts de user-data, así que un reinicio podría dejar la instancia a medio configurar. Desactiva módulos o orígenes de datos concretos en lugar de pararlo sin más.",
+      "problems": [
+        "Una instancia nueva no tiene clave SSH ni usuario — revisa `cloud-init status --long` y el user-data y los metadatos del proveedor.",
+        "Cloud-init falla al arrancar — lee `/var/log/cloud-init.log` y `/var/log/cloud-init-output.log`.",
+        "Cloud-init se ejecuta otra vez y cambia el sistema — revisa `/var/lib/cloud/` y la configuración de módulos repetidos."
+      ]
     },
     "snapd": {
       "name": "Demonio Snap",
       "what": "Instala y actualiza paquetes snap y sus servicios.",
-      "ifFails": "Las aplicaciones snap pueden dejar de actualizarse o iniciarse. Revisa los registros de snapd; si no usas snaps, puede quedarse detenido."
+      "ifFails": "Las aplicaciones snap pueden dejar de actualizarse o iniciarse. Revisa los registros de snapd; si no usas snaps, puede quedarse detenido.",
+      "details": "snapd instala, actualiza y ejecuta paquetes snap. Monta imágenes squashfs, gestiona los servicios snap y los actualiza automáticamente. Los datos de los snaps están en `/var/snap/`, y los paquetes se montan en `/snap/`. Es opcional en Debian; los servidores que no usan snaps pueden funcionar sin él.",
+      "stop": "Parar snapd detiene las actualizaciones automáticas y puede afectar a los servicios snap en marcha, aunque las aplicaciones ya iniciadas pueden seguir un tiempo. Las órdenes snap fallan hasta que vuelva. Si no usas snaps, es seguro dejarlo desactivado.",
+      "problems": [
+        "Una aplicación snap no arranca — revisa `systemctl status snapd` y `snap version`.",
+        "Los snaps no se actualizan — revisa `snap refresh --time` y el registro de snapd.",
+        "Snapd ocupa demasiado disco — ejecuta `snap list --all` y elimina revisiones antiguas con `snap set system refresh.retain=2`."
+      ]
     },
     "modemmanager": {
       "name": "ModemManager",
       "what": "Detecta y gestiona módems de banda ancha móvil.",
-      "ifFails": "Las conexiones de banda ancha móvil pueden no configurarse o reconectarse. Es opcional en servidores sin módem."
+      "ifFails": "Las conexiones de banda ancha móvil pueden no configurarse o reconectarse. Es opcional en servidores sin módem.",
+      "details": "ModemManager detecta módems de banda ancha móvil y los expone a NetworkManager u otras herramientas de conexión. Gestiona el estado de la SIM, la información de señal y la configuración de la conexión. Es útil en portátiles y routers con módem móvil; la mayoría de servidores no tienen uno. No gestiona Ethernet ni Wi-Fi.",
+      "stop": "Parar ModemManager deja las conexiones de módem existentes un tiempo, pero impide configurar o reconectar otras nuevas. Es seguro desactivarlo en un servidor sin módem móvil. Comprueba si NetworkManager lo espera antes de quitarlo.",
+      "problems": [
+        "No se detecta un módem — ejecuta `mmcli -L` y revisa `journalctl -u modemmanager -n 50 --no-pager`.",
+        "La conexión no se levanta — revisa el estado de la SIM con `mmcli -m 0` y el perfil de conexión de NetworkManager.",
+        "ModemManager entra en conflicto con otra herramienta — revisa qué servicio gestiona el módem y desactiva el que no uses."
+      ]
     },
     "wpa-supplicant": {
       "name": "Suplicante WPA",
       "what": "Conecta la máquina a redes Wi-Fi protegidas.",
-      "ifFails": "La conexión Wi-Fi puede caer o no reconectarse. Mantén acceso por cable o consola; revisa la configuración Wi-Fi antes de reiniciar."
+      "ifFails": "La conexión Wi-Fi puede caer o no reconectarse. Mantén acceso por cable o consola; revisa la configuración Wi-Fi antes de reiniciar.",
+      "details": "wpa_supplicant conecta una interfaz Wi-Fi a redes WPA/WPA2/WPA3. Lee la configuración de `/etc/wpa_supplicant/` y a menudo lo inician ifupdown, NetworkManager o una unidad systemd. Gestiona la autenticación y el roaming, pero no las direcciones IP. Los servidores suelen usar Ethernet y no lo necesitan.",
+      "stop": "Parar wpa_supplicant desconecta la interfaz Wi-Fi que gestiona, y el acceso remoto por ese enlace termina. Las demás interfaces siguen funcionando. Ten acceso a la consola y revisa la configuración antes de reiniciar; NetworkManager puede volver a iniciarlo automáticamente.",
+      "problems": [
+        "El Wi-Fi no conecta — ejecuta `wpa_cli status` y revisa el bloque de red en `/etc/wpa_supplicant/wpa_supplicant.conf`.",
+        "La conexión se cae repetidamente — revisa la intensidad de señal con `iw dev` y el registro del supplicant en el journal.",
+        "La contraseña o la clave son incorrectas — actualiza el bloque de red con `wpa_passphrase` y recarga la interfaz."
+      ]
     },
     "avahi": {
       "name": "Avahi",

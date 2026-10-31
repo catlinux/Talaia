@@ -254,6 +254,21 @@ describe('catalog translations', () => {
       'containerd',
       'nginx',
       'caddy',
+      'haproxy',
+      'postfix',
+      'exim4',
+      'dovecot',
+      'fail2ban',
+      'ufw',
+      'nftables',
+      'apparmor',
+      'auditd',
+      'polkit',
+      'qemu-guest-agent',
+      'cloud-init',
+      'snapd',
+      'modemmanager',
+      'wpa-supplicant',
     ]
     for (const language of ['ca', 'es', 'en']) {
       const t = i18n.getFixedT(language, 'catalog')
@@ -319,6 +334,17 @@ describe('catalog translations', () => {
     expect(checksById.get('nftables')).toEqual(['nft list ruleset'])
     expect(checksById.get('wireguard')).toEqual(['wg show'])
     expect(checksById.get('tailscale')).toEqual(['tailscale status'])
+    expect(checksById.get('haproxy')).toEqual(['haproxy -c -f /etc/haproxy/haproxy.cfg'])
+    expect(checksById.get('postfix')).toEqual(['postfix check', 'postqueue -p'])
+    expect(checksById.get('exim4')).toEqual(['exim4 -bV', 'exim4 -bpc'])
+    expect(checksById.get('dovecot')).toEqual(['dovecot -n'])
+    expect(checksById.get('apparmor')).toEqual(['aa-status'])
+    expect(checksById.get('auditd')).toEqual(['auditctl -s'])
+    expect(checksById.get('polkit')).toEqual(['pkaction'])
+    expect(checksById.get('cloud-init')).toEqual(['cloud-init status --long'])
+    expect(checksById.get('snapd')).toEqual(['snap version'])
+    expect(checksById.get('modemmanager')).toEqual(['mmcli -L'])
+    expect(checksById.get('wpa-supplicant')).toEqual(['wpa_cli status'])
   })
 
   it('describes the Talaia update helper as the update path and service', () => {
