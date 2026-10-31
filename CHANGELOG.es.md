@@ -13,6 +13,12 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+## [0.6.23] - 2026-10-31
+
+### Corregido
+
+- Panel: al terminar una actualización del panel, Ajustes recarga la página para que aparezcan la versión nueva y las actualizaciones de los agentes sin recargar a mano.
+
 ## [0.6.22] - 2026-10-31
 
 ### Añadido
@@ -834,7 +840,8 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
   `.gitattributes` y `.gitignore`.
 - Licencia WNCL-1.0 aplicada: archivo `LICENSE` y sección de créditos en los README.
 
-[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.6.22...HEAD
+[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.6.23...HEAD
+[0.6.23]: https://github.com/catlinux/Talaia/releases/tag/v0.6.23
 [0.6.22]: https://github.com/catlinux/Talaia/releases/tag/v0.6.22
 [0.6.21]: https://github.com/catlinux/Talaia/releases/tag/v0.6.21
 [0.6.20]: https://github.com/catlinux/Talaia/releases/tag/v0.6.20

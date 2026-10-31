@@ -18,6 +18,12 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.6.23] - 2026-10-31
+
+### Fixed
+
+- Panel: after a panel update finishes, Settings reloads the page so the new version and the agent updates appear without reloading by hand.
+
 ## [0.6.22] - 2026-10-31
 
 ### Added
@@ -834,7 +840,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.6.22...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.6.23...HEAD
+[0.6.23]: https://github.com/catlinux/Talaia/releases/tag/v0.6.23
 [0.6.22]: https://github.com/catlinux/Talaia/releases/tag/v0.6.22
 [0.6.21]: https://github.com/catlinux/Talaia/releases/tag/v0.6.21
 [0.6.20]: https://github.com/catlinux/Talaia/releases/tag/v0.6.20

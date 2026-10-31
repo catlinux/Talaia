@@ -164,6 +164,7 @@
     "queued": "The update is queued. The host helper will start it.",
     "running": "The update is running.",
     "restarting": "The core is restarting. Waiting…",
+    "reloading": "The panel was updated to {{version}}. Reloading the page…",
     "succeeded": "Updated. The panel is running {{version}}.",
     "failed": "The update failed.",
     "rolledBack": "The update failed and the previous version was restored.",

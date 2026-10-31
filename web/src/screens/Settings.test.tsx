@@ -66,11 +66,11 @@ function apiWith(
   }
 }
 
-function renderSettings(api: SettingsApi, access?: AccessApi) {
+function renderSettings(api: SettingsApi, access?: AccessApi, reload?: () => void) {
   render(
     <ToastProvider>
       <RouterProvider>
-        <Settings api={api} accessApi={access} />
+        <Settings api={api} accessApi={access} reload={reload} />
       </RouterProvider>
     </ToastProvider>,
   )
@@ -786,6 +786,72 @@ describe('Settings', () => {
       await vi.advanceTimersByTimeAsync(pollEvery)
     })
     expect(screen.getByText('Updated. The panel is running 1.3.0.')).toBeTruthy()
+  })
+
+  it('reloads once when the running commit changes after an update', async () => {
+    vi.useFakeTimers()
+    const newCommit = 'c'.repeat(40)
+    const update = vi.fn(() => Promise.resolve({ target: latest }))
+    const version = vi
+      .fn<() => Promise<SystemVersion>>()
+      .mockResolvedValueOnce(makeSystem())
+      .mockResolvedValueOnce(makeSystem({ status: { state: 'running' } }))
+      .mockRejectedValueOnce(new ApiError('network', 0))
+      .mockResolvedValue(
+        makeSystem({
+          version: '1.3.0',
+          commit: newCommit,
+          status: { state: 'succeeded' },
+        }),
+      )
+    const reload = vi.fn()
+    renderSettings(apiWith(version, update), undefined, reload)
+
+    await act(async () => {})
+    fireEvent.click(screen.getByRole('button', { name: 'Update to bbbbbbb' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Update now' }))
+    await act(async () => {})
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(pollEvery)
+    })
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(pollEvery)
+    })
+
+    expect(screen.getByText('The panel was updated to 1.3.0. Reloading the page…')).toBeTruthy()
+    expect(reload).not.toHaveBeenCalled()
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(2000)
+    })
+    expect(reload).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not reload when the running commit stays the same', async () => {
+    vi.useFakeTimers()
+    const update = vi.fn(() => Promise.resolve({ target: latest }))
+    const version = vi
+      .fn<() => Promise<SystemVersion>>()
+      .mockResolvedValueOnce(makeSystem())
+      .mockResolvedValueOnce(makeSystem({ status: { state: 'running' } }))
+      .mockResolvedValue(makeSystem({ status: { state: 'succeeded' } }))
+    const reload = vi.fn()
+    renderSettings(apiWith(version, update), undefined, reload)
+
+    await act(async () => {})
+    fireEvent.click(screen.getByRole('button', { name: 'Update to bbbbbbb' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Update now' }))
+    await act(async () => {})
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(pollEvery)
+    })
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(2000)
+    })
+
+    expect(screen.getByText('Updated. The panel is running 1.2.3.')).toBeTruthy()
+    expect(reload).not.toHaveBeenCalled()
   })
 
   it('resumes the progress from the API after a reload', async () => {

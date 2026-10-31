@@ -164,6 +164,7 @@
     "queued": "L'actualització està en cua. L'ajudant de l'amfitrió la començarà.",
     "running": "L'actualització està en marxa.",
     "restarting": "El core s'està reiniciant. S'espera…",
+    "reloading": "El panell s'ha actualitzat a la versió {{version}}. Recarregant la pàgina…",
     "succeeded": "Actualitzat. El panell funciona amb la versió {{version}}.",
     "failed": "L'actualització ha fallat.",
     "rolledBack": "L'actualització ha fallat i s'ha restaurat la versió anterior.",

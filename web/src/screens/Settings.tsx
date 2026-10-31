@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { createAuthApi, type AccessApi } from '../api/auth'
@@ -41,6 +41,12 @@ export const pollEvery = 3000
 export const pendingShown = 10
 /** logShown is how many of the last log lines the progress card shows. */
 const logShown = 8
+/** reloadDelay is how long the notice stays before the new bundle is loaded. */
+const reloadDelay = 2000
+
+function reloadPage(): void {
+  window.location.reload()
+}
 
 /** SettingsApi is the system API plus the optional agent update calls. */
 export type SettingsApi = SystemApi & Partial<Pick<ServersApi, 'updateAgent' | 'updateAllAgents'>>
@@ -58,6 +64,8 @@ interface SettingsProps {
   groupsApi?: GroupsApi
   /** pollMs overrides the polling interval, for the tests. */
   pollMs?: number
+  /** reload is injected by the tests; the panel reloads the browser otherwise. */
+  reload?: () => void
 }
 
 type View =
@@ -169,6 +177,7 @@ function SettingsContent({
   oidcApi,
   groupsApi,
   pollMs = pollEvery,
+  reload = reloadPage,
 }: SettingsProps) {
   const { t, i18n } = useTranslation(['settings', 'errors'])
   const toast = useToast()
@@ -205,6 +214,26 @@ function SettingsContent({
   const [updateBusy, setUpdateBusy] = useState(false)
   const [updateError, setUpdateError] = useState<string | null>(null)
   const [updateNotice, setUpdateNotice] = useState<string | null>(null)
+
+  const initialCommit = useRef<string | null>(null)
+  const reloadScheduled = useRef(false)
+  const [reloadingVersion, setReloadingVersion] = useState<string | null>(null)
+
+  const observeVersion = useCallback((system: SystemVersion) => {
+    if (initialCommit.current === null) {
+      initialCommit.current = system.commit
+      return
+    }
+    if (
+      !reloadScheduled.current &&
+      initialCommit.current !== '' &&
+      system.commit !== '' &&
+      system.commit !== initialCommit.current
+    ) {
+      reloadScheduled.current = true
+      setReloadingVersion(system.version)
+    }
+  }, [])
 
   const showServers = canSettings && api.listServers !== undefined
   const canUsers = !permissionsLoading && can('users.manage')
@@ -259,6 +288,7 @@ function SettingsContent({
     api.version().then(
       (system) => {
         if (cancelled) return
+        observeVersion(system)
         setView({ status: 'ready', system })
         setWaiting(false)
         if (isFinal(system.status.state) || system.update.error === 'host_helper_missing') {
@@ -283,11 +313,13 @@ function SettingsContent({
     return () => {
       cancelled = true
     }
-  }, [api, canSettings, t])
+  }, [api, canSettings, observeVersion, t])
 
   const status = view.status === 'ready' ? view.system.status : null
   const polling =
-    view.status === 'checking' || (status !== null && (status.state === 'running' || requested))
+    view.status === 'checking' ||
+    waiting ||
+    (status !== null && (status.state === 'running' || requested))
 
   useEffect(() => {
     if (!canSettings || !polling) {
@@ -299,6 +331,7 @@ function SettingsContent({
       api.version().then(
         (system) => {
           if (cancelled) return
+          observeVersion(system)
           setView({ status: 'ready', system })
           setWaiting(false)
           if (isFinal(system.status.state) || system.update.error === 'host_helper_missing') {
@@ -320,7 +353,13 @@ function SettingsContent({
       cancelled = true
       clearInterval(timer)
     }
-  }, [api, canSettings, pollMs, polling, t])
+  }, [api, canSettings, observeVersion, pollMs, polling, t])
+
+  useEffect(() => {
+    if (reloadingVersion === null) return
+    const timer = window.setTimeout(reload, reloadDelay)
+    return () => window.clearTimeout(timer)
+  }, [reload, reloadingVersion])
 
   const requestUpdate = () => {
     if (view.status !== 'ready') {
@@ -339,6 +378,7 @@ function SettingsContent({
         // Ask once now; the polling effect keeps asking until the helper ends.
         api.version().then(
           (system) => {
+            observeVersion(system)
             setView({ status: 'ready', system })
             setWaiting(false)
             if (isFinal(system.status.state) || system.update.error === 'host_helper_missing') {
@@ -385,6 +425,7 @@ function SettingsContent({
     api.check().then(
       (system) => {
         setCheckingNow(false)
+        observeVersion(system)
         setView({ status: 'ready', system })
         setWaiting(false)
         if (isFinal(system.status.state) || system.update.error === 'host_helper_missing') {
@@ -688,7 +729,11 @@ function SettingsContent({
     <section className="settings" aria-label={t('settings:title')}>
       <PageHeader title={t('settings:title')} subtitle={t('settings:subtitle')} />
 
-      {waiting ? (
+      {reloadingVersion !== null ? (
+        <p className="settings__notice" role="status">
+          {t('settings:progress.reloading', { version: reloadingVersion })}
+        </p>
+      ) : waiting ? (
         <p className="settings__notice" role="status">
           {t('settings:progress.restarting')}
         </p>

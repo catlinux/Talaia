@@ -164,6 +164,7 @@
     "queued": "La actualización está en cola. El ayudante del host la comenzará.",
     "running": "La actualización está en marcha.",
     "restarting": "El core se está reiniciando. Esperando…",
+    "reloading": "El panel se ha actualizado a la versión {{version}}. Recargando la página…",
     "succeeded": "Actualizado. El panel funciona con la versión {{version}}.",
     "failed": "La actualización ha fallado.",
     "rolledBack": "La actualización ha fallado y se ha restaurado la versión anterior.",
