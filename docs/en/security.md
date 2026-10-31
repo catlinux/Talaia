@@ -85,6 +85,49 @@ use, removal and troubleshooting: [access.md](access.md).
 - Treat the key as a password: do not put it in URLs, logs or shell history, and prefer `TALAIA_API_KEY` or
   `talaiactl login` over `--api-key`, which appears in the process list. Revoke it immediately if leaked.
 
+## Deployments
+
+Apps connect a Git repository or an image to a Compose stack. The deployment path has its own rules:
+
+- **Deploy keys.** Each Git app gets an ed25519 key pair. The private key is sealed in the core; the
+  public key is shown once and belongs in the repository as a read-only deploy key. The agent trusts a
+  fixed set of GitHub host keys, with strict host-key checking and no trust on first use. The private key
+  is written only to a temporary file with mode `0600` inside a temporary `0700` home, never passed in
+  arguments or the environment, and the directory is removed after the command. Source fetches are
+  shallow and do not run submodules or Git hooks.
+- **Webhooks.** `POST /api/v1/hooks/git/{app_id}` is public because GitHub must reach it, and it is
+  authenticated only by `X-Hub-Signature-256`, an HMAC-SHA256 of the body with the per-app secret,
+  compared in constant time. The body is limited to 1 MiB. Requests are limited to 60 per minute per IP
+  and 30 per minute per app, and a delivery id is remembered for an hour to ignore retries. A `ping`
+  answers without deploying; only a push to the configured branch of a Git app with **Deploy on every
+  push** enabled queues a deployment. Denials and ignored events are audited. Polling, when enabled, is an
+  outbound check every two minutes and follows the same rules.
+- **Secrets.** App variables are sealed. Secret values are never returned by the API and are masked in the
+  panel; the private deploy key and the webhook secret are never returned or logged. Only non-secret
+  variables marked **Available at build time** become Docker build arguments, so a secret does not appear
+  in the image history or the build log. Rotating an app variable means writing a new value.
+- **Builds.** A Git build runs on the app server with `docker build --pull`, one at a time, with a 30
+  minute limit and at least 2 GiB free required. The source workspace is limited to 1 GiB and removed
+  afterwards. Treat a repository as code you allow on that server. The stacks Talaia generates for Git and
+  image apps do not mount the Docker socket and are not privileged; they set a 1 CPU and 512 MB memory
+  limit. Anyone with `stack.edit` can change the Compose file, which is why that permission is equivalent
+  to root.
+- **Release.** One deployment runs at a time per app and a newer waiting one is marked **Superseded**; the
+  running one is not interrupted. A failed build does not touch the running stack, and a failed Git
+  release restores the previous Compose file. Zero downtime is attempted only for a single-service
+  managed stack with no volumes, published ports or fixed container name; the new container has to pass
+  its health check, and the old one keeps serving if it does not. Talaia keeps the last three successful
+  images and removes only `talaia/<stack>:*` images; it never runs a global prune.
+- **Publishing.** External apps listen on `127.0.0.1` between ports 20000 and 29999, and Talaia never edits
+  Apache or nginx; the administrator copies the block. The managed proxy runs Caddy 2.10.2 pinned by
+  digest, exposes only ports 80 and 443, and talks to its admin API through a Unix socket. Installing it
+  is accepted only when both ports are free. The Caddy configuration is built from hostnames, services and
+  ports, never from arbitrary JSON sent by the core. Removing the proxy keeps the apps and their data.
+- **Audit.** Creating, changing and deleting an app, its variables and domains, every deployment request
+  and rollback, every proxy action and every webhook result are written to the audit log.
+
+The user steps are in [apps.md](apps.md); the external web server setup is in [apache.md](apache.md).
+
 ## Single sign-on (OIDC)
 
 - The provider replaces the password only. TOTP or a passkey is still required, so a compromised identity

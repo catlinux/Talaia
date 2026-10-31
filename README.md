@@ -280,6 +280,8 @@ falls back to English. Detail: [docs/en/i18n.md](docs/en/i18n.md).
 Project **documentation** is written in **English and Spanish**. Some guides, such as the sign-in guide, are
 also available in **Catalan**.
 
+- Apps, deployments and GitHub: [docs/en/apps.md](docs/en/apps.md)
+- Publishing apps behind Apache or nginx: [docs/en/apache.md](docs/en/apache.md)
 - Monitoring, alerts and checks: [docs/en/monitoring.md](docs/en/monitoring.md)
 - Web panel guide: [docs/en/panel.md](docs/en/panel.md)
 

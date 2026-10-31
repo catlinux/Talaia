@@ -9,16 +9,17 @@ For metrics, alert rules and notification channels, see [monitoring.md](monitori
 ## Contents
 
 [Layout](#layout) · [Overview](#overview) · [Servers](#servers) · [Server page](#server-page) ·
-[Containers and Stacks](#containers-and-stacks) · [What is this? tips](#what-is-this-tips) ·
-[Catalogue](#catalogue) · [Alerts](#alerts) · [Command palette](#command-palette) · [Users, Audit and Settings](#users-audit-and-settings) ·
-[Mobile](#mobile)
+[Containers and Stacks](#containers-and-stacks) · [Apps](#apps) · [Domains](#domains) ·
+[Templates](#templates) · [What is this? tips](#what-is-this-tips) ·
+[Catalogue](#catalogue) · [Alerts](#alerts) · [Command palette](#command-palette) ·
+[Users, Audit and Settings](#users-audit-and-settings) · [Mobile](#mobile)
 
 ## Layout
 
 The sidebar is grouped into **Infrastructure**, **Monitoring** and **Administration**. **Overview** is
-the home screen; **Servers**, **Containers** and **Stacks** are under Infrastructure; **Alerts** and
-**Audit** under Monitoring; **Users** and **Settings** under Administration. Some entries only appear
-when your account has access to that area.
+the home screen; **Servers**, **Containers**, **Stacks**, **Apps**, **Domains** and **Templates** are under
+Infrastructure; **Alerts** and **Audit** under Monitoring; **Users** and **Settings** under
+Administration. Some entries only appear when your account has access to that area.
 
 The top bar shows breadcrumbs for the current page, a **Search…** box that opens the command palette,
 the alert bell and the user menu. The user menu changes the **Language** and **Theme**, opens
@@ -68,6 +69,12 @@ The tabs are **Overview**, **Containers**, **Services**, **Logs**, **Updates** a
 header and tabs stay in place while the selected tab scrolls. Each tab is also a direct address, for
 example `/servers/<id>/updates`, and a tab is hidden when your account cannot use it.
 
+**Overview** also includes **App publishing** when your account has `server.proxy`. The card shows
+**External proxy** or **Managed proxy (Caddy)**, the Caddy version when reported and, on a managed server,
+the state of its certificates. **Install managed proxy** is offered only when the agent reports that ports
+80 and 443 are free. The two modes and the managed actions are explained in
+[apps.md](apps.md#managed-proxy-caddy); the external Apache and nginx setup is in [apache.md](apache.md).
+
 ## Containers and Stacks
 
 **Containers** and **Stacks** are fleet-wide lists across all servers. Both offer search, server and
@@ -83,6 +90,39 @@ explains the effect before you continue. Adopting a running Compose project from
 Inside a server, **Containers** also lists managed stacks. A stack has its own page with its containers,
 logs and actions, and **New stack** opens the Compose editor. A Compose file runs as root on the
 server, so only give access to people you trust with the server.
+
+## Apps
+
+**Apps** is the fleet-wide list of apps. Search by app, repository, image or server, and filter by
+**Server** and **Source**. Each row shows the source, endpoint, whether it deploys on push and when it
+changed. **New app** opens the five-step wizard: **Source**, **Build**, **Target**, **Domain** and
+**Review**. An app comes from a GitHub repository with a Dockerfile, a template or an existing image; all
+three produce a normal Compose stack.
+
+The app page shows **Configuration**, **Deployments** and **Variables**. People with `stack.deploy` get
+**Deploy now**, **Logs**, **Retry** and **Roll back**; people with `stack.edit` can add or change variables,
+and the same permission is required to create, change or delete an app. Secrets are write-only and stay
+masked. The sources, the GitHub deploy key and webhook, the variables and the deployment rules are in
+[apps.md](apps.md).
+
+## Domains
+
+**Domains** lists the hostnames of the apps you can see. An external server shows **Handled by your
+Apache**; a managed server shows **Managed by Caddy**, **Certificate valid**, **Certificate pending** or
+**Certificate failed**. Search by domain, app or server, and filter by **Server** and **State**, including
+**Issues**. The proxy state and **View setup** need `server.proxy` on that server.
+
+On an external domain, **View setup** opens the drawer with the hostname and host port, the **Apache**
+block, the **nginx** block and the **Steps**. **Copy** puts a block or the steps in the clipboard and the
+button changes to **Copied**. The drawer repeats that Talaia never changes Apache or nginx: paste the
+block yourself. The full walkthrough is in [apache.md](apache.md), including certificates and removal.
+
+## Templates
+
+**Templates** is the gallery of ready-made apps and building blocks. Search by name, image or description;
+each card shows the image, port and recommended RAM. **Use template** opens the new-app wizard with the
+template already selected and the app name prefilled. Using a template needs permission to create apps.
+What the templates generate, and how they deploy, is in [apps.md](apps.md#templates).
 
 ## What is this? tips
 

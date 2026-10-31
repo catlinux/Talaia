@@ -13,6 +13,12 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.6.43] - 2026-10-31
+
+### Added
+
+- Docs: guides to deploy apps from GitHub, templates or images (docs/en/apps.md) and to publish an app behind your own Apache or nginx step by step (docs/en/apache.md), plus deployment sections in the panel and security guides.
+
 ## [0.6.42] - 2026-10-31
 
 ### Added
@@ -957,7 +963,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.6.42...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.6.43...HEAD
+[0.6.43]: https://github.com/catlinux/Talaia/releases/tag/v0.6.43
 [0.6.42]: https://github.com/catlinux/Talaia/releases/tag/v0.6.42
 [0.6.41]: https://github.com/catlinux/Talaia/releases/tag/v0.6.41
 [0.6.40]: https://github.com/catlinux/Talaia/releases/tag/v0.6.40

@@ -93,6 +93,47 @@ vía de recuperación. Configuración, uso, eliminación y problemas frecuentes:
   `TALAIA_API_KEY` o `talaiactl login` antes que `--api-key`, que aparece en la lista de procesos. Revócala
   de inmediato si se filtra.
 
+## Despliegues
+
+Las apps conectan un repositorio de Git o una imagen con un stack Compose. El camino del despliegue tiene
+sus propias reglas:
+
+- **Claves de despliegue.** Cada app de Git recibe un par de claves ed25519. La privada se sella en el
+  núcleo; la pública se muestra una vez y va al repositorio como clave de despliegue de solo lectura. El
+  agente confía en un conjunto fijo de claves de host de GitHub, con comprobación estricta y sin confianza
+  en el primer uso. La clave privada solo se escribe en un archivo temporal con modo `0600` dentro de un
+  `HOME` temporal `0700`, nunca se pasa en argumentos ni en el entorno, y el directorio se elimina al
+  terminar. La descarga del origen es superficial y no ejecuta submódulos ni hooks de Git.
+- **Webhooks.** `POST /api/v1/hooks/git/{app_id}` es público porque GitHub tiene que llegar a él, y se
+  autentica solo con `X-Hub-Signature-256`, un HMAC-SHA256 del cuerpo con el secreto de la app, comparado
+  en tiempo constante. El cuerpo está limitado a 1 MiB. Las peticiones se limitan a 60 por minuto por IP y
+  30 por minuto por app, y el id de una entrega se recuerda durante una hora para ignorar reintentos. Un
+  `ping` responde sin desplegar; solo un push a la rama configurada de una app de Git con **Despliega en
+  cada push** activado pone un despliegue en cola. Las denegaciones y los eventos ignorados se auditan. El
+  sondeo, cuando está activo, es una comprobación saliente cada dos minutos y sigue las mismas reglas.
+- **Secretos.** Las variables de la app se sellan. Los valores secretos nunca vuelven por la API y se
+  ocultan en el panel; la clave privada de despliegue y el secreto del webhook nunca se devuelven ni se
+  registran. Solo las variables no secretas marcadas **Disponible en tiempo de compilación** se convierten
+  en argumentos de `docker build`, así que un secreto no aparece en el historial de la imagen ni en el
+  registro de la construcción. Rotar una variable de la app significa escribir un valor nuevo.
+- **Construcciones.** Una construcción de Git se ejecuta en el servidor de la app con `docker build
+  --pull`, una a la vez, con un límite de 30 minutos y al menos 2 GiB libres. El espacio del origen está
+  limitado a 1 GiB y se elimina después. Trata un repositorio como código que permites en ese servidor. Los
+  stacks que Talaia genera para apps de Git y de imagen no montan el socket de Docker y no son
+  privilegiados; fijan un límite de 1 CPU y 512 MB de memoria. Quien tiene `stack.edit` puede cambiar el
+  archivo Compose, y por eso ese permiso equivale a root.
+- **Publicación.** Las apps externas escuchan en `127.0.0.1` entre los puertos 20000 y 29999, y Talaia
+  nunca edita Apache ni nginx; el administrador copia el bloque. El proxy gestionado ejecuta Caddy 2.10.2
+  fijado por digest, expone solo los puertos 80 y 443 y habla con su API de administración por un socket
+  Unix. Solo se acepta instalarlo cuando los dos puertos están libres. La configuración de Caddy se
+  construye a partir de nombres de host, servicios y puertos, nunca de JSON arbitrario enviado por el
+  núcleo. Quitar el proxy conserva las apps y sus datos.
+- **Auditoría.** Crear, cambiar y eliminar una app, sus variables y dominios, cada petición de despliegue y
+  retorno, cada acción del proxy y cada resultado del webhook se escriben en el registro de auditoría.
+
+Los pasos de uso están en [apps.md](apps.md); la configuración del servidor web externo está en
+[apache.md](apache.md).
+
 ## Inicio de sesión único (OIDC)
 
 - El proveedor sustituye solo la contraseña. TOTP o una clave de acceso siguen siendo obligatorios, así que

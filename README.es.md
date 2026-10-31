@@ -283,6 +283,8 @@ se usa el inglés. Detalle: [docs/es/i18n.md](docs/es/i18n.md).
 La **documentación** del proyecto se escribe en **inglés y castellano**. Algunas guías, como la de acceso,
 también están en **catalán**.
 
+- Apps, despliegues y GitHub: [docs/es/apps.md](docs/es/apps.md)
+- Publicar apps detrás de Apache o nginx: [docs/es/apache.md](docs/es/apache.md)
 - Monitorización, alertas y comprobaciones: [docs/es/monitorizacion.md](docs/es/monitorizacion.md)
 - Guía del panel web: [docs/es/panel.md](docs/es/panel.md)
 

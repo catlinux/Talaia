@@ -10,16 +10,17 @@ Para las métricas, las reglas de alerta y los canales de notificación, consult
 ## Contenido
 
 [Estructura](#estructura) · [Resumen](#resumen) · [Servidores](#servidores) · [Página del servidor](#página-del-servidor) ·
-[Contenedores y stacks](#contenedores-y-stacks) · [Consejos «¿Qué es?»](#consejos-qué-es) ·
-[Catálogo](#catálogo) · [Alertas](#alertas) · [Paleta de comandos](#paleta-de-comandos) · [Usuarios, Auditoría y Ajustes](#usuarios-auditoría-y-ajustes) ·
-[Móvil](#móvil)
+[Contenedores y stacks](#contenedores-y-stacks) · [Apps](#apps) · [Dominios](#dominios) ·
+[Plantillas](#plantillas) · [Consejos «¿Qué es?»](#consejos-qué-es) ·
+[Catálogo](#catálogo) · [Alertas](#alertas) · [Paleta de comandos](#paleta-de-comandos) ·
+[Usuarios, Auditoría y Ajustes](#usuarios-auditoría-y-ajustes) · [Móvil](#móvil)
 
 ## Estructura
 
 La barra lateral se agrupa en **Infraestructura**, **Supervisión** y **Administración**. **Resumen** es
-la pantalla de inicio; **Servidores**, **Contenedores** y **Stacks** están en Infraestructura;
-**Alertas** y **Auditoría** en Supervisión; **Usuarios** y **Ajustes** en Administración. Algunas
-entradas solo aparecen cuando tu cuenta tiene acceso a esa área.
+la pantalla de inicio; **Servidores**, **Contenedores**, **Stacks**, **Apps**, **Dominios** y
+**Plantillas** están en Infraestructura; **Alertas** y **Auditoría** en Supervisión; **Usuarios** y
+**Ajustes** en Administración. Algunas entradas solo aparecen cuando tu cuenta tiene acceso a esa área.
 
 La barra superior muestra la ruta de la página actual, un cuadro **Buscar…** que abre la paleta de
 comandos, la campana de alertas y el menú de usuario. El menú de usuario cambia el **Idioma** y el
@@ -75,6 +76,13 @@ Las pestañas son **Resumen**, **Contenedores**, **Servicios**, **Registros**, *
 pestaña elegida. Cada pestaña también es una dirección directa, por ejemplo
 `/servers/<id>/updates`, y una pestaña se oculta cuando tu cuenta no puede usarla.
 
+**Resumen** incluye además **Publicación de apps** cuando tu cuenta tiene `server.proxy`. La tarjeta
+muestra **Proxy externo** o **Proxy gestionado (Caddy)**, la versión de Caddy cuando se informa y, en un
+servidor gestionado, el estado de sus certificados. **Instalar el proxy gestionado** solo se ofrece cuando
+el agente informa de que los puertos 80 y 443 están libres. Los dos modos y las acciones del proxy se
+explican en [apps.md](apps.md#proxy-gestionado-caddy); la configuración externa de Apache y nginx está en
+[apache.md](apache.md).
+
 ## Contenedores y stacks
 
 **Contenedores** y **Stacks** son listas de toda la flota, entre todos los servidores. Las dos ofrecen
@@ -92,6 +100,41 @@ copiarlo ni reiniciarlo.
 Dentro de un servidor, **Contenedores** también lista los stacks gestionados. Cada stack tiene su propia
 página con sus contenedores, registros y acciones, y **Nuevo stack** abre el editor de Compose. Un
 archivo Compose se ejecuta como root en el servidor, así que da acceso solo a personas de confianza.
+
+## Apps
+
+**Apps** es la lista de apps de toda la flota. Busca por app, repositorio, imagen o servidor, y filtra por
+**Servidor** y **Origen**. Cada fila muestra el origen, el endpoint, si despliega en push y cuándo cambió.
+**Nueva app** abre el asistente de cinco pasos: **Origen**, **Construcción**, **Destino**, **Dominio** y
+**Revisión**. Una app sale de un repositorio de GitHub con un Dockerfile, de una plantilla o de una imagen
+existente; los tres producen un stack Compose normal.
+
+La ficha de la app muestra **Configuración**, **Despliegues** y **Variables**. Quien tiene `stack.deploy`
+ve **Desplegar ahora**, **Registro**, **Reintentar** y **Volver atrás**; quien tiene `stack.edit` puede
+añadir o cambiar variables, y ese mismo permiso hace falta para crear, cambiar o eliminar una app. Los
+secretos son de solo escritura y siguen ocultos. Los orígenes, la clave de despliegue y el webhook de
+GitHub, las variables y las reglas de despliegue están en [apps.md](apps.md).
+
+## Dominios
+
+**Dominios** lista los nombres de host de las apps que puedes ver. Un servidor externo muestra **Lo
+gestiona tu Apache**; uno gestionado muestra **Gestionado por Caddy**, **Certificado válido**,
+**Certificado pendiente** o **Certificado fallido**. Busca por dominio, app o servidor, y filtra por
+**Servidor** y **Estado**, incluido **Problemas**. El estado del proxy y **Ver la configuración** necesitan
+`server.proxy` en ese servidor.
+
+En un dominio externo, **Ver la configuración** abre el panel con el nombre de host y el puerto del
+anfitrión, el bloque de **Apache**, el de **nginx** y los **Pasos**. **Copiar** pone un bloque o los pasos
+en el portapapeles y el botón cambia a **Copiado**. El panel repite que Talaia nunca cambia Apache ni
+nginx: pega tú el bloque. La guía completa está en [apache.md](apache.md), con los certificados y la
+eliminación.
+
+## Plantillas
+
+**Plantillas** es la galería de apps preparadas y bloques. Busca por nombre, imagen o descripción; cada
+tarjeta muestra la imagen, el puerto y la RAM recomendada. **Usar la plantilla** abre el asistente de nueva
+app con la plantilla ya elegida y el nombre de la app rellenado. Usar una plantilla necesita permiso para
+crear apps. Lo que generan las plantillas y cómo se despliegan está en [apps.md](apps.md#plantillas).
 
 ## Consejos «¿Qué es?»
 
