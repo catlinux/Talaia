@@ -62,7 +62,8 @@
     "howToCheck": "Com comprovar-ho",
     "copy": "Copia",
     "copied": "Copiat",
-    "docs": "Documentació oficial"
+    "docs": "Documentació oficial",
+    "viewCard": "Veure fitxa"
   },
   "origin": {
     "service": "unitat de systemd {{unit}}",
@@ -70,7 +71,11 @@
     "stack": "Part de la stack {{stack}} · imatge {{image}}",
     "stackImages": "Part de la stack {{stack}} · imatges {{images}}",
     "stackNoContainers": "Part de la stack {{stack}} · sense contenidors",
-    "standalone": "Contenidor independent · imatge {{image}}"
+    "standalone": "Contenidor independent · imatge {{image}}",
+    "catalogUnits": "unitats de systemd: {{units}}",
+    "catalogImages": "imatges de contenidor: {{images}}",
+    "catalogBoth": "unitats de systemd: {{units}} · imatges de contenidor: {{images}}",
+    "catalogNone": "cap nom d'unitat o imatge exacte (es reconeix per un patró de systemd)"
   },
   "unknownService": "systemd diu: {{description}}",
   "unknownServiceDescription": "No s'ha informat cap descripció.",
@@ -551,5 +556,34 @@
       "what": "Desa i serveix imatges Docker per a descàrregues i pujades.",
       "ifFails": "Les descàrregues i pujades d'imatges fallen, i els desplegaments que necessiten imatges noves s'aturen. Comprova l'espai de disc, l'autenticació i el backend d'emmagatzematge abans de reiniciar."
     }
+  },
+  "screen": {
+    "title": "Catàleg",
+    "subtitle": "La referència integrada dels serveis i les imatges de contenidor que reconeix Talaia, explicada per a principiants.",
+    "searchPlaceholder": "Cerca per nom, id, unitat o imatge",
+    "type": "Tipus",
+    "typeAll": "Tots els tipus",
+    "typeServices": "Serveis",
+    "typeImages": "Imatges de contenidor",
+    "category": "Categoria",
+    "categoryAll": "Totes les categories",
+    "importance": "Importància",
+    "importanceAll": "Totes les importàncies",
+    "count_one": "1 fitxa",
+    "count_other": "{{count}} fitxes",
+    "empty": "Cap fitxa coincideix amb aquests filtres",
+    "columns": {
+      "name": "Nom",
+      "category": "Categoria",
+      "importance": "Importància",
+      "type": "Tipus",
+      "recognises": "Reconeix",
+      "actions": "Accions"
+    }
+  },
+  "kind": {
+    "service": "Servei",
+    "image": "Imatge",
+    "both": "Tots dos"
   }
 }

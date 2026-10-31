@@ -7,6 +7,7 @@ import { Logo } from '../Logo'
 import {
   AlertIcon,
   AuditIcon,
+  BookIcon,
   CloseIcon,
   FleetIcon,
   GearIcon,
@@ -119,6 +120,12 @@ export function Sidebar({ alertSummary, mobileOpen, onClose }: SidebarProps) {
       icon: <UsersIcon />,
       active: isActive('/users'),
     })
+  administration.push({
+    to: '/catalog',
+    label: t('nav.catalog'),
+    icon: <BookIcon />,
+    active: isActive('/catalog'),
+  })
   administration.push({
     to: '/settings',
     label: t('nav.settings'),

@@ -18,6 +18,12 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.6.25] - 2026-10-31
+
+### Added
+
+- Panel: **Catalogue** screen (`/catalog`, under Administration) with every service and container image Talaia recognises, searchable and filterable by type, category and importance; each row opens the detailed card.
+
 ## [0.6.24] - 2026-10-31
 
 ### Added
@@ -846,7 +852,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.6.24...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.6.25...HEAD
+[0.6.25]: https://github.com/catlinux/Talaia/releases/tag/v0.6.25
 [0.6.24]: https://github.com/catlinux/Talaia/releases/tag/v0.6.24
 [0.6.23]: https://github.com/catlinux/Talaia/releases/tag/v0.6.23
 [0.6.22]: https://github.com/catlinux/Talaia/releases/tag/v0.6.22

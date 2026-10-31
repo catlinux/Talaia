@@ -26,6 +26,7 @@ import { Link, matchRoute, RouterProvider, useNavigate, useRoute } from './route
 import { About } from './screens/About'
 import { Audit } from './screens/Audit'
 import { Alerts } from './screens/Alerts'
+import { Catalog } from './screens/Catalog'
 import { Containers } from './screens/Containers'
 import { Overview } from './screens/Overview'
 import { ServerScreen } from './screens/ServerScreen'
@@ -176,6 +177,7 @@ function PanelShell({
   const isAudit = matchRoute('/audit/*', path) !== null
   const isUsers = matchRoute('/users/*', path) !== null
   const isSettings = matchRoute('/settings/*', path) !== null
+  const isCatalog = matchRoute('/catalog', path) !== null
   const isAbout = matchRoute('/about', path) !== null
   const isContainers = matchRoute('/containers', path) !== null
   const isStacks = matchRoute('/stacks', path) !== null
@@ -232,6 +234,8 @@ function PanelShell({
     ) : (
       <PanelMessage title={t('shell.noAccess')} />
     )
+  } else if (isCatalog) {
+    page = <Catalog />
   } else if (isSettings) {
     page = <Settings api={systemApi} />
   } else if (isAbout) {

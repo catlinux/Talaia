@@ -183,6 +183,7 @@ describe('CommandPalette', () => {
     expect(screen.queryByRole('option', { name: 'Containers' })).toBeNull()
     expect(screen.queryByRole('option', { name: 'Stacks' })).toBeNull()
     expect(screen.queryByRole('option', { name: 'Users' })).toBeNull()
+    expect(screen.getByRole('option', { name: 'Catalogue' })).toBeTruthy()
     expect(screen.getByRole('option', { name: 'Servers' })).toBeTruthy()
     expect(screen.getByRole('option', { name: 'Settings' })).toBeTruthy()
   })

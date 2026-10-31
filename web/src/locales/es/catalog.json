@@ -62,7 +62,8 @@
     "howToCheck": "Cómo comprobarlo",
     "copy": "Copiar",
     "copied": "Copiado",
-    "docs": "Documentación oficial"
+    "docs": "Documentación oficial",
+    "viewCard": "Ver ficha"
   },
   "origin": {
     "service": "unidad de systemd {{unit}}",
@@ -70,7 +71,11 @@
     "stack": "Parte de la stack {{stack}} · imagen {{image}}",
     "stackImages": "Parte de la stack {{stack}} · imágenes {{images}}",
     "stackNoContainers": "Parte de la stack {{stack}} · sin contenedores",
-    "standalone": "Contenedor independiente · imagen {{image}}"
+    "standalone": "Contenedor independiente · imagen {{image}}",
+    "catalogUnits": "unidades de systemd: {{units}}",
+    "catalogImages": "imágenes de contenedor: {{images}}",
+    "catalogBoth": "unidades de systemd: {{units}} · imágenes de contenedor: {{images}}",
+    "catalogNone": "ningún nombre de unidad o imagen exacto (se reconoce por un patrón de systemd)"
   },
   "unknownService": "systemd dice: {{description}}",
   "unknownServiceDescription": "No se ha informado de ninguna descripción.",
@@ -551,5 +556,34 @@
       "what": "Guarda y sirve imágenes Docker para descargas y subidas.",
       "ifFails": "Las descargas y subidas de imágenes fallan, y los despliegues que necesitan imágenes nuevas se detienen. Comprueba el espacio de disco, la autenticación y el backend de almacenamiento antes de reiniciar."
     }
+  },
+  "screen": {
+    "title": "Catálogo",
+    "subtitle": "La referencia integrada de los servicios e imágenes de contenedor que reconoce Talaia, explicada para principiantes.",
+    "searchPlaceholder": "Busca por nombre, id, unidad o imagen",
+    "type": "Tipo",
+    "typeAll": "Todos los tipos",
+    "typeServices": "Servicios",
+    "typeImages": "Imágenes de contenedor",
+    "category": "Categoría",
+    "categoryAll": "Todas las categorías",
+    "importance": "Importancia",
+    "importanceAll": "Todas las importancias",
+    "count_one": "1 entrada",
+    "count_other": "{{count}} entradas",
+    "empty": "Ninguna entrada coincide con estos filtros",
+    "columns": {
+      "name": "Nombre",
+      "category": "Categoría",
+      "importance": "Importancia",
+      "type": "Tipo",
+      "recognises": "Reconoce",
+      "actions": "Acciones"
+    }
+  },
+  "kind": {
+    "service": "Servicio",
+    "image": "Imagen",
+    "both": "Ambos"
   }
 }

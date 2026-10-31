@@ -218,6 +218,7 @@ export function CommandPalette({
       result.push({ id: 'screen-users', section: 'screens', label: t('nav.users'), to: '/users' })
     }
     result.push(
+      { id: 'screen-catalog', section: 'screens', label: t('nav.catalog'), to: '/catalog' },
       { id: 'screen-settings', section: 'screens', label: t('nav.settings'), to: '/settings' },
       { id: 'screen-about', section: 'screens', label: t('nav.about'), to: '/about' },
     )

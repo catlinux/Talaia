@@ -46,6 +46,15 @@ export function OverviewIcon({ className }: IconProps) {
   )
 }
 
+export function BookIcon({ className }: IconProps) {
+  return (
+    <Icon className={className}>
+      <path d="M4 4a2 2 0 0 1 2-2h14v18H6a2 2 0 0 0-2 2z" />
+      <path d="M4 4v18M8 6h8M8 10h6" />
+    </Icon>
+  )
+}
+
 export function UsersIcon({ className }: IconProps) {
   return (
     <Icon className={className}>

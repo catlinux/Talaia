@@ -5,6 +5,7 @@ import type { Container } from '../api/containers'
 import type { ServiceUnit } from '../api/services'
 import i18n from '../i18n'
 import {
+  catalog,
   imageRepository,
   lookupImage,
   lookupService,
@@ -109,6 +110,42 @@ export function describeService(unit: ServiceUnit): CatalogDescription {
   return entryDescription(entry, origin, serviceCommands(unit.name))
 }
 
+function catalogOrigin(entry: CatalogEntry): string {
+  const units = (entry.units ?? []).map((unit) => `${unit}.service`)
+  const images = entry.images ?? []
+  if (units.length > 0 && images.length > 0) {
+    return text('origin.catalogBoth', {
+      units: units.join(', '),
+      images: images.join(', '),
+    })
+  }
+  if (units.length > 0) return text('origin.catalogUnits', { units: units.join(', ') })
+  if (images.length > 0) return text('origin.catalogImages', { images: images.join(', ') })
+  return text('origin.catalogNone')
+}
+
+/** describeEntry returns the catalogue card of one catalogue entry. */
+export function describeEntry(id: string): CatalogDescription {
+  const entry = catalog.find((candidate) => candidate.id === id)
+  if (entry === undefined) {
+    return {
+      known: false,
+      name: id,
+      importance: 'unknown',
+      what: id,
+      problems: [],
+      commands: [],
+      origin: id,
+    }
+  }
+  const unit = entry.units?.[0]
+  return entryDescription(
+    entry,
+    catalogOrigin(entry),
+    unit === undefined ? [] : serviceCommands(`${unit}.service`),
+  )
+}
+
 function containerOrigin(container: Container): string {
   const image = imageRepository(container.image) || container.image
   if (container.composeProject !== '') {
@@ -184,6 +221,7 @@ export type WhatIsThisTarget =
   | { kind: 'service'; unit: ServiceUnit }
   | { kind: 'container'; container: Container }
   | { kind: 'stack'; name: string; containers: Container[] }
+  | { kind: 'entry'; id: string }
 
 interface WhatIsThisProps {
   target: WhatIsThisTarget
@@ -200,7 +238,9 @@ export function WhatIsThis({ target, variant = 'compact' }: WhatIsThisProps) {
       ? describeService(target.unit)
       : target.kind === 'container'
         ? describeContainer(target.container)
-        : describeStack(target.name, target.containers)
+        : target.kind === 'entry'
+          ? describeEntry(target.id)
+          : describeStack(target.name, target.containers)
   const full = variant === 'full'
 
   const copy = (command: string) => {

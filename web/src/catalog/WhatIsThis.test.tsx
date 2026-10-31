@@ -5,7 +5,13 @@ import type { Container } from '../api/containers'
 import type { ServiceUnit } from '../api/services'
 import i18n from '../i18n'
 import { CatalogDrawerProvider } from './CatalogDrawer'
-import { describeContainer, describeService, describeStack, WhatIsThis } from './WhatIsThis'
+import {
+  describeContainer,
+  describeEntry,
+  describeService,
+  describeStack,
+  WhatIsThis,
+} from './WhatIsThis'
 
 function service(overrides: Partial<ServiceUnit> = {}): ServiceUnit {
   return {
@@ -83,6 +89,32 @@ describe('describeService', () => {
     expect(description.known).toBe(false)
     expect(description.importance).toBe('unknown')
     expect(description.what).toBe('systemd says: Custom company daemon')
+  })
+})
+
+describe('describeEntry', () => {
+  it('uses the first unit and appends the entry checks', () => {
+    const description = describeEntry('certbot')
+
+    expect(description.known).toBe(true)
+    expect(description.name).toBe('Certbot')
+    expect(description.commands).toEqual([
+      'systemctl status certbot.service',
+      'journalctl -u certbot.service -n 50 --no-pager',
+      'certbot certificates',
+      'certbot renew --dry-run',
+    ])
+    expect(description.origin).toBe(
+      'systemd units: certbot.service · container images: certbot/certbot',
+    )
+    expect(description.docs).toBe('https://eff-certbot.readthedocs.io/')
+  })
+
+  it('has no service command for an entry recognised only by a pattern', () => {
+    const description = describeEntry('php-fpm')
+
+    expect(description.commands).toEqual([])
+    expect(description.origin).toContain('systemd name pattern')
   })
 })
 

@@ -29,6 +29,7 @@ const navOverview = { ca: 'Resum', es: 'Resumen', en: 'Overview' } as const
 const navServers = { ca: 'Servidors', es: 'Servidores', en: 'Servers' } as const
 const navContainers = { ca: 'Contenidors', es: 'Contenedores', en: 'Containers' } as const
 const navStacks = { ca: 'Stacks', es: 'Stacks', en: 'Stacks' } as const
+const navCatalog = { ca: 'Catàleg', es: 'Catálogo', en: 'Catalogue' } as const
 const navSettings = { ca: 'Configuració', es: 'Ajustes', en: 'Settings' } as const
 const navAudit = { ca: 'Auditoria', es: 'Auditoría', en: 'Audit' } as const
 const navAbout = { ca: 'Sobre', es: 'Acerca de', en: 'About' } as const
@@ -395,6 +396,10 @@ describe('App', () => {
     expect(window.location.pathname).toBe('/users')
     expect(await screen.findByRole('heading', { level: 1, name: usersHeading })).toBeTruthy()
 
+    await openSidebarLink(navCatalog.en)
+    expect(window.location.pathname).toBe('/catalog')
+    expect(await screen.findByRole('heading', { level: 1, name: navCatalog.en })).toBeTruthy()
+
     await openSidebarLink(navSettings.en)
     expect(window.location.pathname).toBe('/settings')
     expect(await screen.findByText('1.2.3')).toBeTruthy()
@@ -423,6 +428,7 @@ describe('App', () => {
       navAlerts.en,
       navAudit.en,
       navUsers.en,
+      navCatalog.en,
       navSettings.en,
     ])
   })

@@ -62,7 +62,8 @@
     "howToCheck": "How to check it",
     "copy": "Copy",
     "copied": "Copied",
-    "docs": "Official documentation"
+    "docs": "Official documentation",
+    "viewCard": "View card"
   },
   "origin": {
     "service": "systemd unit {{unit}}",
@@ -70,7 +71,11 @@
     "stack": "Part of stack {{stack}} · image {{image}}",
     "stackImages": "Part of stack {{stack}} · images {{images}}",
     "stackNoContainers": "Part of stack {{stack}} · no containers",
-    "standalone": "Standalone container · image {{image}}"
+    "standalone": "Standalone container · image {{image}}",
+    "catalogUnits": "systemd units: {{units}}",
+    "catalogImages": "container images: {{images}}",
+    "catalogBoth": "systemd units: {{units}} · container images: {{images}}",
+    "catalogNone": "no exact unit or image name (matched by a systemd name pattern)"
   },
   "unknownService": "systemd says: {{description}}",
   "unknownServiceDescription": "No description was reported.",
@@ -551,5 +556,34 @@
       "what": "Stores and serves Docker images for pulls and pushes.",
       "ifFails": "Image pulls and pushes fail, and deployments that need new images stop. Check disk space, authentication and the storage backend before restarting."
     }
+  },
+  "screen": {
+    "title": "Catalogue",
+    "subtitle": "The built-in reference of the services and container images Talaia recognises, explained for beginners.",
+    "searchPlaceholder": "Search by name, id, unit or image",
+    "type": "Type",
+    "typeAll": "All types",
+    "typeServices": "Services",
+    "typeImages": "Container images",
+    "category": "Category",
+    "categoryAll": "All categories",
+    "importance": "Importance",
+    "importanceAll": "All importances",
+    "count_one": "1 entry",
+    "count_other": "{{count}} entries",
+    "empty": "No entries match these filters",
+    "columns": {
+      "name": "Name",
+      "category": "Category",
+      "importance": "Importance",
+      "type": "Type",
+      "recognises": "Recognises",
+      "actions": "Actions"
+    }
+  },
+  "kind": {
+    "service": "Service",
+    "image": "Image",
+    "both": "Both"
   }
 }

@@ -8,6 +8,7 @@ import { AuthGate } from '../../auth/AuthGate'
 import { PermissionsProvider } from '../../auth/permissions'
 import i18n from '../../i18n'
 import { RouterProvider } from '../../router'
+import { Breadcrumbs } from './Breadcrumbs'
 import { Sidebar } from './Sidebar'
 import { Topbar } from './Topbar'
 import { UserMenu } from './UserMenu'
@@ -98,6 +99,7 @@ describe('Sidebar', () => {
       'Alerts',
       'Audit',
       'Users',
+      'Catalogue',
       'Settings',
     ])
     expect(within(nav).getByText('Infrastructure')).toBeTruthy()
@@ -147,6 +149,21 @@ describe('Sidebar', () => {
     }
     expect(within(nav).getByRole('link', { name: 'Settings' })).toBeTruthy()
     expect(within(nav).getByRole('link', { name: 'Overview' })).toBeTruthy()
+  })
+})
+
+describe('Breadcrumbs', () => {
+  it('shows Catalogue under Administration', () => {
+    window.history.replaceState({}, '', '/catalog')
+    render(
+      <RouterProvider>
+        <Breadcrumbs />
+      </RouterProvider>,
+    )
+
+    const crumbs = screen.getByRole('navigation', { name: 'Breadcrumb' })
+    expect(within(crumbs).getByText('Administration')).toBeTruthy()
+    expect(within(crumbs).getByText('Catalogue')).toBeTruthy()
   })
 })
 
