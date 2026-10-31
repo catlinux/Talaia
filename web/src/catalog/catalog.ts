@@ -344,6 +344,7 @@ export const catalog: CatalogEntry[] = [
     category: 'network',
     importance: 'optional',
     units: ['avahi-daemon'],
+    checks: ['avahi-browse -at'],
   },
   {
     id: 'cups',
@@ -358,6 +359,7 @@ export const catalog: CatalogEntry[] = [
     category: 'system',
     importance: 'optional',
     units: ['bluetooth'],
+    checks: ['bluetoothctl show'],
   },
   {
     id: 'mariadb',
@@ -458,6 +460,7 @@ export const catalog: CatalogEntry[] = [
     category: 'dns',
     importance: 'important',
     units: ['bind9', 'named'],
+    checks: ['named-checkconf', 'rndc status'],
   },
   {
     id: 'unbound',

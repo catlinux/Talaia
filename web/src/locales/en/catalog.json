@@ -544,7 +544,14 @@
     "avahi": {
       "name": "Avahi",
       "what": "Advertises services on the local network with mDNS/DNS-SD.",
-      "ifFails": "Local discovery of printers or services may stop. This is usually optional on a server; check the logs if you rely on it."
+      "ifFails": "Local discovery of printers or services may stop. This is usually optional on a server; check the logs if you rely on it.",
+      "details": "Avahi advertises services such as printers, file shares and SSH on the local network using mDNS/DNS-SD. It lets computers find each other without a central DNS server, which is common on desktops and small networks. It includes `avahi-daemon` and helpers for browsing and publishing services. Servers usually do not need it unless they provide a discoverable service.",
+      "stop": "Stopping Avahi removes the services it advertises and stops local discovery; other machines simply stop seeing them. Normal DNS and direct IP connections keep working. It is safe to leave it stopped on a server that does not need mDNS.",
+      "problems": [
+        "Other machines cannot discover this server — check `systemctl status avahi-daemon` and `avahi-browse -at`.",
+        "A service is advertised but not reachable — check the service file in `/etc/avahi/services/` and the firewall.",
+        "Avahi conflicts with another mDNS responder — check whether systemd-resolved or another service is already handling mDNS."
+      ]
     },
     "cups": {
       "name": "CUPS printing",
@@ -561,72 +568,170 @@
     "bluetooth": {
       "name": "Bluetooth service",
       "what": "Manages Bluetooth adapters and connections.",
-      "ifFails": "Bluetooth devices cannot connect. It is optional on most servers and can usually stay stopped."
+      "ifFails": "Bluetooth devices cannot connect. It is optional on most servers and can usually stay stopped.",
+      "details": "The Bluetooth service, BlueZ, manages Bluetooth adapters, pairing and connections. It exposes devices to tools such as `bluetoothctl` and to desktop or IoT applications. On a server it is only useful for a Bluetooth device you actually use, such as a sensor or a serial adapter. It does not manage Wi-Fi or Ethernet.",
+      "stop": "Stopping Bluetooth disconnects paired devices and stops new pairings; services using the adapter lose it. It does not affect networking or normal server services. It is safe to disable on a server without Bluetooth hardware.",
+      "problems": [
+        "A device does not appear — run `bluetoothctl show` and check `journalctl -u bluetooth -n 50 --no-pager`.",
+        "Pairing fails — check the adapter is powered on and the device is in pairing mode.",
+        "The adapter is not detected — check `lsusb` or `dmesg` for missing firmware or hardware."
+      ]
     },
     "mariadb": {
       "name": "MariaDB / MySQL",
       "what": "A relational database server used by many web applications.",
-      "ifFails": "Applications lose their database and may return errors or stop. Check disk space and logs before restarting; a restart cuts every open connection, so do it when the applications can tolerate a short outage."
+      "ifFails": "Applications lose their database and may return errors or stop. Check disk space and logs before restarting; a restart cuts every open connection, so do it when the applications can tolerate a short outage.",
+      "details": "MariaDB is a relational database server and a drop-in replacement for MySQL. Applications connect to it over a local socket or TCP to store and query structured data. It keeps its data under `/var/lib/mysql` and reads configuration from `/etc/mysql/`. Debian often installs MariaDB when a package asks for a MySQL server; in a container, keep `/var/lib/mysql` on a persistent volume.",
+      "stop": "Stopping MariaDB closes every connection and makes the databases unavailable. Applications may return errors or queue work until it returns. Restarting is safe only after checking errors, disk space and backups; use `mysqladmin shutdown` or the service manager for a clean stop.",
+      "problems": [
+        "Applications cannot connect — run `mysqladmin status` and check `journalctl -u mariadb -n 50 --no-pager`.",
+        "The server will not start — check `/var/lib/mysql` permissions, disk space and the error log.",
+        "The disk is full — check `df -h` and remove old binary logs with `PURGE BINARY LOGS` after confirming backups."
+      ]
     },
     "mysql": {
       "name": "MySQL",
       "what": "The MySQL relational database server.",
-      "ifFails": "Applications lose their database and may return errors or stop. Check disk space and logs before restarting; a restart cuts every open connection, so do it when the applications can tolerate a short outage."
+      "ifFails": "Applications lose their database and may return errors or stop. Check disk space and logs before restarting; a restart cuts every open connection, so do it when the applications can tolerate a short outage.",
+      "details": "This is the official MySQL container image. It runs a MySQL server inside a container and stores its data in a volume, usually mounted at `/var/lib/mysql`. Configuration is passed with environment variables or files under `/etc/mysql/conf.d`. The host does not need the MySQL package installed.",
+      "stop": "Stopping the container stops the database and every application connected to it. The data remains in its volume, but an unclean stop can require recovery. Stop the applications first and keep the volume; do not remove it unless you have a backup.",
+      "problems": [
+        "The container exits at startup — read `docker logs --tail 50 <container>` and check the root password and data directory permissions.",
+        "Applications cannot connect — check the published port, the database name and the user credentials.",
+        "Data disappears after recreating the container — mount a named volume at `/var/lib/mysql`."
+      ]
     },
     "postgresql": {
       "name": "PostgreSQL",
       "what": "A relational database server known for reliability and SQL features.",
-      "ifFails": "Applications lose their database and may return errors or stop. Check disk space and logs before restarting; a restart cuts every open connection, so do it when the applications can tolerate a short outage."
+      "ifFails": "Applications lose their database and may return errors or stop. Check disk space and logs before restarting; a restart cuts every open connection, so do it when the applications can tolerate a short outage.",
+      "details": "PostgreSQL is a relational database server used by many applications and by Talaia itself. It stores data under `/var/lib/postgresql` and reads configuration from `/etc/postgresql/`. On Debian, clusters have versioned names such as `16-main` and are managed with `pg_ctlcluster`. It usually listens on port 5432; in a container, keep `/var/lib/postgresql/data` on a persistent volume.",
+      "stop": "Stopping PostgreSQL closes every connection and makes the databases unavailable. Applications may return errors until it returns. Stop it cleanly with the service manager, check disk space and logs, and make sure backups are current before maintenance.",
+      "problems": [
+        "Applications cannot connect — run `pg_isready` and check the cluster status with `pg_lsclusters`.",
+        "The server will not start — read the PostgreSQL log in `/var/log/postgresql/` and check disk space and permissions.",
+        "A cluster is down after an upgrade — check `pg_lsclusters` and the migration logs before starting it again."
+      ]
     },
     "redis": {
       "name": "Redis",
       "what": "An in-memory data store used for caching, queues and sessions.",
-      "ifFails": "Caches and sessions can disappear or writes can fail. Check memory and persistence logs; restart only after deciding whether losing volatile data is acceptable."
+      "ifFails": "Caches and sessions can disappear or writes can fail. Check memory and persistence logs; restart only after deciding whether losing volatile data is acceptable.",
+      "details": "Redis is an in-memory data store used for caches, queues, sessions and fast lookups. It keeps data in memory and can persist snapshots or an append-only log to disk depending on the configuration. It usually listens on port 6379 and is often bound to localhost. Applications must be able to rebuild or tolerate losing cached data; in a container, keep `/data` on a persistent volume.",
+      "stop": "Stopping Redis closes connections and loses data that was not persisted. Cached values are gone, and sessions or queues stored only in Redis are lost. Check persistence and memory before restarting; a restart is usually safe for a pure cache but not for critical queues.",
+      "problems": [
+        "Applications cannot reach Redis — run `redis-cli ping` and check the bind address and firewall.",
+        "Redis is using too much memory — check `redis-cli info memory` and the configured `maxmemory` policy.",
+        "Data disappears after a restart — check the persistence settings and the Redis log for save errors."
+      ]
     },
     "valkey": {
       "name": "Valkey",
       "what": "An open-source in-memory data store compatible with Redis.",
-      "ifFails": "Caches and sessions can disappear or writes can fail. Check memory and persistence logs; restart only after deciding whether losing volatile data is acceptable."
+      "ifFails": "Caches and sessions can disappear or writes can fail. Check memory and persistence logs; restart only after deciding whether losing volatile data is acceptable.",
+      "details": "Valkey is a community fork of Redis and uses the same protocol and most of the same commands. This image runs a Valkey server in a container; applications connect on port 6379. Data can be kept in memory or persisted to a volume, depending on the command and configuration. It is a drop-in option for Redis-compatible workloads.",
+      "stop": "Stopping the container stops Valkey and disconnects every client. Data not written to a volume is lost when the container is recreated. Check persistence and keep the volume before stopping or replacing it.",
+      "problems": [
+        "The container exits at startup — read `docker logs --tail 50 <container>` and check the command and configuration.",
+        "Applications cannot connect — check the published port, the bind address and the password.",
+        "Data disappears after recreating the container — mount a volume and enable persistence."
+      ]
     },
     "memcached": {
       "name": "Memcached",
       "what": "A small in-memory cache used to speed up applications.",
-      "ifFails": "The cache is lost and applications fall back to their slower data source. It is usually safe to restart, but sessions stored there may be lost."
+      "ifFails": "The cache is lost and applications fall back to their slower data source. It is usually safe to restart, but sessions stored there may be lost.",
+      "details": "Memcached is a simple in-memory key-value cache. Applications use it to avoid repeating slow database or API calls, and it stores nothing permanently. It usually listens on port 11211 and should not be exposed to the internet. If it restarts, the cache is empty and applications must rebuild it; in a container, there is nothing to persist.",
+      "stop": "Stopping Memcached clears the cache and disconnects clients. Applications keep working but may be slower until they fill the cache again. It is usually safe to restart; only sessions or locks stored exclusively in Memcached are lost.",
+      "problems": [
+        "Applications are slow after a restart — this is normal while the cache warms up; check the hit rate.",
+        "Memcached is not reachable — check `systemctl status memcached`, the listen address and the firewall.",
+        "Memory use is high — check the configured `-m` limit and the application key sizes."
+      ]
     },
     "mongodb": {
       "name": "MongoDB",
       "what": "A document database that stores JSON-like records.",
-      "ifFails": "Applications lose their database and may return errors or stop. Check disk space, logs and replica set health before restarting."
+      "ifFails": "Applications lose their database and may return errors or stop. Check disk space, logs and replica set health before restarting.",
+      "details": "MongoDB is a document database that stores JSON-like documents in collections. This image runs the MongoDB server in a container and keeps its data in a volume, usually `/data/db`. Applications connect with a MongoDB driver on port 27017. Authentication and replica set settings come from the command or configuration file.",
+      "stop": "Stopping the container stops the database and disconnects every application. Data in the mounted volume remains, but an unclean stop can require repair. Stop the applications first, keep the volume and take a backup before major changes.",
+      "problems": [
+        "The container exits at startup — read `docker logs --tail 50 <container>` and check the data directory permissions.",
+        "Applications cannot connect — check the published port, the database user and the authentication settings.",
+        "Data disappears after recreating the container — mount a volume at `/data/db`."
+      ]
     },
     "rabbitmq": {
       "name": "RabbitMQ",
       "what": "A message broker that queues jobs and events between services.",
-      "ifFails": "Messages may queue up and workers stop receiving jobs. Check disk space, memory and the management UI before restarting."
+      "ifFails": "Messages may queue up and workers stop receiving jobs. Check disk space, memory and the management UI before restarting.",
+      "details": "RabbitMQ is a message broker that queues messages between applications. This image runs the broker in a container; producers publish messages and workers consume them. It uses ports 5672 for AMQP and 15672 for the management interface when enabled. Queues and messages should be stored in a persistent volume if they matter.",
+      "stop": "Stopping the container stops the broker; producers and workers lose their connection. Messages that were not persisted may be lost, and queued work waits until it returns. Keep the volume and check the management interface before restarting.",
+      "problems": [
+        "The container exits at startup — read `docker logs --tail 50 <container>` and check the Erlang cookie and hostname settings.",
+        "Applications cannot connect — check the published ports, user credentials and virtual host.",
+        "Queues disappear after recreating the container — mount a volume at `/var/lib/rabbitmq`."
+      ]
     },
     "php-fpm": {
       "name": "PHP-FPM",
       "what": "Runs PHP web applications for a web server such as Nginx or Apache.",
-      "ifFails": "PHP sites return errors or stop answering. Check the pool configuration and PHP logs before restarting."
+      "ifFails": "PHP sites return errors or stop answering. Check the pool configuration and PHP logs before restarting.",
+      "details": "PHP-FPM is the FastCGI process manager that runs PHP applications for web servers such as Nginx or Apache. It manages a pool of worker processes defined in `/etc/php/<version>/fpm/pool.d/`. The web server sends PHP requests to its socket or TCP port, and FPM returns the generated page. It does not serve static files itself.",
+      "stop": "Stopping PHP-FPM makes every PHP site that uses it return errors or stop answering. Static files served directly by the web server may keep working. Check the pool configuration and logs before restarting; a restart briefly interrupts requests.",
+      "problems": [
+        "PHP sites return 502 — check `systemctl status php<version>-fpm` and the FPM log for pool errors.",
+        "The web server cannot connect to FPM — check the `listen` socket path or port and the permissions.",
+        "A pool will not start — check the pool file syntax and the PHP error log."
+      ]
     },
     "wireguard": {
       "name": "WireGuard VPN",
       "what": "A fast VPN tunnel used for remote access or connecting networks.",
-      "ifFails": "VPN peers lose the tunnel and may lose access to private services. Check the interface configuration and keys; restarting drops active connections."
+      "ifFails": "VPN peers lose the tunnel and may lose access to private services. Check the interface configuration and keys; restarting drops active connections.",
+      "details": "WireGuard is a VPN protocol built into the Linux kernel. It creates encrypted tunnels between peers and is configured with interfaces such as `wg0` under `/etc/wireguard/`. It is often used for remote access, site-to-site links or connecting a server to a private network. It does not manage DNS or routing by itself; the configuration does.",
+      "stop": "Stopping a WireGuard interface closes its tunnel and cuts every connection using it. Remote sessions through the VPN end, and peers cannot reach private services until it returns. Restarting drops active connections; keep console access if you manage the server through the tunnel.",
+      "problems": [
+        "Peers cannot connect — run `wg show` and check the interface, keys and endpoint addresses.",
+        "The tunnel is up but traffic does not pass — check the `AllowedIPs` and the routing or firewall rules.",
+        "The interface will not start — check the `.conf` file under `/etc/wireguard/` and the service logs."
+      ]
     },
     "tailscale": {
       "name": "Tailscale",
       "what": "Connects this machine to a private Tailscale network.",
-      "ifFails": "The machine disappears from the tailnet and remote access through it stops. Check authentication and network access before restarting."
+      "ifFails": "The machine disappears from the tailnet and remote access through it stops. Check authentication and network access before restarting.",
+      "details": "Tailscale creates a private network between your machines using WireGuard. The `tailscaled` service connects this host to your tailnet and manages keys, routes and access rules. It can expose the machine to your other devices or act as an exit node if configured. It is optional and needs an account and network access to the coordination server.",
+      "stop": "Stopping Tailscale disconnects the machine from the tailnet, so remote access through its Tailscale IP stops. Local services and normal networking keep working. Starting it again reconnects automatically if the machine is still authenticated.",
+      "problems": [
+        "The machine is offline in the tailnet — run `tailscale status` and check `journalctl -u tailscaled -n 50 --no-pager`.",
+        "Remote access does not work — check the Tailscale IP, the access rules and whether the service is running.",
+        "Authentication expired — run `tailscale login` or reauthenticate the machine."
+      ]
     },
     "openvpn": {
       "name": "OpenVPN",
       "what": "A VPN server or client that provides encrypted network access.",
-      "ifFails": "VPN clients lose their tunnel and remote services may become unreachable. Check the configuration and logs; restarting drops active connections."
+      "ifFails": "VPN clients lose their tunnel and remote services may become unreachable. Check the configuration and logs; restarting drops active connections.",
+      "details": "OpenVPN creates encrypted VPN tunnels between clients and a server, or between networks. On Debian it runs as `openvpn@<name>` units generated from files in `/etc/openvpn/`. It can route all traffic or only a private subnet, depending on the configuration. It needs certificates or keys and a reachable port, usually UDP 1194.",
+      "stop": "Stopping an OpenVPN unit closes its tunnel and disconnects every client using it. Remote sessions through the VPN end, and private services may become unreachable. Check the configuration and logs before restarting; active connections drop.",
+      "problems": [
+        "Clients cannot connect — check the unit status, the listening port and the firewall.",
+        "The tunnel comes up but traffic does not pass — check the pushed routes, `redirect-gateway` and the server's forwarding rules.",
+        "Certificates or keys fail — check the file paths and expiry in `/etc/openvpn/` and the client configuration."
+      ]
     },
     "bind9": {
       "name": "BIND DNS server",
       "what": "An authoritative and recursive DNS server.",
-      "ifFails": "DNS resolution can fail for everything that depends on it. Validate the configuration with named-checkconf and check logs before restarting."
+      "ifFails": "DNS resolution can fail for everything that depends on it. Validate the configuration with named-checkconf and check logs before restarting.",
+      "details": "BIND, usually the `bind9` service, is a DNS server. It can be authoritative for your domains and can also resolve queries recursively. Configuration lives in `/etc/bind/`, with zone files and options such as `named.conf.options`. It listens on port 53 and is often used by other servers as their resolver.",
+      "stop": "Stopping BIND stops DNS answers for every client and service that uses it. If it is the only resolver, name resolution fails across the server. Validate the configuration and check the logs before restarting; clients may retry.",
+      "problems": [
+        "DNS queries fail — run `rndc status` and `named-checkconf`, and check the BIND log.",
+        "A zone does not load — run `named-checkzone <zone> /etc/bind/<file>` and fix the reported line.",
+        "Clients outside the server cannot query it — check the `listen-on` and `allow-query` settings and the firewall."
+      ]
     },
     "unbound": {
       "name": "Unbound DNS resolver",

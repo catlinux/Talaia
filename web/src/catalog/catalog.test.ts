@@ -269,6 +269,21 @@ describe('catalog translations', () => {
       'snapd',
       'modemmanager',
       'wpa-supplicant',
+      'avahi',
+      'bluetooth',
+      'mariadb',
+      'mysql',
+      'postgresql',
+      'redis',
+      'valkey',
+      'memcached',
+      'mongodb',
+      'rabbitmq',
+      'php-fpm',
+      'wireguard',
+      'tailscale',
+      'openvpn',
+      'bind9',
     ]
     for (const language of ['ca', 'es', 'en']) {
       const t = i18n.getFixedT(language, 'catalog')
@@ -345,6 +360,9 @@ describe('catalog translations', () => {
     expect(checksById.get('snapd')).toEqual(['snap version'])
     expect(checksById.get('modemmanager')).toEqual(['mmcli -L'])
     expect(checksById.get('wpa-supplicant')).toEqual(['wpa_cli status'])
+    expect(checksById.get('avahi')).toEqual(['avahi-browse -at'])
+    expect(checksById.get('bluetooth')).toEqual(['bluetoothctl show'])
+    expect(checksById.get('bind9')).toEqual(['named-checkconf', 'rndc status'])
   })
 
   it('describes the Talaia update helper as the update path and service', () => {

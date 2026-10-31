@@ -544,7 +544,14 @@
     "avahi": {
       "name": "Avahi",
       "what": "Anuncia serveis a la xarxa local amb mDNS/DNS-SD.",
-      "ifFails": "La descoberta local d'impressores o serveis pot aturar-se. Normalment és opcional en un servidor; revisa els registres si en depens."
+      "ifFails": "La descoberta local d'impressores o serveis pot aturar-se. Normalment és opcional en un servidor; revisa els registres si en depens.",
+      "details": "Avahi anuncia serveis com impressores, recursos compartits i SSH a la xarxa local mitjançant mDNS/DNS-SD. Permet que els equips es trobin sense un servidor DNS central, cosa habitual en escriptoris i xarxes petites. Inclou `avahi-daemon` i utilitats per explorar i publicar serveis. Els servidors normalment no el necessiten tret que ofereixin un servei que s’hagi de descobrir.",
+      "stop": "Aturar Avahi elimina els serveis que anuncia i atura el descobriment local; les altres màquines deixen de veure’ls. El DNS normal i les connexions directes per IP continuen funcionant. És segur deixar-lo aturat en un servidor que no necessiti mDNS.",
+      "problems": [
+        "Altres màquines no descobreixen aquest servidor — revisa `systemctl status avahi-daemon` i `avahi-browse -at`.",
+        "Un servei s’anuncia però no és accessible — revisa el fitxer de servei a `/etc/avahi/services/` i el tallafoc.",
+        "Avahi entra en conflicte amb un altre responedor mDNS — comprova si systemd-resolved o un altre servei ja gestiona mDNS."
+      ]
     },
     "cups": {
       "name": "Impressió CUPS",
@@ -561,72 +568,170 @@
     "bluetooth": {
       "name": "Servei Bluetooth",
       "what": "Gestiona adaptadors i connexions Bluetooth.",
-      "ifFails": "Els dispositius Bluetooth no es poden connectar. És opcional a la majoria de servidors i normalment pot quedar aturat."
+      "ifFails": "Els dispositius Bluetooth no es poden connectar. És opcional a la majoria de servidors i normalment pot quedar aturat.",
+      "details": "El servei Bluetooth, BlueZ, gestiona adaptadors, emparellaments i connexions Bluetooth. Exposa els dispositius a eines com `bluetoothctl` i a aplicacions d’escriptori o IoT. En un servidor només és útil per a un dispositiu Bluetooth que facis servir de veritat, com un sensor o un adaptador sèrie. No gestiona Wi-Fi ni Ethernet.",
+      "stop": "Aturar Bluetooth desconnecta els dispositius emparellats i atura els nous emparellaments; els serveis que usen l’adaptador el perden. No afecta la xarxa ni els serveis normals del servidor. És segur desactivar-lo en un servidor sense maquinari Bluetooth.",
+      "problems": [
+        "Un dispositiu no apareix — executa `bluetoothctl show` i revisa `journalctl -u bluetooth -n 50 --no-pager`.",
+        "L’emparellament falla — comprova que l’adaptador està encès i que el dispositiu està en mode d’emparellament.",
+        "No es detecta l’adaptador — revisa `lsusb` o `dmesg` per si falta firmware o maquinari."
+      ]
     },
     "mariadb": {
       "name": "MariaDB / MySQL",
       "what": "Un servidor de bases de dades relacionals que fan servir moltes aplicacions web.",
-      "ifFails": "Les aplicacions perden la base de dades i poden donar errors o aturar-se. Comprova l'espai de disc i els registres abans de reiniciar; reiniciar talla totes les connexions, així que fes-ho quan les aplicacions puguin aguantar un tall breu."
+      "ifFails": "Les aplicacions perden la base de dades i poden donar errors o aturar-se. Comprova l'espai de disc i els registres abans de reiniciar; reiniciar talla totes les connexions, així que fes-ho quan les aplicacions puguin aguantar un tall breu.",
+      "details": "MariaDB és un servidor de bases de dades relacionals i un substitut directe de MySQL. Les aplicacions s’hi connecten per un socket local o per TCP per desar i consultar dades estructurades. Guarda les dades a `/var/lib/mysql` i llegeix la configuració de `/etc/mysql/`. Debian sol instal·lar MariaDB quan un paquet demana un servidor MySQL; en un contenidor, mantén `/var/lib/mysql` en un volum persistent.",
+      "stop": "Aturar MariaDB tanca totes les connexions i deixa les bases de dades inaccessibles. Les aplicacions poden tornar errors o deixar feina en espera fins que torni. Reiniciar només és segur després de revisar errors, espai de disc i còpies; usa `mysqladmin shutdown` o el gestor de serveis per a una aturada neta.",
+      "problems": [
+        "Les aplicacions no connecten — executa `mysqladmin status` i revisa `journalctl -u mariadb -n 50 --no-pager`.",
+        "El servidor no arrenca — revisa els permisos de `/var/lib/mysql`, l’espai de disc i el registre d’errors.",
+        "El disc és ple — revisa `df -h` i elimina registres binaris antics amb `PURGE BINARY LOGS` després de confirmar les còpies."
+      ]
     },
     "mysql": {
       "name": "MySQL",
       "what": "El servidor de bases de dades relacionals MySQL.",
-      "ifFails": "Les aplicacions perden la base de dades i poden donar errors o aturar-se. Comprova l'espai de disc i els registres abans de reiniciar; reiniciar talla totes les connexions, així que fes-ho quan les aplicacions puguin aguantar un tall breu."
+      "ifFails": "Les aplicacions perden la base de dades i poden donar errors o aturar-se. Comprova l'espai de disc i els registres abans de reiniciar; reiniciar talla totes les connexions, així que fes-ho quan les aplicacions puguin aguantar un tall breu.",
+      "details": "Aquesta és la imatge oficial de MySQL per a contenidors. Executa un servidor MySQL dins d’un contenidor i desa les dades en un volum, normalment muntat a `/var/lib/mysql`. La configuració es passa amb variables d’entorn o fitxers a `/etc/mysql/conf.d`. L’amfitrió no necessita tenir instal·lat el paquet de MySQL.",
+      "stop": "Aturar el contenidor atura la base de dades i totes les aplicacions connectades. Les dades continuen al seu volum, però una aturada bruta pot requerir recuperació. Atura primer les aplicacions i conserva el volum; no l’eliminis tret que tinguis una còpia de seguretat.",
+      "problems": [
+        "El contenidor es tanca en arrencar — llegeix `docker logs --tail 50 <contenidor>` i revisa la contrasenya de root i els permisos del directori de dades.",
+        "Les aplicacions no connecten — revisa el port publicat, el nom de la base de dades i les credencials.",
+        "Les dades desapareixen en recrear el contenidor — munta un volum amb nom a `/var/lib/mysql`."
+      ]
     },
     "postgresql": {
       "name": "PostgreSQL",
       "what": "Un servidor de bases de dades relacionals conegut per la fiabilitat i les funcions SQL.",
-      "ifFails": "Les aplicacions perden la base de dades i poden donar errors o aturar-se. Comprova l'espai de disc i els registres abans de reiniciar; reiniciar talla totes les connexions, així que fes-ho quan les aplicacions puguin aguantar un tall breu."
+      "ifFails": "Les aplicacions perden la base de dades i poden donar errors o aturar-se. Comprova l'espai de disc i els registres abans de reiniciar; reiniciar talla totes les connexions, així que fes-ho quan les aplicacions puguin aguantar un tall breu.",
+      "details": "PostgreSQL és un servidor de bases de dades relacionals usat per moltes aplicacions i pel mateix Talaia. Guarda les dades a `/var/lib/postgresql` i llegeix la configuració de `/etc/postgresql/`. A Debian els clústers tenen noms amb versió, com `16-main`, i es gestionen amb `pg_ctlcluster`. Sol escoltar al port 5432; en un contenidor, mantén `/var/lib/postgresql/data` en un volum persistent.",
+      "stop": "Aturar PostgreSQL tanca totes les connexions i deixa les bases de dades inaccessibles. Les aplicacions poden tornar errors fins que torni. Atura’l de manera neta amb el gestor de serveis, revisa l’espai de disc i els registres, i assegura’t que les còpies estan al dia abans d’un manteniment.",
+      "problems": [
+        "Les aplicacions no connecten — executa `pg_isready` i revisa l’estat del clúster amb `pg_lsclusters`.",
+        "El servidor no arrenca — llegeix el registre de PostgreSQL a `/var/log/postgresql/` i revisa l’espai de disc i els permisos.",
+        "Un clúster està caigut després d’una actualització — revisa `pg_lsclusters` i els registres de migració abans de tornar-lo a arrencar."
+      ]
     },
     "redis": {
       "name": "Redis",
       "what": "Un magatzem de dades en memòria per a memòria cau, cues i sessions.",
-      "ifFails": "Les memòries cau i sessions poden desaparèixer o les escriptures poden fallar. Revisa la memòria i els registres de persistència; reinicia només després de decidir si acceptes perdre dades volàtils."
+      "ifFails": "Les memòries cau i sessions poden desaparèixer o les escriptures poden fallar. Revisa la memòria i els registres de persistència; reinicia només després de decidir si acceptes perdre dades volàtils.",
+      "details": "Redis és un magatzem de dades en memòria usat per a memòries cau, cues, sessions i consultes ràpides. Manté les dades en memòria i pot desar instantànies o un registre de només afegir al disc segons la configuració. Sol escoltar al port 6379 i sovint està enllaçat només a localhost. Les aplicacions han de poder reconstruir les dades en memòria cau o tolerar-ne la pèrdua; en un contenidor, mantén `/data` en un volum persistent.",
+      "stop": "Aturar Redis tanca les connexions i perd les dades que no s’hagin persistit. Els valors en memòria cau desapareixen, i les sessions o cues desades només a Redis es perden. Revisa la persistència i la memòria abans de reiniciar; un reinici sol ser segur per a una memòria cau pura, però no per a cues crítiques.",
+      "problems": [
+        "Les aplicacions no arriben a Redis — executa `redis-cli ping` i revisa l’adreça d’escolta i el tallafoc.",
+        "Redis usa massa memòria — revisa `redis-cli info memory` i la política de `maxmemory` configurada.",
+        "Les dades desapareixen després de reiniciar — revisa la configuració de persistència i el registre de Redis per errors de desament."
+      ]
     },
     "valkey": {
       "name": "Valkey",
       "what": "Un magatzem de dades en memòria de codi obert compatible amb Redis.",
-      "ifFails": "Les memòries cau i sessions poden desaparèixer o les escriptures poden fallar. Revisa la memòria i els registres de persistència; reinicia només després de decidir si acceptes perdre dades volàtils."
+      "ifFails": "Les memòries cau i sessions poden desaparèixer o les escriptures poden fallar. Revisa la memòria i els registres de persistència; reinicia només després de decidir si acceptes perdre dades volàtils.",
+      "details": "Valkey és un fork comunitari de Redis i usa el mateix protocol i la majoria de les mateixes ordres. Aquesta imatge executa un servidor Valkey en un contenidor; les aplicacions es connecten pel port 6379. Les dades es poden mantenir en memòria o persistir en un volum, segons l’ordre i la configuració. És una opció compatible amb càrregues de treball per a Redis.",
+      "stop": "Aturar el contenidor atura Valkey i desconnecta tots els clients. Les dades que no s’hagin escrit en un volum es perden en recrear el contenidor. Revisa la persistència i conserva el volum abans d’aturar-lo o substituir-lo.",
+      "problems": [
+        "El contenidor es tanca en arrencar — llegeix `docker logs --tail 50 <contenidor>` i revisa l’ordre i la configuració.",
+        "Les aplicacions no connecten — revisa el port publicat, l’adreça d’escolta i la contrasenya.",
+        "Les dades desapareixen en recrear el contenidor — munta un volum i activa la persistència."
+      ]
     },
     "memcached": {
       "name": "Memcached",
       "what": "Una memòria cau petita en memòria que accelera les aplicacions.",
-      "ifFails": "La memòria cau es perd i les aplicacions tornen a la font de dades més lenta. Normalment és segur reiniciar-lo, però les sessions que hi hagi es poden perdre."
+      "ifFails": "La memòria cau es perd i les aplicacions tornen a la font de dades més lenta. Normalment és segur reiniciar-lo, però les sessions que hi hagi es poden perdre.",
+      "details": "Memcached és una memòria cau clau-valor senzilla que viu en memòria. Les aplicacions la fan servir per evitar repetir consultes lentes a bases de dades o APIs, i no desa res de manera permanent. Sol escoltar al port 11211 i no s’hauria d’exposar a internet. Si es reinicia, la memòria cau queda buida i les aplicacions l’han de reconstruir; en un contenidor, no hi ha res a persistir.",
+      "stop": "Aturar Memcached buida la memòria cau i desconnecta els clients. Les aplicacions continuen funcionant, però poden anar més lentes fins que tornin a omplir la memòria cau. Normalment és segur reiniciar-lo; només es perden les sessions o bloquejos desats exclusivament a Memcached.",
+      "problems": [
+        "Les aplicacions van lentes després d’un reinici — és normal mentre la memòria cau s’escalfa; revisa la taxa d’encerts.",
+        "No s’arriba a Memcached — revisa `systemctl status memcached`, l’adreça d’escolta i el tallafoc.",
+        "L’ús de memòria és alt — revisa el límit configurat amb `-m` i la mida de les claus de l’aplicació."
+      ]
     },
     "mongodb": {
       "name": "MongoDB",
       "what": "Una base de dades de documents que guarda registres semblants a JSON.",
-      "ifFails": "Les aplicacions perden la base de dades i poden donar errors o aturar-se. Comprova l'espai de disc, els registres i l'estat del conjunt de rèpliques abans de reiniciar."
+      "ifFails": "Les aplicacions perden la base de dades i poden donar errors o aturar-se. Comprova l'espai de disc, els registres i l'estat del conjunt de rèpliques abans de reiniciar.",
+      "details": "MongoDB és una base de dades de documents que desa registres semblants a JSON en col·leccions. Aquesta imatge executa el servidor MongoDB en un contenidor i conserva les dades en un volum, normalment `/data/db`. Les aplicacions es connecten amb un controlador de MongoDB al port 27017. L’autenticació i la configuració del conjunt de rèpliques (replica set) vénen de l’ordre o del fitxer de configuració.",
+      "stop": "Aturar el contenidor atura la base de dades i desconnecta totes les aplicacions. Les dades del volum muntat es conserven, però una aturada bruta pot requerir reparació. Atura primer les aplicacions, conserva el volum i fes una còpia abans de canvis importants.",
+      "problems": [
+        "El contenidor es tanca en arrencar — llegeix `docker logs --tail 50 <contenidor>` i revisa els permisos del directori de dades.",
+        "Les aplicacions no connecten — revisa el port publicat, l’usuari de la base de dades i l’autenticació.",
+        "Les dades desapareixen en recrear el contenidor — munta un volum a `/data/db`."
+      ]
     },
     "rabbitmq": {
       "name": "RabbitMQ",
       "what": "Un gestor de missatges que encua feines i esdeveniments entre serveis.",
-      "ifFails": "Els missatges es poden acumular i els treballadors deixen de rebre feines. Revisa l'espai de disc, la memòria i la interfície de gestió abans de reiniciar."
+      "ifFails": "Els missatges es poden acumular i els treballadors deixen de rebre feines. Revisa l'espai de disc, la memòria i la interfície de gestió abans de reiniciar.",
+      "details": "RabbitMQ és un intermediari de missatges que encua missatges entre aplicacions. Aquesta imatge executa l’intermediari en un contenidor; els productors publiquen missatges i els treballadors els consumeixen. Usa el port 5672 per a AMQP i el 15672 per a la interfície de gestió quan està activada. Les cues i els missatges s’han de desar en un volum persistent si importen.",
+      "stop": "Aturar el contenidor atura l’intermediari; productors i treballadors perden la connexió. Els missatges que no s’hagin persistit es poden perdre, i la feina en cua espera fins que torni. Conserva el volum i revisa la interfície de gestió abans de reiniciar.",
+      "problems": [
+        "El contenidor es tanca en arrencar — llegeix `docker logs --tail 50 <contenidor>` i revisa la cookie d’Erlang i el nom d’amfitrió.",
+        "Les aplicacions no connecten — revisa els ports publicats, les credencials i l’host virtual.",
+        "Les cues desapareixen en recrear el contenidor — munta un volum a `/var/lib/rabbitmq`."
+      ]
     },
     "php-fpm": {
       "name": "PHP-FPM",
       "what": "Executa aplicacions web PHP per a un servidor com Nginx o Apache.",
-      "ifFails": "Els llocs PHP donen errors o deixen de respondre. Revisa la configuració del pool i els registres de PHP abans de reiniciar."
+      "ifFails": "Els llocs PHP donen errors o deixen de respondre. Revisa la configuració del pool i els registres de PHP abans de reiniciar.",
+      "details": "PHP-FPM és el gestor de processos FastCGI que executa aplicacions PHP per a servidors web com Nginx o Apache. Gestiona un grup de processos treballadors definits a `/etc/php/<versió>/fpm/pool.d/`. El servidor web envia les peticions PHP al seu socket o port TCP, i FPM retorna la pàgina generada. No serveix fitxers estàtics per si mateix.",
+      "stop": "Aturar PHP-FPM fa que tots els llocs PHP que l’usen tornin errors o deixin de respondre. Els fitxers estàtics servits directament pel servidor web poden continuar funcionant. Revisa la configuració del pool i els registres abans de reiniciar; un reinici interromp breument les peticions.",
+      "problems": [
+        "Els llocs PHP tornen 502 — revisa `systemctl status php<versió>-fpm` i el registre de FPM per errors del pool.",
+        "El servidor web no connecta amb FPM — revisa la ruta del socket o el port de `listen` i els permisos.",
+        "Un pool no arrenca — revisa la sintaxi del fitxer del pool i el registre d’errors de PHP."
+      ]
     },
     "wireguard": {
       "name": "VPN WireGuard",
       "what": "Un túnel VPN ràpid per a accés remot o per connectar xarxes.",
-      "ifFails": "Els parells VPN perden el túnel i poden perdre accés a serveis privats. Revisa la configuració de la interfície i les claus; reiniciar-lo talla les connexions actives."
+      "ifFails": "Els parells VPN perden el túnel i poden perdre accés a serveis privats. Revisa la configuració de la interfície i les claus; reiniciar-lo talla les connexions actives.",
+      "details": "WireGuard és un protocol VPN integrat al nucli de Linux. Crea túnels xifrats entre parells i es configura amb interfícies com `wg0` a `/etc/wireguard/`. S’usa sovint per a accés remot, enllaços entre seus o per connectar un servidor a una xarxa privada. No gestiona DNS ni rutes per si mateix; ho fa la configuració.",
+      "stop": "Aturar una interfície WireGuard tanca el seu túnel i talla totes les connexions que l’usen. Les sessions remotes a través de la VPN s’acaben, i els parells no poden arribar als serveis privats fins que torni. Reiniciar talla les connexions actives; mantén accés a la consola si gestiones el servidor pel túnel.",
+      "problems": [
+        "Els parells no connecten — executa `wg show` i revisa la interfície, les claus i les adreces dels extrems.",
+        "El túnel està aixecat però no passa trànsit — revisa `AllowedIPs` i les regles de rutes o del tallafoc.",
+        "La interfície no arrenca — revisa el fitxer `.conf` de `/etc/wireguard/` i els registres del servei."
+      ]
     },
     "tailscale": {
       "name": "Tailscale",
       "what": "Connecta aquesta màquina a una xarxa privada de Tailscale.",
-      "ifFails": "La màquina desapareix de la xarxa Tailscale i s'atura l'accés remot a través seu. Comprova l'autenticació i l'accés a la xarxa abans de reiniciar."
+      "ifFails": "La màquina desapareix de la xarxa Tailscale i s'atura l'accés remot a través seu. Comprova l'autenticació i l'accés a la xarxa abans de reiniciar.",
+      "details": "Tailscale crea una xarxa privada entre les teves màquines usant WireGuard. El servei `tailscaled` connecta aquest host al teu tailnet i gestiona claus, rutes i regles d’accés. Pot exposar la màquina als teus altres dispositius o actuar com a node de sortida si es configura. És opcional i necessita un compte i accés de xarxa al servidor de coordinació.",
+      "stop": "Aturar Tailscale desconnecta la màquina del tailnet, així que l’accés remot per la seva IP de Tailscale s’atura. Els serveis locals i la xarxa normal continuen funcionant. En tornar-lo a arrencar es reconnecta automàticament si la màquina continua autenticada.",
+      "problems": [
+        "La màquina apareix desconnectada al tailnet — executa `tailscale status` i revisa `journalctl -u tailscaled -n 50 --no-pager`.",
+        "L’accés remot no funciona — revisa la IP de Tailscale, les regles d’accés i si el servei està en marxa.",
+        "L’autenticació ha caducat — executa `tailscale login` o torna a autenticar la màquina."
+      ]
     },
     "openvpn": {
       "name": "OpenVPN",
       "what": "Un servidor o client VPN que proporciona accés de xarxa xifrat.",
-      "ifFails": "Els clients VPN perden el túnel i els serveis remots poden quedar inaccessibles. Revisa la configuració i els registres; reiniciar-lo talla les connexions actives."
+      "ifFails": "Els clients VPN perden el túnel i els serveis remots poden quedar inaccessibles. Revisa la configuració i els registres; reiniciar-lo talla les connexions actives.",
+      "details": "OpenVPN crea túnels VPN xifrats entre clients i un servidor, o entre xarxes. A Debian s’executa com a unitats `openvpn@<nom>` generades a partir de fitxers a `/etc/openvpn/`. Pot encaminar tot el trànsit o només una subxarxa privada, segons la configuració. Necessita certificats o claus i un port accessible, normalment UDP 1194.",
+      "stop": "Aturar una unitat OpenVPN tanca el seu túnel i desconnecta tots els clients que l’usen. Les sessions remotes a través de la VPN s’acaben, i els serveis privats poden quedar inaccessibles. Revisa la configuració i els registres abans de reiniciar; les connexions actives es tallen.",
+      "problems": [
+        "Els clients no connecten — revisa l’estat de la unitat, el port d’escolta i el tallafoc.",
+        "El túnel s’aixeca però no passa trànsit — revisa les rutes enviades, `redirect-gateway` i les regles de reenviament del servidor.",
+        "Fallen els certificats o les claus — revisa les rutes i la caducitat a `/etc/openvpn/` i la configuració del client."
+      ]
     },
     "bind9": {
       "name": "Servidor DNS BIND",
       "what": "Un servidor DNS autoritatiu i recursiu.",
-      "ifFails": "La resolució DNS pot fallar per a tot el que en depèn. Valida la configuració amb named-checkconf i revisa els registres abans de reiniciar."
+      "ifFails": "La resolució DNS pot fallar per a tot el que en depèn. Valida la configuració amb named-checkconf i revisa els registres abans de reiniciar.",
+      "details": "BIND, normalment el servei `bind9`, és un servidor DNS. Pot ser autoritatiu per als teus dominis i també resoldre consultes de manera recursiva. La configuració és a `/etc/bind/`, amb fitxers de zona i opcions com `named.conf.options`. Escolta al port 53 i sovint el fan servir altres servidors com a resolutor.",
+      "stop": "Aturar BIND atura les respostes DNS per a tots els clients i serveis que l’usen. Si és l’únic resolutor, la resolució de noms falla a tot el servidor. Valida la configuració i revisa els registres abans de reiniciar; els clients poden reintentar.",
+      "problems": [
+        "Fallen les consultes DNS — executa `rndc status` i `named-checkconf`, i revisa el registre de BIND.",
+        "Una zona no carrega — executa `named-checkzone <zona> /etc/bind/<fitxer>` i corregeix la línia indicada.",
+        "Els clients externs no hi poden consultar — revisa `listen-on` i `allow-query` i el tallafoc."
+      ]
     },
     "unbound": {
       "name": "Resolutor DNS Unbound",

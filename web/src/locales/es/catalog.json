@@ -544,7 +544,14 @@
     "avahi": {
       "name": "Avahi",
       "what": "Anuncia servicios en la red local con mDNS/DNS-SD.",
-      "ifFails": "El descubrimiento local de impresoras o servicios puede detenerse. Normalmente es opcional en un servidor; revisa los registros si dependes de él."
+      "ifFails": "El descubrimiento local de impresoras o servicios puede detenerse. Normalmente es opcional en un servidor; revisa los registros si dependes de él.",
+      "details": "Avahi anuncia servicios como impresoras, recursos compartidos y SSH en la red local mediante mDNS/DNS-SD. Permite que los equipos se encuentren sin un servidor DNS central, algo habitual en escritorios y redes pequeñas. Incluye `avahi-daemon` y utilidades para explorar y publicar servicios. Los servidores normalmente no lo necesitan salvo que ofrezcan un servicio que deba descubrirse.",
+      "stop": "Parar Avahi elimina los servicios que anuncia y detiene el descubrimiento local; las demás máquinas dejan de verlos. El DNS normal y las conexiones directas por IP siguen funcionando. Es seguro dejarlo parado en un servidor que no necesite mDNS.",
+      "problems": [
+        "Otras máquinas no descubren este servidor — revisa `systemctl status avahi-daemon` y `avahi-browse -at`.",
+        "Un servicio se anuncia pero no es accesible — revisa el archivo de servicio en `/etc/avahi/services/` y el cortafuegos.",
+        "Avahi entra en conflicto con otro respondedor mDNS — comprueba si systemd-resolved u otro servicio ya gestiona mDNS."
+      ]
     },
     "cups": {
       "name": "Impresión CUPS",
@@ -561,72 +568,170 @@
     "bluetooth": {
       "name": "Servicio Bluetooth",
       "what": "Gestiona adaptadores y conexiones Bluetooth.",
-      "ifFails": "Los dispositivos Bluetooth no pueden conectarse. Es opcional en la mayoría de servidores y normalmente puede quedarse detenido."
+      "ifFails": "Los dispositivos Bluetooth no pueden conectarse. Es opcional en la mayoría de servidores y normalmente puede quedarse detenido.",
+      "details": "El servicio Bluetooth, BlueZ, gestiona adaptadores, emparejamientos y conexiones Bluetooth. Expone los dispositivos a herramientas como `bluetoothctl` y a aplicaciones de escritorio o IoT. En un servidor solo es útil para un dispositivo Bluetooth que uses de verdad, como un sensor o un adaptador serie. No gestiona Wi-Fi ni Ethernet.",
+      "stop": "Parar Bluetooth desconecta los dispositivos emparejados y detiene los nuevos emparejamientos; los servicios que usan el adaptador pierden el acceso. No afecta a la red ni a los servicios normales del servidor. Es seguro desactivarlo en un servidor sin hardware Bluetooth.",
+      "problems": [
+        "Un dispositivo no aparece — ejecuta `bluetoothctl show` y revisa `journalctl -u bluetooth -n 50 --no-pager`.",
+        "El emparejamiento falla — comprueba que el adaptador está encendido y que el dispositivo está en modo de emparejamiento.",
+        "No se detecta el adaptador — revisa `lsusb` o `dmesg` por si falta firmware o hardware."
+      ]
     },
     "mariadb": {
       "name": "MariaDB / MySQL",
       "what": "Un servidor de bases de datos relacionales que usan muchas aplicaciones web.",
-      "ifFails": "Las aplicaciones pierden su base de datos y pueden devolver errores o detenerse. Comprueba el espacio de disco y los registros antes de reiniciar; reiniciar corta todas las conexiones, así que hazlo cuando las aplicaciones aguanten un corte breve."
+      "ifFails": "Las aplicaciones pierden su base de datos y pueden devolver errores o detenerse. Comprueba el espacio de disco y los registros antes de reiniciar; reiniciar corta todas las conexiones, así que hazlo cuando las aplicaciones aguanten un corte breve.",
+      "details": "MariaDB es un servidor de bases de datos relacionales y un sustituto directo de MySQL. Las aplicaciones se conectan por un socket local o por TCP para guardar y consultar datos estructurados. Guarda los datos en `/var/lib/mysql` y lee la configuración de `/etc/mysql/`. Debian suele instalar MariaDB cuando un paquete pide un servidor MySQL; en un contenedor, mantén `/var/lib/mysql` en un volumen persistente.",
+      "stop": "Parar MariaDB cierra todas las conexiones y deja las bases de datos inaccesibles. Las aplicaciones pueden devolver errores o dejar trabajo en espera hasta que vuelva. Reiniciar solo es seguro después de revisar errores, espacio en disco y copias; usa `mysqladmin shutdown` o el gestor de servicios para una parada limpia.",
+      "problems": [
+        "Las aplicaciones no pueden conectar — ejecuta `mysqladmin status` y revisa `journalctl -u mariadb -n 50 --no-pager`.",
+        "El servidor no arranca — revisa los permisos de `/var/lib/mysql`, el espacio en disco y el registro de errores.",
+        "El disco está lleno — revisa `df -h` y elimina registros binarios antiguos con `PURGE BINARY LOGS` después de confirmar las copias."
+      ]
     },
     "mysql": {
       "name": "MySQL",
       "what": "El servidor de bases de datos relacionales MySQL.",
-      "ifFails": "Las aplicaciones pierden su base de datos y pueden devolver errores o detenerse. Comprueba el espacio de disco y los registros antes de reiniciar; reiniciar corta todas las conexiones, así que hazlo cuando las aplicaciones aguanten un corte breve."
+      "ifFails": "Las aplicaciones pierden su base de datos y pueden devolver errores o detenerse. Comprueba el espacio de disco y los registros antes de reiniciar; reiniciar corta todas las conexiones, así que hazlo cuando las aplicaciones aguanten un corte breve.",
+      "details": "Esta es la imagen oficial de MySQL para contenedores. Ejecuta un servidor MySQL dentro de un contenedor y guarda los datos en un volumen, normalmente montado en `/var/lib/mysql`. La configuración se pasa con variables de entorno o archivos en `/etc/mysql/conf.d`. El host no necesita tener instalado el paquete de MySQL.",
+      "stop": "Parar el contenedor detiene la base de datos y todas las aplicaciones conectadas. Los datos siguen en su volumen, pero una parada sucia puede requerir recuperación. Para primero las aplicaciones y conserva el volumen; no lo elimines salvo que tengas una copia de seguridad.",
+      "problems": [
+        "El contenedor se cierra al arrancar — lee `docker logs --tail 50 <contenedor>` y revisa la contraseña de root y los permisos del directorio de datos.",
+        "Las aplicaciones no pueden conectar — revisa el puerto publicado, el nombre de la base de datos y las credenciales.",
+        "Los datos desaparecen al recrear el contenedor — monta un volumen con nombre en `/var/lib/mysql`."
+      ]
     },
     "postgresql": {
       "name": "PostgreSQL",
       "what": "Un servidor de bases de datos relacionales conocido por su fiabilidad y sus funciones SQL.",
-      "ifFails": "Las aplicaciones pierden su base de datos y pueden devolver errores o detenerse. Comprueba el espacio de disco y los registros antes de reiniciar; reiniciar corta todas las conexiones, así que hazlo cuando las aplicaciones aguanten un corte breve."
+      "ifFails": "Las aplicaciones pierden su base de datos y pueden devolver errores o detenerse. Comprueba el espacio de disco y los registros antes de reiniciar; reiniciar corta todas las conexiones, así que hazlo cuando las aplicaciones aguanten un corte breve.",
+      "details": "PostgreSQL es un servidor de bases de datos relacionales usado por muchas aplicaciones y por el propio Talaia. Guarda los datos en `/var/lib/postgresql` y lee la configuración de `/etc/postgresql/`. En Debian los clústeres tienen nombres con versión, como `16-main`, y se gestionan con `pg_ctlcluster`. Suele escuchar en el puerto 5432; en un contenedor, mantén `/var/lib/postgresql/data` en un volumen persistente.",
+      "stop": "Parar PostgreSQL cierra todas las conexiones y deja las bases de datos inaccesibles. Las aplicaciones pueden devolver errores hasta que vuelva. Páralo de forma limpia con el gestor de servicios, revisa el espacio en disco y los registros, y asegúrate de que las copias están al día antes de un mantenimiento.",
+      "problems": [
+        "Las aplicaciones no pueden conectar — ejecuta `pg_isready` y revisa el estado del clúster con `pg_lsclusters`.",
+        "El servidor no arranca — lee el registro de PostgreSQL en `/var/log/postgresql/` y revisa el espacio en disco y los permisos.",
+        "Un clúster está caído tras una actualización — revisa `pg_lsclusters` y los registros de migración antes de volver a arrancarlo."
+      ]
     },
     "redis": {
       "name": "Redis",
       "what": "Un almacén de datos en memoria para caché, colas y sesiones.",
-      "ifFails": "Las cachés y sesiones pueden desaparecer o las escrituras pueden fallar. Revisa la memoria y los registros de persistencia; reinicia solo después de decidir si aceptas perder datos volátiles."
+      "ifFails": "Las cachés y sesiones pueden desaparecer o las escrituras pueden fallar. Revisa la memoria y los registros de persistencia; reinicia solo después de decidir si aceptas perder datos volátiles.",
+      "details": "Redis es un almacén de datos en memoria usado para cachés, colas, sesiones y consultas rápidas. Mantiene los datos en memoria y puede guardar instantáneas o un registro de solo adición en disco según la configuración. Suele escuchar en el puerto 6379 y a menudo está enlazado solo a localhost. Las aplicaciones deben poder reconstruir los datos en caché o tolerar su pérdida; en un contenedor, mantén `/data` en un volumen persistente.",
+      "stop": "Parar Redis cierra las conexiones y pierde los datos que no se hayan persistido. Los valores en caché desaparecen, y las sesiones o colas guardadas solo en Redis se pierden. Revisa la persistencia y la memoria antes de reiniciar; un reinicio suele ser seguro para una caché pura, pero no para colas críticas.",
+      "problems": [
+        "Las aplicaciones no llegan a Redis — ejecuta `redis-cli ping` y revisa la dirección de escucha y el cortafuegos.",
+        "Redis usa demasiada memoria — revisa `redis-cli info memory` y la política de `maxmemory` configurada.",
+        "Los datos desaparecen tras reiniciar — revisa la configuración de persistencia y el registro de Redis por errores de guardado."
+      ]
     },
     "valkey": {
       "name": "Valkey",
       "what": "Un almacén de datos en memoria de código abierto compatible con Redis.",
-      "ifFails": "Las cachés y sesiones pueden desaparecer o las escrituras pueden fallar. Revisa la memoria y los registros de persistencia; reinicia solo después de decidir si aceptas perder datos volátiles."
+      "ifFails": "Las cachés y sesiones pueden desaparecer o las escrituras pueden fallar. Revisa la memoria y los registros de persistencia; reinicia solo después de decidir si aceptas perder datos volátiles.",
+      "details": "Valkey es un fork comunitario de Redis y usa el mismo protocolo y la mayoría de las mismas órdenes. Esta imagen ejecuta un servidor Valkey en un contenedor; las aplicaciones se conectan por el puerto 6379. Los datos pueden mantenerse en memoria o persistirse en un volumen, según la orden y la configuración. Es una opción compatible con cargas de trabajo para Redis.",
+      "stop": "Parar el contenedor detiene Valkey y desconecta a todos los clientes. Los datos que no se hayan escrito en un volumen se pierden al recrear el contenedor. Revisa la persistencia y conserva el volumen antes de pararlo o sustituirlo.",
+      "problems": [
+        "El contenedor se cierra al arrancar — lee `docker logs --tail 50 <contenedor>` y revisa la orden y la configuración.",
+        "Las aplicaciones no pueden conectar — revisa el puerto publicado, la dirección de escucha y la contraseña.",
+        "Los datos desaparecen al recrear el contenedor — monta un volumen y activa la persistencia."
+      ]
     },
     "memcached": {
       "name": "Memcached",
       "what": "Una pequeña caché en memoria que acelera las aplicaciones.",
-      "ifFails": "La caché se pierde y las aplicaciones vuelven a su fuente de datos más lenta. Normalmente es seguro reiniciarlo, pero las sesiones que contenga pueden perderse."
+      "ifFails": "La caché se pierde y las aplicaciones vuelven a su fuente de datos más lenta. Normalmente es seguro reiniciarlo, pero las sesiones que contenga pueden perderse.",
+      "details": "Memcached es una caché clave-valor sencilla que vive en memoria. Las aplicaciones lo usan para evitar repetir consultas lentas a bases de datos o APIs, y no guarda nada de forma permanente. Suele escuchar en el puerto 11211 y no debería exponerse a internet. Si se reinicia, la caché queda vacía y las aplicaciones deben reconstruirla; en un contenedor, no hay nada que persistir.",
+      "stop": "Parar Memcached vacía la caché y desconecta a los clientes. Las aplicaciones siguen funcionando, pero pueden ir más lentas hasta que vuelvan a llenar la caché. Normalmente es seguro reiniciarlo; solo se pierden las sesiones o bloqueos guardados exclusivamente en Memcached.",
+      "problems": [
+        "Las aplicaciones van lentas tras un reinicio — es normal mientras la caché se calienta; revisa la tasa de aciertos.",
+        "No se llega a Memcached — revisa `systemctl status memcached`, la dirección de escucha y el cortafuegos.",
+        "El uso de memoria es alto — revisa el límite configurado con `-m` y el tamaño de las claves de la aplicación."
+      ]
     },
     "mongodb": {
       "name": "MongoDB",
       "what": "Una base de datos de documentos que guarda registros similares a JSON.",
-      "ifFails": "Las aplicaciones pierden su base de datos y pueden devolver errores o detenerse. Comprueba el espacio de disco, los registros y el estado del conjunto de réplicas antes de reiniciar."
+      "ifFails": "Las aplicaciones pierden su base de datos y pueden devolver errores o detenerse. Comprueba el espacio de disco, los registros y el estado del conjunto de réplicas antes de reiniciar.",
+      "details": "MongoDB es una base de datos de documentos que guarda registros similares a JSON en colecciones. Esta imagen ejecuta el servidor MongoDB en un contenedor y conserva los datos en un volumen, normalmente `/data/db`. Las aplicaciones se conectan con un controlador de MongoDB en el puerto 27017. La autenticación y la configuración del conjunto de réplicas (replica set) vienen de la orden o del archivo de configuración.",
+      "stop": "Parar el contenedor detiene la base de datos y desconecta todas las aplicaciones. Los datos del volumen montado se conservan, pero una parada sucia puede requerir reparación. Para primero las aplicaciones, conserva el volumen y haz una copia antes de cambios importantes.",
+      "problems": [
+        "El contenedor se cierra al arrancar — lee `docker logs --tail 50 <contenedor>` y revisa los permisos del directorio de datos.",
+        "Las aplicaciones no pueden conectar — revisa el puerto publicado, el usuario de la base de datos y la autenticación.",
+        "Los datos desaparecen al recrear el contenedor — monta un volumen en `/data/db`."
+      ]
     },
     "rabbitmq": {
       "name": "RabbitMQ",
       "what": "Un gestor de mensajes que encola trabajos y eventos entre servicios.",
-      "ifFails": "Los mensajes pueden acumularse y los trabajadores dejan de recibir tareas. Revisa el espacio de disco, la memoria y la interfaz de gestión antes de reiniciar."
+      "ifFails": "Los mensajes pueden acumularse y los trabajadores dejan de recibir tareas. Revisa el espacio de disco, la memoria y la interfaz de gestión antes de reiniciar.",
+      "details": "RabbitMQ es un intermediario de mensajes que encola mensajes entre aplicaciones. Esta imagen ejecuta el intermediario en un contenedor; los productores publican mensajes y los trabajadores los consumen. Usa el puerto 5672 para AMQP y el 15672 para la interfaz de gestión cuando está activada. Las colas y los mensajes deben guardarse en un volumen persistente si importan.",
+      "stop": "Parar el contenedor detiene el intermediario; productores y trabajadores pierden la conexión. Los mensajes que no se hayan persistido pueden perderse, y el trabajo en cola espera hasta que vuelva. Conserva el volumen y revisa la interfaz de gestión antes de reiniciar.",
+      "problems": [
+        "El contenedor se cierra al arrancar — lee `docker logs --tail 50 <contenedor>` y revisa la cookie de Erlang y el nombre de host.",
+        "Las aplicaciones no pueden conectar — revisa los puertos publicados, las credenciales y el host virtual.",
+        "Las colas desaparecen al recrear el contenedor — monta un volumen en `/var/lib/rabbitmq`."
+      ]
     },
     "php-fpm": {
       "name": "PHP-FPM",
       "what": "Ejecuta aplicaciones web PHP para un servidor como Nginx o Apache.",
-      "ifFails": "Los sitios PHP devuelven errores o dejan de responder. Revisa la configuración del pool y los registros de PHP antes de reiniciar."
+      "ifFails": "Los sitios PHP devuelven errores o dejan de responder. Revisa la configuración del pool y los registros de PHP antes de reiniciar.",
+      "details": "PHP-FPM es el gestor de procesos FastCGI que ejecuta aplicaciones PHP para servidores web como Nginx o Apache. Gestiona un grupo de procesos trabajadores definidos en `/etc/php/<versión>/fpm/pool.d/`. El servidor web envía las peticiones PHP a su socket o puerto TCP, y FPM devuelve la página generada. No sirve archivos estáticos por sí mismo.",
+      "stop": "Parar PHP-FPM hace que todos los sitios PHP que lo usan devuelvan errores o dejen de responder. Los archivos estáticos servidos directamente por el servidor web pueden seguir funcionando. Revisa la configuración del pool y los registros antes de reiniciar; un reinicio interrumpe brevemente las peticiones.",
+      "problems": [
+        "Los sitios PHP devuelven 502 — revisa `systemctl status php<versión>-fpm` y el registro de FPM por errores del pool.",
+        "El servidor web no puede conectar con FPM — revisa la ruta del socket o el puerto de `listen` y los permisos.",
+        "Un pool no arranca — revisa la sintaxis del archivo del pool y el registro de errores de PHP."
+      ]
     },
     "wireguard": {
       "name": "VPN WireGuard",
       "what": "Un túnel VPN rápido para acceso remoto o para conectar redes.",
-      "ifFails": "Los pares VPN pierden el túnel y pueden perder acceso a servicios privados. Revisa la configuración de la interfaz y las claves; reiniciarlo corta las conexiones activas."
+      "ifFails": "Los pares VPN pierden el túnel y pueden perder acceso a servicios privados. Revisa la configuración de la interfaz y las claves; reiniciarlo corta las conexiones activas.",
+      "details": "WireGuard es un protocolo VPN integrado en el kernel de Linux. Crea túneles cifrados entre pares y se configura con interfaces como `wg0` en `/etc/wireguard/`. Se usa a menudo para acceso remoto, enlaces entre sedes o para conectar un servidor a una red privada. No gestiona DNS ni rutas por sí mismo; lo hace la configuración.",
+      "stop": "Parar una interfaz WireGuard cierra su túnel y corta todas las conexiones que lo usan. Las sesiones remotas a través de la VPN terminan, y los pares no pueden llegar a los servicios privados hasta que vuelva. Reiniciar corta las conexiones activas; mantén acceso a la consola si gestionas el servidor por el túnel.",
+      "problems": [
+        "Los pares no pueden conectar — ejecuta `wg show` y revisa la interfaz, las claves y las direcciones de los extremos.",
+        "El túnel está arriba pero no pasa tráfico — revisa `AllowedIPs` y las reglas de rutas o del cortafuegos.",
+        "La interfaz no arranca — revisa el archivo `.conf` de `/etc/wireguard/` y los registros del servicio."
+      ]
     },
     "tailscale": {
       "name": "Tailscale",
       "what": "Conecta esta máquina a una red privada de Tailscale.",
-      "ifFails": "La máquina desaparece de la red Tailscale y se detiene el acceso remoto a través de ella. Comprueba la autenticación y el acceso a la red antes de reiniciar."
+      "ifFails": "La máquina desaparece de la red Tailscale y se detiene el acceso remoto a través de ella. Comprueba la autenticación y el acceso a la red antes de reiniciar.",
+      "details": "Tailscale crea una red privada entre tus máquinas usando WireGuard. El servicio `tailscaled` conecta este host a tu tailnet y gestiona claves, rutas y reglas de acceso. Puede exponer la máquina a tus otros dispositivos o actuar como nodo de salida si se configura. Es opcional y necesita una cuenta y acceso de red al servidor de coordinación.",
+      "stop": "Parar Tailscale desconecta la máquina del tailnet, así que el acceso remoto por su IP de Tailscale se detiene. Los servicios locales y la red normal siguen funcionando. Al volver a arrancarlo se reconecta automáticamente si la máquina sigue autenticada.",
+      "problems": [
+        "La máquina aparece desconectada en el tailnet — ejecuta `tailscale status` y revisa `journalctl -u tailscaled -n 50 --no-pager`.",
+        "El acceso remoto no funciona — revisa la IP de Tailscale, las reglas de acceso y si el servicio está en marcha.",
+        "La autenticación ha caducado — ejecuta `tailscale login` o vuelve a autenticar la máquina."
+      ]
     },
     "openvpn": {
       "name": "OpenVPN",
       "what": "Un servidor o cliente VPN que proporciona acceso de red cifrado.",
-      "ifFails": "Los clientes VPN pierden el túnel y los servicios remotos pueden quedar inaccesibles. Revisa la configuración y los registros; reiniciarlo corta las conexiones activas."
+      "ifFails": "Los clientes VPN pierden el túnel y los servicios remotos pueden quedar inaccesibles. Revisa la configuración y los registros; reiniciarlo corta las conexiones activas.",
+      "details": "OpenVPN crea túneles VPN cifrados entre clientes y un servidor, o entre redes. En Debian se ejecuta como unidades `openvpn@<nombre>` generadas a partir de archivos en `/etc/openvpn/`. Puede enrutar todo el tráfico o solo una subred privada, según la configuración. Necesita certificados o claves y un puerto accesible, normalmente UDP 1194.",
+      "stop": "Parar una unidad OpenVPN cierra su túnel y desconecta a todos los clientes que lo usan. Las sesiones remotas a través de la VPN terminan, y los servicios privados pueden quedar inaccesibles. Revisa la configuración y los registros antes de reiniciar; las conexiones activas se cortan.",
+      "problems": [
+        "Los clientes no pueden conectar — revisa el estado de la unidad, el puerto de escucha y el cortafuegos.",
+        "El túnel se levanta pero no pasa tráfico — revisa las rutas enviadas, `redirect-gateway` y las reglas de reenvío del servidor.",
+        "Fallan los certificados o las claves — revisa las rutas y la caducidad en `/etc/openvpn/` y la configuración del cliente."
+      ]
     },
     "bind9": {
       "name": "Servidor DNS BIND",
       "what": "Un servidor DNS autoritativo y recursivo.",
-      "ifFails": "La resolución DNS puede fallar para todo lo que depende de él. Valida la configuración con named-checkconf y revisa los registros antes de reiniciar."
+      "ifFails": "La resolución DNS puede fallar para todo lo que depende de él. Valida la configuración con named-checkconf y revisa los registros antes de reiniciar.",
+      "details": "BIND, normalmente el servicio `bind9`, es un servidor DNS. Puede ser autoritativo para tus dominios y también resolver consultas de forma recursiva. La configuración está en `/etc/bind/`, con archivos de zona y opciones como `named.conf.options`. Escucha en el puerto 53 y a menudo lo usan otros servidores como resolutor.",
+      "stop": "Parar BIND detiene las respuestas DNS para todos los clientes y servicios que lo usan. Si es el único resolutor, la resolución de nombres falla en todo el servidor. Valida la configuración y revisa los registros antes de reiniciar; los clientes pueden reintentar.",
+      "problems": [
+        "Fallan las consultas DNS — ejecuta `rndc status` y `named-checkconf`, y revisa el registro de BIND.",
+        "Una zona no carga — ejecuta `named-checkzone <zona> /etc/bind/<archivo>` y corrige la línea indicada.",
+        "Los clientes externos no pueden consultarlo — revisa `listen-on` y `allow-query` y el cortafuegos."
+      ]
     },
     "unbound": {
       "name": "Resolutor DNS Unbound",
