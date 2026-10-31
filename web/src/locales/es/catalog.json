@@ -1007,6 +1007,222 @@
         "La hora del invitado se desvía — revisa la integración horaria de Hyper-V y si hay otro demonio de hora activo.",
         "Los demonios no arrancan — comprueba `journalctl -u \"hv_*\" -n 50 --no-pager` y si la VM se ejecuta en Hyper-V."
       ]
+    },
+    "accounts-daemon": {
+      "name": "Servicio de cuentas",
+      "what": "Proporciona información de cuentas de usuario a las herramientas gráficas del escritorio.",
+      "ifFails": "Las herramientas gráficas de usuario y cuenta pueden mostrar información ausente o anticuada.",
+      "details": "AccountsService es un pequeño servicio D-Bus que los entornos de escritorio usan para leer y cambiar datos de las cuentas. Guarda ajustes como la foto y el idioma del usuario en `/var/lib/AccountsService`. No hace falta para los accesos SSH ni para el panel de Talaia.",
+      "stop": "Pararlo solo afecta a las herramientas gráficas de cuenta; los usuarios de consola y SSH siguen funcionando. Es seguro dejarlo parado en un servidor sin escritorio. Vuelve a arrancarlo si una sesión gráfica necesita esos ajustes.",
+      "problems": [
+        "La foto o el idioma no se guardan — comprueba `systemctl status accounts-daemon` y los archivos de `/var/lib/AccountsService/users`.",
+        "Una herramienta del escritorio no puede cambiar la cuenta — revisa la sesión D-Bus y `journalctl -u accounts-daemon -n 50 --no-pager`.",
+        "El servicio falla al arrancar — verifica los permisos de `/var/lib/AccountsService`."
+      ]
+    },
+    "alsa": {
+      "name": "Ajustes de sonido ALSA",
+      "what": "Restaura los niveles del mezclador de la tarjeta de sonido al arrancar.",
+      "ifFails": "La tarjeta de sonido local puede arrancar silenciada o con el volumen antiguo.",
+      "details": "Las unidades ALSA guardan y restauran los ajustes del mezclador del hardware de sonido local. Importan en un escritorio o un equipo multimedia con altavoces; un servidor sin pantalla normalmente no tiene tarjeta de sonido. Los ajustes los guarda `alsactl` y se aplican al arrancar.",
+      "stop": "Parar estas unidades solo deja el mezclador en los niveles actuales o por defecto. No afecta a la red, los contenedores ni el acceso remoto. Es seguro desactivarlas en un servidor sin hardware de audio.",
+      "problems": [
+        "El sonido está silenciado tras arrancar — ejecuta `alsamixer` y guarda los niveles con `alsactl store`.",
+        "La unidad ALSA falla — comprueba `systemctl status alsa-restore` y `journalctl -u alsa-restore -n 50 --no-pager`.",
+        "Se selecciona la tarjeta equivocada — revisa `/etc/asound.conf` y el orden con `aplay -l`."
+      ]
+    },
+    "display-manager": {
+      "name": "Gestor de inicio gráfico",
+      "what": "Arranca una pantalla de inicio de sesión gráfica en equipos con escritorio.",
+      "ifFails": "El inicio de sesión gráfico local puede no aparecer, pero SSH y los servicios siguen funcionando.",
+      "details": "El gestor de pantalla es la pantalla de inicio gráfico (LightDM, GDM o SDDM) que inicia una sesión de escritorio. Los servidores normalmente arrancan en consola de texto y no lo necesitan; los escritorios y algunos accesos remotos sí. Solo se ejecuta en una máquina con pantalla o con una pantalla remota configurada.",
+      "stop": "Parar el gestor de pantalla cierra el inicio gráfico local y cualquier sesión de escritorio que haya iniciado. SSH y los servicios de consola no se ven afectados. Es seguro desactivarlo en un servidor sin pantalla.",
+      "problems": [
+        "El inicio gráfico no aparece — comprueba `systemctl status display-manager` y el gestor seleccionado.",
+        "La pantalla queda negra tras arrancar — cambia a una consola de texto y revisa el controlador gráfico y los registros del gestor.",
+        "Una sesión de escritorio se cierra al momento — revisa los registros en `~/.xsession-errors` o el journal."
+      ]
+    },
+    "lm-sensors": {
+      "name": "Sensores de hardware",
+      "what": "Lee los sensores de temperatura, voltaje y ventiladores de la placa y la CPU.",
+      "ifFails": "Las lecturas de temperatura y ventiladores pueden faltar en las herramientas de monitorización.",
+      "details": "lm-sensors carga los controladores del kernel necesarios para leer los chips de monitorización. Da a herramientas como `sensors` acceso a temperaturas, voltajes y velocidades de ventilador. No controla los ventiladores; solo informa de lo que expone el hardware.",
+      "stop": "Pararlo solo omite la configuración de sensores al arrancar; los controladores ya cargados siguen informando y la refrigeración no cambia. El hardware sigue protegiéndose. Es seguro desactivarlo si cargas los módulos de otra forma.",
+      "problems": [
+        "`sensors` no muestra lecturas — ejecuta `sensors-detect` y carga los módulos recomendados.",
+        "Las temperaturas parecen incorrectas — revisa el chip y la escala en `/etc/sensors3.conf`.",
+        "El servicio falla — lee `journalctl -u lm-sensors -n 50 --no-pager`."
+      ]
+    },
+    "rtkit": {
+      "name": "RealtimeKit",
+      "what": "Da prioridad de tiempo real temporal a procesos de audio y multimedia del escritorio.",
+      "ifFails": "El audio o el vídeo pueden entrecortarse bajo carga en un escritorio, pero un servidor normalmente no se ve afectado.",
+      "details": "RealtimeKit es un pequeño servicio D-Bus que permite a programas de escritorio sin privilegios pedir una prioridad de planificación de tiempo real limitada. Lo usan sistemas de audio como PulseAudio y PipeWire. No tiene función en los servicios normales de un servidor.",
+      "stop": "Pararlo solo impide que los programas multimedia del escritorio obtengan prioridad de tiempo real. Los demás servicios y SSH no se ven afectados. Es seguro dejarlo parado en un servidor sin escritorio.",
+      "problems": [
+        "El audio se entrecorta — comprueba `systemctl status rtkit-daemon` y los registros del servidor de audio.",
+        "Un programa multimedia no obtiene prioridad de tiempo real — revisa la sesión D-Bus y la sesión del usuario.",
+        "El servicio falla — lee `journalctl -u rtkit-daemon -n 50 --no-pager`."
+      ]
+    },
+    "udisks2": {
+      "name": "Servicio de gestión de discos",
+      "what": "Permite a las herramientas de escritorio montar, desmontar e inspeccionar discos locales.",
+      "ifFails": "Las herramientas gráficas de disco pueden no ver o no montar medios extraíbles.",
+      "details": "UDisks2 es un servicio D-Bus que expone los dispositivos de bloque a las aplicaciones de escritorio. Gestiona medios extraíbles, información de discos y algunas peticiones de apagado. Los servidores rara vez lo necesitan; los sistemas de archivos suelen montarse desde `/etc/fstab`.",
+      "stop": "Pararlo no desmonta sistemas de archivos ni afecta a los volúmenes de Docker. Las herramientas gráficas de disco pierden su backend. Es seguro desactivarlo en un servidor sin pantalla.",
+      "problems": [
+        "Un disco USB no aparece — comprueba `systemctl status udisks2` y `lsblk`.",
+        "Una herramienta del escritorio no puede montar un disco — revisa el tipo de sistema de archivos y los permisos.",
+        "UDisks2 falla — lee `journalctl -u udisks2 -n 50 --no-pager`."
+      ]
+    },
+    "upower": {
+      "name": "Servicio de información de energía",
+      "what": "Informa a las herramientas del escritorio sobre la batería y la alimentación.",
+      "ifFails": "La información de batería y alimentación puede faltar en un portátil.",
+      "details": "UPower recoge datos de batería, corriente alterna y fuentes de alimentación del kernel. Los entornos de escritorio lo usan para el indicador de batería y los ajustes de suspensión. Un servidor sin batería normalmente no lo necesita.",
+      "stop": "Pararlo solo quita la información de energía de las herramientas del escritorio. No afecta al apagado, al reinicio ni a los servicios del servidor. Es seguro desactivarlo en un servidor.",
+      "problems": [
+        "Falta el indicador de batería — comprueba `systemctl status upower` y `upower -d`.",
+        "No se ofrece suspender — revisa si el hardware y el escritorio lo admiten.",
+        "UPower falla — lee `journalctl -u upower -n 50 --no-pager`."
+      ]
+    },
+    "jellyfin": {
+      "name": "Jellyfin",
+      "what": "Un servidor multimedia autoalojado para películas, series, música y fotos.",
+      "ifFails": "La biblioteca multimedia y su interfaz web dejan de funcionar.",
+      "details": "Jellyfin indexa archivos multimedia y los transmite a aplicaciones y navegadores. Puede usar aceleración por hardware, proveedores de metadatos y cuentas de usuario. Es opcional y solo está presente si decides montar un servidor multimedia.",
+      "stop": "Parar Jellyfin detiene la reproducción y la interfaz web. Los archivos y metadatos siguen en disco. Es seguro pararlo cuando nadie lo usa; los contenedores conservan sus datos en volúmenes.",
+      "problems": [
+        "La interfaz web no carga — comprueba `systemctl status jellyfin` o `docker logs --tail 50 jellyfin`.",
+        "Faltan archivos multimedia — revisa las rutas de la biblioteca y que el usuario del servicio pueda leerlos.",
+        "La reproducción se entrecorta — revisa la carga de CPU y GPU y la transcodificación por hardware."
+      ]
+    },
+    "busybox": {
+      "name": "BusyBox",
+      "what": "Una imagen mínima con una shell y utilidades Unix básicas.",
+      "ifFails": "La automatización o el diagnóstico que usan el contenedor pueden fallar.",
+      "details": "BusyBox reúne una shell pequeña y muchos comandos básicos en un solo binario. Se usa a menudo en contenedores de inicio, pruebas de red y utilidades mínimas. No es un sistema operativo completo y no incluye gestor de paquetes.",
+      "stop": "Parar un contenedor BusyBox solo afecta a ese contenedor. Revisa qué lo inició y si su tarea debe terminar. No lo elimines si otro servicio depende de él.",
+      "problems": [
+        "Falta un comando — BusyBox solo incluye un subconjunto de herramientas; usa una imagen completa si necesitas más.",
+        "El contenedor se cierra al momento — revisa su comando y `docker logs --tail 50 <contenedor>`.",
+        "Una prueba de red falla — revisa DNS y el modo de red del contenedor."
+      ]
+    },
+    "node": {
+      "name": "Node.js",
+      "what": "Una imagen de ejecución para aplicaciones y herramientas JavaScript.",
+      "ifFails": "La aplicación o la compilación JavaScript que la usa puede dejar de funcionar.",
+      "details": "Node.js ejecuta JavaScript fuera del navegador y es la base de muchas aplicaciones web y canalizaciones de compilación. Esta imagen solo aporta el entorno de ejecución; lo que hace depende de la aplicación instalada. Etiquetas como `node:20` eligen la versión del lenguaje.",
+      "stop": "Parar el contenedor detiene la aplicación que se ejecuta dentro. La imagen y los volúmenes se mantienen. Revisa el comando de inicio y los registros antes de reiniciar.",
+      "problems": [
+        "La aplicación se cierra al arrancar — lee `docker logs --tail 50 <contenedor>` y revisa el comando de inicio.",
+        "No encuentra un módulo — revisa `package.json`, `node_modules` y el directorio de trabajo.",
+        "La etiqueta cambió el comportamiento — fija una versión mayor concreta de Node.js."
+      ]
+    },
+    "python": {
+      "name": "Python",
+      "what": "Una imagen de ejecución para aplicaciones y scripts Python.",
+      "ifFails": "La aplicación o la compilación Python que la usa puede dejar de funcionar.",
+      "details": "Esta imagen aporta el intérprete de Python y su biblioteca estándar para contenedores. Las aplicaciones añaden sus paquetes, código y comando de inicio. La etiqueta de versión controla la versión de Python.",
+      "stop": "Parar el contenedor detiene el proceso Python que hay dentro. La imagen y los volúmenes de datos se mantienen. Revisa el comando y los registros antes de reiniciar.",
+      "problems": [
+        "Falta un paquete — instálalo en la imagen o en un archivo de requisitos.",
+        "El script no encuentra un archivo — revisa el directorio de trabajo y los volúmenes montados.",
+        "El contenedor se cierra — lee `docker logs --tail 50 <contenedor>`."
+      ]
+    },
+    "php": {
+      "name": "PHP",
+      "what": "Una imagen de ejecución para aplicaciones PHP, a menudo con Apache o FPM.",
+      "ifFails": "El sitio o la aplicación PHP que la usa puede dejar de funcionar.",
+      "details": "Esta imagen aporta el intérprete PHP para aplicaciones en contenedores. Variantes como `php:apache` o `php:fpm` añaden un servidor web o un gestor FastCGI. El código y la configuración de la aplicación se añaden al contenedor o se montan en él.",
+      "stop": "Parar el contenedor detiene la aplicación PHP que ejecuta. Los demás contenedores y volúmenes se mantienen. Revisa los registros del servidor web y de PHP antes de reiniciar.",
+      "problems": [
+        "El sitio devuelve un error 500 — lee los registros de PHP y del servidor web; es habitual que falte una extensión o un archivo.",
+        "Falta una extensión PHP — elige una imagen que la incluya o instálala en tu Dockerfile.",
+        "Los cambios no aparecen — revisa la ruta montada y la configuración de PHP-FPM o Apache."
+      ]
+    },
+    "alpine": {
+      "name": "Alpine Linux",
+      "what": "Una imagen base de Linux muy pequeña con musl y BusyBox.",
+      "ifFails": "Un contenedor construido sobre ella puede no tener herramientas o bibliotecas que espera.",
+      "details": "Alpine es una distribución Linux mínima que se usa como base para contenedores pequeños. Usa musl libc y BusyBox en lugar de glibc y las herramientas GNU. Los paquetes se instalan con `apk`.",
+      "stop": "Parar un contenedor solo afecta a ese contenedor. Alpine en sí es solo el sistema de archivos base. No lo sustituyas por otra base sin reconstruir la aplicación.",
+      "problems": [
+        "Un binario falla con `not found` — probablemente necesita glibc; usa una base compatible o instala la biblioteca que falta.",
+        "Falta un comando — instala el paquete con `apk add` en el Dockerfile.",
+        "El contenedor se cierra — revisa su comando y los registros."
+      ]
+    },
+    "debian": {
+      "name": "Debian",
+      "what": "La imagen base de Debian para contenedores.",
+      "ifFails": "Un contenedor construido sobre ella puede fallar si sus paquetes o su configuración están incompletos.",
+      "details": "La imagen de Debian aporta un sistema de archivos raíz mínimo de Debian. Usa `apt` para los paquetes e incluye la estructura estándar de Debian. Las aplicaciones añaden sus propios paquetes y comando de inicio.",
+      "stop": "Parar un contenedor solo afecta a ese contenedor. El sistema de archivos base de Debian se queda en la imagen. Reconstruye la imagen si necesitas otros paquetes.",
+      "problems": [
+        "Falta un paquete — instálalo en el Dockerfile con `apt-get`.",
+        "El contenedor se cierra — revisa el comando y `docker logs`.",
+        "La imagen es grande — usa una variante slim y limpia la caché de apt."
+      ]
+    },
+    "ubuntu": {
+      "name": "Ubuntu",
+      "what": "La imagen base de Ubuntu para contenedores.",
+      "ifFails": "Un contenedor construido sobre ella puede fallar si sus paquetes o su configuración están incompletos.",
+      "details": "La imagen de Ubuntu aporta un sistema de archivos raíz mínimo de Ubuntu. Usa `apt` y los repositorios de paquetes de Ubuntu. Las aplicaciones añaden sus propios paquetes y comando de inicio.",
+      "stop": "Parar un contenedor solo afecta a ese contenedor. La imagen base no cambia. Reconstruye la imagen si necesitas otros paquetes.",
+      "problems": [
+        "Falta un paquete — instálalo en el Dockerfile.",
+        "El contenedor se cierra — revisa el comando y los registros.",
+        "La imagen es grande — usa una variante mínima y limpia la caché de apt."
+      ]
+    },
+    "timescaledb": {
+      "name": "TimescaleDB",
+      "what": "Una extensión de PostgreSQL para datos de series temporales.",
+      "ifFails": "El historial de monitorización y otros datos de series temporales pueden dejar de guardarse o consultarse.",
+      "details": "TimescaleDB amplía PostgreSQL con hypertables y consultas por tiempo. Talaia la necesita para su historial de métricas. La imagen arranca PostgreSQL con la extensión disponible; usa un volumen persistente para la base de datos.",
+      "stop": "Parar el contenedor detiene la base de datos y cualquier aplicación que la use. Los datos se quedan en su volumen. Para primero el core que depende de ella y arranca la base antes que él.",
+      "problems": [
+        "El core falla en la migración `0014_metrics.sql` — el servidor no usa una imagen con TimescaleDB.",
+        "La base de datos no arranca — revisa el volumen, el espacio de disco y los registros de PostgreSQL.",
+        "Las consultas de métricas van lentas — revisa los índices y la retención."
+      ]
+    },
+    "immich": {
+      "name": "Immich",
+      "what": "Una biblioteca autoalojada de fotos y vídeos con aplicaciones móviles.",
+      "ifFails": "La biblioteca de fotos y su interfaz web dejan de funcionar.",
+      "details": "Immich guarda e indexa fotos y vídeos, con reconocimiento facial y subidas desde el móvil. Necesita una base de datos PostgreSQL y un volumen de almacenamiento. Los contenedores del servidor y del aprendizaje automático trabajan juntos.",
+      "stop": "Parar Immich detiene las subidas y la navegación; los archivos se quedan en sus volúmenes. Para la aplicación antes de un mantenimiento y mantén la base de datos en marcha o párala en el orden correcto.",
+      "problems": [
+        "La interfaz web no carga — revisa los registros del contenedor del servidor y la conexión con la base de datos.",
+        "Las subidas fallan — revisa el espacio de almacenamiento y los permisos de los volúmenes.",
+        "El aprendizaje automático va lento — revisa la carga de CPU y GPU y los registros de su contenedor."
+      ]
+    },
+    "immich-postgres": {
+      "name": "PostgreSQL para Immich",
+      "what": "La base de datos PostgreSQL que usa Immich.",
+      "ifFails": "Immich no puede cargar ni guardar la biblioteca de fotos.",
+      "details": "Es una imagen PostgreSQL preparada para Immich, con las extensiones y ajustes que espera la aplicación. Guarda metadatos, usuarios y álbumes, mientras los archivos originales viven en otro volumen. Mantenla en un volumen persistente y haz copias junto con la biblioteca de fotos.",
+      "stop": "Pararla detiene Immich y cualquier acceso directo a la base de datos. Los datos siguen en el volumen. Para primero la aplicación y arranca la base de datos antes.",
+      "problems": [
+        "Immich no conecta — revisa el contenedor de la base de datos y sus credenciales.",
+        "La base de datos no arranca — revisa el volumen, el espacio de disco y los registros de PostgreSQL.",
+        "Faltan datos — restaura la base de datos y los volúmenes de fotos de la misma copia de seguridad."
+      ]
     }
   },
   "screen": {

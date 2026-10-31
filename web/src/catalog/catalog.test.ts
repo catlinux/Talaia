@@ -70,6 +70,37 @@ describe('lookupService', () => {
     expect(lookupService('talaia-update.service')?.id).toBe('talaia-hostd')
   })
 
+  it('matches the desktop, hardware and media services of this batch', () => {
+    expect(lookupService('accounts-daemon.service')?.id).toBe('accounts-daemon')
+    expect(lookupService('alsa-restore.service')?.id).toBe('alsa')
+    expect(lookupService('display-manager.service')?.id).toBe('display-manager')
+    expect(lookupService('gdm3.service')?.id).toBe('display-manager')
+    expect(lookupService('lm-sensors.service')?.id).toBe('lm-sensors')
+    expect(lookupService('rtkit-daemon.service')?.id).toBe('rtkit')
+    expect(lookupService('udisks2.service')?.id).toBe('udisks2')
+    expect(lookupService('upower.service')?.id).toBe('upower')
+    expect(lookupService('jellyfin.service')?.id).toBe('jellyfin')
+  })
+
+  it('matches the base and application images of this batch', () => {
+    expect(lookupImage('busybox:latest')?.id).toBe('busybox')
+    expect(lookupImage('node:20-alpine')?.id).toBe('node')
+    expect(lookupImage('python:3.12-slim')?.id).toBe('python')
+    expect(lookupImage('php:8.3-apache')?.id).toBe('php')
+    expect(lookupImage('alpine:3.20')?.id).toBe('alpine')
+    expect(lookupImage('debian:12')?.id).toBe('debian')
+    expect(lookupImage('ubuntu:24.04')?.id).toBe('ubuntu')
+    expect(lookupImage('timescale/timescaledb:latest-pg16')?.id).toBe('timescaledb')
+    expect(lookupImage('timescale/timescaledb-ha:pg16')?.id).toBe('timescaledb')
+    expect(lookupImage('jellyfin/jellyfin:latest')?.id).toBe('jellyfin')
+    expect(lookupImage('linuxserver/jellyfin:latest')?.id).toBe('jellyfin')
+    expect(lookupImage('ghcr.io/immich-app/immich-server:v1')?.id).toBe('immich')
+    expect(lookupImage('ghcr.io/immich-app/postgres:14-vectorchord0.4.3')?.id).toBe(
+      'immich-postgres',
+    )
+    expect(lookupImage('talaia-core:0.6.25')?.id).toBe('talaia-core')
+  })
+
   it('keeps the exact systemd units of the existing entries', () => {
     for (const id of [
       'systemd-journald',
@@ -190,6 +221,24 @@ describe('catalog translations', () => {
       'talaia-hostd',
       'talaia-agent',
       'talaia-core',
+      'accounts-daemon',
+      'alsa',
+      'display-manager',
+      'lm-sensors',
+      'rtkit',
+      'udisks2',
+      'upower',
+      'jellyfin',
+      'busybox',
+      'node',
+      'python',
+      'php',
+      'alpine',
+      'debian',
+      'ubuntu',
+      'timescaledb',
+      'immich',
+      'immich-postgres',
     ]
     for (const language of ['ca', 'es', 'en']) {
       const t = i18n.getFixedT(language, 'catalog')

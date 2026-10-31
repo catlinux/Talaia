@@ -1007,6 +1007,222 @@
         "L’hora de l’invitat es desvia — revisa la integració horària de Hyper-V i si hi ha un altre dimoni d’hora actiu.",
         "Els dimonis no arrenquen — comprova `journalctl -u \"hv_*\" -n 50 --no-pager` i si la VM s’executa a Hyper-V."
       ]
+    },
+    "accounts-daemon": {
+      "name": "Servei de comptes",
+      "what": "Proporciona informació de comptes d’usuari a les eines gràfiques de l’escriptori.",
+      "ifFails": "Les eines gràfiques d’usuari i compte poden mostrar informació absent o antiquada.",
+      "details": "AccountsService és un servei D-Bus petit que els entorns d’escriptori fan servir per llegir i canviar dades dels comptes. Desa ajustos com la foto i l’idioma de l’usuari a `/var/lib/AccountsService`. No cal per als accessos SSH ni per al panell de Talaia.",
+      "stop": "Aturar-lo només afecta les eines gràfiques de compte; els usuaris de consola i SSH segueixen funcionant. És segur deixar-lo aturat en un servidor sense escriptori. Torna a arrencar-lo si una sessió gràfica necessita aquests ajustos.",
+      "problems": [
+        "La foto o l’idioma no es desen — comprova `systemctl status accounts-daemon` i els fitxers de `/var/lib/AccountsService/users`.",
+        "Una eina de l’escriptori no pot canviar el compte — revisa la sessió D-Bus i `journalctl -u accounts-daemon -n 50 --no-pager`.",
+        "El servei falla en arrencar — verifica els permisos de `/var/lib/AccountsService`."
+      ]
+    },
+    "alsa": {
+      "name": "Ajustos de so ALSA",
+      "what": "Restaura els nivells del mesclador de la targeta de so en arrencar.",
+      "ifFails": "La targeta de so local pot arrencar silenciada o amb el volum antic.",
+      "details": "Les unitats ALSA desen i restauren els ajustos del mesclador del maquinari de so local. Importen en un escriptori o un equip multimèdia amb altaveus; un servidor sense pantalla normalment no té targeta de so. Els ajustos els desa `alsactl` i s’apliquen en arrencar.",
+      "stop": "Aturar aquestes unitats només deixa el mesclador en els nivells actuals o per defecte. No afecta la xarxa, els contenidors ni l’accés remot. És segur desactivar-les en un servidor sense maquinari d’àudio.",
+      "problems": [
+        "El so està silenciat després d’arrencar — executa `alsamixer` i desa els nivells amb `alsactl store`.",
+        "La unitat ALSA falla — comprova `systemctl status alsa-restore` i `journalctl -u alsa-restore -n 50 --no-pager`.",
+        "Es tria la targeta equivocada — revisa `/etc/asound.conf` i l’ordre amb `aplay -l`."
+      ]
+    },
+    "display-manager": {
+      "name": "Gestor d’inici gràfic",
+      "what": "Arrenca una pantalla d’inici de sessió gràfica en equips amb escriptori.",
+      "ifFails": "L’inici de sessió gràfic local pot no aparèixer, però SSH i els serveis segueixen funcionant.",
+      "details": "El gestor de pantalla és la pantalla d’inici gràfic (LightDM, GDM o SDDM) que inicia una sessió d’escriptori. Els servidors normalment arrenquen en consola de text i no el necessiten; els escriptoris i alguns accessos remots sí. Només s’executa en una màquina amb pantalla o amb una pantalla remota configurada.",
+      "stop": "Aturar el gestor de pantalla tanca l’inici gràfic local i qualsevol sessió d’escriptori que hagi iniciat. SSH i els serveis de consola no es veuen afectats. És segur desactivar-lo en un servidor sense pantalla.",
+      "problems": [
+        "L’inici gràfic no apareix — comprova `systemctl status display-manager` i el gestor seleccionat.",
+        "La pantalla queda negra després d’arrencar — canvia a una consola de text i revisa el controlador gràfic i els registres del gestor.",
+        "Una sessió d’escriptori es tanca de seguida — revisa els registres a `~/.xsession-errors` o el journal."
+      ]
+    },
+    "lm-sensors": {
+      "name": "Sensors de maquinari",
+      "what": "Llegeix els sensors de temperatura, voltatge i ventiladors de la placa i la CPU.",
+      "ifFails": "Les lectures de temperatura i ventiladors poden faltar a les eines de monitorització.",
+      "details": "lm-sensors carrega els controladors del nucli necessaris per llegir els xips de monitorització. Dona a eines com `sensors` accés a temperatures, voltatges i velocitats de ventilador. No controla els ventiladors; només informa del que exposa el maquinari.",
+      "stop": "Aturar-lo només omet la configuració de sensors en arrencar; els controladors ja carregats segueixen informant i la refrigeració no canvia. El maquinari segueix protegint-se. És segur desactivar-lo si carregues els mòduls d’una altra manera.",
+      "problems": [
+        "`sensors` no mostra lectures — executa `sensors-detect` i carrega els mòduls recomanats.",
+        "Les temperatures semblen incorrectes — revisa el xip i l’escala a `/etc/sensors3.conf`.",
+        "El servei falla — llegeix `journalctl -u lm-sensors -n 50 --no-pager`."
+      ]
+    },
+    "rtkit": {
+      "name": "RealtimeKit",
+      "what": "Dona prioritat de temps real temporal a processos d’àudio i multimèdia de l’escriptori.",
+      "ifFails": "L’àudio o el vídeo es poden entretallar sota càrrega en un escriptori, però un servidor normalment no se’n veu afectat.",
+      "details": "RealtimeKit és un servei D-Bus petit que permet a programes d’escriptori sense privilegis demanar una prioritat de planificació de temps real limitada. El fan servir sistemes d’àudio com PulseAudio i PipeWire. No té cap funció en els serveis normals d’un servidor.",
+      "stop": "Aturar-lo només impedeix que els programes multimèdia de l’escriptori obtinguin prioritat de temps real. Els altres serveis i SSH no es veuen afectats. És segur deixar-lo aturat en un servidor sense escriptori.",
+      "problems": [
+        "L’àudio s’entretalla — comprova `systemctl status rtkit-daemon` i els registres del servidor d’àudio.",
+        "Un programa multimèdia no obté prioritat de temps real — revisa la sessió D-Bus i la sessió de l’usuari.",
+        "El servei falla — llegeix `journalctl -u rtkit-daemon -n 50 --no-pager`."
+      ]
+    },
+    "udisks2": {
+      "name": "Servei de gestió de discs",
+      "what": "Permet a les eines d’escriptori muntar, desmuntar i inspeccionar discs locals.",
+      "ifFails": "Les eines gràfiques de disc poden no veure o no muntar mitjans extraïbles.",
+      "details": "UDisks2 és un servei D-Bus que exposa els dispositius de bloc a les aplicacions d’escriptori. Gestiona mitjans extraïbles, informació de discs i algunes peticions d’apagada. Els servidors poques vegades el necessiten; els sistemes de fitxers solen muntar-se des de `/etc/fstab`.",
+      "stop": "Aturar-lo no desmunta sistemes de fitxers ni afecta els volums de Docker. Les eines gràfiques de disc perden el seu backend. És segur desactivar-lo en un servidor sense pantalla.",
+      "problems": [
+        "Un disc USB no apareix — comprova `systemctl status udisks2` i `lsblk`.",
+        "Una eina de l’escriptori no pot muntar un disc — revisa el tipus de sistema de fitxers i els permisos.",
+        "UDisks2 falla — llegeix `journalctl -u udisks2 -n 50 --no-pager`."
+      ]
+    },
+    "upower": {
+      "name": "Servei d’informació d’energia",
+      "what": "Informa les eines de l’escriptori sobre la bateria i l’alimentació.",
+      "ifFails": "La informació de bateria i alimentació pot faltar en un portàtil.",
+      "details": "UPower recull dades de bateria, corrent altern i fonts d’alimentació del nucli. Els entorns d’escriptori el fan servir per a l’indicador de bateria i els ajustos de suspensió. Un servidor sense bateria normalment no el necessita.",
+      "stop": "Aturar-lo només treu la informació d’energia de les eines de l’escriptori. No afecta l’apagada, el reinici ni els serveis del servidor. És segur desactivar-lo en un servidor.",
+      "problems": [
+        "Falta l’indicador de bateria — comprova `systemctl status upower` i `upower -d`.",
+        "No s’ofereix suspendre — revisa si el maquinari i l’escriptori ho admeten.",
+        "UPower falla — llegeix `journalctl -u upower -n 50 --no-pager`."
+      ]
+    },
+    "jellyfin": {
+      "name": "Jellyfin",
+      "what": "Un servidor multimèdia autoallotjat per a pel·lícules, sèries, música i fotos.",
+      "ifFails": "La biblioteca multimèdia i la seva interfície web deixen de funcionar.",
+      "details": "Jellyfin indexa fitxers multimèdia i els transmet a aplicacions i navegadors. Pot usar acceleració per maquinari, proveïdors de metadades i comptes d’usuari. És opcional i només hi és si decideixes muntar un servidor multimèdia.",
+      "stop": "Aturar Jellyfin deté la reproducció i la interfície web. Els fitxers i metadades segueixen al disc. És segur aturar-lo quan ningú el fa servir; els contenidors conserven les dades en volums.",
+      "problems": [
+        "La interfície web no carrega — comprova `systemctl status jellyfin` o `docker logs --tail 50 jellyfin`.",
+        "Falten fitxers multimèdia — revisa les rutes de la biblioteca i que l’usuari del servei els pugui llegir.",
+        "La reproducció s’entretalla — revisa la càrrega de CPU i GPU i la transcodificació per maquinari."
+      ]
+    },
+    "busybox": {
+      "name": "BusyBox",
+      "what": "Una imatge mínima amb una shell i utilitats Unix bàsiques.",
+      "ifFails": "L’automatització o el diagnòstic que fan servir el contenidor poden fallar.",
+      "details": "BusyBox reuneix una shell petita i moltes ordres bàsiques en un sol binari. S’usa sovint en contenidors d’inici, proves de xarxa i utilitats mínimes. No és un sistema operatiu complet i no inclou gestor de paquets.",
+      "stop": "Aturar un contenidor BusyBox només afecta aquell contenidor. Revisa què el va iniciar i si la seva tasca ha d’acabar. No l’eliminis si un altre servei en depèn.",
+      "problems": [
+        "Falta una ordre — BusyBox només inclou un subconjunt d’eines; usa una imatge completa si necessites més.",
+        "El contenidor es tanca de seguida — revisa la seva ordre i `docker logs --tail 50 <contenidor>`.",
+        "Una prova de xarxa falla — revisa DNS i el mode de xarxa del contenidor."
+      ]
+    },
+    "node": {
+      "name": "Node.js",
+      "what": "Una imatge d’execució per a aplicacions i eines JavaScript.",
+      "ifFails": "L’aplicació o la compilació JavaScript que la fa servir pot deixar de funcionar.",
+      "details": "Node.js executa JavaScript fora del navegador i és la base de moltes aplicacions web i canalitzacions de compilació. Aquesta imatge només aporta l’entorn d’execució; el que fa depèn de l’aplicació instal·lada. Etiquetes com `node:20` trien la versió del llenguatge.",
+      "stop": "Aturar el contenidor deté l’aplicació que s’executa a dins. La imatge i els volums es mantenen. Revisa l’ordre d’inici i els registres abans de reiniciar.",
+      "problems": [
+        "L’aplicació es tanca en arrencar — llegeix `docker logs --tail 50 <contenidor>` i revisa l’ordre d’inici.",
+        "No troba un mòdul — revisa `package.json`, `node_modules` i el directori de treball.",
+        "L’etiqueta va canviar el comportament — fixa una versió major concreta de Node.js."
+      ]
+    },
+    "python": {
+      "name": "Python",
+      "what": "Una imatge d’execució per a aplicacions i scripts Python.",
+      "ifFails": "L’aplicació o la compilació Python que la fa servir pot deixar de funcionar.",
+      "details": "Aquesta imatge aporta l’intèrpret de Python i la seva biblioteca estàndard per a contenidors. Les aplicacions hi afegeixen paquets, codi i l’ordre d’inici. L’etiqueta de versió controla la versió de Python.",
+      "stop": "Aturar el contenidor deté el procés Python que hi ha a dins. La imatge i els volums de dades es mantenen. Revisa l’ordre i els registres abans de reiniciar.",
+      "problems": [
+        "Falta un paquet — instal·la’l a la imatge o en un fitxer de requisits.",
+        "L’script no troba un fitxer — revisa el directori de treball i els volums muntats.",
+        "El contenidor es tanca — llegeix `docker logs --tail 50 <contenidor>`."
+      ]
+    },
+    "php": {
+      "name": "PHP",
+      "what": "Una imatge d’execució per a aplicacions PHP, sovint amb Apache o FPM.",
+      "ifFails": "El lloc o l’aplicació PHP que la fa servir pot deixar de funcionar.",
+      "details": "Aquesta imatge aporta l’intèrpret PHP per a aplicacions en contenidors. Variants com `php:apache` o `php:fpm` afegeixen un servidor web o un gestor FastCGI. El codi i la configuració de l’aplicació s’afegeixen al contenidor o s’hi munten.",
+      "stop": "Aturar el contenidor deté l’aplicació PHP que executa. Els altres contenidors i volums es mantenen. Revisa els registres del servidor web i de PHP abans de reiniciar.",
+      "problems": [
+        "El lloc torna un error 500 — llegeix els registres de PHP i del servidor web; és habitual que falti una extensió o un fitxer.",
+        "Falta una extensió PHP — tria una imatge que la inclogui o instal·la-la al Dockerfile.",
+        "Els canvis no apareixen — revisa la ruta muntada i la configuració de PHP-FPM o Apache."
+      ]
+    },
+    "alpine": {
+      "name": "Alpine Linux",
+      "what": "Una imatge base de Linux molt petita amb musl i BusyBox.",
+      "ifFails": "Un contenidor construït sobre ella pot no tenir eines o biblioteques que espera.",
+      "details": "Alpine és una distribució Linux mínima que s’usa com a base per a contenidors petits. Fa servir musl libc i BusyBox en lloc de glibc i les eines GNU. Els paquets s’instal·len amb `apk`.",
+      "stop": "Aturar un contenidor només afecta aquell contenidor. Alpine en si és només el sistema de fitxers base. No el substitueixis per una altra base sense reconstruir l’aplicació.",
+      "problems": [
+        "Un binari falla amb `not found` — probablement necessita glibc; usa una base compatible o instal·la la biblioteca que falta.",
+        "Falta una ordre — instal·la el paquet amb `apk add` al Dockerfile.",
+        "El contenidor es tanca — revisa la seva ordre i els registres."
+      ]
+    },
+    "debian": {
+      "name": "Debian",
+      "what": "La imatge base de Debian per a contenidors.",
+      "ifFails": "Un contenidor construït sobre ella pot fallar si els paquets o la configuració són incomplets.",
+      "details": "La imatge de Debian aporta un sistema de fitxers arrel mínim de Debian. Fa servir `apt` per als paquets i inclou l’estructura estàndard de Debian. Les aplicacions hi afegeixen els seus paquets i l’ordre d’inici.",
+      "stop": "Aturar un contenidor només afecta aquell contenidor. El sistema de fitxers base de Debian es queda a la imatge. Reconstrueix la imatge si necessites altres paquets.",
+      "problems": [
+        "Falta un paquet — instal·la’l al Dockerfile amb `apt-get`.",
+        "El contenidor es tanca — revisa l’ordre i `docker logs`.",
+        "La imatge és gran — usa una variant slim i neteja la memòria cau d’apt."
+      ]
+    },
+    "ubuntu": {
+      "name": "Ubuntu",
+      "what": "La imatge base d’Ubuntu per a contenidors.",
+      "ifFails": "Un contenidor construït sobre ella pot fallar si els paquets o la configuració són incomplets.",
+      "details": "La imatge d’Ubuntu aporta un sistema de fitxers arrel mínim d’Ubuntu. Fa servir `apt` i els repositoris de paquets d’Ubuntu. Les aplicacions hi afegeixen els seus paquets i l’ordre d’inici.",
+      "stop": "Aturar un contenidor només afecta aquell contenidor. La imatge base no canvia. Reconstrueix la imatge si necessites altres paquets.",
+      "problems": [
+        "Falta un paquet — instal·la’l al Dockerfile.",
+        "El contenidor es tanca — revisa l’ordre i els registres.",
+        "La imatge és gran — usa una variant mínima i neteja la memòria cau d’apt."
+      ]
+    },
+    "timescaledb": {
+      "name": "TimescaleDB",
+      "what": "Una extensió de PostgreSQL per a dades de sèries temporals.",
+      "ifFails": "L’historial de monitorització i altres dades de sèries temporals poden deixar de desar-se o consultar-se.",
+      "details": "TimescaleDB amplia PostgreSQL amb hypertables i consultes per temps. Talaia la necessita per al seu historial de mètriques. La imatge arrenca PostgreSQL amb l’extensió disponible; usa un volum persistent per a la base de dades.",
+      "stop": "Aturar el contenidor deté la base de dades i qualsevol aplicació que la faci servir. Les dades es queden al seu volum. Atura primer el core que en depèn i arrenca la base abans que ell.",
+      "problems": [
+        "El core falla a la migració `0014_metrics.sql` — el servidor no usa una imatge amb TimescaleDB.",
+        "La base de dades no arrenca — revisa el volum, l’espai de disc i els registres de PostgreSQL.",
+        "Les consultes de mètriques van lentes — revisa els índexs i la retenció."
+      ]
+    },
+    "immich": {
+      "name": "Immich",
+      "what": "Una biblioteca autoallotjada de fotos i vídeos amb aplicacions mòbils.",
+      "ifFails": "La biblioteca de fotos i la seva interfície web deixen de funcionar.",
+      "details": "Immich desa i indexa fotos i vídeos, amb reconeixement facial i pujades des del mòbil. Necessita una base de dades PostgreSQL i un volum d’emmagatzematge. Els contenidors del servidor i de l’aprenentatge automàtic treballen junts.",
+      "stop": "Aturar Immich deté les pujades i la navegació; els fitxers es queden als seus volums. Atura l’aplicació abans d’un manteniment i mantén la base de dades en marxa o atura-la en l’ordre correcte.",
+      "problems": [
+        "La interfície web no carrega — revisa els registres del contenidor del servidor i la connexió amb la base de dades.",
+        "Les pujades fallen — revisa l’espai d’emmagatzematge i els permisos dels volums.",
+        "L’aprenentatge automàtic va lent — revisa la càrrega de CPU i GPU i els registres del seu contenidor."
+      ]
+    },
+    "immich-postgres": {
+      "name": "PostgreSQL per a Immich",
+      "what": "La base de dades PostgreSQL que fa servir Immich.",
+      "ifFails": "Immich no pot carregar ni desar la biblioteca de fotos.",
+      "details": "És una imatge PostgreSQL preparada per a Immich, amb les extensions i els ajustos que espera l’aplicació. Desa metadades, usuaris i àlbums, mentre els fitxers originals viuen en un altre volum. Mantén-la en un volum persistent i fes-ne còpies juntament amb la biblioteca de fotos.",
+      "stop": "Aturar-la deté Immich i qualsevol accés directe a la base de dades. Les dades segueixen al volum. Atura primer l’aplicació i arrenca la base de dades abans.",
+      "problems": [
+        "Immich no connecta — revisa el contenidor de la base de dades i les seves credencials.",
+        "La base de dades no arrenca — revisa el volum, l’espai de disc i els registres de PostgreSQL.",
+        "Falten dades — restaura la base de dades i els volums de fotos de la mateixa còpia de seguretat."
+      ]
     }
   },
   "screen": {

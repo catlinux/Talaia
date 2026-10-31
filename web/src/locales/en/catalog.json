@@ -1007,6 +1007,222 @@
         "The guest time drifts — check the Hyper-V integration service settings and whether another time daemon is active.",
         "Daemons fail to start — check `journalctl -u \"hv_*\" -n 50 --no-pager` and whether the VM is running on Hyper-V."
       ]
+    },
+    "accounts-daemon": {
+      "name": "Accounts service",
+      "what": "Provides user account information to graphical desktop tools.",
+      "ifFails": "Desktop user and account tools may show missing or stale information.",
+      "details": "AccountsService is a small D-Bus service used by desktop environments to read and change user account details. It stores settings such as the user picture and language in `/var/lib/AccountsService`. It is not needed for SSH logins or for the Talaia panel.",
+      "stop": "Stopping it only affects desktop account tools; command-line users and SSH keep working. It is safe to leave it stopped on a headless server. Start it again if a graphical session needs the account settings.",
+      "problems": [
+        "The user picture or language is not saved — check `systemctl status accounts-daemon` and the files in `/var/lib/AccountsService/users`.",
+        "A desktop tool cannot change the account — check the D-Bus session and `journalctl -u accounts-daemon -n 50 --no-pager`.",
+        "The service fails at boot — verify the permissions of `/var/lib/AccountsService`."
+      ]
+    },
+    "alsa": {
+      "name": "ALSA sound settings",
+      "what": "Restores the sound-card mixer levels at boot.",
+      "ifFails": "The local sound card may start muted or with old volume settings.",
+      "details": "ALSA units save and restore mixer settings for local sound hardware. They matter on a desktop or media machine with speakers; a headless server usually has no sound card. The settings are stored by `alsactl` and applied at boot.",
+      "stop": "Stopping these units only leaves the mixer at the current or default levels. It does not affect networking, containers or remote access. It is safe to disable them on a server without audio hardware.",
+      "problems": [
+        "Sound is muted after boot — run `alsamixer` and save the levels with `alsactl store`.",
+        "The ALSA unit fails — check `systemctl status alsa-restore` and `journalctl -u alsa-restore -n 50 --no-pager`.",
+        "The wrong card is selected — check `/etc/asound.conf` and the card order with `aplay -l`."
+      ]
+    },
+    "display-manager": {
+      "name": "Graphical login manager",
+      "what": "Starts a graphical login screen on machines with a desktop environment.",
+      "ifFails": "The local graphical login may not appear, but SSH and services keep working.",
+      "details": "The display manager is the graphical login screen (LightDM, GDM or SDDM) that starts a desktop session. Servers normally boot to a text console and do not need it; desktops and some remote desktop setups do. It runs only on a machine with a screen or a configured remote display.",
+      "stop": "Stopping the display manager closes the local graphical login and any desktop session it started. SSH and command-line services are unaffected. It is safe to disable it on a headless server.",
+      "problems": [
+        "The graphical login does not appear — check `systemctl status display-manager` and the selected manager.",
+        "The screen is black after boot — switch to a text console and check the graphics driver and display-manager logs.",
+        "A desktop session logs out immediately — check the session logs in `~/.xsession-errors` or the journal."
+      ]
+    },
+    "lm-sensors": {
+      "name": "Hardware sensors",
+      "what": "Reads temperature, voltage and fan sensors from the motherboard and CPU.",
+      "ifFails": "Temperature and fan readings may be missing from monitoring tools.",
+      "details": "lm-sensors loads the kernel drivers needed to read hardware monitoring chips. It gives tools such as `sensors` access to temperatures, voltages and fan speeds. It does not control the fans; it only reports what the hardware exposes.",
+      "stop": "Stopping it only skips the boot-time sensor setup; already loaded drivers keep reporting and cooling does not change. The hardware continues to protect itself. It is safe to disable it if you load the modules another way.",
+      "problems": [
+        "`sensors` shows no readings — run `sensors-detect` and load the recommended modules.",
+        "Temperatures look wrong — check the chip and scaling in `/etc/sensors3.conf`.",
+        "The service fails — read `journalctl -u lm-sensors -n 50 --no-pager`."
+      ]
+    },
+    "rtkit": {
+      "name": "RealtimeKit",
+      "what": "Gives desktop audio and media processes temporary real-time priority.",
+      "ifFails": "Audio or video may stutter under load on a desktop, but servers are normally unaffected.",
+      "details": "RealtimeKit is a small D-Bus service that lets unprivileged desktop programs request a limited real-time scheduling priority. It is used by audio systems such as PulseAudio and PipeWire. It has no role in normal server services.",
+      "stop": "Stopping it only prevents desktop media programs from getting real-time priority. Other services and SSH are unaffected. It is safe to leave it stopped on a server without a desktop.",
+      "problems": [
+        "Audio stutters — check `systemctl status rtkit-daemon` and the audio server logs.",
+        "A media program cannot get real-time priority — check the D-Bus session and the user session.",
+        "The service fails — read `journalctl -u rtkit-daemon -n 50 --no-pager`."
+      ]
+    },
+    "udisks2": {
+      "name": "Disk management service",
+      "what": "Lets desktop tools mount, unmount and inspect local disks.",
+      "ifFails": "Graphical disk tools may not see or mount removable media.",
+      "details": "UDisks2 is a D-Bus service that exposes block devices to desktop applications. It handles removable media, disk information and some power-off requests. Servers rarely need it; filesystems are usually mounted from `/etc/fstab`.",
+      "stop": "Stopping it does not unmount filesystems or affect Docker volumes. Graphical disk tools lose their backend. It is safe to disable it on a headless server.",
+      "problems": [
+        "A USB disk does not appear — check `systemctl status udisks2` and `lsblk`.",
+        "A desktop tool cannot mount a disk — check the filesystem type and permissions.",
+        "UDisks2 fails — read `journalctl -u udisks2 -n 50 --no-pager`."
+      ]
+    },
+    "upower": {
+      "name": "Power information service",
+      "what": "Reports battery and power-supply information to desktop tools.",
+      "ifFails": "Battery and power information may be missing on a laptop.",
+      "details": "UPower collects battery, AC and power-supply data from the kernel. Desktop environments use it for battery indicators and sleep settings. A server without a battery usually does not need it.",
+      "stop": "Stopping it only removes power information from desktop tools. It does not affect shutdown, reboot or server services. It is safe to disable it on a server.",
+      "problems": [
+        "The battery indicator is missing — check `systemctl status upower` and `upower -d`.",
+        "Sleep is not offered — check whether the hardware and desktop support it.",
+        "UPower fails — read `journalctl -u upower -n 50 --no-pager`."
+      ]
+    },
+    "jellyfin": {
+      "name": "Jellyfin",
+      "what": "A self-hosted media server for films, series, music and photos.",
+      "ifFails": "The media library and its web interface stop working.",
+      "details": "Jellyfin indexes media files and streams them to apps and browsers. It can use hardware acceleration, metadata providers and user accounts. It is optional and only present when you choose to run a media server.",
+      "stop": "Stopping Jellyfin stops streaming and the web interface. Media files and metadata remain on disk. It is safe to stop it when nobody is using it; containers keep their data in volumes.",
+      "problems": [
+        "The web interface does not load — check `systemctl status jellyfin` or `docker logs --tail 50 jellyfin`.",
+        "Media files are missing — check the library paths and that the service user can read them.",
+        "Playback stutters — check CPU and GPU load and the hardware transcoding settings."
+      ]
+    },
+    "busybox": {
+      "name": "BusyBox",
+      "what": "A tiny image with a shell and common Unix utilities.",
+      "ifFails": "Automation or diagnostics that use the container may fail.",
+      "details": "BusyBox combines a small shell and many basic commands in one binary. It is often used for init containers, network tests and tiny utilities. It is not a full operating system and does not include a package manager.",
+      "stop": "Stopping a BusyBox container only affects that container. Check what started it and whether its task is meant to finish. Do not remove it if another service depends on it.",
+      "problems": [
+        "A command is missing — BusyBox includes only a subset of standard tools; use a full image for more.",
+        "The container exits immediately — check its command and `docker logs --tail 50 <container>`.",
+        "A network test fails — check DNS and the network mode of the container."
+      ]
+    },
+    "node": {
+      "name": "Node.js",
+      "what": "A runtime image for JavaScript applications and build tools.",
+      "ifFails": "The JavaScript application or build that uses it may stop working.",
+      "details": "Node.js runs JavaScript outside a browser and is the base for many web applications and build pipelines. This image only provides the runtime; what it does depends on the application installed in it. Tags such as `node:20` select the language version.",
+      "stop": "Stopping the container stops the application running inside it. The image and volumes remain. Check the application start command and logs before restarting.",
+      "problems": [
+        "The app exits at startup — read `docker logs --tail 50 <container>` and check the start command.",
+        "Cannot find a module — check `package.json`, `node_modules` and the working directory.",
+        "The image tag changed behaviour — pin a specific Node.js major version."
+      ]
+    },
+    "python": {
+      "name": "Python",
+      "what": "A runtime image for Python applications and scripts.",
+      "ifFails": "The Python application or build that uses it may stop working.",
+      "details": "This image provides the Python interpreter and standard library for containers. Applications add their own packages, code and start command. The version tag controls the Python release.",
+      "stop": "Stopping the container stops the Python process inside it. The image and data volumes remain. Check the command and logs before restarting.",
+      "problems": [
+        "A package is missing — install it in the image or a requirements file.",
+        "The script cannot find a file — check the working directory and mounted volumes.",
+        "The container exits — read `docker logs --tail 50 <container>`."
+      ]
+    },
+    "php": {
+      "name": "PHP",
+      "what": "A runtime image for PHP applications, often used with Apache or FPM.",
+      "ifFails": "The PHP site or application that uses it may stop working.",
+      "details": "This image provides the PHP interpreter for containerized applications. Variants such as `php:apache` or `php:fpm` add a web server or a FastCGI process manager. The application code and configuration are added by the container or mounted into it.",
+      "stop": "Stopping the container stops the PHP application it runs. Other containers and volumes remain. Check the web server and PHP logs before restarting.",
+      "problems": [
+        "The site returns 500 — read the PHP and web-server logs; a missing extension or file is common.",
+        "A PHP extension is missing — choose an image with the extension or install it in your Dockerfile.",
+        "Changes do not appear — check the mounted path and the PHP-FPM or Apache configuration."
+      ]
+    },
+    "alpine": {
+      "name": "Alpine Linux",
+      "what": "A very small Linux base image with musl and BusyBox.",
+      "ifFails": "A container built on it may lack tools or libraries it expects.",
+      "details": "Alpine is a minimal Linux distribution used as a base for small containers. It uses musl libc and BusyBox instead of glibc and GNU tools. Packages are installed with `apk`.",
+      "stop": "Stopping a container only affects that container. Alpine itself is just the base filesystem. Do not replace it with another base without rebuilding the application.",
+      "problems": [
+        "A binary fails with `not found` — it probably needs glibc; use a compatible base or install the missing library.",
+        "A command is missing — install the package with `apk add` in the Dockerfile.",
+        "The container exits — check its command and logs."
+      ]
+    },
+    "debian": {
+      "name": "Debian",
+      "what": "The Debian base image for containers.",
+      "ifFails": "A container built on it may fail if its packages or configuration are incomplete.",
+      "details": "The Debian image provides a minimal Debian root filesystem. It uses `apt` for packages and includes the standard Debian layout. Applications add their own packages and start command.",
+      "stop": "Stopping a container only affects that container. The Debian base filesystem stays in the image. Rebuild the image if you need different packages.",
+      "problems": [
+        "A package is missing — install it in the Dockerfile with `apt-get`.",
+        "The container exits — check the command and `docker logs`.",
+        "The image is large — use a slim variant and clean the apt caches."
+      ]
+    },
+    "ubuntu": {
+      "name": "Ubuntu",
+      "what": "The Ubuntu base image for containers.",
+      "ifFails": "A container built on it may fail if its packages or configuration are incomplete.",
+      "details": "The Ubuntu image provides a minimal Ubuntu root filesystem. It uses `apt` and the Ubuntu package repositories. Applications add their own packages and start command.",
+      "stop": "Stopping a container only affects that container. The base image stays unchanged. Rebuild it if you need different packages.",
+      "problems": [
+        "A package is missing — install it in the Dockerfile.",
+        "The container exits — check the command and logs.",
+        "The image is large — use a minimal variant and clean the apt caches."
+      ]
+    },
+    "timescaledb": {
+      "name": "TimescaleDB",
+      "what": "A PostgreSQL extension for time-series data.",
+      "ifFails": "Monitoring history and other time-series data may stop being stored or queried.",
+      "details": "TimescaleDB extends PostgreSQL with hypertables and time-based queries. Talaia needs it for its metrics history. The image starts PostgreSQL with the extension available; use a persistent volume for the database.",
+      "stop": "Stopping the container stops the database and any application using it. Data remains in its volume. Stop the dependent core first and start the database before it.",
+      "problems": [
+        "The core fails at migration `0014_metrics.sql` — the server is not using an image with TimescaleDB.",
+        "The database will not start — check the volume, disk space and PostgreSQL logs.",
+        "Metrics queries are slow — check indexes and retention settings."
+      ]
+    },
+    "immich": {
+      "name": "Immich",
+      "what": "A self-hosted photo and video library with mobile apps.",
+      "ifFails": "The photo library and its web interface stop working.",
+      "details": "Immich stores and indexes photos and videos, with face recognition and mobile uploads. It needs a PostgreSQL database and a storage volume. The server and machine-learning containers work together.",
+      "stop": "Stopping Immich stops uploads and browsing; files remain in their volumes. Stop the app before maintenance and keep the database running or stop it in the right order.",
+      "problems": [
+        "The web interface does not load — check the server container logs and the database connection.",
+        "Uploads fail — check storage space and the volume permissions.",
+        "Machine learning is slow — check CPU and GPU load and the machine-learning container logs."
+      ]
+    },
+    "immich-postgres": {
+      "name": "Immich PostgreSQL",
+      "what": "The PostgreSQL database used by Immich.",
+      "ifFails": "Immich cannot load or save the photo library.",
+      "details": "This is a PostgreSQL image prepared for Immich, with the extensions and settings the application expects. It stores metadata, users and album information, while original files live in a separate volume. Keep it on a persistent volume and back it up with the photo library.",
+      "stop": "Stopping it stops Immich and any direct database access. The data remains in the volume. Stop the application before the database and start the database first.",
+      "problems": [
+        "Immich cannot connect — check the database container and its credentials.",
+        "The database will not start — check the volume, disk space and PostgreSQL logs.",
+        "Data is missing — restore the database and photo volumes from the same backup."
+      ]
     }
   },
   "screen": {
