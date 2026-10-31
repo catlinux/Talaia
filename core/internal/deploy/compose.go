@@ -248,7 +248,10 @@ func addServiceEnvFile(compose, service string) (string, bool) {
 		return strings.Join(block.lines, block.newline), true
 	}
 	insert := strings.Repeat(" ", block.propertyIndent) + "env_file: [.env]"
-	lines := append(block.lines[:block.start+1], append([]string{insert}, block.lines[block.start+1:]...)...)
+	lines := make([]string, 0, len(block.lines)+1)
+	lines = append(lines, block.lines[:block.start+1]...)
+	lines = append(lines, insert)
+	lines = append(lines, block.lines[block.start+1:]...)
 	return strings.Join(lines, block.newline), true
 }
 

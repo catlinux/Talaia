@@ -13,6 +13,12 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+## [0.6.48] - 2026-10-31
+
+### Corregido
+
+- CI: se corrigen los avisos del lint de Go del código de la fase 6 (comparación de errores envueltos, append de slices, asignación sin efecto, condiciones más simples) y se excluye crypto/rand.Read de errcheck, porque nunca falla; la prueba con Docker del .env generado lee bien docker compose config (que muestra un dólar literal como dos).
+
 ## [0.6.47] - 2026-10-31
 
 ### Corregido
@@ -987,7 +993,8 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
   `.gitattributes` y `.gitignore`.
 - Licencia WNCL-1.0 aplicada: archivo `LICENSE` y sección de créditos en los README.
 
-[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.6.47...HEAD
+[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.6.48...HEAD
+[0.6.48]: https://github.com/catlinux/Talaia/releases/tag/v0.6.48
 [0.6.47]: https://github.com/catlinux/Talaia/releases/tag/v0.6.47
 [0.6.46]: https://github.com/catlinux/Talaia/releases/tag/v0.6.46
 [0.6.45]: https://github.com/catlinux/Talaia/releases/tag/v0.6.45

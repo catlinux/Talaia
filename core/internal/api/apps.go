@@ -347,7 +347,6 @@ func (h appHandler) create(w http.ResponseWriter, r *http.Request) {
 	publicKey, webhookSecret := "", ""
 	if app.Source == store.AppSourceGit {
 		var err error
-		publicKey, webhookSecret = "", ""
 		publicKey, app.DeployKeyEnc, webhookSecret, app.WebhookSecretEnc, err = newAppSecrets(h.deps.Box)
 		if err != nil {
 			internal(w, "generate app secrets", err)

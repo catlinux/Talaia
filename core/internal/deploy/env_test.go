@@ -219,7 +219,11 @@ func TestComposeConfigResolvesGeneratedEnvFile(t *testing.T) {
 		"UNICODE":   "café",
 		"CR":        "ab",
 	} {
-		if got, exists := service.Environment[key]; !exists || got != want {
+		// docker compose config prints a literal $ as $$, so undo that before
+		// comparing with the value the container receives.
+		got, exists := service.Environment[key]
+		got = strings.ReplaceAll(got, "$$", "$")
+		if !exists || got != want {
 			t.Errorf("environment[%s] = %q, present = %v; want %q", key, got, exists, want)
 		}
 	}

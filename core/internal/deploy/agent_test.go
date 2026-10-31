@@ -78,7 +78,7 @@ func TestHubAgentSourceAndStackNotFound(t *testing.T) {
 	}
 
 	jobs.outputs["job-1"] = []store.Job{{ID: "job-1", State: store.JobFailed, Message: "the stack does not exist"}}
-	if _, _, err := agent.ReadStack(context.Background(), "server-1", "shop"); err != ErrStackNotFound {
+	if _, _, err := agent.ReadStack(context.Background(), "server-1", "shop"); !errors.Is(err, ErrStackNotFound) {
 		t.Fatalf("ReadStack error = %v, want ErrStackNotFound", err)
 	}
 }

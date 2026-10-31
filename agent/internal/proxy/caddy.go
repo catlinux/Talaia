@@ -215,7 +215,7 @@ func validHostname(hostname string) bool {
 			return false
 		}
 		for _, char := range label {
-			if !(char >= 'a' && char <= 'z' || char >= '0' && char <= '9' || char == '-') {
+			if (char < 'a' || char > 'z') && (char < '0' || char > '9') && char != '-' {
 				return false
 			}
 		}
@@ -233,7 +233,7 @@ func validServiceName(service string) bool {
 		if !allowed {
 			return false
 		}
-		if index == 0 && !(char >= 'a' && char <= 'z' || char >= 'A' && char <= 'Z' || char >= '0' && char <= '9') {
+		if index == 0 && (char < 'a' || char > 'z') && (char < 'A' || char > 'Z') && (char < '0' || char > '9') {
 			return false
 		}
 	}
