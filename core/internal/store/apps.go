@@ -51,6 +51,7 @@ type App struct {
 	Image            string
 	Service          string
 	Port             int
+	HostPort         int
 	AutoDeploy       bool
 	PollEnabled      bool
 	ZeroDowntime     bool
@@ -101,7 +102,7 @@ type Domain struct {
 }
 
 const appColumns = `id, server_id, stack_name, source, repo_url, branch, build, dockerfile_path,
-	build_context, image, service, port, auto_deploy, poll_enabled, zero_downtime, template_id,
+	build_context, image, service, port, host_port, auto_deploy, poll_enabled, zero_downtime, template_id,
 	template_version, deploy_key_pub, deploy_key_enc, webhook_secret_enc, known_host,
 	created_at, updated_at, updated_by`
 
@@ -115,7 +116,7 @@ const domainColumns = `id, app_id, hostname, service, port, created_at`
 func scanApp(row rowScanner) (App, error) {
 	var app App
 	err := row.Scan(&app.ID, &app.ServerID, &app.StackName, &app.Source, &app.RepoURL, &app.Branch,
-		&app.Build, &app.DockerfilePath, &app.BuildContext, &app.Image, &app.Service, &app.Port,
+		&app.Build, &app.DockerfilePath, &app.BuildContext, &app.Image, &app.Service, &app.Port, &app.HostPort,
 		&app.AutoDeploy, &app.PollEnabled, &app.ZeroDowntime, &app.TemplateID, &app.TemplateVersion,
 		&app.DeployKeyPub,
 		&app.DeployKeyEnc, &app.WebhookSecretEnc, &app.KnownHost, &app.CreatedAt, &app.UpdatedAt,
@@ -177,14 +178,14 @@ func (s *Store) CreateApp(ctx context.Context, app App) (App, error) {
 	created, err := scanApp(s.pool.QueryRow(ctx,
 		`INSERT INTO app
 		     (server_id, stack_name, source, repo_url, branch, build, dockerfile_path,
-		      build_context, image, service, port, auto_deploy, poll_enabled, zero_downtime,
+		      build_context, image, service, port, host_port, auto_deploy, poll_enabled, zero_downtime,
 		      template_id, template_version, deploy_key_pub, deploy_key_enc, webhook_secret_enc,
 		      known_host, updated_by)
 		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16,
-		         $17, $18, $19, $20, $21)
+		         $17, $18, $19, $20, $21, $22)
 		 RETURNING `+appColumns,
 		app.ServerID, app.StackName, app.Source, app.RepoURL, app.Branch, app.Build,
-		app.DockerfilePath, app.BuildContext, app.Image, app.Service, app.Port, app.AutoDeploy,
+		app.DockerfilePath, app.BuildContext, app.Image, app.Service, app.Port, app.HostPort, app.AutoDeploy,
 		app.PollEnabled, app.ZeroDowntime, app.TemplateID, app.TemplateVersion, app.DeployKeyPub,
 		app.DeployKeyEnc, app.WebhookSecretEnc, app.KnownHost, app.UpdatedBy))
 	if isUniqueViolation(err) {
@@ -254,14 +255,14 @@ func (s *Store) UpdateApp(ctx context.Context, app App) (App, error) {
 		`UPDATE app SET
 		     server_id = $2, stack_name = $3, source = $4, repo_url = $5, branch = $6,
 		     build = $7, dockerfile_path = $8, build_context = $9, image = $10, service = $11,
-		     port = $12, auto_deploy = $13, poll_enabled = $14, zero_downtime = $15,
-		     template_id = $16, template_version = $17, deploy_key_pub = $18,
-		     deploy_key_enc = $19, webhook_secret_enc = $20, known_host = $21,
-		     updated_at = now(), updated_by = $22
+		     port = $12, host_port = $13, auto_deploy = $14, poll_enabled = $15, zero_downtime = $16,
+		     template_id = $17, template_version = $18, deploy_key_pub = $19,
+		     deploy_key_enc = $20, webhook_secret_enc = $21, known_host = $22,
+		     updated_at = now(), updated_by = $23
 		 WHERE id = $1
 		 RETURNING `+appColumns,
 		app.ID, app.ServerID, app.StackName, app.Source, app.RepoURL, app.Branch, app.Build,
-		app.DockerfilePath, app.BuildContext, app.Image, app.Service, app.Port, app.AutoDeploy,
+		app.DockerfilePath, app.BuildContext, app.Image, app.Service, app.Port, app.HostPort, app.AutoDeploy,
 		app.PollEnabled, app.ZeroDowntime, app.TemplateID, app.TemplateVersion, app.DeployKeyPub,
 		app.DeployKeyEnc, app.WebhookSecretEnc, app.KnownHost, app.UpdatedBy))
 	if errors.Is(err, ErrNotFound) {
@@ -274,6 +275,23 @@ func (s *Store) UpdateApp(ctx context.Context, app App) (App, error) {
 		return App{}, fmt.Errorf("update app %q: %w", app.ID, err)
 	}
 	return updated, nil
+}
+
+// SetAppHostPort stores the host port the agent chose for an app in external
+// mode.
+func (s *Store) SetAppHostPort(ctx context.Context, appID string, port int) error {
+	if port <= 0 || port > 65535 {
+		return errors.New("invalid host port")
+	}
+	tag, err := s.pool.Exec(ctx,
+		`UPDATE app SET host_port = $2, updated_at = now() WHERE id = $1`, appID, port)
+	if err != nil {
+		return fmt.Errorf("set app host port: %w", err)
+	}
+	if tag.RowsAffected() == 0 {
+		return ErrNotFound
+	}
+	return nil
 }
 
 // DeleteApp removes an app. Its variables, deployments and domains go with it.

@@ -21,10 +21,11 @@ const (
 	// DefaultIdleInterval is how long the worker waits when the queue is empty.
 	DefaultIdleInterval = 5 * time.Second
 
-	sourceTimeout  = 6 * time.Minute
-	buildTimeout   = 31 * time.Minute
-	stackTimeout   = 3 * time.Minute
-	releaseTimeout = 11 * time.Minute
+	sourceTimeout   = 6 * time.Minute
+	buildTimeout    = 31 * time.Minute
+	stackTimeout    = 3 * time.Minute
+	releaseTimeout  = 11 * time.Minute
+	portPickTimeout = time.Minute
 )
 
 // ErrStackNotFound tells the pipeline that the app stack does not exist yet.
@@ -46,6 +47,7 @@ type Agent interface {
 	ReadStack(ctx context.Context, serverID, name string) (compose, env string, err error)
 	WriteStack(ctx context.Context, serverID string, msg *agentv1.StackWrite) (string, error)
 	UpStack(ctx context.Context, serverID, name string) (string, error)
+	PickPort(ctx context.Context, serverID, name string) (int, error)
 }
 
 // SecretOpener decrypts the sealed deploy key and build variables.
@@ -67,6 +69,7 @@ type AppStore interface {
 	UpdateDeployment(ctx context.Context, deployment store.Deployment) error
 	SupersedeQueuedDeployments(ctx context.Context, appID string) (int64, error)
 	ClaimNextDeployment(ctx context.Context) (store.Deployment, error)
+	SetAppHostPort(ctx context.Context, appID string, port int) error
 }
 
 // Options are the collaborators of a Manager.
@@ -337,13 +340,41 @@ func (m *Manager) deploy(ctx context.Context, app store.App, deployment *store.D
 	if !imageRefRe.MatchString(imageRef) {
 		return errors.New("invalid app image")
 	}
+
+	hostPort := 0
+	if !managed {
+		if app.Port <= 0 || app.Port > 65535 {
+			return errors.New("the app needs a port for 127.0.0.1")
+		}
+		hostPort = app.HostPort
+		if hostPort == 0 {
+			pickCtx, cancel := context.WithTimeout(ctx, portPickTimeout)
+			picked, err := m.agent.PickPort(pickCtx, app.ServerID, app.StackName)
+			cancel()
+			if err != nil {
+				return fmt.Errorf("pick the app host port: %w", err)
+			}
+			if picked < 20000 || picked > 29999 {
+				return fmt.Errorf("the agent returned an invalid host port %d", picked)
+			}
+			if err := m.store.SetAppHostPort(ctx, app.ID, picked); err != nil {
+				return fmt.Errorf("store the app host port: %w", err)
+			}
+			hostPort = picked
+			app.HostPort = picked
+			log.add(fmt.Sprintf("host port %d chosen by the agent", picked))
+		} else if hostPort < 20000 || hostPort > 29999 {
+			return fmt.Errorf("the stored app host port %d is outside 20000-29999", hostPort)
+		}
+	}
+
 	deployment.State = store.DeploymentReleasing
 	deployment.ImageRef = imageRef
 	if err := m.save(ctx, *deployment, log); err != nil {
 		return err
 	}
 
-	if err := m.prepareStack(ctx, app, service, imageRef, managed, log); err != nil {
+	if err := m.prepareStack(ctx, app, service, imageRef, managed, hostPort, log); err != nil {
 		return err
 	}
 
@@ -404,12 +435,12 @@ func imageForRollback(app store.App, deployment *store.Deployment) (rollbackImag
 	return rollbackImage{image: ref, tag: tag}, nil
 }
 
-func (m *Manager) prepareStack(ctx context.Context, app store.App, service, imageRef string, managed bool, log *deploymentLog) error {
+func (m *Manager) prepareStack(ctx context.Context, app store.App, service, imageRef string, managed bool, hostPort int, log *deploymentLog) error {
 	readCtx, cancel := context.WithTimeout(ctx, stackTimeout)
 	compose, env, err := m.agent.ReadStack(readCtx, app.ServerID, app.StackName)
 	cancel()
 	if errors.Is(err, ErrStackNotFound) {
-		generated, err := generateCompose(app, service, imageRef, managed)
+		generated, err := generateCompose(app, service, imageRef, managed, hostPort)
 		if err != nil {
 			return err
 		}

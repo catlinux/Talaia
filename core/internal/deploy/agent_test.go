@@ -96,3 +96,20 @@ func TestHubAgentReadsTheStack(t *testing.T) {
 		t.Errorf("stack = %q / %q", compose, env)
 	}
 }
+
+func TestHubAgentPicksAPort(t *testing.T) {
+	jobs := newFakeJobs()
+	jobs.outputs["job-1"] = []store.Job{{ID: "job-1", State: store.JobSucceeded, Output: "23456"}}
+	dispatcher := &fakeDispatcher{}
+	agent := NewHubAgent(HubAgentOptions{Dispatcher: dispatcher, Jobs: jobs, PollInterval: time.Millisecond})
+	port, err := agent.PickPort(context.Background(), "server-1", "shop")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if port != 23456 {
+		t.Errorf("port = %d", port)
+	}
+	if len(dispatcher.messages) != 1 || dispatcher.messages[0].GetAppPortPick().GetName() != "shop" {
+		t.Errorf("messages = %v", dispatcher.messages)
+	}
+}

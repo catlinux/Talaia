@@ -13,6 +13,12 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.6.37] - 2026-10-31
+
+### Added
+
+- Agent and core: in external proxy mode each app gets its own free port on 127.0.0.1 between 20000 and 29999, chosen by the agent (new AppPortPick command, migration 0020) and kept for later deployments; the compose file publishes 127.0.0.1:<that port>:<app port>.
+
 ## [0.6.36] - 2026-10-31
 
 ### Added
@@ -921,7 +927,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.6.36...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.6.37...HEAD
+[0.6.37]: https://github.com/catlinux/Talaia/releases/tag/v0.6.37
 [0.6.36]: https://github.com/catlinux/Talaia/releases/tag/v0.6.36
 [0.6.35]: https://github.com/catlinux/Talaia/releases/tag/v0.6.35
 [0.6.34]: https://github.com/catlinux/Talaia/releases/tag/v0.6.34

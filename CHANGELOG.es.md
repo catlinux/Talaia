@@ -13,6 +13,12 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+## [0.6.37] - 2026-10-31
+
+### Añadido
+
+- Agente y core: en modo de proxy externo cada app recibe su propio puerto libre de 127.0.0.1 entre 20000 y 29999, elegido por el agente (nuevo comando AppPortPick, migración 0020) y conservado en los despliegues siguientes; el compose publica 127.0.0.1:<ese puerto>:<puerto de la app>.
+
 ## [0.6.36] - 2026-10-31
 
 ### Añadido
@@ -921,7 +927,8 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
   `.gitattributes` y `.gitignore`.
 - Licencia WNCL-1.0 aplicada: archivo `LICENSE` y sección de créditos en los README.
 
-[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.6.36...HEAD
+[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.6.37...HEAD
+[0.6.37]: https://github.com/catlinux/Talaia/releases/tag/v0.6.37
 [0.6.36]: https://github.com/catlinux/Talaia/releases/tag/v0.6.36
 [0.6.35]: https://github.com/catlinux/Talaia/releases/tag/v0.6.35
 [0.6.34]: https://github.com/catlinux/Talaia/releases/tag/v0.6.34

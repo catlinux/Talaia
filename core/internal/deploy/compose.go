@@ -23,7 +23,7 @@ var (
 	imageRefRe    = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9_.:/@-]{0,255}$`)
 )
 
-func generateCompose(app store.App, service, imageRef string, managed bool) (string, error) {
+func generateCompose(app store.App, service, imageRef string, managed bool, hostPort int) (string, error) {
 	if !serviceNameRe.MatchString(service) {
 		return "", errors.New("invalid app service name")
 	}
@@ -49,6 +49,9 @@ networks:
 	if app.Port <= 0 || app.Port > 65535 {
 		return "", errors.New("the app needs a port for 127.0.0.1")
 	}
+	if hostPort < 20000 || hostPort > 29999 {
+		return "", errors.New("the app needs a host port in 20000-29999")
+	}
 	return fmt.Sprintf(`services:
   %s:
     image: %s
@@ -59,7 +62,7 @@ networks:
       - "127.0.0.1:%d:%d"
     labels:
       dev.talaia.app: %s
-`, service, imageRef, DefaultCPUs, DefaultMemory, app.Port, app.Port, app.ID), nil
+`, service, imageRef, DefaultCPUs, DefaultMemory, hostPort, app.Port, app.ID), nil
 }
 
 // setServiceImage changes only the image of service in an existing Compose

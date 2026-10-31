@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -16,7 +17,9 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	appbuild "github.com/catlinux/Talaia/agent/internal/build"
+	"github.com/catlinux/Talaia/agent/internal/proxy"
 	"github.com/catlinux/Talaia/agent/internal/source"
+	"github.com/catlinux/Talaia/agent/internal/stacks"
 	agentv1 "github.com/catlinux/Talaia/proto/gen/go"
 )
 
@@ -51,6 +54,9 @@ var errNoBuild = errors.New("the image builder is not available on this agent")
 
 // errNoRelease is the failure of an app release command without the releaser.
 var errNoRelease = errors.New("the app releaser is not available on this agent")
+
+// errNoPorts is the failure of a port command without the port picker.
+var errNoPorts = errors.New("the app port picker is not available on this agent")
 
 // errNoProxy is the failure of a proxy command without the proxy manager.
 var errNoProxy = errors.New("the proxy manager is not available on this agent")
@@ -92,6 +98,11 @@ type AppReleaser interface {
 	Release(ctx context.Context, app *agentv1.AppRelease) (string, error)
 }
 
+// PortPicker chooses a free TCP port on 127.0.0.1 for an app.
+type PortPicker interface {
+	Pick(ctx context.Context) (proxy.Port, error)
+}
+
 // ProxyManager installs the managed proxy and loads its configuration.
 type ProxyManager interface {
 	Install(ctx context.Context, action agentv1.ProxyInstallAction) (string, error)
@@ -109,6 +120,8 @@ type Executor struct {
 	builds AppBuilder
 	// releases is nil until WithRelease sets it.
 	releases AppReleaser
+	// ports is nil until WithPorts sets it.
+	ports PortPicker
 	// proxy is nil until WithProxy sets it.
 	proxy ProxyManager
 	// resources is nil until WithResources sets it.
@@ -163,6 +176,12 @@ func (e *Executor) WithRelease(releaser AppReleaser) *Executor {
 	return e
 }
 
+// WithPorts lets the executor pick host ports for apps.
+func (e *Executor) WithPorts(picker PortPicker) *Executor {
+	e.ports = picker
+	return e
+}
+
 // WithProxy lets the executor install and configure the managed proxy.
 func (e *Executor) WithProxy(manager ProxyManager) *Executor {
 	e.proxy = manager
@@ -201,6 +220,7 @@ func (e *Executor) Handle(ctx context.Context, msg *agentv1.CoreMsg, emit func(*
 	write, stackAction, read, adopt := msg.GetStackWrite(), msg.GetStackAction(), msg.GetStackRead(), msg.GetStackAdopt()
 	appSource, appBuild := msg.GetAppSource(), msg.GetAppBuild()
 	appRelease := msg.GetAppRelease()
+	appPortPick := msg.GetAppPortPick()
 	proxyInstall, proxyApply := msg.GetProxyInstall(), msg.GetProxyApply()
 	list, remove := msg.GetListResources(), msg.GetRemoveResources()
 	updateCommand := msg.GetAgentUpdate()
@@ -208,7 +228,7 @@ func (e *Executor) Handle(ctx context.Context, msg *agentv1.CoreMsg, emit func(*
 	aptUpgrade, hostReboot := msg.GetAptUpgrade(), msg.GetHostReboot()
 	serviceAction := msg.GetServiceAction()
 	readJournal := msg.GetReadJournal()
-	if action == nil && logs == nil && write == nil && stackAction == nil && read == nil && adopt == nil && appSource == nil && appBuild == nil && appRelease == nil && proxyInstall == nil && proxyApply == nil && list == nil && remove == nil && updateCommand == nil && aptStatus == nil && aptUpgrade == nil && hostReboot == nil && serviceAction == nil && readJournal == nil {
+	if action == nil && logs == nil && write == nil && stackAction == nil && read == nil && adopt == nil && appSource == nil && appBuild == nil && appRelease == nil && appPortPick == nil && proxyInstall == nil && proxyApply == nil && list == nil && remove == nil && updateCommand == nil && aptStatus == nil && aptUpgrade == nil && hostReboot == nil && serviceAction == nil && readJournal == nil {
 		return false
 	}
 
@@ -313,6 +333,23 @@ func (e *Executor) Handle(ctx context.Context, msg *agentv1.CoreMsg, emit func(*
 				return "", errNoRelease
 			}
 			return e.releases.Release(ctx, appRelease)
+		})
+	case appPortPick != nil:
+		go e.execute(ctx, jobID, "app port pick "+appPortPick.GetName(), jobTimeout, emit, func(ctx context.Context) (string, error) {
+			if e.ports == nil {
+				return "", errNoPorts
+			}
+			if !stacks.ValidName(appPortPick.GetName()) {
+				return "", errors.New("invalid stack name")
+			}
+			port, err := e.ports.Pick(ctx)
+			if err != nil {
+				return "", err
+			}
+			if port.Host != proxy.ExternalHost || int(port.Number) < proxy.PortRangeStart || int(port.Number) > proxy.PortRangeEnd {
+				return "", errors.New("the port picker returned a port outside the app range")
+			}
+			return strconv.Itoa(int(port.Number)), nil
 		})
 	case proxyInstall != nil:
 		go e.execute(ctx, jobID, "proxy install "+proxyInstall.GetAction().String(), proxyInstallTimeout, emit, func(ctx context.Context) (string, error) {

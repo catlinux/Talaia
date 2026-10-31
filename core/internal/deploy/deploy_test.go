@@ -108,6 +108,16 @@ func (f *fakeStore) ClaimNextDeployment(_ context.Context) (store.Deployment, er
 	return store.Deployment{}, store.ErrNotFound
 }
 
+func (f *fakeStore) SetAppHostPort(_ context.Context, appID string, port int) error {
+	app, ok := f.apps[appID]
+	if !ok {
+		return store.ErrNotFound
+	}
+	app.HostPort = port
+	f.apps[appID] = app
+	return nil
+}
+
 func (f *fakeStore) deployment(id string) store.Deployment {
 	for _, item := range f.deployments {
 		if item.ID == id {
@@ -152,6 +162,9 @@ type fakeAgent struct {
 	releaseKeep  []string
 	releaseCalls int
 	upCalls      int
+	port         int
+	portErr      error
+	portCalls    int
 }
 
 func (f *fakeAgent) Source(context.Context, string, *agentv1.AppSource) (SourceResult, error) {
@@ -200,6 +213,18 @@ func (f *fakeAgent) UpStack(context.Context, string, string) (string, error) {
 	f.calls = append(f.calls, "up")
 	f.upCalls++
 	return "up output", f.upErr
+}
+
+func (f *fakeAgent) PickPort(context.Context, string, string) (int, error) {
+	f.calls = append(f.calls, "port")
+	f.portCalls++
+	if f.portErr != nil {
+		return 0, f.portErr
+	}
+	if f.port == 0 {
+		return 23456, nil
+	}
+	return f.port, nil
 }
 
 type fakeBox struct {
@@ -281,7 +306,7 @@ func TestDeploySucceedsThroughSourceBuildAndRelease(t *testing.T) {
 	if deployment.CommitSubject != "first deploy" || deployment.CommitSHA == "" {
 		t.Errorf("commit = %q %q", deployment.CommitSHA, deployment.CommitSubject)
 	}
-	if len(agent.calls) != 5 || agent.calls[0] != "source" || agent.calls[1] != "build" || agent.calls[2] != "read" || agent.calls[3] != "write" || agent.calls[4] != "release" {
+	if len(agent.calls) != 6 || agent.calls[0] != "source" || agent.calls[1] != "build" || agent.calls[2] != "port" || agent.calls[3] != "read" || agent.calls[4] != "write" || agent.calls[5] != "release" {
 		t.Errorf("calls = %v", agent.calls)
 	}
 	if len(agent.buildArgs) != 1 || agent.buildArgs[0].GetKey() != "BUILD_ONLY" || agent.buildArgs[0].GetValue() != "plain" {
@@ -289,6 +314,12 @@ func TestDeploySucceedsThroughSourceBuildAndRelease(t *testing.T) {
 	}
 	if len(agent.writes) != 1 || !strings.Contains(agent.writes[0], "image: talaia/shop:abcdef123456") {
 		t.Errorf("writes = %v", agent.writes)
+	}
+	if len(agent.writes) == 1 && !strings.Contains(agent.writes[0], "127.0.0.1:23456:3000") {
+		t.Errorf("compose does not use the picked host port:\n%s", agent.writes[0])
+	}
+	if got := state.apps[app.ID].HostPort; got != 23456 {
+		t.Errorf("stored host port = %d", got)
 	}
 	if agent.releaseTag != "abcdef123456" {
 		t.Errorf("release tag = %q", agent.releaseTag)
@@ -316,8 +347,8 @@ func TestBuildFailureNeverTouchesTheStack(t *testing.T) {
 		t.Fatalf("deployment = %+v", deployment)
 	}
 	for _, call := range agent.calls {
-		if call == "read" || call == "write" || call == "release" || call == "up" {
-			t.Errorf("the stack was touched after a build failure: %v", agent.calls)
+		if call == "read" || call == "write" || call == "release" || call == "up" || call == "port" {
+			t.Errorf("the stack or port was touched after a build failure: %v", agent.calls)
 		}
 	}
 }
@@ -430,9 +461,55 @@ func TestRollbackSkipsSourceAndBuild(t *testing.T) {
 	}
 }
 
+func TestDeployReusesAStoredHostPort(t *testing.T) {
+	app := testApp()
+	app.HostPort = 24567
+	agent := &fakeAgent{source: SourceResult{Commit: "abcdef123456" + strings.Repeat("0", 28)}}
+	manager, state := newTestManager(t, app, agent)
+	if err := manager.Enqueue(context.Background(), app.ID, "push", ""); err != nil {
+		t.Fatal(err)
+	}
+	deployment := processQueued(t, manager, state)
+	if deployment.State != store.DeploymentSucceeded {
+		t.Fatalf("deployment = %+v", deployment)
+	}
+	if agent.portCalls != 0 {
+		t.Errorf("the stored host port was picked again")
+	}
+	if len(agent.writes) != 1 || !strings.Contains(agent.writes[0], "127.0.0.1:24567:3000") {
+		t.Errorf("compose = %v", agent.writes)
+	}
+}
+
+func TestDeployRefusesAnInvalidPickedPort(t *testing.T) {
+	for _, port := range []int{3000, 80, 30000} {
+		t.Run(fmt.Sprintf("%d", port), func(t *testing.T) {
+			app := testApp()
+			agent := &fakeAgent{
+				source: SourceResult{Commit: "abcdef123456" + strings.Repeat("0", 28)},
+				port:   port,
+			}
+			manager, state := newTestManager(t, app, agent)
+			if err := manager.Enqueue(context.Background(), app.ID, "push", ""); err != nil {
+				t.Fatal(err)
+			}
+			deployment := processQueued(t, manager, state)
+			if deployment.State != store.DeploymentFailed {
+				t.Fatalf("deployment = %+v", deployment)
+			}
+			if len(agent.writes) != 0 || agent.releaseCalls != 0 {
+				t.Errorf("the stack was touched with an invalid port: %v", agent.calls)
+			}
+			if got := state.apps[app.ID].HostPort; got != 0 {
+				t.Errorf("invalid port was stored: %d", got)
+			}
+		})
+	}
+}
+
 func TestGenerateCompose(t *testing.T) {
 	app := testApp()
-	external, err := generateCompose(app, "app", "talaia/shop:abcdef123456", false)
+	external, err := generateCompose(app, "app", "talaia/shop:abcdef123456", false, 23456)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -442,7 +519,7 @@ func TestGenerateCompose(t *testing.T) {
 		"restart: unless-stopped",
 		"cpus: \"1.0\"",
 		"mem_limit: 512m",
-		"\"127.0.0.1:3000:3000\"",
+		"\"127.0.0.1:23456:3000\"",
 		"dev.talaia.app: app-1",
 	} {
 		if !strings.Contains(external, want) {
@@ -453,7 +530,7 @@ func TestGenerateCompose(t *testing.T) {
 		t.Errorf("external compose uses the managed proxy network:\n%s", external)
 	}
 
-	managed, err := generateCompose(app, "app", "talaia/shop:abcdef123456", true)
+	managed, err := generateCompose(app, "app", "talaia/shop:abcdef123456", true, 0)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -482,6 +559,9 @@ func TestManagedModeUsesTheProxyNetwork(t *testing.T) {
 	}
 	if !strings.Contains(agent.writes[0], "talaia-proxy") || strings.Contains(agent.writes[0], "127.0.0.1") {
 		t.Errorf("managed compose = %q", agent.writes[0])
+	}
+	if agent.portCalls != 0 {
+		t.Errorf("managed mode picked a host port")
 	}
 }
 

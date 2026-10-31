@@ -232,6 +232,27 @@ func TestAppEnvPublicListingHidesSecretValues(t *testing.T) {
 	}
 }
 
+func TestAppHostPort(t *testing.T) {
+	s := newTestStore(t)
+	ctx := context.Background()
+	app := createTestApp(t, s, newTestServerID(t, s))
+	if app.HostPort != 0 {
+		t.Fatalf("new app host port = %d, want 0", app.HostPort)
+	}
+	if err := s.SetAppHostPort(ctx, app.ID, 23456); err != nil {
+		t.Fatalf("SetAppHostPort: %v", err)
+	}
+	got, err := s.GetApp(ctx, app.ID)
+	if err != nil || got.HostPort != 23456 {
+		t.Fatalf("app host port = %d, %v", got.HostPort, err)
+	}
+	for _, port := range []int{0, -1, 70000} {
+		if err := s.SetAppHostPort(ctx, app.ID, port); err == nil {
+			t.Errorf("SetAppHostPort(%d) succeeded", port)
+		}
+	}
+}
+
 func TestDeploymentNumberingLogAndSupersede(t *testing.T) {
 	s := newTestStore(t)
 	ctx := context.Background()

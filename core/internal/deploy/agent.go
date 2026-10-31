@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -19,6 +20,7 @@ const (
 	jobKindRead    = "deploy_stack_read"
 	jobKindWrite   = "deploy_stack_write"
 	jobKindUp      = "deploy_stack_up"
+	jobKindPort    = "deploy_port_pick"
 
 	defaultPollInterval = time.Second
 )
@@ -135,6 +137,23 @@ func (a *HubAgent) UpStack(ctx context.Context, serverID, name string) (string, 
 		return job.Output, err
 	}
 	return job.Output, nil
+}
+
+// PickPort asks the agent for a free host port on 127.0.0.1.
+func (a *HubAgent) PickPort(ctx context.Context, serverID, name string) (int, error) {
+	job, err := a.runJob(ctx, serverID, jobKindPort, func(jobID string) *agentv1.CoreMsg {
+		return &agentv1.CoreMsg{JobId: jobID, Cmd: &agentv1.CoreMsg_AppPortPick{
+			AppPortPick: &agentv1.AppPortPick{Name: name},
+		}}
+	})
+	if err != nil {
+		return 0, err
+	}
+	port, err := strconv.Atoi(strings.TrimSpace(job.Output))
+	if err != nil {
+		return 0, fmt.Errorf("decode the app host port: %w", err)
+	}
+	return port, nil
 }
 
 func (a *HubAgent) runJob(ctx context.Context, serverID, kind string, command func(jobID string) *agentv1.CoreMsg) (store.Job, error) {

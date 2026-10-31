@@ -45,6 +45,7 @@ message CoreMsg {
     ProxyApply proxy_apply = 31;
     ProxyInstall proxy_install = 32;
     GitProbe git_probe = 33;
+    AppPortPick app_port_pick = 34;
   }
 }
 
@@ -311,6 +312,13 @@ message AppRelease {
   // Tags of talaia/<name> to keep after the release (the new one is always kept);
   // the agent removes the other talaia/<name>:* images and nothing else.
   repeated string keep_tags = 6;
+}
+
+// AppPortPick asks the agent for a free TCP port on 127.0.0.1 in its app
+// range. The succeeded JobEvent output is the port in decimal.
+message AppPortPick {
+  // Stack name, as in StackWrite.
+  string name = 1;
 }
 
 // ProxyMode is how apps are published on a server.
