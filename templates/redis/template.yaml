@@ -1,0 +1,24 @@
+id: redis
+version: "1.0.0"
+name_en: Redis
+name_es: Redis
+name_ca: Redis
+description_en: In-memory cache and key-value store building block.
+description_es: Bloque de caché en memoria y almacén clave-valor.
+description_ca: Bloc de memòria cau i magatzem clau-valor.
+image: redis:7.4.2-alpine
+service: app
+port: 6379
+ram_mb: 128
+compose: |
+  services:
+    app:
+      image: {{image}}
+      restart: unless-stopped
+      ports:
+        - "127.0.0.1:{{host_port}}:{{port}}"
+      command: ["redis-server", "--requirepass", "{{password:32}}"]
+      volumes:
+        - redis_data:/data
+  volumes:
+    redis_data:

@@ -203,6 +203,7 @@ var routePerms = map[routeKey]routePermission{
 	{http.MethodGet, "/servers/{serverID}/notes/services"}:                   {mode: permExact, permission: rbac.PermHostServicesView, target: targetServer},
 	{http.MethodPut, "/servers/{serverID}/notes/services/{name}"}:            {mode: permExact, permission: rbac.PermHostServicesControl, target: targetServer, noAPIKey: true},
 	{http.MethodGet, "/apps"}:                                                {mode: permAny},
+	{http.MethodGet, "/templates"}:                                           {mode: permAny},
 	{http.MethodGet, "/servers/{serverID}/apps"}:                             {mode: permExact, permission: rbac.PermStackView, target: targetServer},
 	{http.MethodPost, "/servers/{serverID}/apps"}:                            {mode: permExact, permission: rbac.PermStackEdit, target: targetServer, noAPIKey: true},
 	{http.MethodGet, "/apps/{appID}"}:                                        {mode: permExact, permission: rbac.PermStackView, target: targetApp},

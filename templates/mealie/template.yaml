@@ -1,0 +1,26 @@
+id: mealie
+version: "1.0.0"
+name_en: Mealie
+name_es: Mealie
+name_ca: Mealie
+description_en: Recipe manager and meal planner.
+description_es: Gestor de recetas y planificador de comidas.
+description_ca: Gestor de receptes i planificador d’àpats.
+image: ghcr.io/mealie-recipes/mealie:v2.2.0
+service: app
+port: 9000
+ram_mb: 512
+compose: |
+  services:
+    app:
+      image: {{image}}
+      restart: unless-stopped
+      ports:
+        - "127.0.0.1:{{host_port}}:{{port}}"
+      environment:
+        BASE_URL: "https://{{domain}}"
+        ALLOW_SIGNUP: "false"
+      volumes:
+        - mealie_data:/app/data
+  volumes:
+    mealie_data:

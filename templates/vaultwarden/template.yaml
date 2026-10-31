@@ -1,0 +1,27 @@
+id: vaultwarden
+version: "1.0.0"
+name_en: Vaultwarden
+name_es: Vaultwarden
+name_ca: Vaultwarden
+description_en: Lightweight Bitwarden-compatible password manager.
+description_es: Gestor de contraseñas ligero compatible con Bitwarden.
+description_ca: Gestor de contrasenyes lleuger compatible amb Bitwarden.
+image: vaultwarden/server:1.32.7
+service: app
+port: 80
+ram_mb: 512
+compose: |
+  services:
+    app:
+      image: {{image}}
+      restart: unless-stopped
+      ports:
+        - "127.0.0.1:{{host_port}}:{{port}}"
+      environment:
+        DOMAIN: "https://{{domain}}"
+        ADMIN_TOKEN: "{{password:48}}"
+        SIGNUPS_ALLOWED: "false"
+      volumes:
+        - vaultwarden_data:/data
+  volumes:
+    vaultwarden_data:

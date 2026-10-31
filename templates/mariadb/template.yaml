@@ -1,0 +1,28 @@
+id: mariadb
+version: "1.0.0"
+name_en: MariaDB
+name_es: MariaDB
+name_ca: MariaDB
+description_en: MySQL-compatible relational database building block.
+description_es: Bloque de base de datos relacional compatible con MySQL.
+description_ca: Bloc de base de dades relacional compatible amb MySQL.
+image: mariadb:11.4.4
+service: app
+port: 3306
+ram_mb: 256
+compose: |
+  services:
+    app:
+      image: {{image}}
+      restart: unless-stopped
+      ports:
+        - "127.0.0.1:{{host_port}}:{{port}}"
+      environment:
+        MARIADB_DATABASE: "talaia"
+        MARIADB_USER: "talaia"
+        MARIADB_PASSWORD: "{{password:32}}"
+        MARIADB_ROOT_PASSWORD: "{{password:32}}"
+      volumes:
+        - mariadb_data:/var/lib/mysql
+  volumes:
+    mariadb_data:

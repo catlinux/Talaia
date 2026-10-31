@@ -1,0 +1,27 @@
+id: postgresql
+version: "1.0.0"
+name_en: PostgreSQL
+name_es: PostgreSQL
+name_ca: PostgreSQL
+description_en: Reliable relational database building block.
+description_es: Bloque de base de datos relacional fiable.
+description_ca: Bloc de base de dades relacional fiable.
+image: postgres:17.2-alpine
+service: app
+port: 5432
+ram_mb: 256
+compose: |
+  services:
+    app:
+      image: {{image}}
+      restart: unless-stopped
+      ports:
+        - "127.0.0.1:{{host_port}}:{{port}}"
+      environment:
+        POSTGRES_DB: "talaia"
+        POSTGRES_USER: "talaia"
+        POSTGRES_PASSWORD: "{{password:32}}"
+      volumes:
+        - postgres_data:/var/lib/postgresql/data
+  volumes:
+    postgres_data:

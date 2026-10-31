@@ -1,0 +1,27 @@
+id: freshrss
+version: "1.0.0"
+name_en: FreshRSS
+name_es: FreshRSS
+name_ca: FreshRSS
+description_en: Self-hosted RSS feed aggregator.
+description_es: Agregador de fuentes RSS autoalojado.
+description_ca: Agregador de fonts RSS autoallotjat.
+image: freshrss/freshrss:1.24.2
+service: app
+port: 80
+ram_mb: 256
+compose: |
+  services:
+    app:
+      image: {{image}}
+      restart: unless-stopped
+      ports:
+        - "127.0.0.1:{{host_port}}:{{port}}"
+      environment:
+        TZ: "Europe/Madrid"
+      volumes:
+        - freshrss_data:/var/www/FreshRSS/data
+        - freshrss_extensions:/var/www/FreshRSS/extensions
+  volumes:
+    freshrss_data:
+    freshrss_extensions:

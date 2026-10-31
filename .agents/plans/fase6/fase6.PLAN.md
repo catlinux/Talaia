@@ -144,6 +144,12 @@ otras webs) y ninguno puede verse afectado; todo debe convivir.** Ver *Convivenc
   publican con el core (no se descargan de internet en tiempo de ejecución). Crear desde plantilla = app
   `source=template` sin build.
 
+**Pendiente de la revisión del paso 10 (2026-10-31):** (1) las plantillas publican siempre
+`127.0.0.1:{{host_port}}` (modo externo); en modo gestionado tendrían que unirse a la red `talaia-proxy` para que
+Caddy llegue a ellas: resolver antes del cierre o declarar las plantillas solo para modo externo. (2) Las versiones de
+imagen fijadas son de finales de 2024: actualizarlas a las estables actuales antes de la 0.7.0 (con un script que
+consulte los registros). (3) Licencias de cada imagen para `CREDITS.md`: las aplica el mantenedor con su script.
+
 ### D8 · Panel
 - Navegación (maqueta 4): **Apps**, **Dominios**, **Plantillas**.
 - Asistente de 5 pasos (Origen · Construcción · Destino · Dominio · Revisión) desde Git, plantilla o imagen, con
@@ -167,7 +173,7 @@ CHANGELOG, o el script falla) y marca ✅ aquí y en los dos TODO. Ejecutor por 
 | 7 ✅ | Agente: release sin corte, reversión y limpieza de imágenes (D3) | `agent/internal/release/**` | pruebas: nuevo sano → viejo fuera; nuevo enfermo → viejo sigue y `failed`; se guardan 3 imágenes; solo borra `talaia/<stack>:*` | AgentRelay · alto + **revisión Opus** | 0.6.7 |
 | 8 | Core: canalización de despliegue (cola por app, estados, log, generación del compose con límites de CPU/RAM, «editada a mano») | `core/internal/deploy/**` | pruebas con agente falso: push → build → release → `succeeded`; push durante otro → `superseded`; fallo de build no toca el stack | AgentRelay · alto | 0.6.8 |
 | 9 ✅ | API de apps, variables, dominios, despliegues, reversión y proxy (incluido el bloque de Apache/nginx); auditoría | `core/internal/api/{apps,domains,deployments,proxy}.go`, `core/internal/api/api.go`, `core/internal/api/authz.go` | pruebas por rol; secretos nunca en respuestas; clave de API puede desplegar y no editar | AgentRelay · medio | 0.6.9 |
-| 10 | Plantillas (D7) según M3 | `templates/**`, `core/internal/templates/**` | prueba que valida todas con `docker compose config` (en CI) y los parámetros | AgentRelay · medio | 0.6.10 |
+| 10 ✅ | Plantillas (D7) según M3 | `templates/**`, `core/internal/templates/**` | prueba que valida todas con `docker compose config` (en CI) y los parámetros | AgentRelay · medio | 0.6.10 |
 | 11 | Panel: Apps (lista y ficha con despliegues, log en vivo, volver atrás, variables) | `web/src/screens/Apps*.tsx`, `web/src/screens/apps/**`, `web/src/api/apps.ts`, locales | capturas claro/oscuro/móvil; pruebas por rol | AgentRelay · alto | 0.6.11 |
 | 12 | Panel: asistente de nueva app (maqueta 4) | `web/src/screens/apps/wizard/**`, locales | capturas; los cinco pasos con los tres orígenes; en modo externo, el paso Dominio muestra el bloque de Apache | AgentRelay · alto | 0.6.12 |
 | 13 | Panel: Dominios (estado del certificado o «lo gestiona tu Apache») y Plantillas; modo de proxy en el servidor | `web/src/screens/{Domains,Templates}*.tsx`, `web/src/screens/server/**` | capturas; pruebas | AgentRelay · medio | 0.6.13 |

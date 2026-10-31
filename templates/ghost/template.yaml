@@ -1,0 +1,25 @@
+id: ghost
+version: "1.0.0"
+name_en: Ghost
+name_es: Ghost
+name_ca: Ghost
+description_en: Modern publishing platform for independent blogs.
+description_es: Plataforma de publicación moderna para blogs independientes.
+description_ca: Plataforma de publicació moderna per a blogs independents.
+image: ghost:5.103.0
+service: app
+port: 2368
+ram_mb: 512
+compose: |
+  services:
+    app:
+      image: {{image}}
+      restart: unless-stopped
+      ports:
+        - "127.0.0.1:{{host_port}}:{{port}}"
+      environment:
+        url: "https://{{domain}}"
+      volumes:
+        - ghost_data:/var/lib/ghost/content
+  volumes:
+    ghost_data:

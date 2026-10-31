@@ -1,0 +1,36 @@
+id: miniflux
+version: "1.0.0"
+name_en: Miniflux
+name_es: Miniflux
+name_ca: Miniflux
+description_en: Minimalist RSS and Atom feed reader.
+description_es: Lector minimalista de fuentes RSS y Atom.
+description_ca: Lector minimalista de fonts RSS i Atom.
+image: miniflux/miniflux:2.2.3
+service: app
+port: 8080
+ram_mb: 256
+compose: |
+  services:
+    app:
+      image: {{image}}
+      restart: unless-stopped
+      ports:
+        - "127.0.0.1:{{host_port}}:{{port}}"
+      environment:
+        BASE_URL: "https://{{domain}}"
+        DATABASE_URL: "postgres://miniflux:{{password:32}}@db:5432/miniflux?sslmode=disable"
+        RUN_MIGRATIONS: "1"
+        ADMIN_USERNAME: "admin"
+        ADMIN_PASSWORD: "{{password:32}}"
+    db:
+      image: postgres:17.2-alpine
+      restart: unless-stopped
+      environment:
+        POSTGRES_DB: "miniflux"
+        POSTGRES_USER: "miniflux"
+        POSTGRES_PASSWORD: "{{password:32}}"
+      volumes:
+        - miniflux_db:/var/lib/postgresql/data
+  volumes:
+    miniflux_db:

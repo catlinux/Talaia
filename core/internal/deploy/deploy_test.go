@@ -6,18 +6,21 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"os"
 	"sort"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/catlinux/Talaia/core/internal/store"
+	"github.com/catlinux/Talaia/core/internal/templates"
 	agentv1 "github.com/catlinux/Talaia/proto/gen/go"
 )
 
 type fakeStore struct {
 	apps        map[string]store.App
 	envs        map[string][]store.AppEnv
+	domains     []store.Domain
 	deployments []store.Deployment
 	next        int
 }
@@ -36,6 +39,16 @@ func (f *fakeStore) GetApp(_ context.Context, id string) (store.App, error) {
 
 func (f *fakeStore) ListAppEnv(_ context.Context, appID string) ([]store.AppEnv, error) {
 	return append([]store.AppEnv(nil), f.envs[appID]...), nil
+}
+
+func (f *fakeStore) ListAppDomains(_ context.Context, appID string) ([]store.Domain, error) {
+	var result []store.Domain
+	for _, domain := range f.domains {
+		if domain.AppID == appID {
+			result = append(result, domain)
+		}
+	}
+	return result, nil
 }
 
 func (f *fakeStore) ListDeployments(_ context.Context, appID string, limit int) ([]store.Deployment, error) {
@@ -504,6 +517,45 @@ func TestDeployRefusesAnInvalidPickedPort(t *testing.T) {
 				t.Errorf("invalid port was stored: %d", got)
 			}
 		})
+	}
+}
+
+func TestTemplateAppRendersAndStartsTheStack(t *testing.T) {
+	catalog, err := templates.LoadFS(os.DirFS("../../.."), "templates")
+	if err != nil {
+		t.Fatal(err)
+	}
+	app := testApp()
+	app.Source = store.AppSourceTemplate
+	app.TemplateID = "uptime-kuma"
+	app.TemplateVersion = "1.0.0"
+	app.Image = "louislam/uptime-kuma:1.23.16"
+	app.Service = "app"
+	app.Port = 3001
+	agent := &fakeAgent{}
+	manager, state := newTestManager(t, app, agent)
+	manager.templates = catalog
+	state.envs[app.ID] = []store.AppEnv{{AppID: app.ID, Key: "TEMPLATE_PASSWORD", ValueEnc: []byte("sealed"), Secret: true}}
+	state.domains = []store.Domain{{ID: "domain-1", AppID: app.ID, Hostname: "uptime.example.com", Service: "app", Port: 3001}}
+
+	if err := manager.Enqueue(context.Background(), app.ID, "create", ""); err != nil {
+		t.Fatal(err)
+	}
+	deployment := processQueued(t, manager, state)
+	if deployment.State != store.DeploymentSucceeded {
+		t.Fatalf("deployment = %+v", deployment)
+	}
+	if agent.upCalls != 1 || agent.releaseCalls != 0 {
+		t.Errorf("up=%d release=%d calls=%v", agent.upCalls, agent.releaseCalls, agent.calls)
+	}
+	for _, call := range agent.calls {
+		if call == "source" || call == "build" {
+			t.Errorf("template ran a build step: %v", agent.calls)
+		}
+	}
+	if len(agent.writes) != 1 || !strings.Contains(agent.writes[0], "uptime.example.com") ||
+		!strings.Contains(agent.writes[0], "127.0.0.1:23456:3001") {
+		t.Errorf("rendered stack = %v", agent.writes)
 	}
 }
 

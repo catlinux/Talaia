@@ -158,6 +158,7 @@ func NewRouter(deps RouterDeps) http.Handler {
 			registerRoute(r, deps.Authz, http.MethodGet, "/servers/{serverID}/notes/services", http.HandlerFunc(serviceNotes.listNotes))
 			registerRoute(r, deps.Authz, http.MethodPut, "/servers/{serverID}/notes/services/{name}", http.HandlerFunc(serviceNotes.setNote))
 			if deps.Apps != nil {
+				registerRoute(r, deps.Authz, http.MethodGet, "/templates", NewTemplatesHandler(*deps.Apps))
 				registerRoute(r, deps.Authz, http.MethodGet, "/apps", NewAppsListHandler(*deps.Apps))
 				registerRoute(r, deps.Authz, http.MethodGet, "/servers/{serverID}/apps", NewAppsByServerHandler(*deps.Apps))
 				registerRoute(r, deps.Authz, http.MethodPost, "/servers/{serverID}/apps", NewAppCreateHandler(*deps.Apps))

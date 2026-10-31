@@ -1,0 +1,40 @@
+id: wordpress
+version: "1.0.0"
+name_en: WordPress
+name_es: WordPress
+name_ca: WordPress
+description_en: Publishing platform for blogs and websites.
+description_es: Plataforma de publicación para blogs y sitios web.
+description_ca: Plataforma de publicació per a blogs i llocs web.
+image: wordpress:6.7.1-php8.3-apache
+service: app
+port: 80
+ram_mb: 1024
+compose: |
+  services:
+    app:
+      image: {{image}}
+      restart: unless-stopped
+      ports:
+        - "127.0.0.1:{{host_port}}:{{port}}"
+      environment:
+        WORDPRESS_DB_HOST: "db:3306"
+        WORDPRESS_DB_NAME: "wordpress"
+        WORDPRESS_DB_USER: "wordpress"
+        WORDPRESS_DB_PASSWORD: "{{password:32}}"
+        WORDPRESS_CONFIG_EXTRA: "define('WP_HOME', 'https://{{domain}}'); define('WP_SITEURL', 'https://{{domain}}');"
+      volumes:
+        - wordpress_data:/var/www/html
+    db:
+      image: mariadb:11.4.4
+      restart: unless-stopped
+      environment:
+        MARIADB_DATABASE: "wordpress"
+        MARIADB_USER: "wordpress"
+        MARIADB_PASSWORD: "{{password:32}}"
+        MARIADB_ROOT_PASSWORD: "{{password:32}}"
+      volumes:
+        - wordpress_db:/var/lib/mysql
+  volumes:
+    wordpress_data:
+    wordpress_db:

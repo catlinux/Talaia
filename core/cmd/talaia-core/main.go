@@ -35,6 +35,7 @@ import (
 	"github.com/catlinux/Talaia/core/internal/metrics"
 	"github.com/catlinux/Talaia/core/internal/notify"
 	"github.com/catlinux/Talaia/core/internal/store"
+	"github.com/catlinux/Talaia/core/internal/templates"
 	"github.com/catlinux/Talaia/core/internal/terminal"
 	"github.com/catlinux/Talaia/core/internal/updates"
 )
@@ -239,6 +240,26 @@ func newAgentRouter(st *store.Store, authority *ca.CA, h *hub.Hub, distDir strin
 
 // serverCertificate generates the in-memory ECDSA key and the server
 // certificate of the core, valid for the configured hostnames.
+// loadTemplates finds the bundled templates next to the working directory or
+// the core binary. A missing catalog only disables template apps.
+func loadTemplates(logger *slog.Logger) *templates.Catalog {
+	candidates := []string{"templates", filepath.Join("..", "templates")}
+	if executable, err := os.Executable(); err == nil {
+		candidates = append(candidates, filepath.Join(filepath.Dir(executable), "templates"))
+	}
+	var lastErr error
+	for _, directory := range candidates {
+		catalog, err := templates.LoadDir(directory)
+		if err == nil {
+			logger.Info("templates loaded", "directory", directory, "count", len(catalog.List()))
+			return catalog
+		}
+		lastErr = err
+	}
+	logger.Warn("templates are not available", "error", lastErr)
+	return nil
+}
+
 func serverCertificate(authority *ca.CA, hosts []string) (tls.Certificate, error) {
 	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	if err != nil {
@@ -392,12 +413,14 @@ func serve() error {
 		panel.Alerts = &api.AlertsDeps{Store: st, Box: box, Audit: st, Hooks: engine, Checks: runner, Notifier: worker, Servers: st, Now: time.Now}
 		panel.Containers = &api.ContainerDeps{Agents: agentHub, Dispatcher: agentHub, Jobs: st, Audit: st, Servers: st, Alerts: engine}
 
+		templateCatalog := loadTemplates(logger)
 		deployer := deploy.New(deploy.Options{
-			Store:  st,
-			Agent:  deploy.NewHubAgent(deploy.HubAgentOptions{Dispatcher: agentHub, Jobs: st}),
-			Box:    box,
-			Modes:  agentHub,
-			Logger: logger,
+			Store:     st,
+			Agent:     deploy.NewHubAgent(deploy.HubAgentOptions{Dispatcher: agentHub, Jobs: st}),
+			Box:       box,
+			Modes:     agentHub,
+			Templates: templateCatalog,
+			Logger:    logger,
 		})
 		go func() {
 			if err := deployer.Run(ctx); err != nil && ctx.Err() == nil {
@@ -418,7 +441,7 @@ func serve() error {
 		}
 		appDeps := &api.AppDeps{
 			Store: st, Box: box, Queue: deployer, Audit: st, Servers: st, Agents: agentHub,
-			Resolver: net.DefaultResolver, PublicURL: publicURL,
+			Resolver: net.DefaultResolver, PublicURL: publicURL, Templates: templateCatalog,
 		}
 		panel.Apps = appDeps
 		panel.Proxy = &api.ProxyDeps{AppDeps: *appDeps, Containers: panel.Containers}

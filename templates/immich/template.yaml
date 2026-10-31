@@ -1,0 +1,43 @@
+id: immich
+version: "1.0.0"
+name_en: Immich
+name_es: Immich
+name_ca: Immich
+description_en: Self-hosted photo and video library with mobile backup.
+description_es: Biblioteca de fotos y vídeos autoalojada con copia móvil.
+description_ca: Biblioteca de fotos i vídeos autoallotjada amb còpia mòbil.
+image: ghcr.io/immich-app/immich-server:v1.123.0
+service: app
+port: 2283
+ram_mb: 4096
+compose: |
+  services:
+    app:
+      image: {{image}}
+      restart: unless-stopped
+      ports:
+        - "127.0.0.1:{{host_port}}:{{port}}"
+      environment:
+        DB_HOSTNAME: "db"
+        DB_USERNAME: "immich"
+        DB_PASSWORD: "{{password:32}}"
+        DB_DATABASE_NAME: "immich"
+        REDIS_HOSTNAME: "redis"
+        IMMICH_SERVER_URL: "https://{{domain}}"
+      volumes:
+        - immich_upload:/usr/src/app/upload
+    db:
+      image: postgres:17.2-alpine
+      restart: unless-stopped
+      environment:
+        POSTGRES_DB: "immich"
+        POSTGRES_USER: "immich"
+        POSTGRES_PASSWORD: "{{password:32}}"
+      volumes:
+        - immich_db:/var/lib/postgresql/data
+    redis:
+      image: redis:7.4.2-alpine
+      restart: unless-stopped
+  volumes:
+    immich_upload:
+    immich_db:

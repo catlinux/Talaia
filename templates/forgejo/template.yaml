@@ -1,0 +1,30 @@
+id: forgejo
+version: "1.0.0"
+name_en: Forgejo
+name_es: Forgejo
+name_ca: Forgejo
+description_en: Self-hosted Git forge with issues, pull requests and packages.
+description_es: Forja Git autoalojada con incidencias, pull requests y paquetes.
+description_ca: Forja Git autoallotjada amb incidències, pull requests i paquets.
+image: codeberg.org/forgejo/forgejo:9.0.1
+service: app
+port: 3000
+ram_mb: 1024
+compose: |
+  services:
+    app:
+      image: {{image}}
+      restart: unless-stopped
+      ports:
+        - "127.0.0.1:{{host_port}}:{{port}}"
+      environment:
+        USER_UID: "1000"
+        USER_GID: "1000"
+        FORGEJO__server__ROOT_URL: "https://{{domain}}/"
+        FORGEJO__security__INSTALL_LOCK: "true"
+      volumes:
+        - forgejo_data:/data
+        - forgejo_config:/etc/gitea
+  volumes:
+    forgejo_data:
+    forgejo_config:

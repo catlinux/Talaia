@@ -1,0 +1,41 @@
+id: plausible
+version: "1.0.0"
+name_en: Plausible CE
+name_es: Plausible CE
+name_ca: Plausible CE
+description_en: Lightweight and privacy-friendly web analytics.
+description_es: Analítica web ligera y respetuosa con la privacidad.
+description_ca: Analítica web lleugera i respectuosa amb la privacitat.
+image: ghcr.io/plausible/community-edition:v2.1.4
+service: app
+port: 8000
+ram_mb: 2048
+compose: |
+  services:
+    app:
+      image: {{image}}
+      restart: unless-stopped
+      ports:
+        - "127.0.0.1:{{host_port}}:{{port}}"
+      environment:
+        BASE_URL: "https://{{domain}}"
+        SECRET_KEY_BASE: "{{password:64}}"
+        DATABASE_URL: "postgres://plausible:{{password:32}}@db:5432/plausible"
+        CLICKHOUSE_DATABASE_URL: "http://clickhouse:8123/plausible"
+    db:
+      image: postgres:17.2-alpine
+      restart: unless-stopped
+      environment:
+        POSTGRES_DB: "plausible"
+        POSTGRES_USER: "plausible"
+        POSTGRES_PASSWORD: "{{password:32}}"
+      volumes:
+        - plausible_db:/var/lib/postgresql/data
+    clickhouse:
+      image: clickhouse/clickhouse-server:24.12.3.47-alpine
+      restart: unless-stopped
+      volumes:
+        - plausible_clickhouse:/var/lib/clickhouse
+  volumes:
+    plausible_db:
+    plausible_clickhouse:

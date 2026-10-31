@@ -1,0 +1,28 @@
+id: nextcloud
+version: "1.0.0"
+name_en: Nextcloud
+name_es: Nextcloud
+name_ca: Nextcloud
+description_en: Private file sync and collaboration server.
+description_es: Servidor privado de sincronización de archivos y colaboración.
+description_ca: Servidor privat de sincronització de fitxers i col·laboració.
+image: nextcloud:30.0.4-apache
+service: app
+port: 80
+ram_mb: 1024
+compose: |
+  services:
+    app:
+      image: {{image}}
+      restart: unless-stopped
+      ports:
+        - "127.0.0.1:{{host_port}}:{{port}}"
+      environment:
+        NEXTCLOUD_ADMIN_USER: "admin"
+        NEXTCLOUD_ADMIN_PASSWORD: "{{password:32}}"
+        NEXTCLOUD_TRUSTED_DOMAINS: "{{domain}}"
+        OVERWRITEPROTOCOL: "https"
+      volumes:
+        - nextcloud_data:/var/www/html
+  volumes:
+    nextcloud_data:

@@ -14,6 +14,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/catlinux/Talaia/core/internal/store"
+	"github.com/catlinux/Talaia/core/internal/templates"
 	agentv1 "github.com/catlinux/Talaia/proto/gen/go"
 )
 
@@ -64,6 +65,7 @@ type ProxyModeSource interface {
 type AppStore interface {
 	GetApp(ctx context.Context, id string) (store.App, error)
 	ListAppEnv(ctx context.Context, appID string) ([]store.AppEnv, error)
+	ListAppDomains(ctx context.Context, appID string) ([]store.Domain, error)
 	ListDeployments(ctx context.Context, appID string, limit int) ([]store.Deployment, error)
 	CreateDeployment(ctx context.Context, deployment store.Deployment) (store.Deployment, error)
 	UpdateDeployment(ctx context.Context, deployment store.Deployment) error
@@ -78,6 +80,7 @@ type Options struct {
 	Agent        Agent
 	Box          SecretOpener
 	Modes        ProxyModeSource
+	Templates    *templates.Catalog
 	Logger       *slog.Logger
 	IdleInterval time.Duration
 }
@@ -88,6 +91,7 @@ type Manager struct {
 	agent        Agent
 	box          SecretOpener
 	modes        ProxyModeSource
+	templates    *templates.Catalog
 	logger       *slog.Logger
 	idleInterval time.Duration
 	wake         chan struct{}
@@ -109,6 +113,7 @@ func New(options Options) *Manager {
 		agent:        options.Agent,
 		box:          options.Box,
 		modes:        options.Modes,
+		templates:    options.Templates,
 		logger:       logger,
 		idleInterval: idle,
 		wake:         make(chan struct{}, 1),
@@ -331,7 +336,11 @@ func (m *Manager) deploy(ctx context.Context, app store.App, deployment *store.D
 		log.add("deploying image " + imageRef)
 
 	case store.AppSourceTemplate:
-		return errors.New("template deployments are not available in this phase")
+		if strings.TrimSpace(app.Image) == "" || app.TemplateID == "" {
+			return errors.New("the template app has no template")
+		}
+		imageRef = app.Image
+		log.add("deploying template " + app.TemplateID)
 
 	default:
 		return fmt.Errorf("unsupported app source %q", app.Source)
@@ -372,6 +381,21 @@ func (m *Manager) deploy(ctx context.Context, app store.App, deployment *store.D
 	deployment.ImageRef = imageRef
 	if err := m.save(ctx, *deployment, log); err != nil {
 		return err
+	}
+
+	if app.Source == store.AppSourceTemplate {
+		if err := m.prepareTemplate(ctx, app, hostPort, log); err != nil {
+			return err
+		}
+		upCtx, cancel := context.WithTimeout(ctx, releaseTimeout)
+		output, err := m.agent.UpStack(upCtx, app.ServerID, app.StackName)
+		cancel()
+		log.add(output)
+		if err != nil {
+			return fmt.Errorf("start the app: %w", err)
+		}
+		log.add("deployment succeeded")
+		return nil
 	}
 
 	if err := m.prepareStack(ctx, app, service, imageRef, managed, hostPort, log); err != nil {
@@ -433,6 +457,62 @@ func imageForRollback(app store.App, deployment *store.Deployment) (rollbackImag
 		return rollbackImage{}, fmt.Errorf("invalid rollback tag %q", tag)
 	}
 	return rollbackImage{image: ref, tag: tag}, nil
+}
+
+func (m *Manager) prepareTemplate(ctx context.Context, app store.App, hostPort int, log *deploymentLog) error {
+	if m.templates == nil {
+		return errors.New("templates are not available on this core")
+	}
+	template, ok := m.templates.Get(app.TemplateID)
+	if !ok {
+		return fmt.Errorf("unknown template %q", app.TemplateID)
+	}
+	if app.TemplateVersion != "" && app.TemplateVersion != template.Version {
+		return fmt.Errorf("unknown template version %q", app.TemplateVersion)
+	}
+
+	password := ""
+	envs, err := m.store.ListAppEnv(ctx, app.ID)
+	if err != nil {
+		return fmt.Errorf("list the template variables: %w", err)
+	}
+	for _, env := range envs {
+		if env.Key != "TEMPLATE_PASSWORD" {
+			continue
+		}
+		if m.box == nil {
+			return errors.New("the template password is sealed and no secret box is available")
+		}
+		plain, err := m.box.Open(env.ValueEnc)
+		if err != nil {
+			return fmt.Errorf("open the template password: %w", err)
+		}
+		password = string(plain)
+	}
+	if password == "" {
+		return errors.New("the template password is missing")
+	}
+
+	domain := "localhost"
+	domains, err := m.store.ListAppDomains(ctx, app.ID)
+	if err != nil {
+		return fmt.Errorf("list the template domains: %w", err)
+	}
+	if len(domains) > 0 && domains[0].Hostname != "" {
+		domain = domains[0].Hostname
+	}
+	if hostPort == 0 {
+		hostPort = app.Port
+	}
+	compose, err := template.Render(templates.RenderValues{
+		Domain: domain, Password: password, HostPort: hostPort,
+		Stack: app.StackName, AppID: app.ID,
+	})
+	if err != nil {
+		return fmt.Errorf("render the template: %w", err)
+	}
+	log.add("writing the template stack")
+	return m.writeStack(ctx, app, compose, "", log)
 }
 
 func (m *Manager) prepareStack(ctx context.Context, app store.App, service, imageRef string, managed bool, hostPort int, log *deploymentLog) error {

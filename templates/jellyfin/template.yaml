@@ -1,0 +1,27 @@
+id: jellyfin
+version: "1.0.0"
+name_en: Jellyfin
+name_es: Jellyfin
+name_ca: Jellyfin
+description_en: Media server for films, series, music and live TV.
+description_es: Servidor multimedia para películas, series, música y TV en directo.
+description_ca: Servidor multimèdia per a pel·lícules, sèries, música i TV en directe.
+image: jellyfin/jellyfin:10.10.3
+service: app
+port: 8096
+ram_mb: 2048
+compose: |
+  services:
+    app:
+      image: {{image}}
+      restart: unless-stopped
+      ports:
+        - "127.0.0.1:{{host_port}}:{{port}}"
+      volumes:
+        - jellyfin_config:/config
+        - jellyfin_cache:/cache
+        - jellyfin_media:/media
+  volumes:
+    jellyfin_config:
+    jellyfin_cache:
+    jellyfin_media:

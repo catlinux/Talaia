@@ -1,0 +1,36 @@
+id: paperless-ngx
+version: "1.0.0"
+name_en: Paperless-ngx
+name_es: Paperless-ngx
+name_ca: Paperless-ngx
+description_en: Document management with OCR, tags and full-text search.
+description_es: Gestión documental con OCR, etiquetas y búsqueda completa.
+description_ca: Gestió documental amb OCR, etiquetes i cerca completa.
+image: ghcr.io/paperless-ngx/paperless-ngx:2.14.7
+service: app
+port: 8000
+ram_mb: 2048
+compose: |
+  services:
+    app:
+      image: {{image}}
+      restart: unless-stopped
+      ports:
+        - "127.0.0.1:{{host_port}}:{{port}}"
+      environment:
+        PAPERLESS_URL: "https://{{domain}}"
+        PAPERLESS_ADMIN_USER: "admin"
+        PAPERLESS_ADMIN_PASSWORD: "{{password:32}}"
+        PAPERLESS_REDIS: "redis://redis:6379"
+      volumes:
+        - paperless_data:/usr/src/paperless/data
+        - paperless_media:/usr/src/paperless/media
+    redis:
+      image: redis:7.4.2-alpine
+      restart: unless-stopped
+      volumes:
+        - paperless_redis:/data
+  volumes:
+    paperless_data:
+    paperless_media:
+    paperless_redis:

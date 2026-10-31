@@ -13,6 +13,12 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.6.39] - 2026-10-31
+
+### Added
+
+- Core: one-click templates published with the core (phase 6 step 10): Uptime Kuma, Vaultwarden, Forgejo, Nextcloud, WordPress, Ghost, Umami, Plausible CE, Paperless-ngx, Miniflux, FreshRSS, Jellyfin, Immich, Homepage and Mealie, plus PostgreSQL, MariaDB and Redis blocks, with pinned image versions, a random password per app and the app published on its own 127.0.0.1 port; a test validates every template.
+
 ## [0.6.38] - 2026-10-31
 
 ### Added
@@ -933,7 +939,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.6.38...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.6.39...HEAD
+[0.6.39]: https://github.com/catlinux/Talaia/releases/tag/v0.6.39
 [0.6.38]: https://github.com/catlinux/Talaia/releases/tag/v0.6.38
 [0.6.37]: https://github.com/catlinux/Talaia/releases/tag/v0.6.37
 [0.6.36]: https://github.com/catlinux/Talaia/releases/tag/v0.6.36

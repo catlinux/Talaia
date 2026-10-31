@@ -19,6 +19,7 @@ import (
 
 	"github.com/catlinux/Talaia/core/internal/rbac"
 	"github.com/catlinux/Talaia/core/internal/store"
+	"github.com/catlinux/Talaia/core/internal/templates"
 )
 
 // AppStore is the part of the store the app API needs.
@@ -68,6 +69,7 @@ type AppDeps struct {
 	Agents    LiveAgents
 	Resolver  HostResolver
 	PublicURL string
+	Templates *templates.Catalog
 }
 
 type appHandler struct {
@@ -289,6 +291,27 @@ func (h appHandler) create(w http.ResponseWriter, r *http.Request) {
 	if app.Source == store.AppSourceGit && strings.TrimSpace(app.Branch) == "" {
 		app.Branch = "main"
 	}
+	if app.Source == store.AppSourceTemplate {
+		if h.deps.Templates == nil {
+			writeError(w, http.StatusBadRequest, "template_unavailable")
+			return
+		}
+		template, ok := h.deps.Templates.Get(request.TemplateID)
+		if !ok {
+			writeError(w, http.StatusBadRequest, "unknown_template")
+			return
+		}
+		if request.TemplateVersion != "" && request.TemplateVersion != template.Version {
+			writeError(w, http.StatusBadRequest, "unknown_template_version")
+			return
+		}
+		app.TemplateID = template.ID
+		app.TemplateVersion = template.Version
+		app.Image = template.Image
+		app.Service = template.Service
+		app.Port = template.Port
+		app.Build = store.AppBuildDockerfile
+	}
 	if err := validateApp(app); err != nil {
 		writeError(w, http.StatusBadRequest, "invalid_request")
 		return
@@ -317,10 +340,31 @@ func (h appHandler) create(w http.ResponseWriter, r *http.Request) {
 		internal(w, "create app", err)
 		return
 	}
+	if created.Source == store.AppSourceTemplate {
+		if h.deps.Box == nil {
+			_ = h.deps.Store.DeleteApp(r.Context(), created.ID)
+			internal(w, "create app template password", errors.New("no secret box"))
+			return
+		}
+		password := make([]byte, 48)
+		if _, err := rand.Read(password); err != nil {
+			_ = h.deps.Store.DeleteApp(r.Context(), created.ID)
+			internal(w, "create app template password", err)
+			return
+		}
+		if err := h.deps.Store.SetAppEnv(r.Context(), store.AppEnv{
+			AppID: created.ID, Key: "TEMPLATE_PASSWORD",
+			ValueEnc: h.deps.Box.Seal([]byte(hex.EncodeToString(password))), Secret: true,
+		}); err != nil {
+			_ = h.deps.Store.DeleteApp(r.Context(), created.ID)
+			internal(w, "store app template password", err)
+			return
+		}
+	}
 	h.audit(r, "app_created", map[string]any{
 		"app_id": created.ID, "server_id": created.ServerID, "stack": created.StackName,
 	})
-	if h.deps.Queue != nil {
+	if h.deps.Queue != nil && created.Source != store.AppSourceTemplate {
 		if err := h.deps.Queue.Enqueue(r.Context(), created.ID, "create", ""); err != nil {
 			slog.Warn("enqueue the first deployment", "app_id", created.ID, "error", err)
 		} else {
@@ -452,7 +496,7 @@ func validateApp(app store.App) error {
 	if !appStackRe.MatchString(app.StackName) {
 		return errors.New("invalid stack name")
 	}
-	if app.Source != store.AppSourceGit && app.Source != store.AppSourceImage {
+	if app.Source != store.AppSourceGit && app.Source != store.AppSourceImage && app.Source != store.AppSourceTemplate {
 		return errors.New("invalid app source")
 	}
 	if !appServiceRe.MatchString(app.Service) {
@@ -460,6 +504,13 @@ func validateApp(app store.App) error {
 	}
 	if app.Port < 0 || app.Port > 65535 {
 		return errors.New("invalid port")
+	}
+	if app.Source == store.AppSourceTemplate {
+		if strings.TrimSpace(app.TemplateID) == "" || strings.TrimSpace(app.TemplateVersion) == "" ||
+			strings.TrimSpace(app.Image) == "" || app.Port <= 0 {
+			return errors.New("invalid template")
+		}
+		return nil
 	}
 	if app.Build != store.AppBuildDockerfile && app.Build != store.AppBuildAuto {
 		return errors.New("invalid build mode")
@@ -486,7 +537,8 @@ func appSourceChanged(before, after store.App) bool {
 	return before.Source != after.Source || before.RepoURL != after.RepoURL ||
 		before.Branch != after.Branch || before.Build != after.Build ||
 		before.DockerfilePath != after.DockerfilePath || before.BuildContext != after.BuildContext ||
-		before.Image != after.Image
+		before.Image != after.Image || before.TemplateID != after.TemplateID ||
+		before.TemplateVersion != after.TemplateVersion
 }
 
 func appStoreError(w http.ResponseWriter, err error) {

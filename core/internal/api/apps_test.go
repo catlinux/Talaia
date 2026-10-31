@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"sort"
 	"strings"
 	"testing"
@@ -16,6 +17,7 @@ import (
 	"github.com/catlinux/Talaia/core/internal/auth"
 	"github.com/catlinux/Talaia/core/internal/hub"
 	"github.com/catlinux/Talaia/core/internal/store"
+	"github.com/catlinux/Talaia/core/internal/templates"
 	agentv1 "github.com/catlinux/Talaia/proto/gen/go"
 )
 
@@ -478,6 +480,71 @@ func TestExternalProxyAnswerHasApacheNginxAndCertbot(t *testing.T) {
 	}
 	if !strings.Contains(item.Certbot, "certbot --apache") || !strings.Contains(item.Certbot, "certbot --nginx") {
 		t.Errorf("certbot steps = %q", item.Certbot)
+	}
+}
+
+func TestTemplatesEndpointIncludesLocalizedMetadata(t *testing.T) {
+	catalog, err := templates.LoadFS(os.DirFS("../../.."), "templates")
+	if err != nil {
+		t.Fatal(err)
+	}
+	state := newMemAppStore()
+	deps, _, _ := newAppAPI(t, state)
+	deps.Templates = catalog
+	response := serveRoute(t, http.MethodGet, "/api/v1/templates", "/api/v1/templates",
+		NewTemplatesHandler(deps), "")
+	if response.Code != http.StatusOK {
+		t.Fatalf("status = %d", response.Code)
+	}
+	var templatesResponse []templateResponse
+	if err := json.Unmarshal(response.Body.Bytes(), &templatesResponse); err != nil {
+		t.Fatal(err)
+	}
+	if len(templatesResponse) != 18 {
+		t.Fatalf("templates = %d", len(templatesResponse))
+	}
+	first := templatesResponse[0]
+	if first.Names["ca"] == "" || first.Names["es"] == "" || first.Names["en"] == "" ||
+		first.Descriptions["en"] == "" || first.RAMMB <= 0 {
+		t.Errorf("template = %+v", first)
+	}
+}
+
+func TestCreateFromTemplateUsesTemplateSource(t *testing.T) {
+	catalog, err := templates.LoadFS(os.DirFS("../../.."), "templates")
+	if err != nil {
+		t.Fatal(err)
+	}
+	state := newMemAppStore()
+	deps, audit, _ := newAppAPI(t, state)
+	deps.Templates = catalog
+	queue := &fakeQueue{}
+	deps.Queue = queue
+	response := serveRoute(t, http.MethodPost, "/api/v1/servers/{serverID}/apps",
+		"/api/v1/servers/s1/apps", NewAppCreateHandler(deps),
+		`{"stack_name":"uptime","source":"template","template_id":"uptime-kuma"}`)
+	if response.Code != http.StatusCreated {
+		t.Fatalf("status = %d, body %s", response.Code, response.Body.String())
+	}
+	var created appCreatedResponse
+	if err := json.Unmarshal(response.Body.Bytes(), &created); err != nil {
+		t.Fatal(err)
+	}
+	if created.Source != store.AppSourceTemplate || created.TemplateID != "uptime-kuma" || created.Port != 3001 {
+		t.Fatalf("created app = %+v", created)
+	}
+	if created.DeployKeyPublic != "" || created.WebhookSecret != "" {
+		t.Error("a template app generated Git secrets")
+	}
+	if len(queue.calls) != 0 {
+		t.Errorf("a template app was deployed before its domain was configured: %+v", queue.calls)
+	}
+	password := state.envs[created.ID]["TEMPLATE_PASSWORD"]
+	if password.Key == "" || !password.Secret || len(password.ValueEnc) == 0 {
+		t.Fatalf("template password was not stored: %+v", password)
+	}
+	if len(audit.events) == 0 || audit.events[0].Action != "app_created" {
+		t.Errorf("audit = %+v", audit.events)
 	}
 }
 
