@@ -18,6 +18,7 @@ import type { ServicesApi } from './api/services'
 import type { SystemApi } from './api/system'
 import type { Server } from './api/types'
 import { usePermissions } from './auth/permissions'
+import { CatalogDrawerProvider } from './catalog/CatalogDrawer'
 import { Sidebar } from './components/shell/Sidebar'
 import { Topbar } from './components/shell/Topbar'
 import { ToastProvider } from './components/ui'
@@ -63,7 +64,9 @@ export function App(props: AppProps) {
   return (
     <ToastProvider>
       <RouterProvider>
-        <PanelShell {...props} />
+        <CatalogDrawerProvider>
+          <PanelShell {...props} />
+        </CatalogDrawerProvider>
       </RouterProvider>
     </ToastProvider>
   )

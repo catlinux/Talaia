@@ -54,7 +54,15 @@
   "label": {
     "what": "Qué es",
     "ifFails": "Si falla",
-    "origin": "Origen"
+    "origin": "Origen",
+    "openFull": "Ver la ficha completa",
+    "details": "Detalles",
+    "stop": "Si lo detienes",
+    "problems": "Problemas habituales",
+    "howToCheck": "Cómo comprobarlo",
+    "copy": "Copiar",
+    "copied": "Copiado",
+    "docs": "Documentación oficial"
   },
   "origin": {
     "service": "unidad de systemd {{unit}}",
@@ -70,12 +78,26 @@
     "ssh": {
       "name": "Servidor OpenSSH",
       "what": "El servidor SSH permite abrir una shell remota segura y copiar archivos en esta máquina.",
-      "ifFails": "Pierdes el acceso remoto al servidor. No lo detengas ni lo reinicies desde una sesión de la que dependas; revisa sus registros y su configuración antes de reiniciarlo."
+      "ifFails": "Pierdes el acceso remoto al servidor. No lo detengas ni lo reinicies desde una sesión de la que dependas; revisa sus registros y su configuración antes de reiniciarlo.",
+      "details": "Es la puerta que usas para administrar el servidor desde otro equipo: una terminal, una herramienta de transferencia de archivos o un script de despliegue se conectan por aquí. Talaia no usa SSH para gestionar los servidores, pero las personas y la automatización sí suelen hacerlo. Mantenerlo en marcha es lo que te permite volver a entrar cuando algo más falla.",
+      "stop": "Si paras o desactivas SSH, cierras la puerta remota al servidor. Si estás conectado por SSH, esa sesión termina y puedes quedarte sin acceso salvo que tengas consola del proveedor. Cambia primero la configuración y mantén una sesión abierta mientras pruebas.",
+      "problems": [
+        "La conexión se rechaza — comprueba `systemctl status ssh` y el cortafuegos del servidor (por ejemplo `sudo ufw status`), y confirma que el puerto SSH está abierto en el cortafuegos del proveedor.",
+        "Se rechaza la contraseña o la clave — confirma que el usuario existe, que la clave está en el archivo `authorized_keys` correcto y que sus permisos son válidos; lee `/var/log/auth.log` para ver el motivo exacto.",
+        "La conexión se queda esperando — puede que el servidor esté apagado, sin red o que un cortafuegos descarte el puerto; usa la consola del proveedor para revisar la máquina."
+      ]
     },
     "cron": {
       "name": "Planificador cron",
       "what": "Ejecuta tareas programadas, como copias de seguridad, limpieza y mantenimiento.",
-      "ifFails": "Las tareas programadas dejan de ejecutarse hasta que cron vuelva a estar activo. Revisa los registros de la unidad y corrige las tareas fallidas antes de reiniciar."
+      "ifFails": "Las tareas programadas dejan de ejecutarse hasta que cron vuelva a estar activo. Revisa los registros de la unidad y corrige las tareas fallidas antes de reiniciar.",
+      "details": "Cron ejecuta comandos con una programación: copias de seguridad, limpieza, comprobaciones de certificados y otras tareas de mantenimiento. La programación está en el crontab de cada usuario y en archivos bajo `/etc/cron.*`. Un trabajo de cron no tiene pantalla, así que su salida suele ir al registro del sistema o al correo.",
+      "stop": "Si paras o desactivas cron, no se ejecuta ninguna tarea programada: se paran las copias, se acumulan archivos temporales y se pierden tareas de mantenimiento. Al volver a arrancarlo no se ejecutan las tareas perdidas; lanza a mano las importantes si hace falta. Rara vez es seguro dejarlo parado.",
+      "problems": [
+        "Una tarea no se ejecuta — comprueba la programación con `crontab -l` (o el archivo en `/etc/cron.d`), los permisos del usuario y que el comando funcione al ejecutarlo a mano.",
+        "La tarea se ejecuta pero falla — cron usa un entorno mínimo; usa rutas absolutas, define las variables necesarias en el crontab y lee la salida en el registro del sistema o en el correo del usuario.",
+        "El servicio está parado — comprueba `systemctl status cron` y `journalctl -u cron -n 50 --no-pager`; inícialo solo después de revisar por qué se paró."
+      ]
     },
     "systemd-journald": {
       "name": "Registro de systemd",
@@ -155,7 +177,14 @@
     "docker": {
       "name": "Motor Docker",
       "what": "Ejecuta contenedores y gestiona imágenes, redes y volúmenes con el demonio Docker.",
-      "ifFails": "Todos los contenedores del servidor se detienen o quedan sin gestionar. Comprueba el espacio de disco y el registro del demonio; reiniciar Docker reinicia los contenedores en marcha."
+      "ifFails": "Todos los contenedores del servidor se detienen o quedan sin gestionar. Comprueba el espacio de disco y el registro del demonio; reiniciar Docker reinicia los contenedores en marcha.",
+      "details": "Docker es el servicio que ejecuta todos los contenedores de este servidor. También guarda imágenes, redes y volúmenes, para que los contenedores arranquen con los mismos datos tras un reinicio. Talaia habla con Docker a través de este demonio para listar, iniciar y parar cargas de trabajo.",
+      "stop": "Si paras Docker, se detienen todos los contenedores del servidor y el panel deja de poder gestionarlos. Al volver a arrancarlo se inician los contenedores con política de reinicio; los que no la tienen se quedan parados. Reserva una ventana de mantenimiento y evita hacerlo desde una terminal dentro de un contenedor.",
+      "problems": [
+        "Un contenedor se cierra nada más arrancar — lee `docker logs --tail 50 <contenedor>` y revisa su comando, variables de entorno y permisos de volúmenes.",
+        "El disco está lleno — ejecuta `docker system df` y elimina imágenes, contenedores parados o volúmenes que ya no necesites; no borres volúmenes a ciegas.",
+        "Docker no responde — comprueba `systemctl status docker` y el registro del demonio con `journalctl -u docker -n 50 --no-pager`; al reiniciarlo se reinician los contenedores en marcha."
+      ]
     },
     "containerd": {
       "name": "Runtime containerd",
@@ -165,7 +194,15 @@
     "apache2": {
       "name": "Servidor HTTP Apache",
       "what": "Sirve sitios web y aplicaciones web por HTTP.",
-      "ifFails": "Los sitios servidos por Apache dejan de responder. Revisa el registro de errores y valida la configuración con apachectl configtest antes de reiniciar."
+      "ifFails": "Los sitios servidos por Apache dejan de responder. Revisa el registro de errores y valida la configuración con apachectl configtest antes de reiniciar.",
+      "details": "Apache es un servidor web: recibe peticiones HTTP y sirve los sitios o aplicaciones configurados en esta máquina. También puede pasar peticiones a otro servicio, como PHP o una aplicación local. Si Apache no está en marcha, los visitantes no pueden llegar a esos sitios.",
+      "stop": "Si paras o desactivas Apache, todos los sitios que sirve dejan de estar disponibles, incluidos los HTTPS cuyos certificados gestiona otro servicio. Solo es seguro durante un mantenimiento planificado o cuando otro servidor web ha ocupado los mismos puertos. Valida la configuración con `apachectl configtest` antes de tocarlo.",
+      "problems": [
+        "El sitio devuelve un error 500 — lee el registro de errores en `/var/log/apache2/error.log`; normalmente la causa es un error de PHP o de la aplicación.",
+        "El navegador dice que se rechazó la conexión — comprueba `systemctl status apache2`, confirma que el sitio está activado y que los puertos 80/443 están abiertos.",
+        "Apache no arranca después de un cambio — ejecuta `apachectl configtest`, corrige el archivo y la línea que indica y vuelve a iniciarlo.",
+        "El certificado no se renueva o el sitio usa el equivocado — revisa `certbot certificates` y las rutas `SSLCertificateFile` de la configuración del sitio."
+      ]
     },
     "nginx": {
       "name": "Nginx",
@@ -500,7 +537,14 @@
     "certbot": {
       "name": "Certbot",
       "what": "Obtiene y renueva certificados TLS de Let's Encrypt.",
-      "ifFails": "Los certificados pueden caducar y los sitios HTTPS mostrarán errores. Revisa sus registros, el DNS y el acceso a los puertos 80/443; ejecútalo manualmente solo después de corregir la causa."
+      "ifFails": "Los certificados pueden caducar y los sitios HTTPS mostrarán errores. Revisa sus registros, el DNS y el acceso a los puertos 80/443; ejecútalo manualmente solo después de corregir la causa.",
+      "details": "Certbot pide a Let's Encrypt los certificados TLS que hacen funcionar HTTPS y los instala en el servidor web. Normalmente lo ejecuta un temporizador cada día, así que los sitios se renuevan sin que nadie los visite. El servicio hace una pasada de renovación; el temporizador es lo que la repite.",
+      "stop": "Si paras Certbot, dejas de renovar los certificados automáticamente. Los certificados actuales siguen funcionando hasta que caducan; entonces el navegador muestra errores de seguridad y algunos clientes rechazan la conexión. No lo desactives salvo que otra herramienta renueve los mismos certificados.",
+      "problems": [
+        "Un dominio ya no apunta a este servidor (se ha mudado a otro equipo o han borrado su registro DNS), así que el desafío HTTP falla cada día — elimina ese certificado aquí con `certbot delete --cert-name <dominio>` y desactiva la configuración de su antiguo sitio web.",
+        "El puerto 80 está cerrado, redirigido por el cortafuegos u ocupado por otro proxy, así que el desafío HTTP no puede llegar — abre el puerto 80 para el desafío o cambia Certbot a validación DNS y ejecuta `certbot renew --dry-run`.",
+        "La configuración del servidor web está rota o han movido los archivos del certificado — arregla `apachectl configtest` o `nginx -t`, restaura las rutas esperadas y ejecuta `certbot renew --dry-run`."
+      ]
     },
     "registry": {
       "name": "Registro Docker",

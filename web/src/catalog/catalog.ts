@@ -35,6 +35,10 @@ export interface CatalogEntry {
   unitPatterns?: RegExp[]
   /** images are repository names without registry, library/ prefix or tag. */
   images?: string[]
+  /** checks are extra diagnostic commands, shown verbatim and not translated. */
+  checks?: string[]
+  /** docs is the official documentation page, when there is a well-known one. */
+  docs?: string
 }
 
 export const catalog: CatalogEntry[] = [
@@ -608,10 +612,12 @@ export const catalog: CatalogEntry[] = [
   },
   {
     id: 'certbot',
-    kind: 'image',
+    kind: 'both',
     category: 'security',
     importance: 'important',
+    units: ['certbot'],
     images: ['certbot/certbot'],
+    checks: ['certbot certificates', 'certbot renew --dry-run'],
   },
   {
     id: 'registry',
@@ -621,6 +627,98 @@ export const catalog: CatalogEntry[] = [
     images: ['registry'],
   },
 ]
+
+const docsById: Partial<Record<string, string>> = {
+  ssh: 'https://www.openssh.com/manual.html',
+  cron: 'https://man7.org/linux/man-pages/man8/cron.8.html',
+  'systemd-journald': 'https://www.freedesktop.org/software/systemd/man/',
+  'systemd-logind': 'https://www.freedesktop.org/software/systemd/man/',
+  'systemd-networkd': 'https://www.freedesktop.org/software/systemd/man/',
+  'systemd-resolved': 'https://www.freedesktop.org/software/systemd/man/',
+  'systemd-timesyncd': 'https://www.freedesktop.org/software/systemd/man/',
+  'systemd-udevd': 'https://www.freedesktop.org/software/systemd/man/',
+  dbus: 'https://www.freedesktop.org/wiki/Software/dbus/',
+  getty: 'https://www.freedesktop.org/software/systemd/man/',
+  networking: 'https://wiki.debian.org/NetworkConfiguration',
+  ifupdown: 'https://manpages.debian.org/ifup.8',
+  rsyslog: 'https://www.rsyslog.com/doc/',
+  chrony: 'https://chrony-project.org/documentation.html',
+  ntp: 'https://www.ntp.org/documentation/',
+  'unattended-upgrades': 'https://wiki.debian.org/UnattendedUpgrades',
+  docker: 'https://docs.docker.com/engine/',
+  containerd: 'https://containerd.io/docs/',
+  apache2: 'https://httpd.apache.org/docs/',
+  nginx: 'https://nginx.org/en/docs/',
+  caddy: 'https://caddyserver.com/docs/',
+  haproxy: 'https://docs.haproxy.org/',
+  postfix: 'https://www.postfix.org/documentation.html',
+  exim4: 'https://www.exim.org/docs.html',
+  dovecot: 'https://doc.dovecot.org/',
+  fail2ban: 'https://github.com/fail2ban/fail2ban/wiki',
+  ufw: 'https://help.ubuntu.com/community/UFW',
+  nftables: 'https://wiki.nftables.org/wiki-nftables/index.php/Main_Page',
+  iptables: 'https://www.netfilter.org/documentation/',
+  apparmor: 'https://apparmor.net/',
+  auditd: 'https://github.com/linux-audit/audit-documentation/wiki',
+  polkit: 'https://www.freedesktop.org/software/polkit/docs/latest/polkit.8.html',
+  'qemu-guest-agent': 'https://www.qemu.org/docs/master/interop/qemu-ga-ref.html',
+  'cloud-init': 'https://docs.cloud-init.io/',
+  snapd: 'https://snapcraft.io/docs',
+  modemmanager: 'https://www.freedesktop.org/wiki/Software/ModemManager/',
+  'wpa-supplicant': 'https://w1.fi/wpa_supplicant/',
+  avahi: 'https://avahi.org/',
+  cups: 'https://openprinting.github.io/cups/',
+  bluetooth: 'https://www.bluez.org/',
+  mariadb: 'https://mariadb.com/kb/en/documentation/',
+  mysql: 'https://dev.mysql.com/doc/',
+  postgresql: 'https://www.postgresql.org/docs/',
+  redis: 'https://redis.io/docs/',
+  valkey: 'https://valkey.io/docs/',
+  memcached: 'https://memcached.org/',
+  mongodb: 'https://www.mongodb.com/docs/',
+  rabbitmq: 'https://www.rabbitmq.com/docs',
+  'php-fpm': 'https://www.php.net/manual/en/install.fpm.php',
+  wireguard: 'https://www.wireguard.com/quickstart/',
+  tailscale: 'https://tailscale.com/kb/',
+  openvpn: 'https://openvpn.net/community-resources/',
+  bind9: 'https://bind9.readthedocs.io/',
+  unbound: 'https://unbound.docs.nlnetlabs.nl/',
+  dnsmasq: 'https://thekelleys.org.uk/dnsmasq/doc.html',
+  smartd: 'https://www.smartmontools.org/',
+  lvm2: 'https://sourceware.org/lvm2/',
+  mdmonitor: 'https://raid.wiki.kernel.org/',
+  zfs: 'https://openzfs.github.io/openzfs-docs/',
+  httpd: 'https://httpd.apache.org/docs/',
+  traefik: 'https://doc.traefik.io/traefik/',
+  'nginx-proxy-manager': 'https://nginxproxymanager.com/',
+  portainer: 'https://docs.portainer.io/',
+  'portainer-agent': 'https://docs.portainer.io/',
+  watchtower: 'https://containrrr.dev/watchtower/',
+  grafana: 'https://grafana.com/docs/',
+  prometheus: 'https://prometheus.io/docs/',
+  'node-exporter': 'https://github.com/prometheus/node_exporter',
+  cadvisor: 'https://github.com/google/cadvisor',
+  loki: 'https://grafana.com/docs/loki/latest/',
+  promtail: 'https://grafana.com/docs/loki/latest/send-data/promtail/',
+  wordpress: 'https://wordpress.org/documentation/',
+  nextcloud: 'https://docs.nextcloud.com/',
+  gitea: 'https://docs.gitea.com/',
+  vaultwarden: 'https://github.com/dani-garcia/vaultwarden/wiki',
+  minio: 'https://min.io/docs/minio/linux/index.html',
+  adminer: 'https://www.adminer.org/',
+  phpmyadmin: 'https://www.phpmyadmin.net/docs/',
+  pgadmin: 'https://www.pgadmin.org/docs/',
+  'uptime-kuma': 'https://github.com/louislam/uptime-kuma/wiki',
+  pihole: 'https://docs.pi-hole.net/',
+  adguard: 'https://adguard-dns.io/kb/',
+  certbot: 'https://eff-certbot.readthedocs.io/',
+  registry: 'https://distribution.github.io/distribution/',
+}
+
+for (const entry of catalog) {
+  const docs = docsById[entry.id]
+  if (docs !== undefined) entry.docs = docs
+}
 
 function normalizeUnit(unitName: string): { full: string; base: string } {
   const withoutSuffix = unitName

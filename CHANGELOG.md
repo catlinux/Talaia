@@ -18,6 +18,12 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.6.24] - 2026-10-31
+
+### Added
+
+- Panel: the ⓘ card of services, containers and stacks has a **View full card** button that opens a detailed card: what it is in plain words, what happens if you stop it, typical problems and how to fix them, commands to check it with a copy button, and the official documentation. `certbot.service` and its timer are now recognised.
+
 ## [0.6.23] - 2026-10-31
 
 ### Fixed
@@ -840,7 +846,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.6.23...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.6.24...HEAD
+[0.6.24]: https://github.com/catlinux/Talaia/releases/tag/v0.6.24
 [0.6.23]: https://github.com/catlinux/Talaia/releases/tag/v0.6.23
 [0.6.22]: https://github.com/catlinux/Talaia/releases/tag/v0.6.22
 [0.6.21]: https://github.com/catlinux/Talaia/releases/tag/v0.6.21

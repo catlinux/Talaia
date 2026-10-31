@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import type { Container } from '../api/containers'
@@ -8,8 +9,10 @@ import {
   lookupImage,
   lookupService,
   type CatalogCategory,
+  type CatalogEntry,
   type CatalogImportance,
 } from './catalog'
+import { useCatalogDrawer } from './CatalogDrawer'
 import './whatisthis.css'
 
 export type DescriptionImportance = CatalogImportance | 'unknown'
@@ -22,12 +25,65 @@ export interface CatalogDescription {
   category?: CatalogCategory
   importance: DescriptionImportance
   what: string
+  details?: string
+  stop?: string
   ifFails?: string
+  problems: string[]
+  commands: string[]
+  docs?: string
   origin: string
 }
 
 function text(key: string, options: Record<string, unknown> = {}): string {
   return i18n.t(key, { ns: 'catalog', ...options }) as string
+}
+
+function optionalText(key: string): string | undefined {
+  if (!i18n.exists(key, { ns: 'catalog' })) return undefined
+  return text(key)
+}
+
+function optionalProblems(key: string): string[] {
+  if (!i18n.exists(key, { ns: 'catalog' })) return []
+  const value: unknown = i18n.t(key, { ns: 'catalog', returnObjects: true })
+  return Array.isArray(value) && value.every((item): item is string => typeof item === 'string')
+    ? value
+    : []
+}
+
+function serviceCommands(unitName: string): string[] {
+  return [`systemctl status ${unitName}`, `journalctl -u ${unitName} -n 50 --no-pager`]
+}
+
+function containerCommands(name: string): string[] {
+  return [`docker logs --tail 50 ${name}`, `docker inspect ${name}`]
+}
+
+function stackCommands(name: string): string[] {
+  return [`docker compose -p ${name} ps`, `docker compose -p ${name} logs --tail 50`]
+}
+
+function entryDescription(
+  entry: CatalogEntry,
+  origin: string,
+  commands: string[],
+): CatalogDescription {
+  const base = `entries.${entry.id}`
+  return {
+    known: true,
+    id: entry.id,
+    name: text(`${base}.name`),
+    category: entry.category,
+    importance: entry.importance,
+    what: text(`${base}.what`),
+    details: optionalText(`${base}.details`),
+    stop: optionalText(`${base}.stop`),
+    ifFails: text(`${base}.ifFails`),
+    problems: optionalProblems(`${base}.problems`),
+    commands: [...commands, ...(entry.checks ?? [])],
+    docs: entry.docs,
+    origin,
+  }
 }
 
 function serviceOrigin(unit: ServiceUnit): string {
@@ -45,19 +101,12 @@ export function describeService(unit: ServiceUnit): CatalogDescription {
       name: unit.name,
       importance: 'unknown',
       what: text('unknownService', { description }),
+      problems: [],
+      commands: serviceCommands(unit.name),
       origin,
     }
   }
-  return {
-    known: true,
-    id: entry.id,
-    name: text(`entries.${entry.id}.name`),
-    category: entry.category,
-    importance: entry.importance,
-    what: text(`entries.${entry.id}.what`),
-    ifFails: text(`entries.${entry.id}.ifFails`),
-    origin,
-  }
+  return entryDescription(entry, origin, serviceCommands(unit.name))
 }
 
 function containerOrigin(container: Container): string {
@@ -85,19 +134,12 @@ export function describeContainer(container: Container): CatalogDescription {
       name: container.name,
       importance: 'unknown',
       what: origin,
+      problems: [],
+      commands: containerCommands(container.name),
       origin,
     }
   }
-  return {
-    known: true,
-    id: entry.id,
-    name: text(`entries.${entry.id}.name`),
-    category: entry.category,
-    importance: entry.importance,
-    what: text(`entries.${entry.id}.what`),
-    ifFails: text(`entries.${entry.id}.ifFails`),
-    origin,
-  }
+  return entryDescription(entry, origin, containerCommands(container.name))
 }
 
 /**
@@ -109,19 +151,14 @@ export function describeStack(name: string, containers: Container[]): CatalogDes
   if (repositories.length === 1) {
     const entry = lookupImage(repositories[0] ?? '')
     if (entry !== undefined) {
-      return {
-        known: true,
-        id: entry.id,
-        name: text(`entries.${entry.id}.name`),
-        category: entry.category,
-        importance: entry.importance,
-        what: text(`entries.${entry.id}.what`),
-        ifFails: text(`entries.${entry.id}.ifFails`),
-        origin: text('origin.stack', {
+      return entryDescription(
+        entry,
+        text('origin.stack', {
           stack: name,
           image: repositories[0],
         }),
-      }
+        stackCommands(name),
+      )
     }
   }
 
@@ -137,6 +174,8 @@ export function describeStack(name: string, containers: Container[]): CatalogDes
     name,
     importance: 'unknown',
     what: origin,
+    problems: [],
+    commands: stackCommands(name),
     origin,
   }
 }
@@ -154,12 +193,24 @@ interface WhatIsThisProps {
 /** WhatIsThis renders the catalogue card used by the info tooltips. */
 export function WhatIsThis({ target, variant = 'compact' }: WhatIsThisProps) {
   const { t } = useTranslation('catalog')
+  const drawer = useCatalogDrawer()
+  const [copiedCommand, setCopiedCommand] = useState<string | null>(null)
   const description =
     target.kind === 'service'
       ? describeService(target.unit)
       : target.kind === 'container'
         ? describeContainer(target.container)
         : describeStack(target.name, target.containers)
+  const full = variant === 'full'
+
+  const copy = (command: string) => {
+    const clipboard = navigator.clipboard
+    if (!clipboard) return
+    void clipboard.writeText(command).then(
+      () => setCopiedCommand(command),
+      () => undefined,
+    )
+  }
 
   return (
     <div className={`whatisthis whatisthis--${variant}`}>
@@ -176,23 +227,107 @@ export function WhatIsThis({ target, variant = 'compact' }: WhatIsThisProps) {
           </span>
         </span>
       </div>
-      <p className="whatisthis__what">{description.what}</p>
-      {description.ifFails !== undefined ? (
-        <p className="whatisthis__fail">
-          <strong>{t('label.ifFails')}:</strong> {description.ifFails}
-        </p>
-      ) : null}
-      {description.origin !== description.what ? (
-        <p className="whatisthis__origin">
-          <strong>{t('label.origin')}:</strong> {description.origin}
-        </p>
-      ) : null}
-      {variant === 'full' && description.category !== undefined ? (
-        <p className="whatisthis__help">{t(`categoryHelp.${description.category}`)}</p>
-      ) : null}
-      {variant === 'full' ? (
-        <p className="whatisthis__help">{t(`importanceHelp.${description.importance}`)}</p>
-      ) : null}
+
+      {full ? (
+        <>
+          <section className="whatisthis__section">
+            <h3 className="whatisthis__heading">{t('label.what')}</h3>
+            <p className="whatisthis__what">{description.what}</p>
+            {description.details !== undefined ? (
+              <p className="whatisthis__what">{description.details}</p>
+            ) : null}
+          </section>
+
+          {description.stop !== undefined ? (
+            <section className="whatisthis__section">
+              <h3 className="whatisthis__heading">{t('label.stop')}</h3>
+              <p className="whatisthis__what">{description.stop}</p>
+            </section>
+          ) : null}
+
+          {description.ifFails !== undefined || description.problems.length > 0 ? (
+            <section className="whatisthis__section">
+              <h3 className="whatisthis__heading">{t('label.ifFails')}</h3>
+              {description.ifFails !== undefined ? (
+                <p className="whatisthis__fail">{description.ifFails}</p>
+              ) : null}
+              {description.problems.length > 0 ? (
+                <>
+                  <h4 className="whatisthis__subheading">{t('label.problems')}</h4>
+                  <ul className="whatisthis__problems">
+                    {description.problems.map((problem) => (
+                      <li key={problem}>{problem}</li>
+                    ))}
+                  </ul>
+                </>
+              ) : null}
+            </section>
+          ) : null}
+
+          {description.commands.length > 0 ? (
+            <section className="whatisthis__section">
+              <h3 className="whatisthis__heading">{t('label.howToCheck')}</h3>
+              <div className="whatisthis__commands">
+                {description.commands.map((command) => (
+                  <div className="whatisthis__command" key={command}>
+                    <code>{command}</code>
+                    <button
+                      type="button"
+                      className="whatisthis__copy"
+                      onClick={() => copy(command)}
+                    >
+                      {copiedCommand === command ? t('label.copied') : t('label.copy')}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </section>
+          ) : null}
+
+          <section className="whatisthis__section">
+            <h3 className="whatisthis__heading">{t('label.origin')}</h3>
+            <p className="whatisthis__origin">{description.origin}</p>
+          </section>
+
+          {description.docs !== undefined ? (
+            <section className="whatisthis__section">
+              <h3 className="whatisthis__heading">{t('label.docs')}</h3>
+              <a
+                className="whatisthis__docs"
+                href={description.docs}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {description.docs}
+              </a>
+            </section>
+          ) : null}
+
+          {description.category !== undefined ? (
+            <p className="whatisthis__help">{t(`categoryHelp.${description.category}`)}</p>
+          ) : null}
+          <p className="whatisthis__help">{t(`importanceHelp.${description.importance}`)}</p>
+        </>
+      ) : (
+        <>
+          <p className="whatisthis__what">{description.what}</p>
+          {description.ifFails !== undefined ? (
+            <p className="whatisthis__fail">
+              <strong>{t('label.ifFails')}:</strong> {description.ifFails}
+            </p>
+          ) : null}
+          {description.origin !== description.what ? (
+            <p className="whatisthis__origin">
+              <strong>{t('label.origin')}:</strong> {description.origin}
+            </p>
+          ) : null}
+          {drawer !== null ? (
+            <button type="button" className="whatisthis__open" onClick={() => drawer.open(target)}>
+              {t('label.openFull')}
+            </button>
+          ) : null}
+        </>
+      )}
     </div>
   )
 }

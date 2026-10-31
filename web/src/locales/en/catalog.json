@@ -54,7 +54,15 @@
   "label": {
     "what": "What it is",
     "ifFails": "If it fails",
-    "origin": "Origin"
+    "origin": "Origin",
+    "openFull": "View full card",
+    "details": "Details",
+    "stop": "If you stop it",
+    "problems": "Common problems",
+    "howToCheck": "How to check it",
+    "copy": "Copy",
+    "copied": "Copied",
+    "docs": "Official documentation"
   },
   "origin": {
     "service": "systemd unit {{unit}}",
@@ -70,12 +78,26 @@
     "ssh": {
       "name": "OpenSSH server",
       "what": "The SSH server lets you open a secure remote shell and copy files to this machine.",
-      "ifFails": "You lose remote access to the server. Do not stop or restart it from a session you depend on; check its logs and configuration before restarting."
+      "ifFails": "You lose remote access to the server. Do not stop or restart it from a session you depend on; check its logs and configuration before restarting.",
+      "details": "It is the door you use to administer the server from another computer: a terminal, a file transfer tool or a deployment script connects through it. Talaia does not use SSH to manage servers, but people and automation often do. Keeping it running is what lets you get back in when something else breaks.",
+      "stop": "Stopping or disabling SSH closes the remote door to the server. If you are connected through SSH, that connection ends and you may lose access completely unless you have console access from your provider. Change the configuration first and keep a working session open while you test.",
+      "problems": [
+        "The connection is refused — check `systemctl status ssh` and the server firewall (for example `sudo ufw status`), and confirm the SSH port is open in the provider firewall.",
+        "The password or key is rejected — confirm the user exists, the key is in the right `authorized_keys` file and its permissions are correct; read `/var/log/auth.log` for the exact reason.",
+        "The connection times out — the server may be offline, its network may be down, or a firewall may be dropping the port; use the provider console to check the machine."
+      ]
     },
     "cron": {
       "name": "Cron scheduler",
       "what": "Runs scheduled jobs, such as backups, cleanup and maintenance tasks.",
-      "ifFails": "Scheduled jobs stop running until cron is started again. Check the unit logs and fix any failed job before restarting."
+      "ifFails": "Scheduled jobs stop running until cron is started again. Check the unit logs and fix any failed job before restarting.",
+      "details": "Cron runs commands on a schedule: backups, cleanup, certificate checks and other maintenance. The schedule lives in each user's crontab and in files under `/etc/cron.*`. A cron job has no screen, so its output usually goes to the system log or to email.",
+      "stop": "Stopping or disabling cron means no scheduled job runs: backups stop, temporary files pile up and maintenance tasks are missed. Starting it again does not run the missed jobs; run the important ones by hand if needed. It is rarely safe to leave it stopped.",
+      "problems": [
+        "A job does not run — check the schedule with `crontab -l` (or the file in `/etc/cron.d`), the user permissions and that the command works when run by hand.",
+        "The job runs but fails — cron uses a minimal environment; use absolute paths, set the needed variables in the crontab and read the output in the system log or the user's mail.",
+        "The service is stopped — check `systemctl status cron` and `journalctl -u cron -n 50 --no-pager`; start it only after reviewing why it stopped."
+      ]
     },
     "systemd-journald": {
       "name": "systemd journal",
@@ -155,7 +177,14 @@
     "docker": {
       "name": "Docker engine",
       "what": "Runs containers and manages images, networks and volumes through the Docker daemon.",
-      "ifFails": "All containers on this server stop or become unmanageable. Check disk space and the daemon log; restarting Docker restarts its running containers."
+      "ifFails": "All containers on this server stop or become unmanageable. Check disk space and the daemon log; restarting Docker restarts its running containers.",
+      "details": "Docker is the service that runs every container on this server. It also keeps images, networks and volumes, so containers can start with the same data after a restart. Talaia talks to Docker through this daemon to list, start and stop workloads.",
+      "stop": "Stopping Docker stops all containers on this server and the panel can no longer manage them. Starting Docker again starts the containers that have a restart policy; containers without one stay stopped. Plan a short maintenance window and avoid doing it from a terminal inside a container.",
+      "problems": [
+        "A container exits immediately — read `docker logs --tail 50 <container>` and check its command, environment variables and volume permissions.",
+        "The disk is full — run `docker system df` and remove unused images, stopped containers or volumes you no longer need; do not delete volumes blindly.",
+        "Docker does not answer — check `systemctl status docker` and the daemon log with `journalctl -u docker -n 50 --no-pager`; a restart restarts running containers."
+      ]
     },
     "containerd": {
       "name": "containerd runtime",
@@ -165,7 +194,15 @@
     "apache2": {
       "name": "Apache HTTP Server",
       "what": "Serves websites and web applications over HTTP.",
-      "ifFails": "Websites served by Apache stop answering. Check the error log and the configuration with apachectl configtest before restarting."
+      "ifFails": "Websites served by Apache stop answering. Check the error log and the configuration with apachectl configtest before restarting.",
+      "details": "Apache is a web server: it accepts HTTP requests and serves the sites or applications configured on this machine. It may also pass requests to another service such as PHP or a local app. If Apache is not running, visitors cannot reach those sites.",
+      "stop": "Stopping or disabling Apache makes every site it serves unavailable, including HTTPS sites whose certificates are handled elsewhere. It is safe only during planned maintenance or when another web server has taken over the same ports. Check the configuration first with `apachectl configtest`.",
+      "problems": [
+        "The site returns 500 — read the error log at `/var/log/apache2/error.log`; a PHP or application error is usually the cause.",
+        "The browser says the connection was refused — check `systemctl status apache2`, confirm the site is enabled and that ports 80/443 are open.",
+        "Apache will not start after an edit — run `apachectl configtest`, fix the reported file and line, then start it again.",
+        "The certificate is not renewed or the site uses the wrong one — check `certbot certificates` and the `SSLCertificateFile` paths in the site configuration."
+      ]
     },
     "nginx": {
       "name": "Nginx",
@@ -500,7 +537,14 @@
     "certbot": {
       "name": "Certbot",
       "what": "Obtains and renews TLS certificates from Let's Encrypt.",
-      "ifFails": "Certificates may expire and HTTPS sites will show errors. Check its logs, DNS and port 80/443 access; run it manually only after fixing the cause."
+      "ifFails": "Certificates may expire and HTTPS sites will show errors. Check its logs, DNS and port 80/443 access; run it manually only after fixing the cause.",
+      "details": "Certbot asks Let's Encrypt for the TLS certificates that make HTTPS work and installs them in the web server. A timer usually runs it every day, so sites renew without anyone visiting them. The service performs one renewal pass; the timer is what makes it repeat.",
+      "stop": "Stopping Certbot stops automatic renewals. Existing certificates keep working until they expire, and then browsers show security errors and some clients refuse the connection. Do not disable it unless another tool renews the same certificates.",
+      "problems": [
+        "A domain no longer points to this server (it moved to another host or its DNS record was removed), so the HTTP challenge fails every day — remove that certificate here with `certbot delete --cert-name <domain>` and disable its old web site configuration.",
+        "Port 80 is closed, redirected by the firewall or taken by another proxy, so the HTTP challenge cannot be reached — open port 80 for the challenge or switch Certbot to DNS validation, then run `certbot renew --dry-run`.",
+        "The web server configuration is broken or the certificate files were moved — fix `apachectl configtest` or `nginx -t`, restore the expected paths and run `certbot renew --dry-run`."
+      ]
     },
     "registry": {
       "name": "Docker registry",

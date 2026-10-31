@@ -54,7 +54,15 @@
   "label": {
     "what": "Què és",
     "ifFails": "Si falla",
-    "origin": "Origen"
+    "origin": "Origen",
+    "openFull": "Veure la fitxa completa",
+    "details": "Detalls",
+    "stop": "Si l'atures",
+    "problems": "Problemes habituals",
+    "howToCheck": "Com comprovar-ho",
+    "copy": "Copia",
+    "copied": "Copiat",
+    "docs": "Documentació oficial"
   },
   "origin": {
     "service": "unitat de systemd {{unit}}",
@@ -70,12 +78,26 @@
     "ssh": {
       "name": "Servidor OpenSSH",
       "what": "El servidor SSH permet obrir una shell remota segura i copiar fitxers en aquesta màquina.",
-      "ifFails": "Perds l'accés remot al servidor. No l'aturis ni el reiniciïs des d'una sessió de la qual depenguis; revisa els registres i la configuració abans de reiniciar-lo."
+      "ifFails": "Perds l'accés remot al servidor. No l'aturis ni el reiniciïs des d'una sessió de la qual depenguis; revisa els registres i la configuració abans de reiniciar-lo.",
+      "details": "És la porta que fas servir per administrar el servidor des d'un altre equip: una terminal, una eina de transferència de fitxers o un script de desplegament s'hi connecten. Talaia no fa servir SSH per gestionar els servidors, però les persones i l'automatització sovint sí. Mantenir-lo en marxa és el que et permet tornar a entrar quan una altra cosa falla.",
+      "stop": "Si atures o desactives SSH, tanques la porta remota al servidor. Si hi estàs connectat, aquella sessió s'acaba i pots quedar-te sense accés llevat que tinguis consola del proveïdor. Canvia primer la configuració i mantén una sessió oberta mentre proves.",
+      "problems": [
+        "La connexió es rebutja — comprova `systemctl status ssh` i el tallafoc del servidor (per exemple `sudo ufw status`), i confirma que el port SSH és obert al tallafoc del proveïdor.",
+        "Es rebutja la contrasenya o la clau — confirma que l'usuari existeix, que la clau és al fitxer `authorized_keys` correcte i que els permisos són vàlids; llegeix `/var/log/auth.log` per veure'n el motiu exacte.",
+        "La connexió es queda esperant — potser el servidor està aturat, sense xarxa o un tallafoc descarta el port; fes servir la consola del proveïdor per revisar la màquina."
+      ]
     },
     "cron": {
       "name": "Planificador cron",
       "what": "Executa tasques programades, com còpies de seguretat, neteja i manteniment.",
-      "ifFails": "Les tasques programades deixen de funcionar fins que cron torni a estar actiu. Revisa els registres de la unitat i arregla les tasques fallides abans de reiniciar."
+      "ifFails": "Les tasques programades deixen de funcionar fins que cron torni a estar actiu. Revisa els registres de la unitat i arregla les tasques fallides abans de reiniciar.",
+      "details": "Cron executa ordres amb una programació: còpies de seguretat, neteja, comprovacions de certificats i altres tasques de manteniment. La programació és al crontab de cada usuari i en fitxers sota `/etc/cron.*`. Un treball de cron no té pantalla, així que la seva sortida sol anar al registre del sistema o al correu.",
+      "stop": "Si atures o desactives cron, no s'executa cap tasca programada: s'aturen les còpies, s'acumulen fitxers temporals i es perden tasques de manteniment. En tornar-lo a arrencar no s'executen les tasques perdudes; llança a mà les importants si cal. Poques vegades és segur deixar-lo aturat.",
+      "problems": [
+        "Una tasca no s'executa — comprova la programació amb `crontab -l` (o el fitxer a `/etc/cron.d`), els permisos de l'usuari i que l'ordre funcioni en executar-la a mà.",
+        "La tasca s'executa però falla — cron fa servir un entorn mínim; usa rutes absolutes, defineix les variables necessàries al crontab i llegeix la sortida al registre del sistema o al correu de l'usuari.",
+        "El servei està aturat — comprova `systemctl status cron` i `journalctl -u cron -n 50 --no-pager`; inicia'l només després de revisar per què es va aturar."
+      ]
     },
     "systemd-journald": {
       "name": "Registre de systemd",
@@ -155,7 +177,14 @@
     "docker": {
       "name": "Motor Docker",
       "what": "Executa contenidors i gestiona imatges, xarxes i volums amb el dimoni Docker.",
-      "ifFails": "Tots els contenidors del servidor s'aturen o queden sense gestió. Comprova l'espai de disc i el registre del dimoni; reiniciar Docker reinicia els contenidors en marxa."
+      "ifFails": "Tots els contenidors del servidor s'aturen o queden sense gestió. Comprova l'espai de disc i el registre del dimoni; reiniciar Docker reinicia els contenidors en marxa.",
+      "details": "Docker és el servei que executa tots els contenidors d'aquest servidor. També guarda imatges, xarxes i volums, perquè els contenidors arrenquin amb les mateixes dades després d'un reinici. Talaia parla amb Docker a través d'aquest dimoni per llistar, iniciar i aturar càrregues de treball.",
+      "stop": "Si atures Docker, s'aturen tots els contenidors del servidor i el panell deixa de poder gestionar-los. En tornar-lo a arrencar s'inicien els contenidors amb política de reinici; els que no la tenen queden aturats. Reserva una finestra de manteniment i evita fer-ho des d'una terminal dins d'un contenidor.",
+      "problems": [
+        "Un contenidor es tanca només arrencar — llegeix `docker logs --tail 50 <contenidor>` i revisa'n la comanda, les variables d'entorn i els permisos dels volums.",
+        "El disc és ple — executa `docker system df` i elimina imatges, contenidors aturats o volums que ja no necessitis; no esborris volums a cegues.",
+        "Docker no respon — comprova `systemctl status docker` i el registre del dimoni amb `journalctl -u docker -n 50 --no-pager`; en reiniciar-lo es reinicien els contenidors en marxa."
+      ]
     },
     "containerd": {
       "name": "Runtime containerd",
@@ -165,7 +194,15 @@
     "apache2": {
       "name": "Servidor HTTP Apache",
       "what": "Serveix llocs web i aplicacions web per HTTP.",
-      "ifFails": "Els llocs servits per Apache deixen de respondre. Revisa el registre d'errors i valida la configuració amb apachectl configtest abans de reiniciar."
+      "ifFails": "Els llocs servits per Apache deixen de respondre. Revisa el registre d'errors i valida la configuració amb apachectl configtest abans de reiniciar.",
+      "details": "Apache és un servidor web: rep peticions HTTP i serveix els llocs o aplicacions configurats en aquesta màquina. També pot passar peticions a un altre servei, com PHP o una aplicació local. Si Apache no està en marxa, els visitants no poden arribar a aquests llocs.",
+      "stop": "Si atures o desactives Apache, tots els llocs que serveix deixen d'estar disponibles, inclosos els HTTPS els certificats dels quals gestiona un altre servei. Només és segur durant un manteniment planificat o quan un altre servidor web ha ocupat els mateixos ports. Valida la configuració amb `apachectl configtest` abans de tocar-lo.",
+      "problems": [
+        "El lloc torna un error 500 — llegeix el registre d'errors a `/var/log/apache2/error.log`; normalment la causa és un error de PHP o de l'aplicació.",
+        "El navegador diu que s'ha rebutjat la connexió — comprova `systemctl status apache2`, confirma que el lloc està activat i que els ports 80/443 són oberts.",
+        "Apache no arrenca després d'un canvi — executa `apachectl configtest`, corregeix el fitxer i la línia que indica i torna a iniciar-lo.",
+        "El certificat no es renova o el lloc fa servir el equivocat — revisa `certbot certificates` i les rutes `SSLCertificateFile` de la configuració del lloc."
+      ]
     },
     "nginx": {
       "name": "Nginx",
@@ -500,7 +537,14 @@
     "certbot": {
       "name": "Certbot",
       "what": "Obté i renova certificats TLS de Let's Encrypt.",
-      "ifFails": "Els certificats poden caducar i els llocs HTTPS mostraran errors. Revisa els registres, el DNS i l'accés als ports 80/443; executa'l manualment només després d'arreglar la causa."
+      "ifFails": "Els certificats poden caducar i els llocs HTTPS mostraran errors. Revisa els registres, el DNS i l'accés als ports 80/443; executa'l manualment només després d'arreglar la causa.",
+      "details": "Certbot demana a Let's Encrypt els certificats TLS que fan funcionar HTTPS i els instal·la al servidor web. Normalment l'executa un temporitzador cada dia, així que els llocs es renoven sense que ningú els visiti. El servei fa una passada de renovació; el temporitzador és el que la repeteix.",
+      "stop": "Si atures Certbot, deixes de renovar els certificats automàticament. Els certificats actuals segueixen funcionant fins que caduquen; aleshores el navegador mostra errors de seguretat i alguns clients rebutgen la connexió. No el desactivis llevat que una altra eina renovi els mateixos certificats.",
+      "problems": [
+        "Un domini ja no apunta a aquest servidor (s'ha mudat a un altre equip o han esborrat el seu registre DNS), així que el desafiament HTTP falla cada dia — elimina aquest certificat aquí amb `certbot delete --cert-name <domini>` i desactiva la configuració del seu antic lloc web.",
+        "El port 80 està tancat, redirigit pel tallafoc o ocupat per un altre proxy, així que el desafiament HTTP no pot arribar — obre el port 80 per al desafiament o canvia Certbot a validació DNS i executa `certbot renew --dry-run`.",
+        "La configuració del servidor web està trencada o han mogut els fitxers del certificat — arregla `apachectl configtest` o `nginx -t`, restaura les rutes esperades i executa `certbot renew --dry-run`."
+      ]
     },
     "registry": {
       "name": "Registre Docker",

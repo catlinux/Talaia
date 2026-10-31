@@ -13,6 +13,8 @@ describe('lookupService', () => {
     expect(lookupService('php8.2-fpm.service')?.id).toBe('php-fpm')
     expect(lookupService('wg-quick@wg0.service')?.id).toBe('wireguard')
     expect(lookupService('apt-daily.timer')?.id).toBe('apt-daily')
+    expect(lookupService('certbot.service')?.id).toBe('certbot')
+    expect(lookupService('certbot.timer')?.id).toBe('certbot')
   })
 
   it('prefers an exact unit over a pattern', () => {
@@ -85,5 +87,15 @@ describe('catalog translations', () => {
     expect(new Set(units).size).toBe(units.length)
     const images = catalog.flatMap((entry) => entry.images ?? [])
     expect(new Set(images).size).toBe(images.length)
+  })
+
+  it('uses https documentation links and the Certbot diagnostics', () => {
+    for (const entry of catalog) {
+      if (entry.docs !== undefined) expect(entry.docs.startsWith('https://')).toBe(true)
+    }
+    const certbot = catalog.find((entry) => entry.id === 'certbot')
+    expect(certbot?.kind).toBe('both')
+    expect(certbot?.units).toEqual(['certbot'])
+    expect(certbot?.checks).toEqual(['certbot certificates', 'certbot renew --dry-run'])
   })
 })
