@@ -13,6 +13,12 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+## [0.6.20] - 2026-10-31
+
+### Corregido
+
+- Panel: los mensajes de alerta sin valor medido ya no muestran una marca sin rellenar; el panel de detalle de la alerta, la campana y la nota de acciones en bloque se leen mejor.
+
 ## [0.6.19] - 2026-10-31
 
 ### Cambiado
@@ -816,7 +822,8 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
   `.gitattributes` y `.gitignore`.
 - Licencia WNCL-1.0 aplicada: archivo `LICENSE` y sección de créditos en los README.
 
-[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.6.19...HEAD
+[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.6.20...HEAD
+[0.6.20]: https://github.com/catlinux/Talaia/releases/tag/v0.6.20
 [0.6.19]: https://github.com/catlinux/Talaia/releases/tag/v0.6.19
 [0.6.18]: https://github.com/catlinux/Talaia/releases/tag/v0.6.18
 [0.6.17]: https://github.com/catlinux/Talaia/releases/tag/v0.6.17

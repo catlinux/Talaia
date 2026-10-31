@@ -71,6 +71,12 @@
   "bulk": {
     "notAllowed_one": "1 no permitida",
     "notAllowed_other": "{{count}} no permitidas",
+    "withoutPermission_one": "1 sin permiso",
+    "withoutPermission_other": "{{count}} sin permiso",
+    "alreadyAcknowledged_one": "1 ya confirmada",
+    "alreadyAcknowledged_other": "{{count}} ya confirmadas",
+    "notApplicable_one": "1 no aplicable",
+    "notApplicable_other": "{{count}} no aplicables",
     "result": "{{done}} hechas · {{failed}} fallidas · {{skipped}} no permitidas",
     "unwatchTitle_one": "¿Dejar de vigilar {{count}} contenedor?",
     "unwatchTitle_other": "¿Dejar de vigilar {{count}} contenedores?",
@@ -216,5 +222,6 @@
     "container": "Contenedor",
     "organization": "Organización",
     "group": "Grupo"
-  }
+  },
+  "withoutValue": "{{label}} en {{server}}"
 }

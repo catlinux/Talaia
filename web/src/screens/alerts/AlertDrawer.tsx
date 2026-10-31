@@ -380,6 +380,8 @@ export function AlertDrawer({
       ? '/alerts/rules'
       : `/alerts/rules?rule=${encodeURIComponent(alert.ruleId)}`
     : null
+  const ruleName = rule?.name || ruleLabel(t, alert.ruleType)
+  const ruleTypeLabel = ruleLabel(t, rule?.type ?? alert.ruleType)
 
   return (
     <>
@@ -456,7 +458,7 @@ export function AlertDrawer({
                     <button
                       key={action.id}
                       type="button"
-                      className="ui-btn"
+                      className="ui-btn ui-btn--primary"
                       disabled={busy}
                       onClick={() => setConfirming(action.containerAction ?? 'restart')}
                     >
@@ -464,7 +466,7 @@ export function AlertDrawer({
                     </button>
                   ) : null
                 ) : action.href !== undefined ? (
-                  <Link key={action.id} className="ui-btn ui-btn--ghost" to={action.href}>
+                  <Link key={action.id} className="ui-btn" to={action.href}>
                     {actionLabel(t, action)}
                   </Link>
                 ) : null,
@@ -495,7 +497,7 @@ export function AlertDrawer({
               {can('alerts.silence', scope) && alert.subjectKind === 'container' ? (
                 <button
                   type="button"
-                  className="ui-btn ui-btn--danger"
+                  className="ui-btn alerts-drawer__unwatch"
                   disabled={busy}
                   onClick={() => setUnwatch(true)}
                 >
@@ -520,8 +522,8 @@ export function AlertDrawer({
           <div className="alerts-drawer__section">
             <h3>{t('drawer.rule.title')}</h3>
             <div className="alerts-drawer__rule">
-              <strong>{rule?.name || ruleLabel(t, alert.ruleType)}</strong>
-              <span>{ruleLabel(t, rule?.type ?? alert.ruleType)}</span>
+              <strong>{ruleName}</strong>
+              {ruleTypeLabel !== ruleName ? <span>{ruleTypeLabel}</span> : null}
               {rule !== null ? <SeverityTag severity={rule.severity} /> : null}
               <span>{thresholdText(rule, t, language)}</span>
               {editRule !== null ? <Link to={editRule}>{t('drawer.rule.edit')}</Link> : null}

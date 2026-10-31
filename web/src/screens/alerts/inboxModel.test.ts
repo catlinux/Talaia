@@ -147,9 +147,15 @@ describe('permissions and scopes', () => {
     )
     expect(result.acknowledge.allowed.map((row) => row.id)).toEqual(['a1', 'server'])
     expect(result.acknowledge.denied.map((row) => row.id)).toEqual(['seen', 'outside'])
+    expect(result.acknowledge.notApplicable.map((row) => row.id)).toEqual(['seen'])
+    expect(result.acknowledge.withoutPermission.map((row) => row.id)).toEqual(['outside'])
     expect(result.silence.allowed.map((row) => row.id)).toEqual(['a1', 'seen', 'server'])
+    expect(result.silence.notApplicable).toEqual([])
+    expect(result.silence.withoutPermission.map((row) => row.id)).toEqual(['outside'])
     expect(result.unwatch.allowed.map((row) => row.id)).toEqual(['a1', 'seen'])
     expect(result.unwatch.denied.map((row) => row.id)).toEqual(['server', 'outside'])
+    expect(result.unwatch.notApplicable.map((row) => row.id)).toEqual(['server'])
+    expect(result.unwatch.withoutPermission.map((row) => row.id)).toEqual(['outside'])
   })
 
   it('deduplicates bulk silence scopes', () => {

@@ -71,6 +71,12 @@
   "bulk": {
     "notAllowed_one": "1 no permesa",
     "notAllowed_other": "{{count}} no permeses",
+    "withoutPermission_one": "1 sense permís",
+    "withoutPermission_other": "{{count}} sense permís",
+    "alreadyAcknowledged_one": "1 ja confirmada",
+    "alreadyAcknowledged_other": "{{count}} ja confirmades",
+    "notApplicable_one": "1 no aplicable",
+    "notApplicable_other": "{{count}} no aplicables",
     "result": "{{done}} fetes · {{failed}} fallides · {{skipped}} no permeses",
     "unwatchTitle_one": "Deixar de vigilar {{count}} contenidor?",
     "unwatchTitle_other": "Deixar de vigilar {{count}} contenidors?",
@@ -216,5 +222,6 @@
     "container": "Contenidor",
     "organization": "Organització",
     "group": "Grup"
-  }
+  },
+  "withoutValue": "{{label}} a {{server}}"
 }

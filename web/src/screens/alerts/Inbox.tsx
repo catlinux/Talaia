@@ -505,7 +505,11 @@ export function Inbox({
           )
         }
         if (state === 'silenced') {
-          return <span className="tag alerts-inbox__state--silenced">{t('state.silenced')}</span>
+          return (
+            <span className="alerts-inbox__state alerts-inbox__state--silenced">
+              {t('state.silenced')}
+            </span>
+          )
         }
         return (
           <span className="alerts-inbox__state alerts-inbox__state--seen">

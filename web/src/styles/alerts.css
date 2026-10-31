@@ -724,11 +724,17 @@ table td .mono {
   color: var(--muted);
 }
 
-.alerts-inbox__bulk-note {
-  margin-left: 5px;
+.alerts-inbox__bulk-notes {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
   color: var(--muted);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 400;
+}
+
+.alerts-inbox__bulk-notes span {
   white-space: nowrap;
 }
 
@@ -971,4 +977,44 @@ table td .mono {
 .alerts-drawer__missing {
   margin: 0;
   color: var(--muted);
+}
+
+/* Alert detail polish */
+.alerts-drawer__section h3 {
+  color: var(--muted);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+.alerts-drawer__where,
+.alerts-drawer__container {
+  font-family: var(--f-body);
+}
+
+.alerts-drawer__where a,
+.alerts-drawer__rule a {
+  text-decoration: none;
+}
+
+.alerts-drawer__where a:hover,
+.alerts-drawer__rule a:hover {
+  text-decoration: underline;
+}
+
+.alerts-drawer__timeline time,
+.alerts-drawer__timeline li span:last-child {
+  font-family: var(--f-body);
+  font-variant-numeric: tabular-nums;
+}
+
+.alerts-drawer__unwatch {
+  border-color: var(--crit);
+  background: transparent;
+  color: var(--crit);
+}
+
+.alerts-drawer__unwatch:hover:not(:disabled) {
+  background: var(--crit-soft);
 }

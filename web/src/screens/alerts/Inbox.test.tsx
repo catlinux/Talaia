@@ -240,14 +240,46 @@ describe('Inbox', () => {
     await screen.findAllByText(/Container web is down/)
 
     fireEvent.click(screen.getByRole('checkbox', { name: 'Select all' }))
-    expect(
-      within(screen.getByRole('button', { name: 'Acknowledge' })).getByText('1 not allowed'),
-    ).toBeTruthy()
-    fireEvent.click(screen.getByRole('button', { name: 'Acknowledge' }))
+    const acknowledgeButton = screen.getByRole('button', { name: 'Acknowledge' })
+    expect(within(acknowledgeButton).queryByText('1 without permission')).toBeNull()
+    expect(screen.getByText('1 without permission')).toBeTruthy()
+    fireEvent.click(acknowledgeButton)
 
     await waitFor(() => expect(acknowledge).toHaveBeenCalledTimes(1))
     expect(acknowledge).toHaveBeenCalledWith('allowed')
     expect(await screen.findByText('1 done · 0 failed · 1 not allowed')).toBeTruthy()
+  })
+
+  it('separates the reasons why selected alerts cannot be processed', async () => {
+    const { api } = fakeApi({
+      list: () =>
+        Promise.resolve([
+          alert({ id: 'allowed' }),
+          alert({ id: 'outside', serverId: 's2', serverName: 'vps-db-01' }),
+          alert({ id: 'seen', ackedAt: '2026-10-24T12:00:00Z', ackedBy: 'admin' }),
+          alert({ id: 'server', subjectKind: 'server', subjectName: 's1', stack: '' }),
+        ]),
+    })
+    renderInbox(api, {
+      me: me(['alerts.view'], { servers: { s1: ['alerts.silence' as Permission] } }),
+    })
+    await screen.findAllByText(/Container web is down/)
+
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Select all' }))
+
+    expect(screen.getByText('1 without permission')).toBeTruthy()
+    expect(screen.getByText('1 already acknowledged')).toBeTruthy()
+    expect(screen.getByText('1 not applicable')).toBeTruthy()
+  })
+
+  it('renders the silenced state with the regular UI font', async () => {
+    const { api } = fakeApi({ list: () => Promise.resolve([alert({ silenced: true })]) })
+    renderInbox(api)
+    await screen.findAllByText(/Container web is down/)
+
+    const tag = document.querySelector('.alerts-inbox__state--silenced')
+    expect(tag?.textContent).toBe('Silenced')
+    expect(tag?.className).toBe('alerts-inbox__state alerts-inbox__state--silenced')
   })
 
   it('creates one bulk silence for a repeated scope', async () => {

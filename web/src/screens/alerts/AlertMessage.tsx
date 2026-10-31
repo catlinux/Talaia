@@ -19,12 +19,21 @@ export function alertMessageText(t: TFunction, alert: Alert): string {
   const summaryKey = alert.summary?.key?.replace(/^alerts\./, '') ?? ''
   const rule = summaryKey === '' ? alert.ruleType : summaryKey
   if (!ruleTypes.includes(rule as (typeof ruleTypes)[number])) {
-    return alert.ruleType || t('unknownRule', { rule: '—' })
+    return rule === '' ? t('unknownRule', { rule: '—' }) : ruleLabel(t, rule)
   }
-  const params = {
+  const params: Record<string, string | number> = {
     ...(alert.summary?.params ?? {}),
     server: alert.serverName || alert.serverId || '—',
     subject: alert.subjectName || '—',
+  }
+  if (
+    (rule === 'cpu_high' || rule === 'mem_high' || rule === 'disk_high') &&
+    (params.value === undefined || params.value === null || params.value === '')
+  ) {
+    return t('withoutValue', {
+      label: ruleLabel(t, rule),
+      server: params.server,
+    })
   }
   return t(rule, params)
 }

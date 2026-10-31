@@ -18,6 +18,12 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.6.20] - 2026-10-31
+
+### Fixed
+
+- Panel: alert messages without a measured value no longer show a raw placeholder; the alert detail panel, the alert bell and the inbox bulk note are easier to read.
+
 ## [0.6.19] - 2026-10-31
 
 ### Changed
@@ -816,7 +822,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.6.19...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.6.20...HEAD
+[0.6.20]: https://github.com/catlinux/Talaia/releases/tag/v0.6.20
 [0.6.19]: https://github.com/catlinux/Talaia/releases/tag/v0.6.19
 [0.6.18]: https://github.com/catlinux/Talaia/releases/tag/v0.6.18
 [0.6.17]: https://github.com/catlinux/Talaia/releases/tag/v0.6.17

@@ -82,8 +82,6 @@ export function alertActions(alert: Alert, can: AlertActionPermission): AlertCau
 
   if (alert.ruleType === 'cpu_high' || alert.ruleType === 'mem_high') {
     if (server) actions.push({ id: 'open-server', kind: 'link', href: server })
-    const updates = serverPath(alert, '/updates')
-    if (updates) actions.push({ id: 'view-updates', kind: 'link', href: updates })
     return actions
   }
 

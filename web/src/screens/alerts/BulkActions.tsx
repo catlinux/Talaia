@@ -26,6 +26,17 @@ export function BulkActions({
 }: BulkActionsProps) {
   const { t } = useTranslation('alerts')
   const available = eligibility(selected, can)
+  const notes = [
+    available.silence.withoutPermission.length > 0
+      ? t('bulk.withoutPermission', { count: available.silence.withoutPermission.length })
+      : null,
+    available.acknowledge.notApplicable.length > 0
+      ? t('bulk.alreadyAcknowledged', { count: available.acknowledge.notApplicable.length })
+      : null,
+    available.unwatch.notApplicable.length > 0
+      ? t('bulk.notApplicable', { count: available.unwatch.notApplicable.length })
+      : null,
+  ].filter((note): note is string => note !== null)
   const actions: Array<{
     id: BulkAction
     label: string
@@ -53,8 +64,6 @@ export function BulkActions({
       {actions.map((action) => {
         const state = available[action.id]
         const blocked = state.allowed.length === 0
-        const denied = state.denied.length
-        const note = denied > 0 ? t('bulk.notAllowed', { count: denied }) : undefined
         return (
           <button
             key={action.id}
@@ -62,18 +71,19 @@ export function BulkActions({
             className={action.id === 'unwatch' ? 'ui-btn ui-btn--danger' : 'ui-btn'}
             disabled={disabled || blocked}
             aria-label={action.label}
-            title={note}
             onClick={() => action.run(state.allowed)}
           >
             {action.label}
-            {note !== undefined ? (
-              <span className="alerts-inbox__bulk-note" aria-hidden="true">
-                {note}
-              </span>
-            ) : null}
           </button>
         )
       })}
+      {notes.length > 0 ? (
+        <span className="alerts-inbox__bulk-notes">
+          {notes.map((note) => (
+            <span key={note}>{note}</span>
+          ))}
+        </span>
+      ) : null}
     </BulkBar>
   )
 }

@@ -65,13 +65,13 @@ describe('alertActions', () => {
     expect(actions[1]?.href).toBe('/servers/s1/containers')
   })
 
-  it('opens the server and updates for CPU and memory', () => {
+  it('opens the server for CPU and memory', () => {
     for (const ruleType of ['cpu_high', 'mem_high']) {
       expect(
         alertActions(alert({ ruleType, subjectKind: 'server', stack: '' }), all).map(
           (action) => action.id,
         ),
-      ).toEqual(['open-server', 'view-updates'])
+      ).toEqual(['open-server'])
     }
   })
 

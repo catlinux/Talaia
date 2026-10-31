@@ -22,6 +22,8 @@ export type AlertPermissionCheck = (permission: Permission, scope: PermissionSco
 export interface BulkEligibility {
   allowed: Alert[]
   denied: Alert[]
+  withoutPermission: Alert[]
+  notApplicable: Alert[]
 }
 
 export interface SilenceScope {
@@ -121,11 +123,20 @@ export function eligibility(
   const partition = (applicable: (alert: Alert) => boolean): BulkEligibility => {
     const allowed: Alert[] = []
     const denied: Alert[] = []
+    const withoutPermission: Alert[] = []
+    const notApplicable: Alert[] = []
     for (const alert of alerts) {
-      if (applicable(alert) && can('alerts.silence', alertScope(alert))) allowed.push(alert)
-      else denied.push(alert)
+      if (!applicable(alert)) {
+        denied.push(alert)
+        notApplicable.push(alert)
+      } else if (can('alerts.silence', alertScope(alert))) {
+        allowed.push(alert)
+      } else {
+        denied.push(alert)
+        withoutPermission.push(alert)
+      }
     }
-    return { allowed, denied }
+    return { allowed, denied, withoutPermission, notApplicable }
   }
 
   return {
