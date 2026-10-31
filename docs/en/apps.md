@@ -168,16 +168,20 @@ Open an app and use **Variables**. **Add variable** asks for a **Key**, a **Valu
 
 - Keys use uppercase letters, numbers and underscores, start with a letter or underscore, and are at most
   128 characters.
-- **Secret** values are write-only. The panel masks them and never returns the value; to replace one,
-  enter a new value. Deleting a variable removes it from the app.
+- **Secret** values are write-only and sealed in the core. The panel masks them and never returns the
+  value; to replace one, enter a new value. Deleting a variable removes it from the app.
 - **Available at build time** passes a non-secret variable to `docker build` as a build argument. Secret
   variables are never passed as build arguments, even if the flag is set.
-- Variables are sealed in the core. They are not added to the container environment automatically by the
-  Compose stack that Talaia generates for Git and image apps. If the app needs one at runtime, add it to
-  the `environment:` section of the stack.
+- Talaia owns the `.env` file: every deployment regenerates it from the app variables. The generated stack
+  and a template stack read it with `env_file: [.env]`. `TEMPLATE_PASSWORD` is internal to a template and
+  is not exported. Edit variables in the panel, not in `.env`, because the next deployment replaces the
+  file.
+- If the app has variables and a hand-edited stack does not reference `.env`, Talaia still writes the
+  file but logs a warning. Add `env_file: [.env]` to the app service of that stack so the container
+  receives the variables.
 
-Changing a variable does not change a running container by itself. Deploy the app again for the new
-build-time value to take effect.
+Changing a variable does not change a running container by itself. Deploy the app again: the value is
+available at runtime and, when **Available at build time** is set, in the next build.
 
 ## Deployments, logs, retry and rollback
 
@@ -284,8 +288,8 @@ hand-edited stacks, and the bundled templates are intended for external mode.
 
 ## What Talaia touches
 
-- The app's Compose project in `/opt/talaia/stacks/<app>/`, including `compose.yaml` and an existing
-  `.env` when it updates a hand-edited stack.
+- The app's Compose project in `/opt/talaia/stacks/<app>/`, including `compose.yaml` and the `.env`
+  generated from the app variables on every deployment.
 - Build workspaces under `/var/lib/talaia/builds/<app>/`, which are removed after each build.
 - Images named `talaia/<app>:<commit>`. It keeps the last three successful ones and removes only other
   images with that exact prefix.

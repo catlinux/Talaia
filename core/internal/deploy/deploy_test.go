@@ -299,6 +299,7 @@ func TestDeploySucceedsThroughSourceBuildAndRelease(t *testing.T) {
 	manager, state := newTestManager(t, app, agent)
 	state.envs[app.ID] = []store.AppEnv{
 		{AppID: app.ID, Key: "BUILD_ONLY", ValueEnc: []byte("sealed"), BuildTime: true},
+		{AppID: app.ID, Key: "RUNTIME", ValueEnc: []byte("sealed")},
 		{AppID: app.ID, Key: "SECRET_BUILD", ValueEnc: []byte("sealed"), BuildTime: true, Secret: true},
 	}
 	state.deployments = append(state.deployments,
@@ -327,6 +328,12 @@ func TestDeploySucceedsThroughSourceBuildAndRelease(t *testing.T) {
 	}
 	if len(agent.writes) != 1 || !strings.Contains(agent.writes[0], "image: talaia/shop:abcdef123456") {
 		t.Errorf("writes = %v", agent.writes)
+	}
+	if len(agent.writes) == 1 && !strings.Contains(agent.writes[0], "env_file: [.env]") {
+		t.Errorf("compose does not reference .env:\n%s", agent.writes[0])
+	}
+	if agent.stackEnv != "BUILD_ONLY=\"plain\"\nRUNTIME=\"plain\"\nSECRET_BUILD=\"plain\"\n" {
+		t.Errorf("env = %q", agent.stackEnv)
 	}
 	if len(agent.writes) == 1 && !strings.Contains(agent.writes[0], "127.0.0.1:23456:3000") {
 		t.Errorf("compose does not use the picked host port:\n%s", agent.writes[0])
@@ -426,6 +433,103 @@ func TestHandEditedStackOnlyChangesTheImage(t *testing.T) {
 	if !strings.Contains(deployment.Log, "hand-edited") {
 		t.Errorf("log = %q", deployment.Log)
 	}
+	if hasAny(agent.writes, "env_file:") {
+		t.Errorf("the hand-edited compose was changed to reference .env: %v", agent.writes)
+	}
+	if agent.stackEnv != "\n" {
+		t.Errorf("env = %q, want a generated empty file", agent.stackEnv)
+	}
+}
+
+func TestHandEditedStackWritesEnvAndWarnsWhenNotReferenced(t *testing.T) {
+	app := testApp()
+	agent := &fakeAgent{
+		source:       SourceResult{Commit: "abcdef123456" + strings.Repeat("0", 28)},
+		stackExists:  true,
+		stackCompose: "services:\n  app:\n    image: old\n    environment:\n      KEEP: yes\n",
+	}
+	manager, state := newTestManager(t, app, agent)
+	state.envs[app.ID] = []store.AppEnv{{
+		AppID: app.ID, Key: "DATABASE_URL", ValueEnc: []byte("sealed"), Secret: true,
+	}}
+
+	if err := manager.Enqueue(context.Background(), app.ID, "push", ""); err != nil {
+		t.Fatal(err)
+	}
+	deployment := processQueued(t, manager, state)
+	if deployment.State != store.DeploymentSucceeded {
+		t.Fatalf("deployment = %+v", deployment)
+	}
+	if agent.stackEnv != "DATABASE_URL=\"plain\"\n" {
+		t.Errorf("env = %q", agent.stackEnv)
+	}
+	if !strings.Contains(deployment.Log, "does not reference .env") {
+		t.Errorf("log has no warning: %q", deployment.Log)
+	}
+	if strings.Contains(deployment.Log, "plain") {
+		t.Errorf("the deployment log leaked the value: %q", deployment.Log)
+	}
+	if !strings.Contains(agent.writes[0], "KEEP: yes") || strings.Contains(agent.writes[0], "env_file:") {
+		t.Errorf("the hand-edited compose changed:\n%s", agent.writes[0])
+	}
+}
+
+func TestHandEditedStackWithEnvFileDoesNotWarn(t *testing.T) {
+	app := testApp()
+	agent := &fakeAgent{
+		source:       SourceResult{Commit: "abcdef123456" + strings.Repeat("0", 28)},
+		stackExists:  true,
+		stackCompose: "services:\n  app:\n    image: old\n    env_file: [.env]\n    environment:\n      KEEP: yes\n",
+		stackEnv:     "OLD=\"value\"\n",
+	}
+	manager, state := newTestManager(t, app, agent)
+	state.envs[app.ID] = []store.AppEnv{{
+		AppID: app.ID, Key: "DATABASE_URL", ValueEnc: []byte("sealed"), Secret: true,
+	}}
+
+	if err := manager.Enqueue(context.Background(), app.ID, "push", ""); err != nil {
+		t.Fatal(err)
+	}
+	deployment := processQueued(t, manager, state)
+	if deployment.State != store.DeploymentSucceeded {
+		t.Fatalf("deployment = %+v", deployment)
+	}
+	if strings.Contains(deployment.Log, "does not reference .env") {
+		t.Errorf("unexpected warning: %q", deployment.Log)
+	}
+	if agent.stackEnv != "DATABASE_URL=\"plain\"\n" {
+		t.Errorf("env = %q", agent.stackEnv)
+	}
+}
+
+func TestHandEditedStackKeepsAnEmptyEnvFileWhenItReferencesIt(t *testing.T) {
+	app := testApp()
+	agent := &fakeAgent{
+		source:       SourceResult{Commit: "abcdef123456" + strings.Repeat("0", 28)},
+		stackExists:  true,
+		stackCompose: "services:\n  app:\n    image: old\n    env_file: [.env]\n",
+	}
+	manager, state := newTestManager(t, app, agent)
+
+	if err := manager.Enqueue(context.Background(), app.ID, "push", ""); err != nil {
+		t.Fatal(err)
+	}
+	deployment := processQueued(t, manager, state)
+	if deployment.State != store.DeploymentSucceeded {
+		t.Fatalf("deployment = %+v", deployment)
+	}
+	if agent.stackEnv != "\n" {
+		t.Errorf("env = %q, want a kept empty file", agent.stackEnv)
+	}
+}
+
+func hasAny(values []string, substring string) bool {
+	for _, value := range values {
+		if strings.Contains(value, substring) {
+			return true
+		}
+	}
+	return false
 }
 
 func TestHandEditedStackWarnsWhenTheServiceIsGone(t *testing.T) {
@@ -535,7 +639,10 @@ func TestTemplateAppRendersAndStartsTheStack(t *testing.T) {
 	agent := &fakeAgent{}
 	manager, state := newTestManager(t, app, agent)
 	manager.templates = catalog
-	state.envs[app.ID] = []store.AppEnv{{AppID: app.ID, Key: "TEMPLATE_PASSWORD", ValueEnc: []byte("sealed"), Secret: true}}
+	state.envs[app.ID] = []store.AppEnv{
+		{AppID: app.ID, Key: "TEMPLATE_PASSWORD", ValueEnc: []byte("sealed"), Secret: true},
+		{AppID: app.ID, Key: "CUSTOM", ValueEnc: []byte("sealed"), Secret: true},
+	}
 	state.domains = []store.Domain{{ID: "domain-1", AppID: app.ID, Hostname: "uptime.example.com", Service: "app", Port: 3001}}
 
 	if err := manager.Enqueue(context.Background(), app.ID, "create", ""); err != nil {
@@ -557,6 +664,53 @@ func TestTemplateAppRendersAndStartsTheStack(t *testing.T) {
 		!strings.Contains(agent.writes[0], "127.0.0.1:23456:3001") {
 		t.Errorf("rendered stack = %v", agent.writes)
 	}
+	if !strings.Contains(agent.writes[0], "env_file: [.env]") {
+		t.Errorf("the template stack does not reference .env:\n%s", agent.writes[0])
+	}
+	if agent.stackEnv != "CUSTOM=\"plain\"\n" {
+		t.Errorf("env = %q", agent.stackEnv)
+	}
+	if strings.Contains(agent.stackEnv, "TEMPLATE_PASSWORD") {
+		t.Errorf("the template password was exported: %q", agent.stackEnv)
+	}
+	if strings.Contains(deployment.Log, "plain") {
+		t.Errorf("the deployment log leaked a value: %q", deployment.Log)
+	}
+}
+
+func TestTemplateAppWithoutUserVariablesKeepsEnvFile(t *testing.T) {
+	catalog, err := templates.LoadFS(os.DirFS("../../.."), "templates")
+	if err != nil {
+		t.Fatal(err)
+	}
+	app := testApp()
+	app.Source = store.AppSourceTemplate
+	app.TemplateID = "uptime-kuma"
+	app.TemplateVersion = "1.0.0"
+	app.Image = "louislam/uptime-kuma:1.23.16"
+	app.Service = "app"
+	app.Port = 3001
+	agent := &fakeAgent{}
+	manager, state := newTestManager(t, app, agent)
+	manager.templates = catalog
+	state.envs[app.ID] = []store.AppEnv{{AppID: app.ID, Key: "TEMPLATE_PASSWORD", ValueEnc: []byte("sealed"), Secret: true}}
+
+	if err := manager.Enqueue(context.Background(), app.ID, "create", ""); err != nil {
+		t.Fatal(err)
+	}
+	deployment := processQueued(t, manager, state)
+	if deployment.State != store.DeploymentSucceeded {
+		t.Fatalf("deployment = %+v", deployment)
+	}
+	if !strings.Contains(agent.writes[0], "env_file: [.env]") {
+		t.Errorf("the template stack does not reference .env:\n%s", agent.writes[0])
+	}
+	if agent.stackEnv != "\n" {
+		t.Errorf("env = %q, want a kept empty file", agent.stackEnv)
+	}
+	if strings.Contains(agent.stackEnv, "TEMPLATE_PASSWORD") {
+		t.Errorf("the template password was exported: %q", agent.stackEnv)
+	}
 }
 
 func TestGenerateCompose(t *testing.T) {
@@ -571,6 +725,7 @@ func TestGenerateCompose(t *testing.T) {
 		"restart: unless-stopped",
 		"cpus: \"1.0\"",
 		"mem_limit: 512m",
+		"env_file: [.env]",
 		"\"127.0.0.1:23456:3000\"",
 		"dev.talaia.app: app-1",
 	} {
@@ -588,6 +743,9 @@ func TestGenerateCompose(t *testing.T) {
 	}
 	if !strings.Contains(managed, "  talaia-proxy:\n    external: true") {
 		t.Errorf("managed compose has no proxy network:\n%s", managed)
+	}
+	if !strings.Contains(managed, "env_file: [.env]") {
+		t.Errorf("managed compose does not reference .env:\n%s", managed)
 	}
 	if strings.Contains(managed, "127.0.0.1") {
 		t.Errorf("managed compose publishes a host port:\n%s", managed)
@@ -609,8 +767,14 @@ func TestManagedModeUsesTheProxyNetwork(t *testing.T) {
 	if len(agent.writes) != 1 {
 		t.Fatalf("writes = %v", agent.writes)
 	}
-	if !strings.Contains(agent.writes[0], "talaia-proxy") || strings.Contains(agent.writes[0], "127.0.0.1") {
+	if len(agent.writes) != 1 || !strings.Contains(agent.writes[0], "talaia-proxy") || strings.Contains(agent.writes[0], "127.0.0.1") {
 		t.Errorf("managed compose = %q", agent.writes[0])
+	}
+	if !strings.Contains(agent.writes[0], "env_file: [.env]") {
+		t.Errorf("managed compose does not reference .env: %q", agent.writes[0])
+	}
+	if agent.stackEnv != "\n" {
+		t.Errorf("env = %q, want a kept empty file", agent.stackEnv)
 	}
 	if agent.portCalls != 0 {
 		t.Errorf("managed mode picked a host port")
@@ -646,6 +810,12 @@ func TestDeployImageSourceStartsTheStack(t *testing.T) {
 	}
 	if len(agent.writes) != 1 || !strings.Contains(agent.writes[0], "image: nginx:1.27") {
 		t.Errorf("writes = %v", agent.writes)
+	}
+	if !strings.Contains(agent.writes[0], "env_file: [.env]") {
+		t.Errorf("the image stack does not reference .env: %v", agent.writes)
+	}
+	if agent.stackEnv != "\n" {
+		t.Errorf("env = %q, want a kept empty file", agent.stackEnv)
 	}
 }
 

@@ -37,6 +37,7 @@ func generateCompose(app store.App, service, imageRef string, managed bool, host
     restart: unless-stopped
     cpus: "%s"
     mem_limit: %s
+    env_file: [.env]
     labels:
       dev.talaia.app: %s
     networks:
@@ -58,6 +59,7 @@ networks:
     restart: unless-stopped
     cpus: "%s"
     mem_limit: %s
+    env_file: [.env]
     ports:
       - "127.0.0.1:%d:%d"
     labels:
@@ -151,4 +153,117 @@ func indentOf(line string) int {
 		count++
 	}
 	return count
+}
+
+type serviceBlock struct {
+	lines          []string
+	newline        string
+	start          int
+	end            int
+	propertyIndent int
+}
+
+// locateService returns the lines and bounds of one service in a Compose file.
+// It works on the text instead of parsing YAML so the rest of the file, its
+// comments and its formatting stay untouched.
+func locateService(compose, service string) (serviceBlock, bool) {
+	newline := "\n"
+	if strings.Contains(compose, "\r\n") {
+		newline = "\r\n"
+		compose = strings.ReplaceAll(compose, "\r\n", "\n")
+	}
+	lines := strings.Split(compose, "\n")
+
+	servicesLine := -1
+	for index, line := range lines {
+		if indentOf(line) == 0 && strings.TrimSpace(line) == "services:" {
+			servicesLine = index
+			break
+		}
+	}
+	if servicesLine < 0 {
+		return serviceBlock{}, false
+	}
+
+	start := -1
+	serviceIndent := 0
+	for index := servicesLine + 1; index < len(lines); index++ {
+		trimmed := strings.TrimSpace(lines[index])
+		if trimmed == "" || strings.HasPrefix(trimmed, "#") {
+			continue
+		}
+		indent := indentOf(lines[index])
+		if indent == 0 {
+			break
+		}
+		if strings.Trim(strings.TrimSuffix(trimmed, ":"), `"'`) == service {
+			start = index
+			serviceIndent = indent
+			break
+		}
+	}
+	if start < 0 {
+		return serviceBlock{}, false
+	}
+
+	end := len(lines)
+	for index := start + 1; index < len(lines); index++ {
+		trimmed := strings.TrimSpace(lines[index])
+		if trimmed == "" || strings.HasPrefix(trimmed, "#") {
+			continue
+		}
+		if indentOf(lines[index]) <= serviceIndent {
+			end = index
+			break
+		}
+	}
+
+	propertyIndent := serviceIndent + 2
+	for index := start + 1; index < end; index++ {
+		trimmed := strings.TrimSpace(lines[index])
+		if trimmed == "" || strings.HasPrefix(trimmed, "#") {
+			continue
+		}
+		propertyIndent = indentOf(lines[index])
+		break
+	}
+
+	return serviceBlock{
+		lines:          lines,
+		newline:        newline,
+		start:          start,
+		end:            end,
+		propertyIndent: propertyIndent,
+	}, true
+}
+
+// addServiceEnvFile makes the service read .env and reports whether the service
+// was found. An existing env_file property is left as it is.
+func addServiceEnvFile(compose, service string) (string, bool) {
+	block, ok := locateService(compose, service)
+	if !ok {
+		return compose, false
+	}
+	if serviceHasEnvFileInBlock(block) {
+		return strings.Join(block.lines, block.newline), true
+	}
+	insert := strings.Repeat(" ", block.propertyIndent) + "env_file: [.env]"
+	lines := append(block.lines[:block.start+1], append([]string{insert}, block.lines[block.start+1:]...)...)
+	return strings.Join(lines, block.newline), true
+}
+
+// serviceHasEnvFile reports whether the service already declares env_file.
+func serviceHasEnvFile(compose, service string) bool {
+	block, ok := locateService(compose, service)
+	return ok && serviceHasEnvFileInBlock(block)
+}
+
+func serviceHasEnvFileInBlock(block serviceBlock) bool {
+	for index := block.start + 1; index < block.end; index++ {
+		trimmed := strings.TrimSpace(block.lines[index])
+		if strings.HasPrefix(trimmed, "env_file:") {
+			return true
+		}
+	}
+	return false
 }

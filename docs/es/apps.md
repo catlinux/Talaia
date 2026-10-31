@@ -175,16 +175,21 @@ Abre una app y usa **Variables**. **Añadir variable** pide una **Clave**, un **
 
 - Las claves usan letras mayúsculas, números y guiones bajos, empiezan por letra o guion bajo y tienen como
   máximo 128 caracteres.
-- Los valores **Secreto** son de solo escritura. El panel los oculta y nunca devuelve el valor; para
-  sustituirlo, introduce un valor nuevo. Eliminar una variable la quita de la app.
+- Los valores **Secreto** son de solo escritura y se sellan en el núcleo. El panel los oculta y nunca
+  devuelve el valor; para sustituirlo, introduce un valor nuevo. Eliminar una variable la quita de la app.
 - **Disponible en tiempo de compilación** pasa una variable no secreta a `docker build` como argumento de
   construcción. Las variables secretas nunca se pasan como argumentos, aunque la marca esté activada.
-- Las variables se sellan en el núcleo. El stack Compose que Talaia genera para apps de Git y de imagen no
-  las añade automáticamente al entorno del contenedor. Si la app necesita una en ejecución, añádela a la
-  sección `environment:` del stack.
+- Talaia es dueña del archivo `.env`: cada despliegue lo vuelve a generar a partir de las variables de la
+  app. El stack generado y un stack de plantilla lo leen con `env_file: [.env]`. `TEMPLATE_PASSWORD` es
+  interna de una plantilla y no se exporta. Edita las variables en el panel, no en `.env`, porque el
+  siguiente despliegue sustituye el archivo.
+- Si la app tiene variables y un stack editado a mano no referencia `.env`, Talaia escribe igualmente el
+  archivo pero deja un aviso en el registro. Añade `env_file: [.env]` al servicio de la app de ese stack
+  para que el contenedor reciba las variables.
 
-Cambiar una variable no modifica por sí solo un contenedor en marcha. Vuelve a desplegar la app para que
-tenga efecto el nuevo valor de compilación.
+Cambiar una variable no modifica por sí solo un contenedor en marcha. Vuelve a desplegar la app: el valor
+queda disponible en ejecución y, cuando **Disponible en tiempo de compilación** está activado, en la
+siguiente construcción.
 
 ## Despliegues, registros, reintentar y volver atrás
 
@@ -298,8 +303,8 @@ mano, y las plantillas incluidas están pensadas para el modo externo.
 
 ## Qué toca Talaia
 
-- El proyecto Compose de la app en `/opt/talaia/stacks/<app>/`, incluido `compose.yaml` y un `.env`
-  existente cuando actualiza un stack editado a mano.
+- El proyecto Compose de la app en `/opt/talaia/stacks/<app>/`, incluido `compose.yaml` y el `.env`
+  generado a partir de las variables de la app en cada despliegue.
 - Los espacios de construcción en `/var/lib/talaia/builds/<app>/`, que se eliminan después de cada
   construcción.
 - Las imágenes llamadas `talaia/<app>:<commit>`. Guarda las tres últimas correctas y elimina solo otras

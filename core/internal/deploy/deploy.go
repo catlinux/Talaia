@@ -477,7 +477,7 @@ func (m *Manager) prepareTemplate(ctx context.Context, app store.App, hostPort i
 		return fmt.Errorf("list the template variables: %w", err)
 	}
 	for _, env := range envs {
-		if env.Key != "TEMPLATE_PASSWORD" {
+		if env.Key != templatePasswordKey {
 			continue
 		}
 		if m.box == nil {
@@ -491,6 +491,11 @@ func (m *Manager) prepareTemplate(ctx context.Context, app store.App, hostPort i
 	}
 	if password == "" {
 		return errors.New("the template password is missing")
+	}
+
+	envFile, envCount, err := renderEnvFile(envs, m.box)
+	if err != nil {
+		return fmt.Errorf("render the app variables: %w", err)
 	}
 
 	domain := "localhost"
@@ -511,21 +516,36 @@ func (m *Manager) prepareTemplate(ctx context.Context, app store.App, hostPort i
 	if err != nil {
 		return fmt.Errorf("render the template: %w", err)
 	}
+	compose, ok = addServiceEnvFile(compose, template.Service)
+	if !ok {
+		return fmt.Errorf("the template service %q was not found", template.Service)
+	}
+	if envCount > 0 {
+		log.add("writing the app variables to .env")
+	}
 	log.add("writing the template stack")
-	return m.writeStack(ctx, app, compose, "", log)
+	return m.writeStack(ctx, app, compose, envFileContent(envFile), log)
 }
 
 func (m *Manager) prepareStack(ctx context.Context, app store.App, service, imageRef string, managed bool, hostPort int, log *deploymentLog) error {
+	envFile, envCount, err := m.renderAppEnv(ctx, app)
+	if err != nil {
+		return err
+	}
+
 	readCtx, cancel := context.WithTimeout(ctx, stackTimeout)
-	compose, env, err := m.agent.ReadStack(readCtx, app.ServerID, app.StackName)
+	compose, _, err := m.agent.ReadStack(readCtx, app.ServerID, app.StackName)
 	cancel()
 	if errors.Is(err, ErrStackNotFound) {
 		generated, err := generateCompose(app, service, imageRef, managed, hostPort)
 		if err != nil {
 			return err
 		}
+		if envCount > 0 {
+			log.add("writing the app variables to .env")
+		}
 		log.add("writing the initial stack")
-		return m.writeStack(ctx, app, generated, "", log)
+		return m.writeStack(ctx, app, generated, envFileContent(envFile), log)
 	}
 	if err != nil {
 		return fmt.Errorf("read the app stack: %w", err)
@@ -535,8 +555,16 @@ func (m *Manager) prepareStack(ctx context.Context, app store.App, service, imag
 		log.add("warning: the service " + service + " no longer exists in the hand-edited stack")
 		return fmt.Errorf("the service %q no longer exists in the hand-edited stack", service)
 	}
+	hasEnvFile := serviceHasEnvFile(compose, service)
+	if envCount > 0 && !hasEnvFile {
+		log.add("warning: the hand-edited stack does not reference .env; " +
+			"the app variables are not referenced by the stack and are not available to the container")
+	}
+	if envCount > 0 {
+		log.add("writing the app variables to .env")
+	}
 	log.add("the stack is hand-edited; only the image of " + service + " changes")
-	return m.writeStack(ctx, app, updated, env, log)
+	return m.writeStack(ctx, app, updated, envFileContent(envFile), log)
 }
 
 func (m *Manager) writeStack(ctx context.Context, app store.App, compose, env string, log *deploymentLog) error {

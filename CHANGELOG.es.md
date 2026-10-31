@@ -13,6 +13,12 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+## [0.6.44] - 2026-10-31
+
+### Corregido
+
+- Despliegues: las variables de la app llegan por fin al contenedor en marcha. Cada despliegue escribe el .env del stack con las variables del panel (también las secretas, que nunca salen en el registro) y el servicio de la app lo lee con env_file; antes solo eran argumentos de build. El .env del stack de una app es de Talaia: las variables se editan en el panel.
+
 ## [0.6.43] - 2026-10-31
 
 ### Añadido
@@ -963,7 +969,8 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
   `.gitattributes` y `.gitignore`.
 - Licencia WNCL-1.0 aplicada: archivo `LICENSE` y sección de créditos en los README.
 
-[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.6.43...HEAD
+[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.6.44...HEAD
+[0.6.44]: https://github.com/catlinux/Talaia/releases/tag/v0.6.44
 [0.6.43]: https://github.com/catlinux/Talaia/releases/tag/v0.6.43
 [0.6.42]: https://github.com/catlinux/Talaia/releases/tag/v0.6.42
 [0.6.41]: https://github.com/catlinux/Talaia/releases/tag/v0.6.41

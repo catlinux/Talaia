@@ -13,6 +13,12 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.6.44] - 2026-10-31
+
+### Fixed
+
+- Deployments: app variables now reach the running container. Each deployment writes the stack .env from the variables of the panel (secret ones included, never shown in the log) and the app service reads it with env_file; before, they were only build arguments. The .env of an app stack belongs to Talaia: edit variables in the panel.
+
 ## [0.6.43] - 2026-10-31
 
 ### Added
@@ -963,7 +969,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.6.43...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.6.44...HEAD
+[0.6.44]: https://github.com/catlinux/Talaia/releases/tag/v0.6.44
 [0.6.43]: https://github.com/catlinux/Talaia/releases/tag/v0.6.43
 [0.6.42]: https://github.com/catlinux/Talaia/releases/tag/v0.6.42
 [0.6.41]: https://github.com/catlinux/Talaia/releases/tag/v0.6.41
