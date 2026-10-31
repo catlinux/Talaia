@@ -5,6 +5,7 @@ import { App } from './App'
 import { AuthGate } from './auth/AuthGate'
 import type { AptApi } from './api/apt'
 import type { AlertsApi } from './api/alerts'
+import type { App as AppModel, AppsApi } from './api/apps'
 import type { AuditApi } from './api/audit'
 import type { AuthApi } from './api/auth'
 import { createMockFleetClient, type FleetClient } from './api/client'
@@ -29,6 +30,7 @@ const navOverview = { ca: 'Resum', es: 'Resumen', en: 'Overview' } as const
 const navServers = { ca: 'Servidors', es: 'Servidores', en: 'Servers' } as const
 const navContainers = { ca: 'Contenidors', es: 'Contenedores', en: 'Containers' } as const
 const navStacks = { ca: 'Stacks', es: 'Stacks', en: 'Stacks' } as const
+const navApps = { ca: 'Apps', es: 'Apps', en: 'Apps' } as const
 const navCatalog = { ca: 'Catàleg', es: 'Catálogo', en: 'Catalogue' } as const
 const navSettings = { ca: 'Configuració', es: 'Ajustes', en: 'Settings' } as const
 const navAudit = { ca: 'Auditoria', es: 'Auditoría', en: 'Audit' } as const
@@ -268,6 +270,7 @@ interface RenderOptions {
   journalApi?: JournalApi
   systemApi?: SystemApi
   auditApi?: AuditApi
+  appsApi?: AppsApi
   alertsApi?: AlertsApi
   usersApi?: UsersApi
   teamsApi?: TeamsApi
@@ -288,6 +291,7 @@ function renderApp(options: RenderOptions = {}) {
         journalApi={options.journalApi}
         systemApi={options.systemApi}
         auditApi={options.auditApi}
+        appsApi={options.appsApi}
         alertsApi={options.alertsApi ?? adminAlertsApi}
         usersApi={options.usersApi}
         teamsApi={options.teamsApi}
@@ -311,6 +315,54 @@ async function openSidebarLink(name: string) {
   const nav = mainNav()
   await within(nav).findByRole('link', { name })
   fireEvent.click(within(nav).getByRole('link', { name }))
+}
+
+function emptyAppsApi(): AppsApi {
+  const unexpected = () => Promise.reject(new Error('unexpected apps call'))
+  return {
+    list: () => Promise.resolve([]),
+    listByServer: () => Promise.resolve([]),
+    get: unexpected,
+    variables: unexpected,
+    setVariable: unexpected,
+    deleteVariable: unexpected,
+    deployments: unexpected,
+    deployment: unexpected,
+    deploy: unexpected,
+    rollback: unexpected,
+  }
+}
+
+function appsApiWithApp(): AppsApi {
+  const item: AppModel = {
+    id: 'app-1',
+    serverId: 'srv-1',
+    stackName: 'shop',
+    source: 'git',
+    repoUrl: 'https://github.com/example/shop.git',
+    branch: 'main',
+    build: 'dockerfile',
+    dockerfilePath: 'Dockerfile',
+    buildContext: '.',
+    image: '',
+    service: 'web',
+    port: 3000,
+    hostPort: 23456,
+    autoDeploy: true,
+    pollEnabled: false,
+    zeroDowntime: true,
+    templateId: '',
+    templateVersion: '',
+    createdAt: '2026-10-20T09:12:00Z',
+    updatedAt: '2026-10-31T10:21:46Z',
+    updatedBy: 'admin',
+  }
+  return {
+    ...emptyAppsApi(),
+    get: () => Promise.resolve(item),
+    variables: () => Promise.resolve([]),
+    deployments: () => Promise.resolve([]),
+  }
 }
 
 function serverApis() {
@@ -362,6 +414,7 @@ describe('App', () => {
     renderApp({
       systemApi: systemApi(),
       auditApi,
+      appsApi: emptyAppsApi(),
       usersApi: usersApi(),
       teamsApi: teamsApi(),
       groupsApi: groupsApi(),
@@ -383,6 +436,10 @@ describe('App', () => {
     await openSidebarLink(navStacks.en)
     expect(window.location.pathname).toBe('/stacks')
     expect(currentTitle()).toBe(navStacks.en)
+
+    await openSidebarLink(navApps.en)
+    expect(window.location.pathname).toBe('/apps')
+    expect(currentTitle()).toBe(navApps.en)
 
     await openSidebarLink(navAlerts.en)
     expect(window.location.pathname).toBe('/alerts')
@@ -426,6 +483,7 @@ describe('App', () => {
       navServers.en,
       navContainers.en,
       navStacks.en,
+      navApps.en,
       navAlerts.en,
       navAudit.en,
       navUsers.en,
@@ -542,6 +600,16 @@ describe('App', () => {
     expect(window.location.pathname).toBe('/servers')
   })
 
+  it('shows the app name in the breadcrumb and the app page', async () => {
+    window.history.replaceState({}, '', '/apps/app-1')
+    renderApp({ appsApi: appsApiWithApp() })
+
+    const crumbs = await screen.findByRole('navigation', { name: 'Breadcrumb' })
+    expect(await within(crumbs).findByText('shop')).toBeTruthy()
+    expect(within(crumbs).queryByText('Application')).toBeNull()
+    expect(await screen.findByRole('heading', { level: 1, name: 'shop' })).toBeTruthy()
+  })
+
   it('shows a not-found page for unknown routes', async () => {
     window.history.replaceState({}, '', '/does-not-exist')
     renderApp()
@@ -559,7 +627,7 @@ describe('App', () => {
 
     const nav = mainNav()
     await within(nav).findByRole('link', { name: navServers.en })
-    for (const name of [navUsers.en, navAudit.en, navAlerts.en]) {
+    for (const name of [navUsers.en, navAudit.en, navAlerts.en, navApps.en]) {
       expect(within(nav).queryByRole('link', { name })).toBeNull()
     }
 

@@ -46,6 +46,15 @@ export function OverviewIcon({ className }: IconProps) {
   )
 }
 
+export function AppsIcon({ className }: IconProps) {
+  return (
+    <Icon className={className}>
+      <path d="m12 3 8 4.5-8 4.5-8-4.5L12 3Z" />
+      <path d="m4 12 8 4.5 8-4.5M4 16.5l8 4.5 8-4.5" />
+    </Icon>
+  )
+}
+
 export function BookIcon({ className }: IconProps) {
   return (
     <Icon className={className}>

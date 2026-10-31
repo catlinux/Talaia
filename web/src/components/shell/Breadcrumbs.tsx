@@ -5,6 +5,7 @@ import { Link, useRoute } from '../../router'
 
 interface BreadcrumbsProps {
   serverName?: string
+  appName?: string
 }
 
 interface Crumb {
@@ -13,7 +14,7 @@ interface Crumb {
 }
 
 /** Breadcrumbs derives the trail of the current route. */
-export function Breadcrumbs({ serverName }: BreadcrumbsProps) {
+export function Breadcrumbs({ serverName, appName }: BreadcrumbsProps) {
   const { t } = useTranslation('common')
   const { path } = useRoute()
   const routePath = path.length > 1 ? path.replace(/\/+$/, '') : path
@@ -31,6 +32,14 @@ export function Breadcrumbs({ serverName }: BreadcrumbsProps) {
     crumbs = [{ label: t('nav.group.infrastructure') }, { label: t('nav.containers') }]
   } else if (routePath === '/stacks') {
     crumbs = [{ label: t('nav.group.infrastructure') }, { label: t('nav.stacks') }]
+  } else if (routePath === '/apps') {
+    crumbs = [{ label: t('nav.group.infrastructure') }, { label: t('nav.apps') }]
+  } else if (routePath.startsWith('/apps/')) {
+    crumbs = [
+      { label: t('nav.group.infrastructure') },
+      { label: t('nav.apps'), to: '/apps' },
+      { label: appName ?? t('apps:detail.breadcrumb') },
+    ]
   } else if (routePath === '/alerts' || routePath.startsWith('/alerts/')) {
     crumbs = [{ label: t('nav.group.monitoring') }, { label: t('nav.alerts') }]
   } else if (routePath === '/audit' || routePath.startsWith('/audit/')) {

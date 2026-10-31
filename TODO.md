@@ -154,7 +154,7 @@ Decisions closed on 2026-10-30: external proxy by default (Talaia never touches 
 - [x] Agent: external proxy by default (app on a free `127.0.0.1` port, Apache/nginx block shown in the panel) and optional managed Caddy only when 80/443 are free
 - [ ] Agent: zero-downtime release, rollback to one of the last three images and image cleanup
 - [ ] Core: deploy pipeline (one deploy per app, superseded pushes, logs) and its API
-- [ ] Template catalog (15 apps) shipped with the core
+- [x] Template catalog (15 apps) shipped with the core
 - [ ] Panel: Apps, new app wizard (mockup 4), Domains and Templates
 - [ ] Docs EN/ES, Opus security review, real test of the criterion and close at 0.7.0
 

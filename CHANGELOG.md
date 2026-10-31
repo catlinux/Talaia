@@ -13,6 +13,12 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.6.40] - 2026-10-31
+
+### Added
+
+- Panel: **Apps** screen under Infrastructure (phase 6 step 11): list of apps with server, source, endpoint and auto-deploy, and an app page with its configuration, deployments (state, commit, duration, live log, retry and roll back) and variables (secret values are never shown). Behind your own Apache the page explains that each deployment has a cut of a few seconds.
+
 ## [0.6.39] - 2026-10-31
 
 ### Added
@@ -939,7 +945,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.6.39...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.6.40...HEAD
+[0.6.40]: https://github.com/catlinux/Talaia/releases/tag/v0.6.40
 [0.6.39]: https://github.com/catlinux/Talaia/releases/tag/v0.6.39
 [0.6.38]: https://github.com/catlinux/Talaia/releases/tag/v0.6.38
 [0.6.37]: https://github.com/catlinux/Talaia/releases/tag/v0.6.37

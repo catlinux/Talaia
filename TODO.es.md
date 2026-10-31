@@ -154,7 +154,7 @@ Decisiones cerradas el 2026-10-30: proxy externo por defecto (Talaia nunca toca 
 - [x] Agente: proxy externo por defecto (app en un puerto libre de `127.0.0.1`, bloque de Apache/nginx en el panel) y Caddy gestionado opcional solo si 80/443 están libres
 - [ ] Agente: release sin corte, vuelta atrás a una de las tres últimas imágenes y limpieza de imágenes
 - [ ] Core: canalización de despliegue (un despliegue por app, pushes sustituidos, logs) y su API
-- [ ] Catálogo de plantillas (15 apps) publicado con el core
+- [x] Catálogo de plantillas (15 apps) publicado con el core
 - [ ] Panel: Apps, asistente de nueva app (maqueta 4), Dominios y Plantillas
 - [ ] Docs EN/ES, revisión de seguridad Opus, prueba real del criterio y cierre en 0.7.0
 

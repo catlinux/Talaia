@@ -14,6 +14,7 @@ export type Permission =
   | 'server.remove'
   | 'server.enroll'
   | 'server.agent_update'
+  | 'server.proxy'
   | 'resources.manage'
   | 'host.services.view'
   | 'host.services.control'

@@ -13,6 +13,12 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+## [0.6.40] - 2026-10-31
+
+### Añadido
+
+- Panel: pantalla **Apps** en Infraestructura (fase 6, paso 11): lista de apps con servidor, origen, endpoint y despliegue en push, y ficha de cada app con su configuración, sus despliegues (estado, commit, duración, registro en vivo, reintentar y volver atrás) y sus variables (los valores secretos nunca se muestran). Detrás de tu propio Apache, la ficha explica que cada despliegue tiene un corte de unos segundos.
+
 ## [0.6.39] - 2026-10-31
 
 ### Añadido
@@ -939,7 +945,8 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
   `.gitattributes` y `.gitignore`.
 - Licencia WNCL-1.0 aplicada: archivo `LICENSE` y sección de créditos en los README.
 
-[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.6.39...HEAD
+[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.6.40...HEAD
+[0.6.40]: https://github.com/catlinux/Talaia/releases/tag/v0.6.40
 [0.6.39]: https://github.com/catlinux/Talaia/releases/tag/v0.6.39
 [0.6.38]: https://github.com/catlinux/Talaia/releases/tag/v0.6.38
 [0.6.37]: https://github.com/catlinux/Talaia/releases/tag/v0.6.37

@@ -96,6 +96,7 @@ describe('Sidebar', () => {
       'Servers',
       'Containers',
       'Stacks',
+      'Apps',
       'Alerts',
       'Audit',
       'Users',
@@ -144,7 +145,7 @@ describe('Sidebar', () => {
 
     const nav = await screen.findByRole('navigation', { name: 'Main navigation' })
     await within(nav).findByRole('link', { name: 'Servers' })
-    for (const name of ['Containers', 'Stacks', 'Alerts', 'Audit', 'Users']) {
+    for (const name of ['Containers', 'Stacks', 'Apps', 'Alerts', 'Audit', 'Users']) {
       expect(within(nav).queryByRole('link', { name })).toBeNull()
     }
     expect(within(nav).getByRole('link', { name: 'Settings' })).toBeTruthy()
@@ -164,6 +165,21 @@ describe('Breadcrumbs', () => {
     const crumbs = screen.getByRole('navigation', { name: 'Breadcrumb' })
     expect(within(crumbs).getByText('Administration')).toBeTruthy()
     expect(within(crumbs).getByText('Catalogue')).toBeTruthy()
+  })
+
+  it('shows the apps trail and the app name on an app page', () => {
+    window.history.replaceState({}, '', '/apps/app-1')
+    render(
+      <RouterProvider>
+        <Breadcrumbs appName="shop" />
+      </RouterProvider>,
+    )
+
+    const crumbs = screen.getByRole('navigation', { name: 'Breadcrumb' })
+    expect(within(crumbs).getByText('Infrastructure')).toBeTruthy()
+    expect(within(crumbs).getByRole('link', { name: 'Apps' }).getAttribute('href')).toBe('/apps')
+    expect(within(crumbs).getByText('shop')).toBeTruthy()
+    expect(within(crumbs).queryByText('Application')).toBeNull()
   })
 })
 

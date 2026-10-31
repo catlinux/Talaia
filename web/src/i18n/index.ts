@@ -3,6 +3,7 @@ import LanguageDetector from 'i18next-browser-languagedetector'
 import { initReactI18next } from 'react-i18next'
 
 import caAbout from '../locales/ca/about.json'
+import caApps from '../locales/ca/apps.json'
 import caAudit from '../locales/ca/audit.json'
 import caCatalog from '../locales/ca/catalog.json'
 import caAuth from '../locales/ca/auth.json'
@@ -20,6 +21,7 @@ import caUI from '../locales/ca/ui.json'
 import caUsers from '../locales/ca/users.json'
 import caValidation from '../locales/ca/validation.json'
 import enAbout from '../locales/en/about.json'
+import enApps from '../locales/en/apps.json'
 import enAudit from '../locales/en/audit.json'
 import enCatalog from '../locales/en/catalog.json'
 import enAuth from '../locales/en/auth.json'
@@ -37,6 +39,7 @@ import enUI from '../locales/en/ui.json'
 import enUsers from '../locales/en/users.json'
 import enValidation from '../locales/en/validation.json'
 import esAbout from '../locales/es/about.json'
+import esApps from '../locales/es/apps.json'
 import esAudit from '../locales/es/audit.json'
 import esCatalog from '../locales/es/catalog.json'
 import esAuth from '../locales/es/auth.json'
@@ -68,6 +71,7 @@ void i18n
     resources: {
       ca: {
         common: caCommon,
+        apps: caApps,
         about: caAbout,
         audit: caAudit,
         catalog: caCatalog,
@@ -87,6 +91,7 @@ void i18n
       },
       es: {
         common: esCommon,
+        apps: esApps,
         about: esAbout,
         audit: esAudit,
         catalog: esCatalog,
@@ -106,6 +111,7 @@ void i18n
       },
       en: {
         common: enCommon,
+        apps: enApps,
         about: enAbout,
         audit: enAudit,
         catalog: enCatalog,
@@ -128,6 +134,7 @@ void i18n
     fallbackLng: 'en',
     ns: [
       'common',
+      'apps',
       'about',
       'audit',
       'catalog',

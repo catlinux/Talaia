@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import type { AptApi } from './api/apt'
+import { createAppsApi, type AppsApi } from './api/apps'
 import type { AuditApi } from './api/audit'
 import { createAlertsApi, type AlertsApi, type AlertSummary } from './api/alerts'
 import { createAlertsAdminApi, type AlertsAdminApi } from './api/alertsAdmin'
@@ -24,6 +25,8 @@ import { Topbar } from './components/shell/Topbar'
 import { ToastProvider } from './components/ui'
 import { Link, matchRoute, RouterProvider, useNavigate, useRoute } from './router'
 import { About } from './screens/About'
+import { Apps } from './screens/Apps'
+import { AppDetail } from './screens/apps/AppDetail'
 import { Audit } from './screens/Audit'
 import { Alerts } from './screens/Alerts'
 import { Catalog } from './screens/Catalog'
@@ -50,6 +53,8 @@ interface AppProps {
   systemApi?: SystemApi
   /** Audit API of the audit screen. Tests inject their own. */
   auditApi?: AuditApi
+  /** Apps API of the apps screens. Tests inject their own. */
+  appsApi?: AppsApi
   alertsApi?: AlertsApi
   alertsAdminApi?: AlertsAdminApi
   metricsApi?: MetricsApi
@@ -81,6 +86,7 @@ function PanelShell({
   journalApi,
   systemApi,
   auditApi,
+  appsApi,
   alertsApi,
   alertsAdminApi,
   metricsApi,
@@ -106,6 +112,7 @@ function PanelShell({
   const alertsAdmin = alertsAdminApi ?? defaultAlertsAdminApi
   const metrics = metricsApi ?? defaultMetricsApi
   const containers = containersApi ?? defaultContainersApi
+  const apps = appsApi ?? defaultAppsApi
   const groups = groupsApi ?? defaultGroupsApi
   const servers = serversApi ?? defaultServersApi
   const [alertSummary, setAlertSummary] = useState<AlertSummary | null>(null)
@@ -137,10 +144,15 @@ function PanelShell({
   const [mobileOpen, setMobileOpen] = useState(false)
   const [serverNames, setServerNames] = useState<Record<string, string>>({})
   const [serverDetails, setServerDetails] = useState<Record<string, Server>>({})
+  const [appNames, setAppNames] = useState<Record<string, string>>({})
+  const requestedAppNames = useRef(new Set<string>())
   const serverMatch = matchRoute('/servers/:id/*', path)
   const serverID = serverMatch?.params.id ?? ''
+  const appMatch = matchRoute('/apps/:id', path)
+  const appID = appMatch?.params.id ?? ''
   const serverName = serverID === '' ? undefined : serverNames[serverID]
   const serverDetail = serverID === '' ? undefined : serverDetails[serverID]
+  const appName = appID === '' ? undefined : appNames[appID]
 
   useEffect(() => {
     if (serverID === '' || serverDetail !== undefined) return
@@ -164,6 +176,28 @@ function PanelShell({
     }
   }, [fleetClient, serverDetail, serverID])
 
+  useEffect(() => {
+    const requested = requestedAppNames.current
+    if (appID === '' || requested.has(appID)) return
+    requested.add(appID)
+    let active = true
+    queueMicrotask(() => {
+      apps.get(appID).then(
+        (app) => {
+          if (!active) return
+          setAppNames((current) =>
+            current[appID] === app.stackName ? current : { ...current, [appID]: app.stackName },
+          )
+        },
+        () => undefined,
+      )
+    })
+    return () => {
+      active = false
+      requested.delete(appID)
+    }
+  }, [appID, apps])
+
   const openServer = useCallback(
     (id: string, name: string) => {
       setServerNames((current) => ({ ...current, [id]: name }))
@@ -181,6 +215,7 @@ function PanelShell({
   const isAbout = matchRoute('/about', path) !== null
   const isContainers = matchRoute('/containers', path) !== null
   const isStacks = matchRoute('/stacks', path) !== null
+  const isApps = matchRoute('/apps', path) !== null
 
   // Tabs and stacks of one server share the screen state; the URL only changes the panel.
   const pageKey = serverID === '' ? path : `server:${serverID}`
@@ -252,6 +287,18 @@ function PanelShell({
     ) : (
       <PanelMessage title={t('shell.noAccess')} />
     )
+  } else if (appMatch !== null) {
+    page = canStacks ? (
+      <AppDetail appId={appMatch.params.id ?? ''} api={apps} client={fleetClient} />
+    ) : (
+      <PanelMessage title={t('shell.noAccess')} />
+    )
+  } else if (isApps) {
+    page = canStacks ? (
+      <Apps api={apps} client={fleetClient} />
+    ) : (
+      <PanelMessage title={t('shell.noAccess')} />
+    )
   } else {
     page = (
       <PanelMessage
@@ -276,6 +323,7 @@ function PanelShell({
           client={fleetClient}
           containersApi={containers}
           serverName={serverID === '' ? undefined : (serverName ?? serverDetail?.name ?? serverID)}
+          appName={appName}
           onOpenMenu={() => setMobileOpen(true)}
         />
         <main className="shell__main">
@@ -308,6 +356,7 @@ function PanelMessage({
 
 const defaultAlertsApi = createAlertsApi()
 const defaultAlertsAdminApi = createAlertsAdminApi()
+const defaultAppsApi = createAppsApi()
 const defaultMetricsApi = createMetricsApi()
 const defaultContainersApi = createContainersApi()
 const defaultGroupsApi = createGroupsApi()

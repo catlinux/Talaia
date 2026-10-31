@@ -196,12 +196,20 @@ export function CommandPalette({
       })
     }
     if (canAnywhere('stack.view')) {
-      result.push({
-        id: 'screen-stacks',
-        section: 'screens',
-        label: t('nav.stacks'),
-        to: '/stacks',
-      })
+      result.push(
+        {
+          id: 'screen-stacks',
+          section: 'screens',
+          label: t('nav.stacks'),
+          to: '/stacks',
+        },
+        {
+          id: 'screen-apps',
+          section: 'screens',
+          label: t('nav.apps'),
+          to: '/apps',
+        },
+      )
     }
     if (canAnywhere('alerts.view') || canAnywhere('alerts.manage')) {
       result.push({

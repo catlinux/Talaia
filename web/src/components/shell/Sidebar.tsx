@@ -6,6 +6,7 @@ import { usePermissions } from '../../auth/permissions'
 import { Logo } from '../Logo'
 import {
   AlertIcon,
+  AppsIcon,
   AuditIcon,
   BookIcon,
   CloseIcon,
@@ -93,6 +94,13 @@ export function Sidebar({ alertSummary, mobileOpen, onClose }: SidebarProps) {
       label: t('nav.stacks'),
       icon: <FleetIcon />,
       active: isActive('/stacks'),
+    })
+  if (canStacks)
+    infrastructure.push({
+      to: '/apps',
+      label: t('nav.apps'),
+      icon: <AppsIcon />,
+      active: isActive('/apps'),
     })
 
   const monitoring: NavItem[] = []

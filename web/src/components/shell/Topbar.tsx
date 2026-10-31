@@ -15,6 +15,7 @@ interface TopbarProps {
   client?: FleetClient
   containersApi?: ContainersApi
   serverName?: string
+  appName?: string
   onOpenMenu: () => void
 }
 
@@ -40,6 +41,7 @@ export function Topbar({
   client,
   containersApi,
   serverName,
+  appName,
   onOpenMenu,
 }: TopbarProps) {
   const { t } = useTranslation('common')
@@ -56,7 +58,7 @@ export function Topbar({
       >
         <span aria-hidden="true">☰</span>
       </button>
-      <Breadcrumbs serverName={serverName} />
+      <Breadcrumbs serverName={serverName} appName={appName} />
       <div className="shell__topbar-spacer" />
       <button
         type="button"
