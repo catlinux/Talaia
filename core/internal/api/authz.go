@@ -28,29 +28,48 @@ type ServerGetter interface {
 	GetServer(ctx context.Context, id string) (store.Server, error)
 }
 
+// DeploymentGetter returns one deployment.
+type DeploymentGetter interface {
+	GetDeployment(ctx context.Context, id string) (store.Deployment, error)
+}
+
+// DomainGetter returns one domain.
+type DomainGetter interface {
+	GetDomain(ctx context.Context, id string) (store.Domain, error)
+}
+
 // AuthorizerDeps are the collaborators of the permission checks.
 type AuthorizerDeps struct {
-	Bindings BindingLister
-	Servers  ServerGetter
-	Agents   LiveAgents
-	Audit    Auditor
+	Bindings    BindingLister
+	Servers     ServerGetter
+	Agents      LiveAgents
+	Audit       Auditor
+	Apps        AppGetter
+	Deployments DeploymentGetter
+	Domains     DomainGetter
 }
 
 // Authorizer resolves a request's effective permissions and enforces them.
 type Authorizer struct {
-	bindings BindingLister
-	servers  ServerGetter
-	agents   LiveAgents
-	audit    Auditor
+	bindings    BindingLister
+	servers     ServerGetter
+	agents      LiveAgents
+	audit       Auditor
+	apps        AppGetter
+	deployments DeploymentGetter
+	domains     DomainGetter
 }
 
 // NewAuthorizer builds an authorizer. Missing collaborators fail closed.
 func NewAuthorizer(deps AuthorizerDeps) *Authorizer {
 	return &Authorizer{
-		bindings: deps.Bindings,
-		servers:  deps.Servers,
-		agents:   deps.Agents,
-		audit:    deps.Audit,
+		bindings:    deps.Bindings,
+		servers:     deps.Servers,
+		agents:      deps.Agents,
+		audit:       deps.Audit,
+		apps:        deps.Apps,
+		deployments: deps.Deployments,
+		domains:     deps.Domains,
 	}
 }
 
@@ -81,6 +100,9 @@ const (
 	targetServer
 	targetStack
 	targetContainer
+	targetApp
+	targetDeployment
+	targetDomain
 )
 
 type permissionMode uint8
@@ -180,6 +202,30 @@ var routePerms = map[routeKey]routePermission{
 	{http.MethodPut, "/servers/{serverID}/notes/stacks/{name}"}:              {mode: permExact, permission: rbac.PermStackDeploy, target: targetServer, noAPIKey: true},
 	{http.MethodGet, "/servers/{serverID}/notes/services"}:                   {mode: permExact, permission: rbac.PermHostServicesView, target: targetServer},
 	{http.MethodPut, "/servers/{serverID}/notes/services/{name}"}:            {mode: permExact, permission: rbac.PermHostServicesControl, target: targetServer, noAPIKey: true},
+	{http.MethodGet, "/apps"}:                                                {mode: permAny},
+	{http.MethodGet, "/servers/{serverID}/apps"}:                             {mode: permExact, permission: rbac.PermStackView, target: targetServer},
+	{http.MethodPost, "/servers/{serverID}/apps"}:                            {mode: permExact, permission: rbac.PermStackEdit, target: targetServer, noAPIKey: true},
+	{http.MethodGet, "/apps/{appID}"}:                                        {mode: permExact, permission: rbac.PermStackView, target: targetApp},
+	{http.MethodPatch, "/apps/{appID}"}:                                      {mode: permExact, permission: rbac.PermStackEdit, target: targetApp, noAPIKey: true},
+	{http.MethodDelete, "/apps/{appID}"}:                                     {mode: permExact, permission: rbac.PermStackEdit, target: targetApp, noAPIKey: true},
+	{http.MethodGet, "/apps/{appID}/env"}:                                    {mode: permExact, permission: rbac.PermStackView, target: targetApp},
+	{http.MethodPut, "/apps/{appID}/env/{key}"}:                              {mode: permExact, permission: rbac.PermStackEdit, target: targetApp, noAPIKey: true},
+	{http.MethodDelete, "/apps/{appID}/env/{key}"}:                           {mode: permExact, permission: rbac.PermStackEdit, target: targetApp, noAPIKey: true},
+	{http.MethodGet, "/apps/{appID}/variables"}:                              {mode: permExact, permission: rbac.PermStackView, target: targetApp},
+	{http.MethodPut, "/apps/{appID}/variables/{key}"}:                        {mode: permExact, permission: rbac.PermStackEdit, target: targetApp, noAPIKey: true},
+	{http.MethodDelete, "/apps/{appID}/variables/{key}"}:                     {mode: permExact, permission: rbac.PermStackEdit, target: targetApp, noAPIKey: true},
+	{http.MethodGet, "/apps/{appID}/domains"}:                                {mode: permExact, permission: rbac.PermStackView, target: targetApp},
+	{http.MethodPost, "/apps/{appID}/domains"}:                               {mode: permExact, permission: rbac.PermStackEdit, target: targetApp, noAPIKey: true},
+	{http.MethodDelete, "/apps/{appID}/domains/{domainID}"}:                  {mode: permExact, permission: rbac.PermStackEdit, target: targetApp, noAPIKey: true},
+	{http.MethodDelete, "/domains/{domainID}"}:                               {mode: permExact, permission: rbac.PermStackEdit, target: targetDomain, noAPIKey: true},
+	{http.MethodGet, "/apps/{appID}/deployments"}:                            {mode: permExact, permission: rbac.PermStackView, target: targetApp},
+	{http.MethodPost, "/apps/{appID}/deployments"}:                           {mode: permExact, permission: rbac.PermStackDeploy, target: targetApp},
+	{http.MethodGet, "/apps/{appID}/deployments/{deploymentID}"}:             {mode: permExact, permission: rbac.PermStackDeploy, target: targetApp},
+	{http.MethodPost, "/apps/{appID}/deployments/{deploymentID}/rollback"}:   {mode: permExact, permission: rbac.PermStackDeploy, target: targetApp},
+	{http.MethodGet, "/deployments/{deploymentID}"}:                          {mode: permExact, permission: rbac.PermStackDeploy, target: targetDeployment},
+	{http.MethodPost, "/deployments/{deploymentID}/rollback"}:                {mode: permExact, permission: rbac.PermStackDeploy, target: targetDeployment},
+	{http.MethodGet, "/servers/{serverID}/proxy"}:                            {mode: permExact, permission: rbac.PermServerProxy, target: targetServer, noAPIKey: true},
+	{http.MethodPost, "/servers/{serverID}/proxy"}:                           {mode: permExact, permission: rbac.PermServerProxy, target: targetServer, noAPIKey: true},
 	{http.MethodGet, "/servers/{serverID}/metrics"}:                          {mode: permSeeServer, permission: rbac.PermServerView, target: targetServer},
 	{http.MethodGet, "/servers/{serverID}/containers/{container}/metrics"}:   {mode: permExact, permission: rbac.PermContainerView, target: targetContainer},
 	{http.MethodPost, "/servers/{serverID}/containers/{container}/actions"}:  {mode: permExact, permission: rbac.PermContainerControl, target: targetContainer},
@@ -386,7 +432,56 @@ func (a *Authorizer) targetFor(r *http.Request, kind targetKind) (rbac.Target, e
 		return target, nil
 	}
 
-	target.ServerID = chi.URLParam(r, "serverID")
+	switch kind {
+	case targetServer:
+		target.ServerID = chi.URLParam(r, "serverID")
+	case targetStack:
+		target.ServerID = chi.URLParam(r, "serverID")
+		target.Stack = chi.URLParam(r, "name")
+	case targetContainer:
+		target.ServerID = chi.URLParam(r, "serverID")
+		target.Container = chi.URLParam(r, "container")
+		target.Stack = containerProject(a.agents, target.ServerID, target.Container)
+	case targetApp:
+		if a.apps == nil {
+			return target, errors.New("no app store")
+		}
+		app, err := a.apps.GetApp(r.Context(), chi.URLParam(r, "appID"))
+		if err != nil {
+			return target, err
+		}
+		target.ServerID = app.ServerID
+		target.Stack = app.StackName
+	case targetDeployment:
+		if a.deployments == nil || a.apps == nil {
+			return target, errors.New("no deployment store")
+		}
+		deployment, err := a.deployments.GetDeployment(r.Context(), chi.URLParam(r, "deploymentID"))
+		if err != nil {
+			return target, err
+		}
+		app, err := a.apps.GetApp(r.Context(), deployment.AppID)
+		if err != nil {
+			return target, err
+		}
+		target.ServerID = app.ServerID
+		target.Stack = app.StackName
+	case targetDomain:
+		if a.domains == nil || a.apps == nil {
+			return target, errors.New("no domain store")
+		}
+		domain, err := a.domains.GetDomain(r.Context(), chi.URLParam(r, "domainID"))
+		if err != nil {
+			return target, err
+		}
+		app, err := a.apps.GetApp(r.Context(), domain.AppID)
+		if err != nil {
+			return target, err
+		}
+		target.ServerID = app.ServerID
+		target.Stack = app.StackName
+	}
+
 	if a.servers != nil && target.ServerID != "" {
 		server, err := a.servers.GetServer(r.Context(), target.ServerID)
 		if err != nil && !errors.Is(err, store.ErrNotFound) {
@@ -395,14 +490,6 @@ func (a *Authorizer) targetFor(r *http.Request, kind targetKind) (rbac.Target, e
 		if err == nil {
 			target.GroupID = server.GroupID
 		}
-	}
-
-	switch kind {
-	case targetStack:
-		target.Stack = chi.URLParam(r, "name")
-	case targetContainer:
-		target.Container = chi.URLParam(r, "container")
-		target.Stack = containerProject(a.agents, target.ServerID, target.Container)
 	}
 	return target, nil
 }
@@ -444,6 +531,8 @@ func (a *Authorizer) visible(effective rbac.Effective, kind targetKind, target r
 		return effective.Can(rbac.PermStackView, target)
 	case targetContainer:
 		return effective.Can(rbac.PermContainerView, target)
+	case targetApp, targetDeployment, targetDomain:
+		return effective.Can(rbac.PermStackView, target)
 	default:
 		return false
 	}

@@ -82,6 +82,24 @@ func (hookRouteApps) GetApp(context.Context, string) (store.App, error) {
 	return store.App{}, nil
 }
 
+type authzApps struct{}
+
+func (authzApps) GetApp(_ context.Context, id string) (store.App, error) {
+	return store.App{ID: id, ServerID: "s1", StackName: "shop"}, nil
+}
+
+type authzDeployments struct{}
+
+func (authzDeployments) GetDeployment(_ context.Context, id string) (store.Deployment, error) {
+	return store.Deployment{ID: id, AppID: "app-1"}, nil
+}
+
+type authzDomains struct{}
+
+func (authzDomains) GetDomain(_ context.Context, id string) (store.Domain, error) {
+	return store.Domain{ID: id, AppID: "app-1"}, nil
+}
+
 func fullRouter(t *testing.T) http.Handler {
 	t.Helper()
 	servers := authzServers()
@@ -106,8 +124,12 @@ func fullRouter(t *testing.T) http.Handler {
 		Recordings:         &RecordingDeps{},
 		System:             &SystemDeps{},
 		Hooks:              &HooksDeps{Apps: hookRouteApps{}},
-		Authz:              NewAuthorizer(AuthorizerDeps{}),
-		Auth:               AuthDeps{},
+		Apps:               &AppDeps{},
+		Proxy:              &ProxyDeps{},
+		Authz: NewAuthorizer(AuthorizerDeps{
+			Apps: authzApps{}, Deployments: authzDeployments{}, Domains: authzDomains{},
+		}),
+		Auth: AuthDeps{},
 	})
 }
 
@@ -199,6 +221,9 @@ func routePath(method string, pattern string) string {
 		"{teamID}", "00000000-0000-0000-0000-000000000007",
 		"{id}", "00000000-0000-0000-0000-000000000008",
 		"{appID}", "00000000-0000-0000-0000-000000000009",
+		"{deploymentID}", "00000000-0000-0000-0000-00000000000a",
+		"{domainID}", "00000000-0000-0000-0000-00000000000b",
+		"{key}", "TOKEN",
 	).Replace(pattern)
 	return "/api/v1" + path
 }
@@ -316,6 +341,43 @@ func TestContainerMetricsPermissionsRespectContainerScopes(t *testing.T) {
 	}
 }
 
+func TestAPIKeyCanDeployButNotEditApps(t *testing.T) {
+	session := Session{
+		User: store.User{ID: "u1", Username: "app"}, Stage: store.StageFull,
+		AuthKind: AuthKindAPIKey, APIKeyID: "key-1",
+	}
+	authorizer := NewAuthorizer(AuthorizerDeps{
+		Bindings: stubBindings{
+			byUser: map[string][]store.RoleBinding{"u1": {{
+				SubjectType: store.SubjectUser, SubjectID: "u1",
+				ScopeType: store.ScopeOrganization, Role: string(rbac.RoleAppOperator),
+			}}},
+			bySubject: map[string][]store.RoleBinding{"api_key/key-1": {{
+				SubjectType: store.SubjectAPIKey, SubjectID: "key-1",
+				ScopeType: store.ScopeOrganization, Role: string(rbac.RoleAppOperator),
+			}}},
+		},
+		Servers: authzServers(), Agents: fakeAgents{agents: []hub.AgentInfo{agentWithContainers("s1")}},
+		Apps: authzApps{}, Deployments: authzDeployments{}, Domains: authzDomains{},
+	})
+	handler := routeTestRouter(t, authorizer)
+
+	for _, test := range []struct {
+		method, path string
+		want         int
+	}{
+		{http.MethodPost, "/api/v1/apps/00000000-0000-0000-0000-000000000009/deployments", http.StatusNoContent},
+		{http.MethodPost, "/api/v1/deployments/00000000-0000-0000-0000-00000000000a/rollback", http.StatusNoContent},
+		{http.MethodPatch, "/api/v1/apps/00000000-0000-0000-0000-000000000009", http.StatusForbidden},
+		{http.MethodPut, "/api/v1/apps/00000000-0000-0000-0000-000000000009/env/TOKEN", http.StatusForbidden},
+		{http.MethodPost, "/api/v1/servers/s1/proxy", http.StatusForbidden},
+	} {
+		if got := doAuthorized(t, handler, authzRequest(test.method, test.path, session)); got != test.want {
+			t.Errorf("%s %s: status %d, want %d", test.method, test.path, got, test.want)
+		}
+	}
+}
+
 func TestOrganizationAdminPassesEveryRoute(t *testing.T) {
 	session := Session{User: store.User{ID: "u1", Username: "alice"}, Stage: store.StageFull}
 	authorizer := NewAuthorizer(AuthorizerDeps{
@@ -323,9 +385,12 @@ func TestOrganizationAdminPassesEveryRoute(t *testing.T) {
 			SubjectType: store.SubjectUser, SubjectID: "u1",
 			ScopeType: store.ScopeOrganization, Role: string(rbac.RoleAdmin),
 		}}}},
-		Servers: authzServers(),
-		Agents:  fakeAgents{agents: []hub.AgentInfo{agentWithContainers("s1")}},
-		Audit:   &fakeAudit{},
+		Servers:     authzServers(),
+		Agents:      fakeAgents{agents: []hub.AgentInfo{agentWithContainers("s1")}},
+		Audit:       &fakeAudit{},
+		Apps:        authzApps{},
+		Deployments: authzDeployments{},
+		Domains:     authzDomains{},
 	})
 	handler := routeTestRouter(t, authorizer)
 	for key := range routePerms {

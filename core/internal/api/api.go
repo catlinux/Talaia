@@ -62,6 +62,11 @@ type RouterDeps struct {
 	System *SystemDeps
 	// Hooks enables the public GitHub push webhook; nil leaves it out.
 	Hooks *HooksDeps
+	// Apps enables the app, variable, domain and deployment endpoints; nil
+	// leaves them out.
+	Apps *AppDeps
+	// Proxy enables the app publishing endpoints; nil leaves them out.
+	Proxy *ProxyDeps
 	// Authz enforces the permissions of the protected API. Nil fails closed.
 	Authz *Authorizer
 }
@@ -152,6 +157,34 @@ func NewRouter(deps RouterDeps) http.Handler {
 			registerRoute(r, deps.Authz, http.MethodPut, "/servers/{serverID}/notes/stacks/{name}", http.HandlerFunc(stackNotes.setNote))
 			registerRoute(r, deps.Authz, http.MethodGet, "/servers/{serverID}/notes/services", http.HandlerFunc(serviceNotes.listNotes))
 			registerRoute(r, deps.Authz, http.MethodPut, "/servers/{serverID}/notes/services/{name}", http.HandlerFunc(serviceNotes.setNote))
+			if deps.Apps != nil {
+				registerRoute(r, deps.Authz, http.MethodGet, "/apps", NewAppsListHandler(*deps.Apps))
+				registerRoute(r, deps.Authz, http.MethodGet, "/servers/{serverID}/apps", NewAppsByServerHandler(*deps.Apps))
+				registerRoute(r, deps.Authz, http.MethodPost, "/servers/{serverID}/apps", NewAppCreateHandler(*deps.Apps))
+				registerRoute(r, deps.Authz, http.MethodGet, "/apps/{appID}", NewAppHandler(*deps.Apps))
+				registerRoute(r, deps.Authz, http.MethodPatch, "/apps/{appID}", NewAppUpdateHandler(*deps.Apps))
+				registerRoute(r, deps.Authz, http.MethodDelete, "/apps/{appID}", NewAppDeleteHandler(*deps.Apps))
+				registerRoute(r, deps.Authz, http.MethodGet, "/apps/{appID}/env", NewAppEnvListHandler(*deps.Apps))
+				registerRoute(r, deps.Authz, http.MethodPut, "/apps/{appID}/env/{key}", NewAppEnvSetHandler(*deps.Apps))
+				registerRoute(r, deps.Authz, http.MethodDelete, "/apps/{appID}/env/{key}", NewAppEnvDeleteHandler(*deps.Apps))
+				registerRoute(r, deps.Authz, http.MethodGet, "/apps/{appID}/variables", NewAppEnvListHandler(*deps.Apps))
+				registerRoute(r, deps.Authz, http.MethodPut, "/apps/{appID}/variables/{key}", NewAppEnvSetHandler(*deps.Apps))
+				registerRoute(r, deps.Authz, http.MethodDelete, "/apps/{appID}/variables/{key}", NewAppEnvDeleteHandler(*deps.Apps))
+				registerRoute(r, deps.Authz, http.MethodGet, "/apps/{appID}/domains", NewDomainListHandler(*deps.Apps))
+				registerRoute(r, deps.Authz, http.MethodPost, "/apps/{appID}/domains", NewDomainAddHandler(*deps.Apps))
+				registerRoute(r, deps.Authz, http.MethodDelete, "/apps/{appID}/domains/{domainID}", NewDomainDeleteHandler(*deps.Apps))
+				registerRoute(r, deps.Authz, http.MethodDelete, "/domains/{domainID}", NewDomainDeleteHandler(*deps.Apps))
+				registerRoute(r, deps.Authz, http.MethodGet, "/apps/{appID}/deployments", NewDeploymentListHandler(*deps.Apps))
+				registerRoute(r, deps.Authz, http.MethodPost, "/apps/{appID}/deployments", NewDeploymentCreateHandler(*deps.Apps))
+				registerRoute(r, deps.Authz, http.MethodGet, "/apps/{appID}/deployments/{deploymentID}", NewDeploymentGetHandler(*deps.Apps))
+				registerRoute(r, deps.Authz, http.MethodPost, "/apps/{appID}/deployments/{deploymentID}/rollback", NewDeploymentRollbackHandler(*deps.Apps))
+				registerRoute(r, deps.Authz, http.MethodGet, "/deployments/{deploymentID}", NewDeploymentGetHandler(*deps.Apps))
+				registerRoute(r, deps.Authz, http.MethodPost, "/deployments/{deploymentID}/rollback", NewDeploymentRollbackHandler(*deps.Apps))
+			}
+			if deps.Proxy != nil {
+				registerRoute(r, deps.Authz, http.MethodGet, "/servers/{serverID}/proxy", NewProxyHandler(*deps.Proxy))
+				registerRoute(r, deps.Authz, http.MethodPost, "/servers/{serverID}/proxy", NewProxyActionHandler(*deps.Proxy))
+			}
 			registerRoute(r, deps.Authz, http.MethodGet, "/groups", http.HandlerFunc(userAdmin.listGroups))
 			registerRoute(r, deps.Authz, http.MethodPost, "/groups", http.HandlerFunc(userAdmin.createGroup))
 			registerRoute(r, deps.Authz, http.MethodPatch, "/groups/{groupID}", http.HandlerFunc(userAdmin.updateGroup))

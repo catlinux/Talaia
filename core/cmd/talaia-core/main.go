@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -114,6 +115,8 @@ type panelOptions struct {
 	Alerts         *api.AlertsDeps
 	System         *api.SystemDeps
 	Hooks          *api.HooksDeps
+	Apps           *api.AppDeps
+	Proxy          *api.ProxyDeps
 	Origins        []string
 	TLS            bool
 	Limiter        *api.RateLimiter
@@ -165,11 +168,16 @@ func newCoreRouter(st *store.Store, agents api.LiveAgents, options panelOptions)
 		Alerts:             options.Alerts,
 		System:             options.System,
 		Hooks:              options.Hooks,
+		Apps:               options.Apps,
+		Proxy:              options.Proxy,
 		Authz: api.NewAuthorizer(api.AuthorizerDeps{
-			Bindings: st,
-			Servers:  st,
-			Agents:   agents,
-			Audit:    st,
+			Bindings:    st,
+			Servers:     st,
+			Agents:      agents,
+			Audit:       st,
+			Apps:        st,
+			Deployments: st,
+			Domains:     st,
 		}),
 		Auth: api.AuthDeps{
 			Store:          st,
@@ -404,6 +412,16 @@ func serve() error {
 			IPLimiter:  api.NewRateLimiterWithClock(60, time.Minute, time.Now),
 			AppLimiter: api.NewRateLimiterWithClock(30, time.Minute, time.Now),
 		}
+		publicURL := ""
+		if len(cfg.AllowedOrigins) > 0 {
+			publicURL = cfg.AllowedOrigins[0]
+		}
+		appDeps := &api.AppDeps{
+			Store: st, Box: box, Queue: deployer, Audit: st, Servers: st, Agents: agentHub,
+			Resolver: net.DefaultResolver, PublicURL: publicURL,
+		}
+		panel.Apps = appDeps
+		panel.Proxy = &api.ProxyDeps{AppDeps: *appDeps, Containers: panel.Containers}
 
 		// Terminal sessions: the ones an earlier run left open are closed first.
 		if err := terminal.CloseOrphans(context.Background(), st); err != nil {

@@ -13,6 +13,12 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+## [0.6.38] - 2026-10-31
+
+### Añadido
+
+- Core: API de apps, variables, dominios, despliegues, vuelta atrás y modo de proxy (fase 6, paso 9), con los permisos de los stacks (ver, desplegar también para claves de API, editar) y server.proxy, y todo auditado. Las variables secretas, la clave privada de despliegue y el secreto del webhook nunca salen del core; la clave pública y el secreto del webhook se muestran una sola vez. En modo externo cada dominio trae un sitio de Apache y nginx listo para el puerto 80 y los pasos (módulos, configtest antes de recargar, certbot), y un aviso si el nombre no resuelve al servidor. La clave de despliegue se guarda en formato OpenSSH.
+
 ## [0.6.37] - 2026-10-31
 
 ### Añadido
@@ -927,7 +933,8 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
   `.gitattributes` y `.gitignore`.
 - Licencia WNCL-1.0 aplicada: archivo `LICENSE` y sección de créditos en los README.
 
-[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.6.37...HEAD
+[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.6.38...HEAD
+[0.6.38]: https://github.com/catlinux/Talaia/releases/tag/v0.6.38
 [0.6.37]: https://github.com/catlinux/Talaia/releases/tag/v0.6.37
 [0.6.36]: https://github.com/catlinux/Talaia/releases/tag/v0.6.36
 [0.6.35]: https://github.com/catlinux/Talaia/releases/tag/v0.6.35

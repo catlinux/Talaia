@@ -13,6 +13,12 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.6.38] - 2026-10-31
+
+### Added
+
+- Core: API of apps, variables, domains, deployments, rollback and proxy mode (phase 6 step 9), with the permissions of stacks (view, deploy also for API keys, edit) and server.proxy, and everything audited. Secret variables, the deploy private key and the webhook secret never leave the core; the deploy public key and the webhook secret are shown once. In external mode each domain comes with a ready Apache and nginx site for port 80 and the steps (modules, configtest before reload, certbot), and a warning when the name does not resolve to the server. The deploy key is stored in OpenSSH format.
+
 ## [0.6.37] - 2026-10-31
 
 ### Added
@@ -927,7 +933,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.6.37...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.6.38...HEAD
+[0.6.38]: https://github.com/catlinux/Talaia/releases/tag/v0.6.38
 [0.6.37]: https://github.com/catlinux/Talaia/releases/tag/v0.6.37
 [0.6.36]: https://github.com/catlinux/Talaia/releases/tag/v0.6.36
 [0.6.35]: https://github.com/catlinux/Talaia/releases/tag/v0.6.35

@@ -612,6 +612,19 @@ func (s *Store) RemoveDomain(ctx context.Context, id string) error {
 	return nil
 }
 
+// GetDomain returns one domain or ErrNotFound.
+func (s *Store) GetDomain(ctx context.Context, id string) (Domain, error) {
+	domain, err := scanDomain(s.pool.QueryRow(ctx,
+		`SELECT `+domainColumns+` FROM domain WHERE id = $1`, id))
+	if errors.Is(err, ErrNotFound) {
+		return Domain{}, ErrNotFound
+	}
+	if err != nil {
+		return Domain{}, fmt.Errorf("get domain %q: %w", id, err)
+	}
+	return domain, nil
+}
+
 // ListDomains returns every domain ordered by hostname.
 func (s *Store) ListDomains(ctx context.Context) ([]Domain, error) {
 	return s.listDomains(ctx, `SELECT `+domainColumns+` FROM domain ORDER BY hostname, id`)

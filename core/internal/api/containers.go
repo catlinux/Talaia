@@ -25,6 +25,11 @@ const containerActionKind = "container_action"
 // purges them once they have finished (internal/jobs).
 const containerLogsKind = "container_logs"
 
+const (
+	proxyInstallKind = "proxy_install"
+	proxyApplyKind   = "proxy_apply"
+)
+
 // jobTimeout is how long an unfinished job of a kind may live before it is
 // reported as failed, for example because the agent disconnected without
 // answering. It must outlast the timeout the agent gives the same work, or a
@@ -34,6 +39,10 @@ func jobTimeout(kind string) time.Duration {
 	switch kind {
 	case stackActionKind:
 		return 10*time.Minute + margin
+	case proxyInstallKind:
+		return 10*time.Minute + margin
+	case proxyApplyKind:
+		return time.Minute + margin
 	case resourcesRemoveKind:
 		return 5*time.Minute + margin
 	case stackWriteKind:
