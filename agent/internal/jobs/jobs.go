@@ -23,11 +23,13 @@ import (
 // jobTimeout bounds a container command; the stack commands pull images and
 // start services, so they get longer.
 const (
-	jobTimeout         = 90 * time.Second
-	stackActionTimeout = 10 * time.Minute
-	stackWriteTimeout  = 2 * time.Minute
-	resourceTimeout    = 5 * time.Minute
-	sourceTimeout      = 5 * time.Minute
+	jobTimeout          = 90 * time.Second
+	stackActionTimeout  = 10 * time.Minute
+	stackWriteTimeout   = 2 * time.Minute
+	resourceTimeout     = 5 * time.Minute
+	sourceTimeout       = 5 * time.Minute
+	proxyInstallTimeout = 10 * time.Minute
+	proxyApplyTimeout   = time.Minute
 )
 
 // rememberedJobs is how many finished jobs the executor remembers to answer a
@@ -45,6 +47,9 @@ var errNoSource = errors.New("the git source is not available on this agent")
 
 // errNoBuild is the failure of an app build command without the builder.
 var errNoBuild = errors.New("the image builder is not available on this agent")
+
+// errNoProxy is the failure of a proxy command without the proxy manager.
+var errNoProxy = errors.New("the proxy manager is not available on this agent")
 
 // Actions are the container operations the executor can run.
 type Actions interface {
@@ -78,6 +83,12 @@ type AppBuilder interface {
 	Build(ctx context.Context, app *agentv1.AppBuild) (string, error)
 }
 
+// ProxyManager installs the managed proxy and loads its configuration.
+type ProxyManager interface {
+	Install(ctx context.Context, action agentv1.ProxyInstallAction) (string, error)
+	Apply(ctx context.Context, routes []*agentv1.ProxyRoute) (string, error)
+}
+
 // Executor runs commands. Every command carries a job id; running the same id
 // twice does not repeat the effect, the executor sends the first outcome again.
 type Executor struct {
@@ -87,6 +98,8 @@ type Executor struct {
 	sources SourceFetcher
 	// builds is nil until WithBuild sets it.
 	builds AppBuilder
+	// proxy is nil until WithProxy sets it.
+	proxy ProxyManager
 	// resources is nil until WithResources sets it.
 	resources ResourceManager
 	// updates is nil until WithUpdates sets it.
@@ -133,6 +146,12 @@ func (e *Executor) WithBuild(builder AppBuilder) *Executor {
 	return e
 }
 
+// WithProxy lets the executor install and configure the managed proxy.
+func (e *Executor) WithProxy(manager ProxyManager) *Executor {
+	e.proxy = manager
+	return e
+}
+
 // WithResources lets the executor list and remove Docker resources.
 func (e *Executor) WithResources(manager ResourceManager) *Executor {
 	e.resources = manager
@@ -164,13 +183,14 @@ func (e *Executor) Handle(ctx context.Context, msg *agentv1.CoreMsg, emit func(*
 	action, logs := msg.GetContainerAction(), msg.GetReadLogs()
 	write, stackAction, read, adopt := msg.GetStackWrite(), msg.GetStackAction(), msg.GetStackRead(), msg.GetStackAdopt()
 	appSource, appBuild := msg.GetAppSource(), msg.GetAppBuild()
+	proxyInstall, proxyApply := msg.GetProxyInstall(), msg.GetProxyApply()
 	list, remove := msg.GetListResources(), msg.GetRemoveResources()
 	updateCommand := msg.GetAgentUpdate()
 	aptStatus := msg.GetAptStatus()
 	aptUpgrade, hostReboot := msg.GetAptUpgrade(), msg.GetHostReboot()
 	serviceAction := msg.GetServiceAction()
 	readJournal := msg.GetReadJournal()
-	if action == nil && logs == nil && write == nil && stackAction == nil && read == nil && adopt == nil && appSource == nil && appBuild == nil && list == nil && remove == nil && updateCommand == nil && aptStatus == nil && aptUpgrade == nil && hostReboot == nil && serviceAction == nil && readJournal == nil {
+	if action == nil && logs == nil && write == nil && stackAction == nil && read == nil && adopt == nil && appSource == nil && appBuild == nil && proxyInstall == nil && proxyApply == nil && list == nil && remove == nil && updateCommand == nil && aptStatus == nil && aptUpgrade == nil && hostReboot == nil && serviceAction == nil && readJournal == nil {
 		return false
 	}
 
@@ -268,6 +288,20 @@ func (e *Executor) Handle(ctx context.Context, msg *agentv1.CoreMsg, emit func(*
 				return "", errNoBuild
 			}
 			return e.builds.Build(ctx, appBuild)
+		})
+	case proxyInstall != nil:
+		go e.execute(ctx, jobID, "proxy install "+proxyInstall.GetAction().String(), proxyInstallTimeout, emit, func(ctx context.Context) (string, error) {
+			if e.proxy == nil {
+				return "", errNoProxy
+			}
+			return e.proxy.Install(ctx, proxyInstall.GetAction())
+		})
+	case proxyApply != nil:
+		go e.execute(ctx, jobID, "proxy apply", proxyApplyTimeout, emit, func(ctx context.Context) (string, error) {
+			if e.proxy == nil {
+				return "", errNoProxy
+			}
+			return e.proxy.Apply(ctx, proxyApply.GetRoutes())
 		})
 	case updateCommand != nil:
 		go e.execute(ctx, jobID, "agent update", updateTimeout, emit, func(ctx context.Context) (string, error) {

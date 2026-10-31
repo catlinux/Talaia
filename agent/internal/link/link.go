@@ -29,6 +29,7 @@ import (
 	"github.com/catlinux/Talaia/agent/internal/enroll"
 	"github.com/catlinux/Talaia/agent/internal/inventory"
 	"github.com/catlinux/Talaia/agent/internal/jobs"
+	"github.com/catlinux/Talaia/agent/internal/proxy"
 	"github.com/catlinux/Talaia/agent/internal/source"
 	"github.com/catlinux/Talaia/agent/internal/stacks"
 	"github.com/catlinux/Talaia/agent/internal/terminal"
@@ -60,6 +61,8 @@ type Link struct {
 	// aptOps runs apt upgrades and host reboots, and resumes the units left by
 	// an earlier agent process.
 	aptOps jobs.AptOperations
+	// proxy is the mode and status of the managed proxy.
+	proxy *proxy.Manager
 	// terminals runs the interactive shells; its sessions end with each stream.
 	terminals *terminal.Manager
 	// hostTerminal reports whether this agent accepts host terminal sessions.
@@ -136,15 +139,17 @@ func newLink(
 	if hostTerminal {
 		terminals = terminals.WithHost(terminal.NewHostBackend(), 2)
 	}
+	proxyManager := proxy.NewDefault()
 
 	return &Link{
 		cfg:               cfg,
 		collector:         collector,
 		identity:          identity,
 		client:            agentv1connect.NewAgentHubClient(connect.NewClient(rpcTransport)),
-		jobs:              newExecutor(cfg, identity, checker, aptOps),
+		jobs:              newExecutor(cfg, identity, checker, aptOps, proxyManager),
 		apt:               checker,
 		aptOps:            aptOps,
+		proxy:             proxyManager,
 		terminals:         terminals,
 		hostTerminal:      hostTerminal,
 		HeartbeatInterval: 10 * time.Second,
@@ -217,7 +222,7 @@ func (l *Link) session(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("collect inventory: %w", err)
 	}
-	applyInventory(inventory, l.apt, l.hostTerminal)
+	applyInventory(ctx, inventory, l.apt, l.hostTerminal, l.proxy)
 	if err := stream.Send(inventoryMsg(inventory)); err != nil {
 		return fmt.Errorf("send inventory: %w", err)
 	}
@@ -286,7 +291,7 @@ func (l *Link) session(ctx context.Context) error {
 			slog.Warn("collect inventory", "error", err)
 			return nil
 		}
-		applyInventory(current, l.apt, l.hostTerminal)
+		applyInventory(ctx, current, l.apt, l.hostTerminal, l.proxy)
 		if inventoryUnchanged(current, sentInventory) {
 			return nil
 		}
@@ -535,10 +540,13 @@ func inventoryMsg(inventory *agentv1.Inventory) *agentv1.AgentMsg {
 }
 
 // applyInventory copies the optional summaries into an inventory message.
-func applyInventory(inventory *agentv1.Inventory, checker *apt.Checker, hostTerminal bool) {
+func applyInventory(ctx context.Context, inventory *agentv1.Inventory, checker *apt.Checker, hostTerminal bool, proxyManager *proxy.Manager) {
 	applyAptSummary(inventory, checker)
 	if inventory != nil {
 		inventory.HostTerminal = hostTerminal
+		if proxyManager != nil {
+			inventory.Proxy = proxyManager.Status(ctx)
+		}
 	}
 }
 
@@ -629,13 +637,15 @@ func jitter(backoff time.Duration) time.Duration {
 }
 
 // newExecutor builds the executor of a real agent: container actions, stacks,
-// Docker resources, agent updates, apt and host operations, and the journal.
-func newExecutor(cfg config.Config, identity *enroll.Identity, checker *apt.Checker, aptOps jobs.AptOperations) *jobs.Executor {
+// app source and builds, the proxy, Docker resources, agent updates, apt and
+// host operations, and the journal.
+func newExecutor(cfg config.Config, identity *enroll.Identity, checker *apt.Checker, aptOps jobs.AptOperations, proxyManager *proxy.Manager) *jobs.Executor {
 	docker := jobs.NewDockerActions()
 	return jobs.New(docker).
 		WithStacks(stacks.NewDefault().WithProjects(inventory.NewDocker())).
 		WithSource(source.NewDefault()).
 		WithBuild(appbuild.NewDefault()).
+		WithProxy(proxyManager).
 		WithResources(docker).
 		WithUpdates(update.New(update.Options{CoreURL: cfg.CoreURL, Identity: identity})).
 		WithApt(checker).

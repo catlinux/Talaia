@@ -151,7 +151,7 @@ Decisiones cerradas el 2026-10-30: proxy externo por defecto (Talaia nunca toca 
 - [x] Agente: fetch de Git endurecido desde GitHub con clave de despliegue por app y clave de host fijada
 - [x] Core: webhooks de push firmados de GitHub y sondeo de la rama
 - [x] Agente: builds con Dockerfile, uno a la vez por servidor
-- [ ] Agente: proxy externo por defecto (app en un puerto libre de `127.0.0.1`, bloque de Apache/nginx en el panel) y Caddy gestionado opcional solo si 80/443 están libres
+- [x] Agente: proxy externo por defecto (app en un puerto libre de `127.0.0.1`, bloque de Apache/nginx en el panel) y Caddy gestionado opcional solo si 80/443 están libres
 - [ ] Agente: release sin corte, vuelta atrás a una de las tres últimas imágenes y limpieza de imágenes
 - [ ] Core: canalización de despliegue (un despliegue por app, pushes sustituidos, logs) y su API
 - [ ] Catálogo de plantillas (15 apps) publicado con el core

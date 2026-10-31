@@ -13,6 +13,12 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.6.34] - 2026-10-31
+
+### Added
+
+- Agent: proxy modes (phase 6 step 6). External mode by default: each app gets a free port on 127.0.0.1 between 20000 and 29999 that no socket or Docker container uses, and Talaia never touches Apache or any other web server. Optional managed mode with Caddy 2.10.2 pinned by digest, only when ports 80 and 443 are free; the agent builds the Caddy configuration itself and loads it through an admin socket that is never on TCP.
+
 ## [0.6.33] - 2026-10-31
 
 ### Added
@@ -903,7 +909,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.6.33...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.6.34...HEAD
+[0.6.34]: https://github.com/catlinux/Talaia/releases/tag/v0.6.34
 [0.6.33]: https://github.com/catlinux/Talaia/releases/tag/v0.6.33
 [0.6.32]: https://github.com/catlinux/Talaia/releases/tag/v0.6.32
 [0.6.31]: https://github.com/catlinux/Talaia/releases/tag/v0.6.31

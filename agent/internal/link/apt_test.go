@@ -64,11 +64,11 @@ func TestApplyAptSummaryLeavesTheInventoryUnsetWithoutApt(t *testing.T) {
 
 func TestApplyInventorySetsHostTerminal(t *testing.T) {
 	inventory := &agentv1.Inventory{}
-	applyInventory(inventory, nil, true)
+	applyInventory(context.Background(), inventory, nil, true, nil)
 	if !inventory.GetHostTerminal() {
 		t.Error("host_terminal = false, want true")
 	}
-	applyInventory(inventory, nil, false)
+	applyInventory(context.Background(), inventory, nil, false, nil)
 	if inventory.GetHostTerminal() {
 		t.Error("host_terminal = true, want false")
 	}
