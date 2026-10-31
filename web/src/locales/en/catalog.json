@@ -736,32 +736,74 @@
     "unbound": {
       "name": "Unbound DNS resolver",
       "what": "A validating, recursive DNS resolver.",
-      "ifFails": "Name resolution can fail for local clients and services. Check the configuration and logs; a bad config prevents it from starting."
+      "ifFails": "Name resolution can fail for local clients and services. Check the configuration and logs; a bad config prevents it from starting.",
+      "details": "Unbound is a validating, recursive DNS resolver. It answers queries for clients on the machine or network, checks DNSSEC and caches results. Configuration lives in `/etc/unbound/`, and it listens on port 53 by default. It is often used as a local resolver instead of a full authoritative server.",
+      "stop": "Stopping Unbound stops DNS answers for every client that uses it. If it is the only resolver, name resolution fails across the machine or network. Validate the configuration and check the logs before restarting.",
+      "problems": [
+        "DNS queries fail — run `unbound-control status` and `unbound-checkconf`, and read the Unbound log.",
+        "Unbound will not start — check the configuration in `/etc/unbound/unbound.conf.d/` and a port conflict with another resolver.",
+        "DNSSEC validation fails for a domain — check the system time and the trust anchor with `unbound-anchor`."
+      ]
     },
     "dnsmasq": {
       "name": "Dnsmasq",
       "what": "A small DNS forwarder and DHCP server for local networks.",
-      "ifFails": "Local DNS or DHCP can stop, and clients may lose addresses or name resolution. Check the configuration and logs before restarting."
+      "ifFails": "Local DNS or DHCP can stop, and clients may lose addresses or name resolution. Check the configuration and logs before restarting.",
+      "details": "Dnsmasq is a small DNS forwarder and DHCP server for local networks. It can answer DNS from `/etc/hosts` or upstream servers and hand out IP addresses to DHCP clients. Configuration is in `/etc/dnsmasq.conf` and `/etc/dnsmasq.d/`. It is common on routers, labs and small office servers.",
+      "stop": "Stopping Dnsmasq stops local DNS and DHCP. Clients may lose name resolution, and DHCP leases may not be renewed. Existing leases remain valid for a while; keep console access and check the configuration before restarting.",
+      "problems": [
+        "Local names do not resolve — run `dnsmasq --test` and check the `server` and `address` lines.",
+        "DHCP clients do not get an address — check the `dhcp-range` and the interface settings.",
+        "Dnsmasq will not start — the port may already be used by systemd-resolved or another DNS server; check the logs."
+      ]
     },
     "smartd": {
       "name": "S.M.A.R.T. monitoring",
       "what": "Warns about failing disks using their S.M.A.R.T. health data.",
-      "ifFails": "Disk health warnings may not be sent. It is optional, but check the logs and start it again if you rely on disk monitoring."
+      "ifFails": "Disk health warnings may not be sent. It is optional, but check the logs and start it again if you rely on disk monitoring.",
+      "details": "smartd monitors the S.M.A.R.T. health data of disks and warns when a drive reports errors or rising failure indicators. It reads settings from `/etc/smartd.conf` and writes warnings to the system log or email. It does not repair disks; it only reports problems. It is most useful on servers with important local disks.",
+      "stop": "Stopping smartd stops new health checks and warnings; the disks keep working. Existing warnings are not sent while it is down. Start it again or use another monitoring system if you depend on disk health alerts.",
+      "problems": [
+        "No disk warnings arrive — check `systemctl status smartd` and `smartctl --scan` to confirm the devices are seen.",
+        "smartd will not start — check `/etc/smartd.conf` and the logs.",
+        "A disk reports errors — run `smartctl -a /dev/sdX` and plan a replacement; do not ignore reallocated sectors."
+      ]
     },
     "lvm2": {
       "name": "LVM",
       "what": "Manages logical volumes and snapshots on top of physical disks.",
-      "ifFails": "Logical volumes may not activate and filesystems can become unavailable. Check the LVM logs and disk state; do not force changes without a backup."
+      "ifFails": "Logical volumes may not activate and filesystems can become unavailable. Check the LVM logs and disk state; do not force changes without a backup.",
+      "details": "LVM groups physical disks into volume groups and divides them into logical volumes. It adds flexibility: you can resize filesystems, create snapshots and move data between disks. LVM metadata lives on the physical volumes, and the `lvm2-*` units activate it at boot. It is not a filesystem itself.",
+      "stop": "Stopping the LVM units does not unmount filesystems by itself, but it can prevent volumes from activating after a reboot. Do not deactivate a volume that is in use. Check `pvs`, `vgs` and `lvs` and keep a backup before changing storage.",
+      "problems": [
+        "A logical volume is missing — run `pvs`, `vgs` and `lvs` and check `journalctl -u lvm2-* --no-pager`.",
+        "A volume will not activate — check that all physical disks are present and the LVM metadata is readable.",
+        "The filesystem is full — extend the logical volume and then grow the filesystem with the appropriate tool."
+      ]
     },
     "mdmonitor": {
       "name": "Linux software RAID",
       "what": "Monitors and manages md RAID arrays.",
-      "ifFails": "Array problems may go unnoticed and degraded arrays may not be repaired. Check /proc/mdstat and the logs before restarting."
+      "ifFails": "Array problems may go unnoticed and degraded arrays may not be repaired. Check /proc/mdstat and the logs before restarting.",
+      "details": "Linux software RAID, managed by mdadm, combines several disks into an array for redundancy or speed. The `mdmonitor` service watches arrays and can send mail when one degrades or fails. Status is visible in `/proc/mdstat` and with `mdadm --detail`. It does not replace backups.",
+      "stop": "Stopping mdmonitor stops the monitoring and notifications, but the RAID array keeps running. A degraded array can go unnoticed until another disk fails. Start it again or monitor `/proc/mdstat` another way.",
+      "problems": [
+        "An array is degraded — read `/proc/mdstat` and run `mdadm --detail /dev/mdX`.",
+        "No RAID warnings arrive — check `systemctl status mdmonitor` and the mail settings.",
+        "An array will not assemble — check `mdadm --examine` on the member disks and the initramfs configuration."
+      ]
     },
     "zfs": {
       "name": "OpenZFS",
       "what": "Manages ZFS pools, datasets, snapshots and scrubs.",
-      "ifFails": "ZFS datasets may become unavailable and pool problems may go unnoticed. Check zpool status and the logs; never force-import a damaged pool."
+      "ifFails": "ZFS datasets may become unavailable and pool problems may go unnoticed. Check zpool status and the logs; never force-import a damaged pool.",
+      "details": "OpenZFS manages pools of disks and the datasets and snapshots inside them. It checks data integrity, supports compression and snapshots, and can replace failed disks without unmounting everything. Pool status is shown by `zpool status` and datasets by `zfs list`. It is not part of the standard Debian installer and needs its own packages.",
+      "stop": "Stopping the ZFS units can make pools and datasets unavailable, and services using them fail. Never force-export or destroy a pool to fix a problem. Check `zpool status` and the logs, and keep backups before changing storage.",
+      "problems": [
+        "A pool is degraded or faulted — run `zpool status -v` and replace the failed disk; do not clear errors blindly.",
+        "A dataset is not mounted — check `zfs list` and `zpool status`, then mount it with `zfs mount`.",
+        "Scrubs report errors — check the disk health and the pool history with `zpool history`."
+      ]
     },
     "talaia-agent": {
       "name": "Talaia agent",
@@ -802,47 +844,110 @@
     "httpd": {
       "name": "Apache HTTP Server image",
       "what": "Serves websites and static files from a container.",
-      "ifFails": "The web service in this container stops answering. Check the container logs and its mounted configuration before restarting."
+      "ifFails": "The web service in this container stops answering. Check the container logs and its mounted configuration before restarting.",
+      "details": "This is the official Apache HTTP Server container image. It runs Apache inside a container and serves files from `/usr/local/apache2/htdocs` by default. Configuration lives under `/usr/local/apache2/conf/`, and the image exposes port 80. It does not include your site files unless you mount or copy them.",
+      "stop": "Stopping the container stops the web server and every site it serves. The image and mounted files remain. Check the container logs and configuration before restarting; static files served by another server are unaffected.",
+      "problems": [
+        "The container exits at startup — read `docker logs --tail 50 <container>` and check the configuration syntax.",
+        "The site returns 404 — check that the files are mounted at the document root and the path is correct.",
+        "Changes do not appear — restart or reload the container after changing the mounted configuration."
+      ]
     },
     "traefik": {
       "name": "Traefik",
       "what": "A reverse proxy and load balancer that discovers container services.",
-      "ifFails": "Routes to containers may stop working and certificates may not renew. Check its logs, providers and routing labels before restarting."
+      "ifFails": "Routes to containers may stop working and certificates may not renew. Check its logs, providers and routing labels before restarting.",
+      "details": "Traefik is a reverse proxy and load balancer designed for containers. It discovers services through Docker labels or other providers and routes requests to them. It can also obtain and renew TLS certificates automatically. Configuration comes from command-line flags, a file or container labels.",
+      "stop": "Stopping the container stops all routes and certificate renewal. Running applications keep running but are no longer reachable through Traefik. Keep its configuration and certificate storage on a volume before recreating it.",
+      "problems": [
+        "Routes return 404 — check the container labels, the provider connection and the Traefik logs.",
+        "HTTPS fails — check the entrypoints, certificate resolver and DNS or ports.",
+        "The dashboard is not reachable — check the API or dashboard configuration and the published port."
+      ]
     },
     "nginx-proxy-manager": {
       "name": "Nginx Proxy Manager",
       "what": "A web UI that manages Nginx reverse proxies and TLS certificates.",
-      "ifFails": "Proxied sites or certificate renewal may stop. Check its logs and database; keep a backup of its configuration."
+      "ifFails": "Proxied sites or certificate renewal may stop. Check its logs and database; keep a backup of its configuration.",
+      "details": "Nginx Proxy Manager is a web interface for managing Nginx reverse proxies and TLS certificates. It stores its configuration and database in its data directory, usually `/data` and `/etc/letsencrypt`. It is convenient for a few sites, but it is another service to keep updated and backed up.",
+      "stop": "Stopping the container takes down its admin interface and every proxied site. The configuration and certificates stay in their volumes. Keep backups and check the logs before recreating the container.",
+      "problems": [
+        "The admin interface does not load — check the container logs and the published ports 80, 443 and 81.",
+        "A proxied site returns 502 — check the forward host and port and whether the target container is running.",
+        "Certificates do not renew — check DNS, port 80 access and the certificate logs."
+      ]
     },
     "portainer": {
       "name": "Portainer",
       "what": "A web interface for managing Docker containers, images and stacks.",
-      "ifFails": "The Docker management UI becomes unavailable, but running containers continue. Check its data volume and logs before restarting."
+      "ifFails": "The Docker management UI becomes unavailable, but running containers continue. Check its data volume and logs before restarting.",
+      "details": "Portainer is a web interface for Docker. It talks to the Docker socket or a Portainer agent and lets you manage containers, images, volumes and stacks. It stores its own data in `/data`. It does not run your containers; Docker does.",
+      "stop": "Stopping the container only removes the management interface; running containers keep working. The Portainer data remains in its volume. Check the logs and the Docker socket mount before restarting.",
+      "problems": [
+        "The web interface does not load — check the container logs, the published port and the data volume.",
+        "Portainer cannot see containers — check that `/var/run/docker.sock` is mounted or the agent is reachable.",
+        "The admin password is lost — reset it with the `portainer` helper or restore the data volume."
+      ]
     },
     "portainer-agent": {
       "name": "Portainer agent",
       "what": "Lets a Portainer server manage the Docker host it runs on.",
-      "ifFails": "Portainer can no longer manage this Docker host. Check its connection and logs; running containers are not affected."
+      "ifFails": "Portainer can no longer manage this Docker host. Check its connection and logs; running containers are not affected.",
+      "details": "The Portainer agent lets a Portainer server manage the Docker host where the agent runs. It listens on port 9001 and talks to the local Docker API. It is used when Portainer cannot mount the host Docker socket directly, for example across a network. It does not provide a web interface.",
+      "stop": "Stopping the container disconnects this host from its Portainer server, but local containers keep running. The agent stores no application data. Restart it and check the server connection and firewall.",
+      "problems": [
+        "The host is offline in Portainer — check the agent container logs and that port 9001 is reachable.",
+        "The agent cannot reach Docker — check the Docker socket mount and permissions.",
+        "TLS errors appear — check the agent and server certificates and the configured ports."
+      ]
     },
     "watchtower": {
       "name": "Watchtower",
       "what": "Periodically updates running containers when their images change.",
-      "ifFails": "Containers stop being updated automatically. Check its logs and schedule; it is optional if you update images another way."
+      "ifFails": "Containers stop being updated automatically. Check its logs and schedule; it is optional if you update images another way.",
+      "details": "Watchtower periodically checks running containers for newer images and restarts them with the new version. It uses the Docker API and can watch all containers or only selected ones. It can also clean up old images. It is optional and can surprise you if updates are not tested.",
+      "stop": "Stopping the container stops automatic updates; running containers keep their current images. No data is lost by stopping Watchtower itself. If you disable it, update images manually or with another tool.",
+      "problems": [
+        "Containers are not updated — check the container logs and the schedule or interval settings.",
+        "A container restarts at a bad time — set a schedule or exclude it with labels.",
+        "Old images fill the disk — enable cleanup or remove unused images manually."
+      ]
     },
     "grafana": {
       "name": "Grafana",
       "what": "Builds dashboards and graphs from metrics, logs and other data sources.",
-      "ifFails": "Dashboards and alerts in Grafana stop loading. Check its database and data source connections before restarting."
+      "ifFails": "Dashboards and alerts in Grafana stop loading. Check its database and data source connections before restarting.",
+      "details": "Grafana builds dashboards and graphs from metrics, logs and other data sources. It stores dashboards, users and settings in its database, usually SQLite in `/var/lib/grafana`. It queries sources such as Prometheus but does not collect metrics itself. It is commonly used with Prometheus and Node Exporter.",
+      "stop": "Stopping the container takes down the dashboards and alert views. Data sources keep running, but alerts configured in Grafana may not be evaluated. Keep the Grafana data volume and check the logs before recreating it.",
+      "problems": [
+        "The web interface does not load — check the container logs and the published port.",
+        "Dashboards are empty — check the data source URL and whether the source is reachable.",
+        "The database is locked or corrupted — stop Grafana, back up `/var/lib/grafana` and check the SQLite file."
+      ]
     },
     "prometheus": {
       "name": "Prometheus",
       "what": "Collects and stores time-series metrics and evaluates alert rules.",
-      "ifFails": "Metrics stop being collected and alert rules stop firing. Check disk space, its configuration and the targets; restart only after checking the WAL state."
+      "ifFails": "Metrics stop being collected and alert rules stop firing. Check disk space, its configuration and the targets; restart only after checking the WAL state.",
+      "details": "Prometheus collects metrics from configured targets, stores them as time series and evaluates alert rules. Its configuration is in `prometheus.yml`, and its data lives in `/prometheus` by default. It pulls metrics over HTTP rather than receiving them. It is usually paired with Grafana and exporters.",
+      "stop": "Stopping the container stops collection and alert evaluation. Existing data remains in its volume, but the gap is permanent. Keep the volume and check the configuration and the write-ahead log (WAL) before restarting.",
+      "problems": [
+        "Targets are down — check the Prometheus targets page and the exporter URLs.",
+        "The container will not start — validate `prometheus.yml` with `promtool check config` and check the logs.",
+        "Disk use grows quickly — check retention settings and the size of `/prometheus`."
+      ]
     },
     "node-exporter": {
       "name": "Prometheus Node Exporter",
       "what": "Exposes CPU, memory, disk and network metrics of the host.",
-      "ifFails": "Host metrics disappear from dashboards and alerts. Check its logs and port; restarting it does not affect the host services."
+      "ifFails": "Host metrics disappear from dashboards and alerts. Check its logs and port; restarting it does not affect the host services.",
+      "details": "Node Exporter exposes CPU, memory, disk, network and filesystem metrics from the host in Prometheus format. It runs as a small HTTP server, usually on port 9100, and Prometheus scrapes it. It does not store metrics or provide dashboards. The container needs host mounts to see the host filesystems and network.",
+      "stop": "Stopping the container removes the host metrics from Prometheus; the host itself keeps running. No data is stored by the exporter. Restart it and check the Prometheus target page if metrics disappear.",
+      "problems": [
+        "Host metrics are missing — check the container logs, the published port and the Prometheus target.",
+        "Filesystem metrics are wrong — check that the host paths are mounted read-only with the correct mount points.",
+        "The exporter shows container metrics instead of host metrics — check the network and PID namespace settings."
+      ]
     },
     "cadvisor": {
       "name": "cAdvisor",

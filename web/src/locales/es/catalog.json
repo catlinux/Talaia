@@ -736,32 +736,74 @@
     "unbound": {
       "name": "Resolutor DNS Unbound",
       "what": "Un resolutor DNS recursivo y validador.",
-      "ifFails": "La resolución de nombres puede fallar para clientes y servicios locales. Revisa la configuración y los registros; una configuración mala le impide arrancar."
+      "ifFails": "La resolución de nombres puede fallar para clientes y servicios locales. Revisa la configuración y los registros; una configuración mala le impide arrancar.",
+      "details": "Unbound es un resolutor DNS recursivo y validador. Responde consultas de clientes de la máquina o de la red, comprueba DNSSEC y guarda resultados en caché. La configuración está en `/etc/unbound/`, y escucha en el puerto 53 por defecto. Se usa a menudo como resolutor local en lugar de un servidor autoritativo completo.",
+      "stop": "Parar Unbound detiene las respuestas DNS para todos los clientes que lo usan. Si es el único resolutor, la resolución de nombres falla en toda la máquina o red. Valida la configuración y revisa los registros antes de reiniciar.",
+      "problems": [
+        "Fallan las consultas DNS — ejecuta `unbound-control status` y `unbound-checkconf`, y lee el registro de Unbound.",
+        "Unbound no arranca — revisa la configuración de `/etc/unbound/unbound.conf.d/` y el conflicto de puerto con otro resolutor.",
+        "Falla la validación DNSSEC de un dominio — revisa la hora del sistema y el ancla de confianza con `unbound-anchor`."
+      ]
     },
     "dnsmasq": {
       "name": "Dnsmasq",
       "what": "Un pequeño reenviador DNS y servidor DHCP para redes locales.",
-      "ifFails": "El DNS o DHCP local puede detenerse, y los clientes pueden perder direcciones o resolución de nombres. Revisa la configuración y los registros antes de reiniciar."
+      "ifFails": "El DNS o DHCP local puede detenerse, y los clientes pueden perder direcciones o resolución de nombres. Revisa la configuración y los registros antes de reiniciar.",
+      "details": "Dnsmasq es un pequeño reenviador DNS y servidor DHCP para redes locales. Puede responder DNS desde `/etc/hosts` o desde servidores upstream y repartir direcciones IP a clientes DHCP. La configuración está en `/etc/dnsmasq.conf` y `/etc/dnsmasq.d/`. Es habitual en routers, laboratorios y pequeñas oficinas.",
+      "stop": "Parar Dnsmasq detiene el DNS local y el DHCP. Los clientes pueden perder la resolución de nombres, y las concesiones DHCP pueden no renovarse. Las concesiones existentes siguen siendo válidas un tiempo; mantén acceso a la consola y revisa la configuración antes de reiniciar.",
+      "problems": [
+        "Los nombres locales no se resuelven — ejecuta `dnsmasq --test` y revisa las líneas `server` y `address`.",
+        "Los clientes DHCP no reciben dirección — revisa `dhcp-range` y la configuración de la interfaz.",
+        "Dnsmasq no arranca — puede que el puerto ya lo use systemd-resolved u otro servidor DNS; revisa los registros."
+      ]
     },
     "smartd": {
       "name": "Monitorización S.M.A.R.T.",
       "what": "Avisa de discos que están fallando con sus datos de salud S.M.A.R.T.",
-      "ifFails": "Los avisos de salud de los discos pueden no enviarse. Es opcional, pero revisa los registros y vuelve a iniciarlo si dependes de la monitorización de discos."
+      "ifFails": "Los avisos de salud de los discos pueden no enviarse. Es opcional, pero revisa los registros y vuelve a iniciarlo si dependes de la monitorización de discos.",
+      "details": "smartd vigila los datos de salud S.M.A.R.T. de los discos y avisa cuando una unidad informa de errores o de indicadores de fallo crecientes. Lee la configuración de `/etc/smartd.conf` y escribe avisos en el registro del sistema o por correo. No repara discos; solo informa de problemas. Es más útil en servidores con discos locales importantes.",
+      "stop": "Parar smartd detiene las nuevas comprobaciones y avisos de salud; los discos siguen funcionando. Los avisos existentes no se envían mientras está parado. Vuelve a arrancarlo o usa otro sistema de monitorización si dependes de los avisos de salud de los discos.",
+      "problems": [
+        "No llegan avisos de disco — revisa `systemctl status smartd` y `smartctl --scan` para confirmar que ve los dispositivos.",
+        "smartd no arranca — revisa `/etc/smartd.conf` y los registros.",
+        "Un disco informa de errores — ejecuta `smartctl -a /dev/sdX` y planifica su sustitución; no ignores los sectores reasignados."
+      ]
     },
     "lvm2": {
       "name": "LVM",
       "what": "Gestiona volúmenes lógicos e instantáneas sobre discos físicos.",
-      "ifFails": "Los volúmenes lógicos pueden no activarse y los sistemas de archivos pueden quedar no disponibles. Revisa los registros de LVM y el estado de los discos; no fuerces cambios sin una copia de seguridad."
+      "ifFails": "Los volúmenes lógicos pueden no activarse y los sistemas de archivos pueden quedar no disponibles. Revisa los registros de LVM y el estado de los discos; no fuerces cambios sin una copia de seguridad.",
+      "details": "LVM agrupa discos físicos en grupos de volúmenes y los divide en volúmenes lógicos. Añade flexibilidad: puedes redimensionar sistemas de archivos, crear instantáneas y mover datos entre discos. Los metadatos de LVM viven en los volúmenes físicos, y las unidades `lvm2-*` los activan al arrancar. No es un sistema de archivos en sí mismo.",
+      "stop": "Parar las unidades de LVM no desmonta los sistemas de archivos por sí mismo, pero puede impedir que los volúmenes se activen tras un reinicio. No desactives un volumen que esté en uso. Revisa `pvs`, `vgs` y `lvs` y guarda una copia antes de cambiar el almacenamiento.",
+      "problems": [
+        "Falta un volumen lógico — ejecuta `pvs`, `vgs` y `lvs` y revisa `journalctl -u lvm2-* --no-pager`.",
+        "Un volumen no se activa — comprueba que todos los discos físicos están presentes y que los metadatos de LVM son legibles.",
+        "El sistema de archivos está lleno — amplía el volumen lógico y luego agranda el sistema de archivos con la herramienta adecuada."
+      ]
     },
     "mdmonitor": {
       "name": "RAID por software de Linux",
       "what": "Monitoriza y gestiona matrices RAID md.",
-      "ifFails": "Los problemas de la matriz pueden pasar desapercibidos y las matrices degradadas pueden no repararse. Revisa /proc/mdstat y los registros antes de reiniciar."
+      "ifFails": "Los problemas de la matriz pueden pasar desapercibidos y las matrices degradadas pueden no repararse. Revisa /proc/mdstat y los registros antes de reiniciar.",
+      "details": "El RAID por software de Linux, gestionado por mdadm, combina varios discos en una matriz para obtener redundancia o velocidad. El servicio `mdmonitor` vigila las matrices y puede enviar correo cuando una se degrada o falla. El estado se ve en `/proc/mdstat` y con `mdadm --detail`. No sustituye las copias de seguridad.",
+      "stop": "Parar mdmonitor detiene la monitorización y las notificaciones, pero la matriz RAID sigue funcionando. Una matriz degradada puede pasar desapercibida hasta que falle otro disco. Vuelve a arrancarlo o vigila `/proc/mdstat` de otra forma.",
+      "problems": [
+        "Una matriz está degradada — lee `/proc/mdstat` y ejecuta `mdadm --detail /dev/mdX`.",
+        "No llegan avisos de RAID — revisa `systemctl status mdmonitor` y la configuración de correo.",
+        "Una matriz no se ensambla — revisa `mdadm --examine` en los discos miembros y la configuración de initramfs."
+      ]
     },
     "zfs": {
       "name": "OpenZFS",
       "what": "Gestiona pools, conjuntos de datos, instantáneas y scrubs de ZFS.",
-      "ifFails": "Los conjuntos de datos ZFS pueden quedar no disponibles y los problemas del pool pueden pasar desapercibidos. Revisa zpool status y los registros; no importes nunca a la fuerza un pool dañado."
+      "ifFails": "Los conjuntos de datos ZFS pueden quedar no disponibles y los problemas del pool pueden pasar desapercibidos. Revisa zpool status y los registros; no importes nunca a la fuerza un pool dañado.",
+      "details": "OpenZFS gestiona grupos de discos y los datasets e instantáneas que contienen. Comprueba la integridad de los datos, admite compresión e instantáneas y puede sustituir discos fallidos sin desmontar todo. El estado del pool se ve con `zpool status` y los datasets con `zfs list`. No forma parte del instalador estándar de Debian y necesita sus propios paquetes.",
+      "stop": "Parar las unidades de ZFS puede dejar pools y datasets inaccesibles, y los servicios que los usan fallan. Nunca forces la exportación ni destruyas un pool para arreglar un problema. Revisa `zpool status` y los registros, y guarda copias antes de cambiar el almacenamiento.",
+      "problems": [
+        "Un pool está degradado o en fallo — ejecuta `zpool status -v` y sustituye el disco fallido; no borres los errores sin más.",
+        "Un dataset no está montado — revisa `zfs list` y `zpool status`, y móntalo con `zfs mount`.",
+        "Los scrubs informan de errores — revisa la salud de los discos y el historial del pool con `zpool history`."
+      ]
     },
     "talaia-agent": {
       "name": "Agente de Talaia",
@@ -802,47 +844,110 @@
     "httpd": {
       "name": "Imagen del servidor HTTP Apache",
       "what": "Sirve sitios web y archivos estáticos desde un contenedor.",
-      "ifFails": "El servicio web de este contenedor deja de responder. Revisa los registros del contenedor y la configuración montada antes de reiniciar."
+      "ifFails": "El servicio web de este contenedor deja de responder. Revisa los registros del contenedor y la configuración montada antes de reiniciar.",
+      "details": "Esta es la imagen oficial del servidor Apache HTTP para contenedores. Ejecuta Apache dentro de un contenedor y sirve archivos desde `/usr/local/apache2/htdocs` por defecto. La configuración está en `/usr/local/apache2/conf/`, y la imagen expone el puerto 80. No incluye los archivos de tu sitio salvo que los montes o copies.",
+      "stop": "Parar el contenedor detiene el servidor web y todos los sitios que sirve. La imagen y los archivos montados se conservan. Revisa los registros y la configuración del contenedor antes de reiniciar; los archivos estáticos servidos por otro servidor no se ven afectados.",
+      "problems": [
+        "El contenedor se cierra al arrancar — lee `docker logs --tail 50 <contenedor>` y revisa la sintaxis de la configuración.",
+        "El sitio devuelve 404 — comprueba que los archivos están montados en la raíz del documento y que la ruta es correcta.",
+        "Los cambios no aparecen — reinicia o recarga el contenedor después de cambiar la configuración montada."
+      ]
     },
     "traefik": {
       "name": "Traefik",
       "what": "Un proxy inverso y balanceador de carga que descubre servicios de contenedores.",
-      "ifFails": "Las rutas hacia los contenedores pueden dejar de funcionar y los certificados pueden no renovarse. Revisa sus registros, proveedores y etiquetas de enrutamiento antes de reiniciar."
+      "ifFails": "Las rutas hacia los contenedores pueden dejar de funcionar y los certificados pueden no renovarse. Revisa sus registros, proveedores y etiquetas de enrutamiento antes de reiniciar.",
+      "details": "Traefik es un proxy inverso y balanceador de carga diseñado para contenedores. Descubre servicios mediante etiquetas de Docker u otros proveedores y enruta las peticiones hacia ellos. También puede obtener y renovar certificados TLS automáticamente. La configuración viene de opciones de línea de órdenes, un archivo o etiquetas de contenedor.",
+      "stop": "Parar el contenedor detiene todas las rutas y la renovación de certificados. Las aplicaciones siguen funcionando, pero dejan de ser accesibles a través de Traefik. Conserva su configuración y el almacenamiento de certificados en un volumen antes de recrearlo.",
+      "problems": [
+        "Las rutas devuelven 404 — revisa las etiquetas del contenedor, la conexión con el proveedor y los registros de Traefik.",
+        "HTTPS falla — revisa los entrypoints, el resolutor de certificados y el DNS o los puertos.",
+        "El panel no es accesible — revisa la configuración de la API o del panel y el puerto publicado."
+      ]
     },
     "nginx-proxy-manager": {
       "name": "Nginx Proxy Manager",
       "what": "Una interfaz web que gestiona proxys inversos de Nginx y certificados TLS.",
-      "ifFails": "Los sitios proxificados o la renovación de certificados pueden detenerse. Revisa sus registros y su base de datos; guarda una copia de su configuración."
+      "ifFails": "Los sitios proxificados o la renovación de certificados pueden detenerse. Revisa sus registros y su base de datos; guarda una copia de su configuración.",
+      "details": "Nginx Proxy Manager es una interfaz web para gestionar proxies inversos de Nginx y certificados TLS. Guarda su configuración y su base de datos en su directorio de datos, normalmente `/data` y `/etc/letsencrypt`. Es cómodo para unos pocos sitios, pero es otro servicio que hay que mantener actualizado y con copias.",
+      "stop": "Parar el contenedor tumba su interfaz de administración y todos los sitios proxificados. La configuración y los certificados siguen en sus volúmenes. Guarda copias y revisa los registros antes de recrear el contenedor.",
+      "problems": [
+        "La interfaz de administración no carga — revisa los registros del contenedor y los puertos publicados 80, 443 y 81.",
+        "Un sitio proxificado devuelve 502 — revisa el host y el puerto de destino y si el contenedor de destino está en marcha.",
+        "Los certificados no se renuevan — revisa el DNS, el acceso al puerto 80 y los registros de certificados."
+      ]
     },
     "portainer": {
       "name": "Portainer",
       "what": "Una interfaz web para gestionar contenedores, imágenes y stacks de Docker.",
-      "ifFails": "La interfaz de gestión de Docker deja de estar disponible, pero los contenedores en marcha continúan. Revisa su volumen de datos y sus registros antes de reiniciar."
+      "ifFails": "La interfaz de gestión de Docker deja de estar disponible, pero los contenedores en marcha continúan. Revisa su volumen de datos y sus registros antes de reiniciar.",
+      "details": "Portainer es una interfaz web para Docker. Habla con el socket de Docker o con un agente de Portainer y permite gestionar contenedores, imágenes, volúmenes y stacks. Guarda sus propios datos en `/data`. No ejecuta tus contenedores; eso lo hace Docker.",
+      "stop": "Parar el contenedor solo elimina la interfaz de gestión; los contenedores en marcha siguen funcionando. Los datos de Portainer siguen en su volumen. Revisa los registros y el montaje del socket de Docker antes de reiniciar.",
+      "problems": [
+        "La interfaz web no carga — revisa los registros del contenedor, el puerto publicado y el volumen de datos.",
+        "Portainer no ve los contenedores — comprueba que `/var/run/docker.sock` está montado o que el agente es accesible.",
+        "Se ha perdido la contraseña de administración — restablécala con la utilidad `portainer` o restaura el volumen de datos."
+      ]
     },
     "portainer-agent": {
       "name": "Agente de Portainer",
       "what": "Permite que un servidor Portainer gestione el anfitrión Docker donde se ejecuta.",
-      "ifFails": "Portainer ya no puede gestionar este anfitrión Docker. Revisa su conexión y sus registros; los contenedores en marcha no se ven afectados."
+      "ifFails": "Portainer ya no puede gestionar este anfitrión Docker. Revisa su conexión y sus registros; los contenedores en marcha no se ven afectados.",
+      "details": "El agente de Portainer permite que un servidor Portainer gestione el host Docker donde se ejecuta el agente. Escucha en el puerto 9001 y habla con la API local de Docker. Se usa cuando Portainer no puede montar directamente el socket de Docker del host, por ejemplo a través de la red. No proporciona interfaz web.",
+      "stop": "Parar el contenedor desconecta este host de su servidor Portainer, pero los contenedores locales siguen funcionando. El agente no guarda datos de aplicaciones. Vuelve a arrancarlo y revisa la conexión con el servidor y el cortafuegos.",
+      "problems": [
+        "El host aparece desconectado en Portainer — revisa los registros del contenedor del agente y que el puerto 9001 sea accesible.",
+        "El agente no llega a Docker — revisa el montaje del socket de Docker y los permisos.",
+        "Aparecen errores TLS — revisa los certificados del agente y del servidor y los puertos configurados."
+      ]
     },
     "watchtower": {
       "name": "Watchtower",
       "what": "Actualiza periódicamente los contenedores en marcha cuando cambian sus imágenes.",
-      "ifFails": "Los contenedores dejan de actualizarse automáticamente. Revisa sus registros y su planificación; es opcional si actualizas las imágenes de otra forma."
+      "ifFails": "Los contenedores dejan de actualizarse automáticamente. Revisa sus registros y su planificación; es opcional si actualizas las imágenes de otra forma.",
+      "details": "Watchtower comprueba periódicamente si hay imágenes nuevas para los contenedores en marcha y los reinicia con la nueva versión. Usa la API de Docker y puede vigilar todos los contenedores o solo algunos seleccionados. También puede limpiar imágenes antiguas. Es opcional y puede sorprenderte si las actualizaciones no se prueban.",
+      "stop": "Parar el contenedor detiene las actualizaciones automáticas; los contenedores en marcha conservan sus imágenes actuales. No se pierden datos por parar Watchtower. Si lo desactivas, actualiza las imágenes a mano o con otra herramienta.",
+      "problems": [
+        "Los contenedores no se actualizan — revisa los registros del contenedor y la configuración de la programación o el intervalo.",
+        "Un contenedor se reinicia en mal momento — define una programación o exclúyelo con etiquetas.",
+        "Las imágenes antiguas llenan el disco — activa la limpieza o elimina imágenes sin usar a mano."
+      ]
     },
     "grafana": {
       "name": "Grafana",
       "what": "Crea paneles y gráficos a partir de métricas, registros y otras fuentes.",
-      "ifFails": "Los paneles y alertas de Grafana dejan de cargarse. Revisa su base de datos y las conexiones de las fuentes antes de reiniciar."
+      "ifFails": "Los paneles y alertas de Grafana dejan de cargarse. Revisa su base de datos y las conexiones de las fuentes antes de reiniciar.",
+      "details": "Grafana crea paneles y gráficos a partir de métricas, registros y otras fuentes de datos. Guarda paneles, usuarios y ajustes en su base de datos, normalmente SQLite en `/var/lib/grafana`. Consulta fuentes como Prometheus, pero no recopila métricas por sí mismo. Se usa mucho con Prometheus y Node Exporter.",
+      "stop": "Parar el contenedor tumba los paneles y las vistas de alertas. Las fuentes de datos siguen funcionando, pero las alertas configuradas en Grafana pueden no evaluarse. Conserva el volumen de datos de Grafana y revisa los registros antes de recrearlo.",
+      "problems": [
+        "La interfaz web no carga — revisa los registros del contenedor y el puerto publicado.",
+        "Los paneles están vacíos — revisa la URL de la fuente de datos y si la fuente es accesible.",
+        "La base de datos está bloqueada o dañada — para Grafana, guarda una copia de `/var/lib/grafana` y revisa el archivo SQLite."
+      ]
     },
     "prometheus": {
       "name": "Prometheus",
       "what": "Recoge y guarda métricas de series temporales y evalúa reglas de alerta.",
-      "ifFails": "Las métricas dejan de recogerse y las alertas dejan de dispararse. Comprueba el espacio de disco, su configuración y los objetivos; reinicia solo después de revisar el estado del WAL."
+      "ifFails": "Las métricas dejan de recogerse y las alertas dejan de dispararse. Comprueba el espacio de disco, su configuración y los objetivos; reinicia solo después de revisar el estado del WAL.",
+      "details": "Prometheus recopila métricas de los objetivos configurados, las guarda como series temporales y evalúa reglas de alerta. Su configuración está en `prometheus.yml`, y sus datos viven en `/prometheus` por defecto. Extrae métricas por HTTP en lugar de recibirlas. Suele combinarse con Grafana y exportadores.",
+      "stop": "Parar el contenedor detiene la recopilación y la evaluación de alertas. Los datos existentes siguen en su volumen, pero el hueco es permanente. Conserva el volumen y revisa la configuración y el registro de escritura anticipada (WAL) antes de reiniciar.",
+      "problems": [
+        "Los objetivos están caídos — revisa la página de objetivos de Prometheus y las URL de los exportadores.",
+        "El contenedor no arranca — valida `prometheus.yml` con `promtool check config` y revisa los registros.",
+        "El disco crece rápido — revisa la retención y el tamaño de `/prometheus`."
+      ]
     },
     "node-exporter": {
       "name": "Prometheus Node Exporter",
       "what": "Expone métricas de CPU, memoria, disco y red del anfitrión.",
-      "ifFails": "Las métricas del anfitrión desaparecen de los paneles y alertas. Revisa sus registros y su puerto; reiniciarlo no afecta a los servicios del anfitrión."
+      "ifFails": "Las métricas del anfitrión desaparecen de los paneles y alertas. Revisa sus registros y su puerto; reiniciarlo no afecta a los servicios del anfitrión.",
+      "details": "Node Exporter expone métricas de CPU, memoria, disco, red y sistemas de archivos del host en formato Prometheus. Se ejecuta como un pequeño servidor HTTP, normalmente en el puerto 9100, y Prometheus lo consulta. No guarda métricas ni ofrece paneles. El contenedor necesita montajes del host para ver sus sistemas de archivos y su red.",
+      "stop": "Parar el contenedor elimina las métricas del host de Prometheus; el host sigue funcionando. El exportador no guarda datos. Vuelve a arrancarlo y revisa la página de objetivos de Prometheus si desaparecen las métricas.",
+      "problems": [
+        "Faltan las métricas del host — revisa los registros del contenedor, el puerto publicado y el objetivo de Prometheus.",
+        "Las métricas de sistemas de archivos son incorrectas — comprueba que las rutas del host están montadas en solo lectura con los puntos de montaje correctos.",
+        "El exportador muestra métricas del contenedor en vez del host — revisa la configuración de red y de espacios de nombres PID."
+      ]
     },
     "cadvisor": {
       "name": "cAdvisor",

@@ -736,32 +736,74 @@
     "unbound": {
       "name": "Resolutor DNS Unbound",
       "what": "Un resolutor DNS recursiu i validador.",
-      "ifFails": "La resolució de noms pot fallar per als clients i serveis locals. Revisa la configuració i els registres; una configuració dolenta li impedeix arrencar."
+      "ifFails": "La resolució de noms pot fallar per als clients i serveis locals. Revisa la configuració i els registres; una configuració dolenta li impedeix arrencar.",
+      "details": "Unbound és un resolutor DNS recursiu i validador. Respon consultes de clients de la màquina o de la xarxa, comprova DNSSEC i desa resultats en memòria cau. La configuració és a `/etc/unbound/`, i escolta al port 53 per defecte. S’usa sovint com a resolutor local en lloc d’un servidor autoritatiu complet.",
+      "stop": "Aturar Unbound atura les respostes DNS per a tots els clients que l’usen. Si és l’únic resolutor, la resolució de noms falla a tota la màquina o xarxa. Valida la configuració i revisa els registres abans de reiniciar.",
+      "problems": [
+        "Fallen les consultes DNS — executa `unbound-control status` i `unbound-checkconf`, i llegeix el registre d’Unbound.",
+        "Unbound no arrenca — revisa la configuració de `/etc/unbound/unbound.conf.d/` i el conflicte de port amb un altre resolutor.",
+        "Falla la validació DNSSEC d’un domini — revisa l’hora del sistema i l’àncora de confiança amb `unbound-anchor`."
+      ]
     },
     "dnsmasq": {
       "name": "Dnsmasq",
       "what": "Un petit reenviador DNS i servidor DHCP per a xarxes locals.",
-      "ifFails": "El DNS o DHCP local pot aturar-se, i els clients poden perdre adreces o resolució de noms. Revisa la configuració i els registres abans de reiniciar."
+      "ifFails": "El DNS o DHCP local pot aturar-se, i els clients poden perdre adreces o resolució de noms. Revisa la configuració i els registres abans de reiniciar.",
+      "details": "Dnsmasq és un petit reenviador DNS i servidor DHCP per a xarxes locals. Pot respondre DNS des de `/etc/hosts` o des de servidors upstream i repartir adreces IP a clients DHCP. La configuració és a `/etc/dnsmasq.conf` i `/etc/dnsmasq.d/`. És habitual en routers, laboratoris i petites oficines.",
+      "stop": "Aturar Dnsmasq atura el DNS local i el DHCP. Els clients poden perdre la resolució de noms, i les concessions DHCP poden no renovar-se. Les concessions existents continuen sent vàlides una estona; mantén accés a la consola i revisa la configuració abans de reiniciar.",
+      "problems": [
+        "Els noms locals no es resolen — executa `dnsmasq --test` i revisa les línies `server` i `address`.",
+        "Els clients DHCP no reben adreça — revisa `dhcp-range` i la configuració de la interfície.",
+        "Dnsmasq no arrenca — pot ser que el port ja el faci servir systemd-resolved o un altre servidor DNS; revisa els registres."
+      ]
     },
     "smartd": {
       "name": "Monitoratge S.M.A.R.T.",
       "what": "Avisa de discs que estan fallant amb les seves dades de salut S.M.A.R.T.",
-      "ifFails": "Els avisos de salut dels discs poden no enviar-se. És opcional, però revisa els registres i torna'l a iniciar si depens del monitoratge de discs."
+      "ifFails": "Els avisos de salut dels discs poden no enviar-se. És opcional, però revisa els registres i torna'l a iniciar si depens del monitoratge de discs.",
+      "details": "smartd vigila les dades de salut S.M.A.R.T. dels discs i avisa quan una unitat informa d’errors o d’indicadors de fallada creixents. Llegeix la configuració de `/etc/smartd.conf` i escriu avisos al registre del sistema o per correu. No repara discs; només informa de problemes. És més útil en servidors amb discs locals importants.",
+      "stop": "Aturar smartd atura les noves comprovacions i avisos de salut; els discs continuen funcionant. Els avisos existents no s’envien mentre està aturat. Torna a arrencar-lo o usa un altre sistema de monitorització si depens dels avisos de salut dels discs.",
+      "problems": [
+        "No arriben avisos de disc — revisa `systemctl status smartd` i `smartctl --scan` per confirmar que veu els dispositius.",
+        "smartd no arrenca — revisa `/etc/smartd.conf` i els registres.",
+        "Un disc informa d’errors — executa `smartctl -a /dev/sdX` i planifica’n la substitució; no ignoris els sectors reassignats."
+      ]
     },
     "lvm2": {
       "name": "LVM",
       "what": "Gestiona volums lògics i instantànies sobre discs físics.",
-      "ifFails": "Els volums lògics poden no activar-se i els sistemes de fitxers poden quedar no disponibles. Revisa els registres de LVM i l'estat dels discs; no forcís canvis sense còpia de seguretat."
+      "ifFails": "Els volums lògics poden no activar-se i els sistemes de fitxers poden quedar no disponibles. Revisa els registres de LVM i l'estat dels discs; no forcis canvis sense còpia de seguretat.",
+      "details": "LVM agrupa discs físics en grups de volums i els divideix en volums lògics. Afegeix flexibilitat: pots redimensionar sistemes de fitxers, crear instantànies i moure dades entre discs. Les metadades de LVM viuen als volums físics, i les unitats `lvm2-*` les activen en arrencar. No és un sistema de fitxers en si mateix.",
+      "stop": "Aturar les unitats de LVM no desmunta els sistemes de fitxers per si mateix, però pot impedir que els volums s’activin després d’un reinici. No desactivis un volum que estigui en ús. Revisa `pvs`, `vgs` i `lvs` i desa una còpia abans de canviar l’emmagatzematge.",
+      "problems": [
+        "Falta un volum lògic — executa `pvs`, `vgs` i `lvs` i revisa `journalctl -u lvm2-* --no-pager`.",
+        "Un volum no s’activa — comprova que tots els discs físics hi són i que les metadades de LVM són llegibles.",
+        "El sistema de fitxers és ple — amplia el volum lògic i després engrandeix el sistema de fitxers amb l’eina adequada."
+      ]
     },
     "mdmonitor": {
       "name": "RAID per programari de Linux",
       "what": "Monitoritza i gestiona matrius RAID md.",
-      "ifFails": "Els problemes de la matriu poden passar desapercebuts i les matrius degradades poden no reparar-se. Revisa /proc/mdstat i els registres abans de reiniciar."
+      "ifFails": "Els problemes de la matriu poden passar desapercebuts i les matrius degradades poden no reparar-se. Revisa /proc/mdstat i els registres abans de reiniciar.",
+      "details": "El RAID per programari de Linux, gestionat per mdadm, combina diversos discs en una matriu per obtenir redundància o velocitat. El servei `mdmonitor` vigila les matrius i pot enviar correu quan una es degrada o falla. L’estat es veu a `/proc/mdstat` i amb `mdadm --detail`. No substitueix les còpies de seguretat.",
+      "stop": "Aturar mdmonitor atura la monitorització i les notificacions, però la matriu RAID continua funcionant. Una matriu degradada pot passar desapercebuda fins que falli un altre disc. Torna a arrencar-lo o vigila `/proc/mdstat` d’una altra manera.",
+      "problems": [
+        "Una matriu està degradada — llegeix `/proc/mdstat` i executa `mdadm --detail /dev/mdX`.",
+        "No arriben avisos de RAID — revisa `systemctl status mdmonitor` i la configuració de correu.",
+        "Una matriu no s’assembla — revisa `mdadm --examine` als discs membres i la configuració d’initramfs."
+      ]
     },
     "zfs": {
       "name": "OpenZFS",
       "what": "Gestiona pools, conjunts de dades, instantànies i escombrats de ZFS.",
-      "ifFails": "Els conjunts de dades ZFS poden quedar no disponibles i els problemes del pool poden passar desapercebuts. Revisa zpool status i els registres; no importis mai a la força un pool malmès."
+      "ifFails": "Els conjunts de dades ZFS poden quedar no disponibles i els problemes del pool poden passar desapercebuts. Revisa zpool status i els registres; no importis mai a la força un pool malmès.",
+      "details": "OpenZFS gestiona grups de discs i els datasets i instantànies que contenen. Comprova la integritat de les dades, admet compressió i instantànies i pot substituir discs fallits sense desmuntar-ho tot. L’estat del pool es veu amb `zpool status` i els datasets amb `zfs list`. No forma part de l’instal·lador estàndard de Debian i necessita els seus propis paquets.",
+      "stop": "Aturar les unitats de ZFS pot deixar pools i datasets inaccessibles, i els serveis que els usen fallen. No forcis mai l’exportació ni destrueixis un pool per arreglar un problema. Revisa `zpool status` i els registres, i desa còpies abans de canviar l’emmagatzematge.",
+      "problems": [
+        "Un pool està degradat o en fallada — executa `zpool status -v` i substitueix el disc fallit; no esborris els errors sense més.",
+        "Un dataset no està muntat — revisa `zfs list` i `zpool status`, i munta’l amb `zfs mount`.",
+        "Els scrubs informen d’errors — revisa la salut dels discs i l’historial del pool amb `zpool history`."
+      ]
     },
     "talaia-agent": {
       "name": "Agent de Talaia",
@@ -802,47 +844,110 @@
     "httpd": {
       "name": "Imatge del servidor HTTP Apache",
       "what": "Serveix llocs web i fitxers estàtics des d'un contenidor.",
-      "ifFails": "El servei web d'aquest contenidor deixa de respondre. Revisa els registres del contenidor i la configuració muntada abans de reiniciar."
+      "ifFails": "El servei web d'aquest contenidor deixa de respondre. Revisa els registres del contenidor i la configuració muntada abans de reiniciar.",
+      "details": "Aquesta és la imatge oficial del servidor Apache HTTP per a contenidors. Executa Apache dins d’un contenidor i serveix fitxers des de `/usr/local/apache2/htdocs` per defecte. La configuració és a `/usr/local/apache2/conf/`, i la imatge exposa el port 80. No inclou els fitxers del teu lloc tret que els muntis o els copiïs.",
+      "stop": "Aturar el contenidor atura el servidor web i tots els llocs que serveix. La imatge i els fitxers muntats es conserven. Revisa els registres i la configuració del contenidor abans de reiniciar; els fitxers estàtics servits per un altre servidor no es veuen afectats.",
+      "problems": [
+        "El contenidor es tanca en arrencar — llegeix `docker logs --tail 50 <contenidor>` i revisa la sintaxi de la configuració.",
+        "El lloc retorna 404 — comprova que els fitxers estan muntats a l’arrel del document i que la ruta és correcta.",
+        "Els canvis no apareixen — reinicia o recarrega el contenidor després de canviar la configuració muntada."
+      ]
     },
     "traefik": {
       "name": "Traefik",
       "what": "Un proxy invers i balancejador de càrrega que descobreix serveis de contenidors.",
-      "ifFails": "Les rutes cap als contenidors poden deixar de funcionar i els certificats poden no renovar-se. Revisa els registres, els proveïdors i les etiquetes d'encaminament abans de reiniciar."
+      "ifFails": "Les rutes cap als contenidors poden deixar de funcionar i els certificats poden no renovar-se. Revisa els registres, els proveïdors i les etiquetes d'encaminament abans de reiniciar.",
+      "details": "Traefik és un proxy invers i balancejador de càrrega dissenyat per a contenidors. Descobreix serveis mitjançant etiquetes de Docker o altres proveïdors i encamina les peticions cap a ells. També pot obtenir i renovar certificats TLS automàticament. La configuració ve d’opcions de línia d’ordres, un fitxer o etiquetes de contenidor.",
+      "stop": "Aturar el contenidor atura totes les rutes i la renovació de certificats. Les aplicacions continuen funcionant, però deixen de ser accessibles a través de Traefik. Conserva la configuració i l’emmagatzematge de certificats en un volum abans de recrear-lo.",
+      "problems": [
+        "Les rutes retornen 404 — revisa les etiquetes del contenidor, la connexió amb el proveïdor i els registres de Traefik.",
+        "HTTPS falla — revisa els entrypoints, el resolutor de certificats i el DNS o els ports.",
+        "El panell no és accessible — revisa la configuració de l’API o del panell i el port publicat."
+      ]
     },
     "nginx-proxy-manager": {
       "name": "Nginx Proxy Manager",
       "what": "Una interfície web que gestiona proxys inversos de Nginx i certificats TLS.",
-      "ifFails": "Els llocs proxificats o la renovació de certificats poden aturar-se. Revisa els registres i la base de dades; desa una còpia de la configuració."
+      "ifFails": "Els llocs proxificats o la renovació de certificats poden aturar-se. Revisa els registres i la base de dades; desa una còpia de la configuració.",
+      "details": "Nginx Proxy Manager és una interfície web per gestionar proxys inversos de Nginx i certificats TLS. Desa la configuració i la base de dades al seu directori de dades, normalment `/data` i `/etc/letsencrypt`. És còmode per a uns quants llocs, però és un altre servei que cal mantenir actualitzat i amb còpies.",
+      "stop": "Aturar el contenidor tomba la interfície d’administració i tots els llocs proxificats. La configuració i els certificats continuen als seus volums. Desa còpies i revisa els registres abans de recrear el contenidor.",
+      "problems": [
+        "La interfície d’administració no carrega — revisa els registres del contenidor i els ports publicats 80, 443 i 81.",
+        "Un lloc proxificat retorna 502 — revisa l’amfitrió i el port de destinació i si el contenidor de destinació està en marxa.",
+        "Els certificats no es renoven — revisa el DNS, l’accés al port 80 i els registres de certificats."
+      ]
     },
     "portainer": {
       "name": "Portainer",
       "what": "Una interfície web per gestionar contenidors, imatges i stacks de Docker.",
-      "ifFails": "La interfície de gestió de Docker deixa d'estar disponible, però els contenidors en marxa continuen. Revisa el volum de dades i els registres abans de reiniciar."
+      "ifFails": "La interfície de gestió de Docker deixa d'estar disponible, però els contenidors en marxa continuen. Revisa el volum de dades i els registres abans de reiniciar.",
+      "details": "Portainer és una interfície web per a Docker. Parla amb el socket de Docker o amb un agent de Portainer i permet gestionar contenidors, imatges, volums i stacks. Desa les seves dades a `/data`. No executa els teus contenidors; això ho fa Docker.",
+      "stop": "Aturar el contenidor només elimina la interfície de gestió; els contenidors en marxa continuen funcionant. Les dades de Portainer continuen al seu volum. Revisa els registres i el muntatge del socket de Docker abans de reiniciar.",
+      "problems": [
+        "La interfície web no carrega — revisa els registres del contenidor, el port publicat i el volum de dades.",
+        "Portainer no veu els contenidors — comprova que `/var/run/docker.sock` està muntat o que l’agent és accessible.",
+        "S’ha perdut la contrasenya d’administració — restableix-la amb l’eina `portainer` o restaura el volum de dades."
+      ]
     },
     "portainer-agent": {
       "name": "Agent de Portainer",
       "what": "Permet que un servidor Portainer gestioni l'amfitrió Docker on s'executa.",
-      "ifFails": "Portainer ja no pot gestionar aquest amfitrió Docker. Revisa la connexió i els registres; els contenidors en marxa no es veuen afectats."
+      "ifFails": "Portainer ja no pot gestionar aquest amfitrió Docker. Revisa la connexió i els registres; els contenidors en marxa no es veuen afectats.",
+      "details": "L’agent de Portainer permet que un servidor Portainer gestioni l’amfitrió Docker on s’executa l’agent. Escolta al port 9001 i parla amb l’API local de Docker. S’usa quan Portainer no pot muntar directament el socket de Docker de l’amfitrió, per exemple a través de la xarxa. No proporciona interfície web.",
+      "stop": "Aturar el contenidor desconnecta aquest amfitrió del seu servidor Portainer, però els contenidors locals continuen funcionant. L’agent no desa dades d’aplicacions. Torna a arrencar-lo i revisa la connexió amb el servidor i el tallafoc.",
+      "problems": [
+        "L’amfitrió apareix desconnectat a Portainer — revisa els registres del contenidor de l’agent i que el port 9001 sigui accessible.",
+        "L’agent no arriba a Docker — revisa el muntatge del socket de Docker i els permisos.",
+        "Apareixen errors TLS — revisa els certificats de l’agent i del servidor i els ports configurats."
+      ]
     },
     "watchtower": {
       "name": "Watchtower",
       "what": "Actualitza periòdicament els contenidors en marxa quan canvien les seves imatges.",
-      "ifFails": "Els contenidors deixen d'actualitzar-se automàticament. Revisa els registres i la planificació; és opcional si actualitzes les imatges d'una altra manera."
+      "ifFails": "Els contenidors deixen d'actualitzar-se automàticament. Revisa els registres i la planificació; és opcional si actualitzes les imatges d'una altra manera.",
+      "details": "Watchtower comprova periòdicament si hi ha imatges noves per als contenidors en marxa i els reinicia amb la versió nova. Usa l’API de Docker i pot vigilar tots els contenidors o només alguns de seleccionats. També pot netejar imatges antigues. És opcional i et pot sorprendre si les actualitzacions no es proven.",
+      "stop": "Aturar el contenidor atura les actualitzacions automàtiques; els contenidors en marxa conserven les imatges actuals. No es perden dades per aturar Watchtower. Si el desactives, actualitza les imatges a mà o amb una altra eina.",
+      "problems": [
+        "Els contenidors no s’actualitzen — revisa els registres del contenidor i la configuració de la programació o l’interval.",
+        "Un contenidor es reinicia en mal moment — defineix una programació o exclou-lo amb etiquetes.",
+        "Les imatges antigues omplen el disc — activa la neteja o elimina imatges sense usar a mà."
+      ]
     },
     "grafana": {
       "name": "Grafana",
       "what": "Crea quadres de comandament i gràfics a partir de mètriques, registres i altres fonts.",
-      "ifFails": "Els quadres i alertes de Grafana deixen de carregar-se. Revisa la base de dades i les connexions de les fonts abans de reiniciar."
+      "ifFails": "Els quadres i alertes de Grafana deixen de carregar-se. Revisa la base de dades i les connexions de les fonts abans de reiniciar.",
+      "details": "Grafana crea panells i gràfics a partir de mètriques, registres i altres fonts de dades. Desa panells, usuaris i ajustos a la seva base de dades, normalment SQLite a `/var/lib/grafana`. Consulta fonts com Prometheus, però no recopila mètriques per si mateix. S’usa molt amb Prometheus i Node Exporter.",
+      "stop": "Aturar el contenidor tomba els panells i les vistes d’alertes. Les fonts de dades continuen funcionant, però les alertes configurades a Grafana es poden no avaluar. Conserva el volum de dades de Grafana i revisa els registres abans de recrear-lo.",
+      "problems": [
+        "La interfície web no carrega — revisa els registres del contenidor i el port publicat.",
+        "Els panells són buits — revisa l’URL de la font de dades i si la font és accessible.",
+        "La base de dades està bloquejada o malmesa — atura Grafana, desa una còpia de `/var/lib/grafana` i revisa el fitxer SQLite."
+      ]
     },
     "prometheus": {
       "name": "Prometheus",
       "what": "Recull i desa mètriques de sèries temporals i avalua regles d'alerta.",
-      "ifFails": "Les mètriques deixen de recollir-se i les alertes deixen de disparar-se. Comprova l'espai de disc, la configuració i els objectius; reinicia només després de revisar l'estat del WAL."
+      "ifFails": "Les mètriques deixen de recollir-se i les alertes deixen de disparar-se. Comprova l'espai de disc, la configuració i els objectius; reinicia només després de revisar l'estat del WAL.",
+      "details": "Prometheus recopila mètriques dels objectius configurats, les desa com a sèries temporals i avalua regles d’alerta. La configuració és a `prometheus.yml`, i les dades viuen a `/prometheus` per defecte. Extreu mètriques per HTTP en lloc de rebre-les. Sol combinar-se amb Grafana i exportadors.",
+      "stop": "Aturar el contenidor atura la recopilació i l’avaluació d’alertes. Les dades existents continuen al seu volum, però el buit és permanent. Conserva el volum i revisa la configuració i el registre d’escriptura anticipada (WAL) abans de reiniciar.",
+      "problems": [
+        "Els objectius estan caiguts — revisa la pàgina d’objectius de Prometheus i les URL dels exportadors.",
+        "El contenidor no arrenca — valida `prometheus.yml` amb `promtool check config` i revisa els registres.",
+        "El disc creix ràpid — revisa la retenció i la mida de `/prometheus`."
+      ]
     },
     "node-exporter": {
       "name": "Prometheus Node Exporter",
       "what": "Exposa mètriques de CPU, memòria, disc i xarxa de l'amfitrió.",
-      "ifFails": "Les mètriques de l'amfitrió desapareixen dels quadres i alertes. Revisa els registres i el port; reiniciar-lo no afecta els serveis de l'amfitrió."
+      "ifFails": "Les mètriques de l'amfitrió desapareixen dels quadres i alertes. Revisa els registres i el port; reiniciar-lo no afecta els serveis de l'amfitrió.",
+      "details": "Node Exporter exposa mètriques de CPU, memòria, disc, xarxa i sistemes de fitxers de l’amfitrió en format Prometheus. S’executa com un petit servidor HTTP, normalment al port 9100, i Prometheus el consulta. No desa mètriques ni ofereix panells. El contenidor necessita muntatges de l’amfitrió per veure’n els sistemes de fitxers i la xarxa.",
+      "stop": "Aturar el contenidor elimina les mètriques de l’amfitrió de Prometheus; l’amfitrió continua funcionant. L’exportador no desa dades. Torna a arrencar-lo i revisa la pàgina d’objectius de Prometheus si desapareixen les mètriques.",
+      "problems": [
+        "Falten les mètriques de l’amfitrió — revisa els registres del contenidor, el port publicat i l’objectiu de Prometheus.",
+        "Les mètriques de sistemes de fitxers són incorrectes — comprova que les rutes de l’amfitrió estan muntades en només lectura amb els punts de muntatge correctes.",
+        "L’exportador mostra mètriques del contenidor en lloc de l’amfitrió — revisa la configuració de xarxa i d’espais de noms PID."
+      ]
     },
     "cadvisor": {
       "name": "cAdvisor",

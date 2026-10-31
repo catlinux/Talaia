@@ -468,6 +468,7 @@ export const catalog: CatalogEntry[] = [
     category: 'dns',
     importance: 'important',
     units: ['unbound'],
+    checks: ['unbound-checkconf', 'unbound-control status'],
   },
   {
     id: 'dnsmasq',
@@ -475,6 +476,7 @@ export const catalog: CatalogEntry[] = [
     category: 'dns',
     importance: 'important',
     units: ['dnsmasq'],
+    checks: ['dnsmasq --test'],
   },
   {
     id: 'smartd',
@@ -482,6 +484,7 @@ export const catalog: CatalogEntry[] = [
     category: 'monitoring',
     importance: 'optional',
     units: ['smartd', 'smartmontools'],
+    checks: ['smartctl --scan'],
   },
   {
     id: 'lvm2',
@@ -489,6 +492,7 @@ export const catalog: CatalogEntry[] = [
     category: 'system',
     importance: 'important',
     unitPatterns: [/^lvm2-/],
+    checks: ['pvs'],
   },
   {
     id: 'mdmonitor',
@@ -496,6 +500,7 @@ export const catalog: CatalogEntry[] = [
     category: 'system',
     importance: 'important',
     units: ['mdmonitor', 'mdadm'],
+    checks: ['mdadm --detail --scan'],
   },
   {
     id: 'zfs',
@@ -503,6 +508,7 @@ export const catalog: CatalogEntry[] = [
     category: 'system',
     importance: 'important',
     unitPatterns: [/^zfs/],
+    checks: ['zpool status'],
   },
   {
     id: 'talaia-agent',

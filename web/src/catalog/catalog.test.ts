@@ -284,6 +284,21 @@ describe('catalog translations', () => {
       'tailscale',
       'openvpn',
       'bind9',
+      'unbound',
+      'dnsmasq',
+      'smartd',
+      'lvm2',
+      'mdmonitor',
+      'zfs',
+      'httpd',
+      'traefik',
+      'nginx-proxy-manager',
+      'portainer',
+      'portainer-agent',
+      'watchtower',
+      'grafana',
+      'prometheus',
+      'node-exporter',
     ]
     for (const language of ['ca', 'es', 'en']) {
       const t = i18n.getFixedT(language, 'catalog')
@@ -363,6 +378,12 @@ describe('catalog translations', () => {
     expect(checksById.get('avahi')).toEqual(['avahi-browse -at'])
     expect(checksById.get('bluetooth')).toEqual(['bluetoothctl show'])
     expect(checksById.get('bind9')).toEqual(['named-checkconf', 'rndc status'])
+    expect(checksById.get('unbound')).toEqual(['unbound-checkconf', 'unbound-control status'])
+    expect(checksById.get('dnsmasq')).toEqual(['dnsmasq --test'])
+    expect(checksById.get('smartd')).toEqual(['smartctl --scan'])
+    expect(checksById.get('lvm2')).toEqual(['pvs'])
+    expect(checksById.get('mdmonitor')).toEqual(['mdadm --detail --scan'])
+    expect(checksById.get('zfs')).toEqual(['zpool status'])
   })
 
   it('describes the Talaia update helper as the update path and service', () => {
