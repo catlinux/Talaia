@@ -11,6 +11,7 @@ import type {
   VariableInput,
 } from '../api/apps'
 import type { FleetClient } from '../api/client'
+import { ApiError } from '../api/http'
 import type { MeApi, MePermissions, Permission } from '../api/me'
 import { PermissionsProvider } from '../auth/permissions'
 import { ToastProvider } from '../components/ui'
@@ -93,6 +94,7 @@ function fakeApi(overrides: Partial<AppsApi> = {}): AppsApi {
     list: vi.fn(() => Promise.resolve([app()])),
     listByServer: vi.fn(() => Promise.resolve([app()])),
     get: vi.fn(() => Promise.resolve(app())),
+    delete: vi.fn(() => Promise.resolve({ output: '' })),
     variables: vi.fn(() => Promise.resolve(variables)),
     setVariable: vi.fn(() => Promise.resolve()),
     deleteVariable: vi.fn(() => Promise.resolve()),
@@ -255,6 +257,7 @@ describe('app detail roles', () => {
     expect(screen.queryByRole('button', { name: 'Add variable' })).toBeNull()
     expect(screen.queryByRole('button', { name: 'Edit' })).toBeNull()
     expect(screen.queryByRole('button', { name: 'Delete' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Delete app' })).toBeNull()
   })
 
   it('app operator can deploy and roll back but cannot edit variables', async () => {
@@ -344,5 +347,85 @@ describe('app detail roles', () => {
     const dialog = await screen.findByRole('dialog')
     fireEvent.click(within(dialog).getByRole('button', { name: 'Delete' }))
     await waitFor(() => expect(api.deleteVariable).toHaveBeenCalled())
+  })
+
+  it('deletes the app after typing its name and explains what is kept', async () => {
+    const api = fakeApi()
+    window.history.replaceState({}, '', '/apps/app-1')
+    renderWithPermissions(
+      meApi(stackPermissions(['stack.view', 'stack.edit'])),
+      <AppDetail appId="app-1" api={api} client={fleet()} refreshMs={0} logPollMs={0} />,
+    )
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Delete app' }))
+    const dialog = await screen.findByRole('dialog')
+    expect(within(dialog).getByText(/stop and remove the containers/)).toBeTruthy()
+    expect(
+      within(dialog).getByText('docker volume ls --filter label=com.docker.compose.project=shop'),
+    ).toBeTruthy()
+    expect(within(dialog).getByText('This cannot be undone.')).toBeTruthy()
+    expect(
+      within(dialog).getByRole('link', { name: 'Apache and nginx guide' }).getAttribute('href'),
+    ).toContain('docs/en/apache.md')
+
+    const confirm = within(dialog).getByRole('button', { name: 'Delete app' })
+    expect(confirm).toHaveProperty('disabled', true)
+    const name = within(dialog).getByLabelText('Type shop to confirm')
+    fireEvent.change(name, { target: { value: 'sho' } })
+    expect(confirm).toHaveProperty('disabled', true)
+    fireEvent.change(name, { target: { value: 'shop' } })
+    expect(confirm).toHaveProperty('disabled', false)
+    fireEvent.click(confirm)
+
+    await waitFor(() => expect(api.delete).toHaveBeenCalledWith('app-1', 'shop'))
+    await waitFor(() => expect(window.location.pathname).toBe('/apps'))
+    expect(await screen.findByText('App deleted.')).toBeTruthy()
+  })
+
+  it('shows the deployment-running error when delete is refused', async () => {
+    const api = fakeApi({
+      delete: vi.fn(() => Promise.reject(new ApiError('deployment_running', 409))),
+    })
+    renderWithPermissions(
+      meApi(stackPermissions(['stack.view', 'stack.edit'])),
+      <AppDetail appId="app-1" api={api} client={fleet()} refreshMs={0} logPollMs={0} />,
+    )
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Delete app' }))
+    const dialog = await screen.findByRole('dialog')
+    fireEvent.change(within(dialog).getByLabelText('Type shop to confirm'), {
+      target: { value: 'shop' },
+    })
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Delete app' }))
+
+    expect(
+      await screen.findByText(
+        'The app could not be deleted: A deployment is running. Wait for it to finish before deleting the app.',
+      ),
+    ).toBeTruthy()
+    expect(screen.getByRole('dialog')).toBeTruthy()
+  })
+
+  it('shows the agent-offline error when delete is refused', async () => {
+    const api = fakeApi({
+      delete: vi.fn(() => Promise.reject(new ApiError('agent_offline', 409))),
+    })
+    renderWithPermissions(
+      meApi(stackPermissions(['stack.view', 'stack.edit'])),
+      <AppDetail appId="app-1" api={api} client={fleet()} refreshMs={0} logPollMs={0} />,
+    )
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Delete app' }))
+    const dialog = await screen.findByRole('dialog')
+    fireEvent.change(within(dialog).getByLabelText('Type shop to confirm'), {
+      target: { value: 'shop' },
+    })
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Delete app' }))
+
+    expect(
+      await screen.findByText(
+        'The app could not be deleted: The agent of this server is not connected.',
+      ),
+    ).toBeTruthy()
   })
 })

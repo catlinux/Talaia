@@ -288,4 +288,21 @@ describe('api apps client', () => {
       expect.objectContaining({ id: 'dep-1', log: 'build output', state: 'succeeded' }),
     )
   })
+
+  it('deletes an app with the confirmation name', async () => {
+    const fetchImpl = vi.fn(() =>
+      Promise.resolve(json({ output: 'removed image talaia/shop:abc' })),
+    )
+    const api = createAppsApi(fetchImpl as unknown as typeof fetch)
+    await expect(api.delete('app-1', 'shop')).resolves.toEqual({
+      output: 'removed image talaia/shop:abc',
+    })
+    expect(fetchImpl).toHaveBeenLastCalledWith(
+      '/api/v1/apps/app-1',
+      expect.objectContaining({
+        method: 'DELETE',
+        body: JSON.stringify({ confirm_name: 'shop' }),
+      }),
+    )
+  })
 })

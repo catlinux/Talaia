@@ -123,6 +123,7 @@ function fakeApi(overrides: Partial<WizardApi> = {}): WizardApi {
     list: () => Promise.resolve([]),
     listByServer: () => Promise.resolve([]),
     get: () => Promise.reject(new Error('unexpected get')),
+    delete: () => Promise.reject(new Error('unexpected delete')),
     variables: () => Promise.resolve([]),
     setVariable: () => Promise.reject(new Error('unexpected set')),
     deleteVariable: () => Promise.reject(new Error('unexpected delete')),

@@ -325,6 +325,7 @@ function emptyAppsApi(): WizardApi {
     list: () => Promise.resolve([]),
     listByServer: () => Promise.resolve([]),
     get: unexpected,
+    delete: unexpected,
     variables: unexpected,
     setVariable: unexpected,
     deleteVariable: unexpected,

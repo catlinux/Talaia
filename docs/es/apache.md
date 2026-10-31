@@ -201,32 +201,22 @@ tus sitios de nginx no se tocan.
 
 ## Eliminar una app y su sitio
 
-Esta versión no tiene un botón **Eliminar app** en el panel. Elimina la app por la API y después quita su
-sitio web. El id de la app es la última parte de la dirección de su ficha, `/apps/<id>`. Con la sesión
-iniciada en el panel, ejecuta esto en la consola del navegador en la pestaña del panel, con el nombre de la
-app donde pone `<nombre-de-la-app>`:
+Abre la app y pulsa **Eliminar la app**. Necesita `stack.edit`; sin ese permiso el botón no aparece. El
+diálogo explica que Talaia detiene y elimina los contenedores y el stack Compose, borra las imágenes
+`talaia/<app>:*` y el espacio de construcción, conserva los volúmenes de datos con nombre y después
+elimina la app del panel. También muestra cómo listar los volúmenes conservados. Escribe el nombre de la
+app para confirmar.
 
-```js
-fetch('/api/v1/apps/<app-id>', {
-  method: 'DELETE',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ confirm_name: '<nombre-de-la-app>' }),
-})
-```
+La petición se rechaza si hay un despliegue construyendo o publicando, o si el agente del servidor no está
+conectado; espera o vuelve a conectarlo y prueba otra vez. En modo gestionado Talaia también quita la app
+de las rutas de Caddy. Nunca cambia Apache ni nginx.
 
-Necesita `stack.edit` en la app y usa tu sesión actual; una clave de API no puede eliminar una app. La
-confirmación debe ser el nombre de la app, que es el nombre del stack Compose. La petición se rechaza con
-`409` si hay un despliegue construyendo o publicando, o si el agente del servidor no está conectado.
-Devuelve `200` con un `output` que resume lo eliminado. Talaia detiene y elimina los contenedores y los
-archivos Compose, borra las imágenes `talaia/<app>:*` y el espacio de construcción, y conserva los
-volúmenes con nombre, así que los datos de la app no se destruyen. En modo gestionado también quita la app
-de las rutas de Caddy.
-
-Elimina el sitio de Apache:
+Elimina el sitio de Apache, incluido el host virtual HTTPS que creó Certbot:
 
 ```
-sudo a2dissite app.example.com
+sudo a2dissite app.example.com app.example.com-le-ssl
 sudo rm /etc/apache2/sites-available/app.example.com.conf
+sudo rm /etc/apache2/sites-available/app.example.com-le-ssl.conf
 sudo apachectl configtest && sudo systemctl reload apache2
 ```
 
@@ -244,9 +234,16 @@ sudo rm /etc/nginx/sites-available/app.example.com
 sudo nginx -t && sudo systemctl reload nginx
 ```
 
-La API ya ha eliminado el stack y las imágenes; no hace falta quitarlos desde la página del servidor. Los
-volúmenes con nombre se quedan en el servidor, así que elimínalos aparte si ya no necesitas los datos. El
-registro DNS puede quedarse si vas a reutilizar el nombre; si no, elimínalo en tu proveedor de DNS.
+El stack y las imágenes de la app ya no están; no hace falta quitarlos desde la página del servidor. Los
+volúmenes con nombre se quedan en el servidor. Lístalos y elimínalos solo cuando estés seguro de que ya no
+necesitas los datos:
+
+```
+sudo docker volume ls --filter label=com.docker.compose.project=<nombre-de-la-app>
+sudo docker volume rm <nombre-del-volumen> [<nombre-del-volumen> ...]
+```
+
+El registro DNS puede quedarse si vas a reutilizar el nombre; si no, elimínalo en tu proveedor de DNS.
 
 ## Solución de problemas
 

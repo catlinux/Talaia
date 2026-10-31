@@ -21,6 +21,9 @@ export type ApiErrorCode =
   | 'rate_limited'
   | 'name_taken'
   | 'app_exists'
+  | 'deployment_running'
+  | 'app_cleanup_failed'
+  | 'app_cleanup_unavailable'
   | 'confirmation_required'
   | 'agent_offline'
   | 'agent_busy'
@@ -65,6 +68,9 @@ const knownCodes: readonly ApiErrorCode[] = [
   'rate_limited',
   'name_taken',
   'app_exists',
+  'deployment_running',
+  'app_cleanup_failed',
+  'app_cleanup_unavailable',
   'confirmation_required',
   'agent_offline',
   'agent_busy',

@@ -13,6 +13,12 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+## [0.6.46] - 2026-10-31
+
+### Añadido
+
+- Panel: **Eliminar app** en la ficha de la app. Escribes el nombre de la app; el diálogo explica que se quitan los contenedores, el stack y las imágenes, que los volúmenes de datos se conservan (con la orden para listarlos) y que el sitio de Apache o nginx se quita a mano siguiendo la guía, que ahora desactiva tanto el sitio como su copia de certbot.
+
 ## [0.6.45] - 2026-10-31
 
 ### Cambiado
@@ -975,7 +981,8 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
   `.gitattributes` y `.gitignore`.
 - Licencia WNCL-1.0 aplicada: archivo `LICENSE` y sección de créditos en los README.
 
-[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.6.45...HEAD
+[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.6.46...HEAD
+[0.6.46]: https://github.com/catlinux/Talaia/releases/tag/v0.6.46
 [0.6.45]: https://github.com/catlinux/Talaia/releases/tag/v0.6.45
 [0.6.44]: https://github.com/catlinux/Talaia/releases/tag/v0.6.44
 [0.6.43]: https://github.com/catlinux/Talaia/releases/tag/v0.6.43

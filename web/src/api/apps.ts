@@ -111,6 +111,11 @@ export interface Domain {
   warning: string
 }
 
+/** AppDeleteResult is the summary returned after removing an app. */
+export interface AppDeleteResult {
+  output: string
+}
+
 export interface DomainInput {
   hostname: string
   service: string
@@ -149,6 +154,7 @@ export interface AppsApi {
   list(): Promise<App[]>
   listByServer(serverId: string): Promise<App[]>
   get(appId: string): Promise<App>
+  delete(appId: string, confirmName: string): Promise<AppDeleteResult>
   variables(appId: string): Promise<Variable[]>
   setVariable(appId: string, key: string, input: VariableInput): Promise<void>
   deleteVariable(appId: string, key: string): Promise<void>
@@ -369,6 +375,13 @@ export function createAppsApi(fetchImpl?: typeof fetch): WizardApi {
       (await http.get<apiApp[]>(`/api/v1/servers/${encodeURIComponent(serverId)}/apps`)).map(toApp),
     get: async (appId) =>
       toApp(await http.get<apiApp>(`/api/v1/apps/${encodeURIComponent(appId)}`)),
+    delete: async (appId, confirmName) => {
+      const body = await http.delete<{ output?: string }>(
+        `/api/v1/apps/${encodeURIComponent(appId)}`,
+        { confirm_name: confirmName },
+      )
+      return { output: body?.output ?? '' }
+    },
     variables: async (appId) =>
       (await http.get<apiVariable[]>(`/api/v1/apps/${encodeURIComponent(appId)}/env`)).map(
         toVariable,

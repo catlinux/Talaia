@@ -24,7 +24,7 @@ import {
   type DataTableColumn,
   type Status,
 } from '../../components/ui'
-import { Link } from '../../router'
+import { Link, useNavigate } from '../../router'
 import { deploymentDuration, formatDateTime, isActiveDeployment, shortCommit } from './format'
 import './apps.css'
 
@@ -69,6 +69,7 @@ export function AppDetail({
   const { t, i18n } = useTranslation('apps')
   const toast = useToast()
   const { can } = usePermissions()
+  const navigate = useNavigate()
   const appsApi = useMemo(() => api ?? createAppsApi(), [api])
   const fleetClient = useMemo(() => client ?? createApiFleetClient(), [client])
   const language = i18n.resolvedLanguage ?? i18n.language
@@ -100,6 +101,8 @@ export function AppDetail({
   const [saving, setSaving] = useState(false)
   const [deleteKey, setDeleteKey] = useState<string | null>(null)
   const [deleting, setDeleting] = useState(false)
+  const [deleteAppOpen, setDeleteAppOpen] = useState(false)
+  const [deletingApp, setDeletingApp] = useState(false)
 
   useEffect(() => {
     alive.current = true
@@ -219,6 +222,8 @@ export function AppDetail({
   const scope = app === null ? undefined : { serverId: app.serverId, stack: app.stackName }
   const canDeploy = app !== null && can('stack.deploy', scope)
   const canEdit = app !== null && can('stack.edit', scope)
+  const guideLanguage = language.startsWith('es') ? 'es' : 'en'
+  const guideUrl = `https://github.com/catlinux/Talaia/blob/main/docs/${guideLanguage}/apache.md`
 
   const deploy = async (commit = '') => {
     if (app === null || deploying) return
@@ -328,6 +333,23 @@ export function AppDetail({
       }
     } finally {
       if (alive.current) setDeleting(false)
+    }
+  }
+
+  const deleteApp = async () => {
+    if (app === null || deletingApp) return
+    setDeletingApp(true)
+    try {
+      await appsApi.delete(app.id, app.stackName)
+      setDeleteAppOpen(false)
+      toast.success(t('detail.deleteAppSuccess'))
+      navigate('/apps')
+    } catch (error) {
+      if (!isSignedOut(error)) {
+        toast.error(t('detail.deleteAppFailed', { message: errorMessage(t, error) }))
+      }
+    } finally {
+      if (alive.current) setDeletingApp(false)
     }
   }
 
@@ -534,16 +556,29 @@ export function AppDetail({
           source: t(`source.${app.source}`),
         })}
         actions={
-          canDeploy ? (
-            <button
-              type="button"
-              className="ui-btn ui-btn--primary"
-              disabled={activeDeployment}
-              title={activeDeployment ? t('detail.deploymentRunning') : undefined}
-              onClick={() => void deploy()}
-            >
-              {deploying ? t('detail.deploying') : t('detail.deploy')}
-            </button>
+          canDeploy || canEdit ? (
+            <>
+              {canDeploy ? (
+                <button
+                  type="button"
+                  className="ui-btn ui-btn--primary"
+                  disabled={activeDeployment}
+                  title={activeDeployment ? t('detail.deploymentRunning') : undefined}
+                  onClick={() => void deploy()}
+                >
+                  {deploying ? t('detail.deploying') : t('detail.deploy')}
+                </button>
+              ) : null}
+              {canEdit ? (
+                <button
+                  type="button"
+                  className="ui-btn ui-btn--danger"
+                  onClick={() => setDeleteAppOpen(true)}
+                >
+                  {t('detail.deleteApp')}
+                </button>
+              ) : null}
+            </>
           ) : undefined
         }
       />
@@ -754,6 +789,36 @@ export function AppDetail({
           </form>
         ) : null}
       </section>
+
+      <ConfirmDialog
+        open={deleteAppOpen}
+        title={t('detail.deleteAppTitle', { name: app.stackName })}
+        body={
+          <div className="apps__delete-copy">
+            <p>{t('detail.deleteAppBody', { stack: app.stackName })}</p>
+            <p>{t('detail.deleteAppVolumes')}</p>
+            <code className="apps__delete-command">
+              {`docker volume ls --filter label=com.docker.compose.project=${app.stackName}`}
+            </code>
+            <p>{t('detail.deleteAppWarning')}</p>
+            <p>
+              {t('detail.deleteAppSite')}{' '}
+              <a href={guideUrl} target="_blank" rel="noreferrer">
+                {t('detail.deleteAppGuide')}
+              </a>
+              .
+            </p>
+          </div>
+        }
+        confirmLabel={deletingApp ? t('detail.deletingApp') : t('detail.deleteApp')}
+        danger
+        requireText={app.stackName}
+        busy={deletingApp}
+        onConfirm={() => void deleteApp()}
+        onCancel={() => {
+          if (!deletingApp) setDeleteAppOpen(false)
+        }}
+      />
 
       <ConfirmDialog
         open={rollbackTarget !== null}

@@ -98,6 +98,7 @@ function fakeApi(): WizardApi {
     list: vi.fn(() => Promise.resolve(apps)),
     listByServer: vi.fn(() => Promise.resolve(apps)),
     get: unexpected,
+    delete: unexpected,
     variables: unexpected,
     setVariable: unexpected,
     deleteVariable: unexpected,
