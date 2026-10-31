@@ -13,6 +13,12 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+## [0.6.31] - 2026-10-31
+
+### Añadido
+
+- Core: notas propias para contenedores, stacks y servicios de cada servidor (migración 0019, hasta 500 caracteres): GET /api/v1/servers/{id}/notes/{containers|stacks|services} y PUT .../notes/{tipo}/{nombre}, con el permiso de ver y de controlar de cada tipo; las claves de API pueden leerlas pero no escribirlas; se auditan como note_update y note_delete.
+
 ## [0.6.30] - 2026-10-31
 
 ### Añadido
@@ -885,7 +891,8 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
   `.gitattributes` y `.gitignore`.
 - Licencia WNCL-1.0 aplicada: archivo `LICENSE` y sección de créditos en los README.
 
-[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.6.30...HEAD
+[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.6.31...HEAD
+[0.6.31]: https://github.com/catlinux/Talaia/releases/tag/v0.6.31
 [0.6.30]: https://github.com/catlinux/Talaia/releases/tag/v0.6.30
 [0.6.29]: https://github.com/catlinux/Talaia/releases/tag/v0.6.29
 [0.6.28]: https://github.com/catlinux/Talaia/releases/tag/v0.6.28
