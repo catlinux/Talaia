@@ -13,6 +13,12 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.6.59] - 2026-11-01
+
+### Security
+
+- Authorization denials are audited with a budget of 30 `authz_denied` rows per user or API key every 10 minutes; the rest are counted in one `authz_denied_suppressed` summary row, so a signed-in user cannot grow the audit table at will.
+
 ## [0.6.58] - 2026-11-01
 
 ### Added
@@ -1054,7 +1060,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.6.58...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.6.59...HEAD
+[0.6.59]: https://github.com/catlinux/Talaia/releases/tag/v0.6.59
 [0.6.58]: https://github.com/catlinux/Talaia/releases/tag/v0.6.58
 [0.6.57]: https://github.com/catlinux/Talaia/releases/tag/v0.6.57
 [0.6.56]: https://github.com/catlinux/Talaia/releases/tag/v0.6.56

@@ -69,7 +69,9 @@ vía de recuperación. Configuración, uso, eliminación y problemas frecuentes:
   operación recibe **403**. El panel solo esconde controles; el núcleo toma todas las decisiones.
 - Cada denegación se audita como `authz_denied` con el actor, el permiso, el método, la ruta, el resultado y
   el ámbito; las denegaciones de claves de API incluyen además el id de la clave. La respuesta nunca
-  contiene el motivo.
+  contiene el motivo. Cada usuario o clave de API tiene como máximo 30 filas `authz_denied` cada 10 minutos;
+  las siguientes se cuentan y se resumen en una fila `authz_denied_suppressed` al empezar la siguiente
+  ventana.
 - Un enlace de invitación es de un solo uso, caduca a las 72 horas y el token se guarda con hash. Quien
   consiga el enlace antes de usarlo puede reclamar la cuenta, así que envíalo por un canal de confianza.
   Talaia no envía correo. La persona invitada pone una contraseña y debe configurar TOTP antes de tener una

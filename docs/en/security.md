@@ -63,7 +63,9 @@ use, removal and troubleshooting: [access.md](access.md).
 - A user who cannot see an object gets **404**, not a hint that it exists. A user who can see it but lacks
   the operation gets **403**. The panel only hides controls; the core makes every decision.
 - Every denial is audited as `authz_denied` with the actor, permission, method, path, result and scope; API
-  key denials also include the key id. The response never contains the reason.
+  key denials also include the key id. The response never contains the reason. Each user or API key gets at
+  most 30 `authz_denied` rows per 10 minutes; further denials are counted and summarized in one
+  `authz_denied_suppressed` row when the next window starts.
 - An invitation link is single-use, expires after 72 hours, and the token is stored hashed. Anyone who gets
   the link before it is used can claim the account, so send it through a trusted channel. Talaia sends no
   email. The invitee sets a password and must set up TOTP before a full session.

@@ -13,6 +13,12 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+## [0.6.59] - 2026-11-01
+
+### Seguridad
+
+- Las denegaciones de autorización se auditan con un presupuesto de 30 filas `authz_denied` por usuario o clave de API cada 10 minutos; el resto se cuentan en una fila resumen `authz_denied_suppressed`, de modo que un usuario con sesión no pueda hacer crecer la tabla de auditoría a voluntad.
+
 ## [0.6.58] - 2026-11-01
 
 ### Añadido
@@ -1054,7 +1060,8 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
   `.gitattributes` y `.gitignore`.
 - Licencia WNCL-1.0 aplicada: archivo `LICENSE` y sección de créditos en los README.
 
-[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.6.58...HEAD
+[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.6.59...HEAD
+[0.6.59]: https://github.com/catlinux/Talaia/releases/tag/v0.6.59
 [0.6.58]: https://github.com/catlinux/Talaia/releases/tag/v0.6.58
 [0.6.57]: https://github.com/catlinux/Talaia/releases/tag/v0.6.57
 [0.6.56]: https://github.com/catlinux/Talaia/releases/tag/v0.6.56

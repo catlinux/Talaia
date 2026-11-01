@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 
@@ -47,6 +48,8 @@ type AuthorizerDeps struct {
 	Apps        AppGetter
 	Deployments DeploymentGetter
 	Domains     DomainGetter
+	// Now is the clock used by the denial budget. Nil uses time.Now.
+	Now func() time.Time
 }
 
 // Authorizer resolves a request's effective permissions and enforces them.
@@ -58,10 +61,16 @@ type Authorizer struct {
 	apps        AppGetter
 	deployments DeploymentGetter
 	domains     DomainGetter
+	now         func() time.Time
+	denials     denialBudget
 }
 
 // NewAuthorizer builds an authorizer. Missing collaborators fail closed.
 func NewAuthorizer(deps AuthorizerDeps) *Authorizer {
+	now := deps.Now
+	if now == nil {
+		now = time.Now
+	}
 	return &Authorizer{
 		bindings:    deps.Bindings,
 		servers:     deps.Servers,
@@ -70,6 +79,8 @@ func NewAuthorizer(deps AuthorizerDeps) *Authorizer {
 		apps:        deps.Apps,
 		deployments: deps.Deployments,
 		domains:     deps.Domains,
+		now:         now,
+		denials:     newDenialBudget(),
 	}
 }
 
@@ -540,26 +551,35 @@ func (a *Authorizer) visible(effective rbac.Effective, kind targetKind, target r
 }
 
 func (a *Authorizer) deny(w http.ResponseWriter, r *http.Request, session Session, permission rbac.Permission, kind targetKind, target rbac.Target, status int, code string) {
-	details := map[string]any{
-		"permission": string(permission),
-		"method":     r.Method,
-		"path":       r.URL.Path,
-	}
-	if session.AuthKind == AuthKindAPIKey {
-		details["api_key_id"] = session.APIKeyID
-	}
 	if a.audit != nil {
-		event := store.AuditEvent{
-			Actor:   session.User.Username,
-			ActorID: session.User.ID,
-			Action:  "authz_denied",
-			IP:      clientIP(r),
-			Result:  "denied",
-			Details: details,
-			Scope:   auditScope(kind, target),
+		ip := clientIP(r)
+		summaries, writeDenial := a.recordAuthzDenial(session, ip)
+		for _, event := range summaries {
+			if err := a.audit.AppendAudit(r.Context(), event); err != nil {
+				slog.Error("append suppressed authz denial audit", "error", err)
+			}
 		}
-		if err := a.audit.AppendAudit(r.Context(), event); err != nil {
-			slog.Error("append authz denial audit", "permission", permission, "error", err)
+		if writeDenial {
+			details := map[string]any{
+				"permission": string(permission),
+				"method":     r.Method,
+				"path":       r.URL.Path,
+			}
+			if session.AuthKind == AuthKindAPIKey {
+				details["api_key_id"] = session.APIKeyID
+			}
+			event := store.AuditEvent{
+				Actor:   session.User.Username,
+				ActorID: session.User.ID,
+				Action:  authzDeniedAction,
+				IP:      ip,
+				Result:  "denied",
+				Details: details,
+				Scope:   auditScope(kind, target),
+			}
+			if err := a.audit.AppendAudit(r.Context(), event); err != nil {
+				slog.Error("append authz denial audit", "permission", permission, "error", err)
+			}
 		}
 	}
 	writeError(w, status, code)
