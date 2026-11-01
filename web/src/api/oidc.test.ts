@@ -75,4 +75,24 @@ describe('api oidc client', () => {
       button_label: 'Company SSO',
     })
   })
+
+  it('maps the public URL requirement error', async () => {
+    const fetchImpl = vi.fn(() =>
+      Promise.resolve(json({ error: { code: 'public_url_required' } }, 422)),
+    )
+    const api = createOIDCApi(fetchImpl as unknown as typeof fetch)
+
+    await expect(
+      api.update({
+        enabled: true,
+        issuer: 'https://id.example.com',
+        clientId: 'client',
+        clientSecret: '',
+        buttonLabel: 'Company SSO',
+      }),
+    ).rejects.toMatchObject({
+      code: 'public_url_required',
+      status: 422,
+    } satisfies Partial<ApiError>)
+  })
 })

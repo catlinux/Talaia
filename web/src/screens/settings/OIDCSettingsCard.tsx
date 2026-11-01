@@ -92,7 +92,7 @@ export function OIDCSettingsCard({ api }: OIDCSettingsCardProps) {
   }
 
   const copyRedirect = async () => {
-    if (settings === null) return
+    if (settings === null || settings.redirectUrl === '') return
     try {
       await navigator.clipboard.writeText(settings.redirectUrl)
       setCopied(true)
@@ -124,6 +124,7 @@ export function OIDCSettingsCard({ api }: OIDCSettingsCardProps) {
             <input
               type="checkbox"
               checked={form.enabled}
+              disabled={settings.redirectUrl === '' && !settings.enabled}
               onChange={(event) => setForm({ ...form, enabled: event.target.checked })}
             />
             <span>{t('settings:oidc.enabled')}</span>
@@ -211,15 +212,27 @@ export function OIDCSettingsCard({ api }: OIDCSettingsCardProps) {
             />
           </label>
 
-          <div className="oidc-form__redirect">
-            <span className="field__label">{t('settings:oidc.redirect')}</span>
-            <code>{settings.redirectUrl}</code>
-            <button type="button" className="settings__button" onClick={() => void copyRedirect()}>
-              {copied ? <CheckIcon /> : <CopyIcon />}
-              {copied ? t('settings:oidc.copied') : t('settings:oidc.copyRedirect')}
-            </button>
-          </div>
-          <p className="settings__hint">{t('settings:oidc.redirectHint')}</p>
+          {settings.redirectUrl === '' ? (
+            <p className="settings__message settings__message--warning" role="status">
+              {t('settings:oidc.noPublicUrl')}
+            </p>
+          ) : (
+            <>
+              <div className="oidc-form__redirect">
+                <span className="field__label">{t('settings:oidc.redirect')}</span>
+                <code>{settings.redirectUrl}</code>
+                <button
+                  type="button"
+                  className="settings__button"
+                  onClick={() => void copyRedirect()}
+                >
+                  {copied ? <CheckIcon /> : <CopyIcon />}
+                  {copied ? t('settings:oidc.copied') : t('settings:oidc.copyRedirect')}
+                </button>
+              </div>
+              <p className="settings__hint">{t('settings:oidc.redirectHint')}</p>
+            </>
+          )}
 
           {error !== null ? (
             <p className="settings__message settings__message--error" role="alert">

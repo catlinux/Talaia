@@ -68,6 +68,7 @@ const errorKeys: Record<ApiErrorCode, string> = {
   session_open: 'sessionOpen',
   recording_corrupt: 'recordingCorrupt',
   oidc_discovery_failed: 'oidcDiscoveryFailed',
+  public_url_required: 'publicUrlRequired',
   internal: 'generic',
   network: 'network',
 }

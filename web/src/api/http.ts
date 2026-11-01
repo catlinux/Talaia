@@ -49,6 +49,7 @@ export type ApiErrorCode =
   | 'session_open'
   | 'recording_corrupt'
   | 'oidc_discovery_failed'
+  | 'public_url_required'
   | 'internal'
   | 'network'
 
@@ -96,6 +97,7 @@ const knownCodes: readonly ApiErrorCode[] = [
   'session_open',
   'recording_corrupt',
   'oidc_discovery_failed',
+  'public_url_required',
   'internal',
 ]
 

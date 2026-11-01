@@ -13,6 +13,12 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+## [0.6.56] - 2026-11-01
+
+### Cambiado
+
+- La tarjeta de ajustes OIDC avisa cuando el panel no tiene URL pública, mantiene el interruptor apagado y traduce el error `public_url_required`.
+
 ## [0.6.55] - 2026-11-01
 
 ### Cambiado
@@ -1036,7 +1042,8 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
   `.gitattributes` y `.gitignore`.
 - Licencia WNCL-1.0 aplicada: archivo `LICENSE` y sección de créditos en los README.
 
-[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.6.55...HEAD
+[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.6.56...HEAD
+[0.6.56]: https://github.com/catlinux/Talaia/releases/tag/v0.6.56
 [0.6.55]: https://github.com/catlinux/Talaia/releases/tag/v0.6.55
 [0.6.54]: https://github.com/catlinux/Talaia/releases/tag/v0.6.54
 [0.6.53]: https://github.com/catlinux/Talaia/releases/tag/v0.6.53

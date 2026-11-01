@@ -249,6 +249,7 @@
     "copyRedirect": "Copia la URL de redirecció",
     "copied": "Copiada",
     "redirectHint": "Registra exactament aquesta URL al proveïdor.",
+    "noPublicUrl": "El panel no té cap URL pública configurada, així que no es pot activar OpenID Connect. Configura l'URL pública del nucli i reinicia'l.",
     "saved": "Configuració de l'inici de sessió únic desada.",
     "saving": "Desant…",
     "save": "Desa la configuració"

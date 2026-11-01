@@ -249,6 +249,7 @@
     "copyRedirect": "Copiar URL de redirección",
     "copied": "Copiada",
     "redirectHint": "Registra exactamente esta URL en el proveedor.",
+    "noPublicUrl": "El panel no tiene una URL pública configurada, así que no se puede activar OpenID Connect. Configura la URL pública del núcleo y reinícialo.",
     "saved": "Configuración del inicio de sesión único guardada.",
     "saving": "Guardando…",
     "save": "Guardar configuración"

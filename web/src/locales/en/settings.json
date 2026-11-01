@@ -249,6 +249,7 @@
     "copyRedirect": "Copy redirect URL",
     "copied": "Copied",
     "redirectHint": "Register exactly this URL at the provider.",
+    "noPublicUrl": "The panel has no public URL configured, so OpenID Connect cannot be enabled. Set the public URL of the core and restart it.",
     "saved": "Single sign-on settings saved.",
     "saving": "Saving…",
     "save": "Save settings"
