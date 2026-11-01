@@ -31,11 +31,12 @@ func TestJobLifecycle(t *testing.T) {
 	ctx := context.Background()
 	serverID := newTestServerID(t, s)
 
-	job, err := s.CreateJob(ctx, serverID, "container_action", map[string]any{"action": "restart", "container": "web"}, "admin")
+	job, err := s.CreateJob(ctx, serverID, "container_action", map[string]any{"action": "restart", "container": "web"}, "admin", "u1")
 	if err != nil {
 		t.Fatalf("CreateJob: %v", err)
 	}
-	if job.State != JobPending || job.Params["container"] != "web" || job.CreatedBy != "admin" || job.Done() {
+	if job.State != JobPending || job.Params["container"] != "web" || job.CreatedBy != "admin" ||
+		job.CreatedByID != "u1" || job.Done() {
 		t.Fatalf("new job = %+v", job)
 	}
 
@@ -54,7 +55,8 @@ func TestJobLifecycle(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GetJob: %v", err)
 	}
-	if got.State != JobSucceeded || got.Message != "done" || got.Output != "log line\n" || !got.Done() || got.FinishedAt.IsZero() {
+	if got.State != JobSucceeded || got.Message != "done" || got.Output != "log line\n" || !got.Done() ||
+		got.CreatedByID != "u1" || got.FinishedAt.IsZero() {
 		t.Errorf("finished job = %+v", got)
 	}
 
@@ -64,13 +66,34 @@ func TestJobLifecycle(t *testing.T) {
 	}
 }
 
+func TestLegacyJobReadsAnEmptyCreatedByID(t *testing.T) {
+	s := newTestStore(t)
+	ctx := context.Background()
+	serverID := newTestServerID(t, s)
+
+	var id string
+	if err := s.pool.QueryRow(ctx,
+		`INSERT INTO job (server_id, kind, state, created_by, created_by_id)
+		 VALUES ($1, 'legacy', 'succeeded', 'admin', '')
+		 RETURNING id`, serverID).Scan(&id); err != nil {
+		t.Fatalf("insert legacy job: %v", err)
+	}
+	job, err := s.GetJob(ctx, id)
+	if err != nil {
+		t.Fatalf("GetJob: %v", err)
+	}
+	if job.CreatedBy != "admin" || job.CreatedByID != "" {
+		t.Fatalf("legacy job = %+v", job)
+	}
+}
+
 func TestJobStateOnlyChangesForItsOwnServer(t *testing.T) {
 	s := newTestStore(t)
 	ctx := context.Background()
 	serverID := newTestServerID(t, s)
 	otherID := newTestServerID(t, s)
 
-	job, err := s.CreateJob(ctx, serverID, "container_action", nil, "admin")
+	job, err := s.CreateJob(ctx, serverID, "container_action", nil, "admin", "")
 	if err != nil {
 		t.Fatalf("CreateJob: %v", err)
 	}
@@ -89,7 +112,7 @@ func TestJobValidation(t *testing.T) {
 	ctx := context.Background()
 	serverID := newTestServerID(t, s)
 
-	if _, err := s.CreateJob(ctx, serverID, "", nil, "admin"); err == nil {
+	if _, err := s.CreateJob(ctx, serverID, "", nil, "admin", ""); err == nil {
 		t.Error("expected an error without a kind")
 	}
 	if _, err := s.UpdateJobState(ctx, "x", serverID, "pending", "", ""); err == nil {
@@ -106,7 +129,7 @@ func TestHasActiveJobWithin(t *testing.T) {
 	serverID := newTestServerID(t, s)
 	otherID := newTestServerID(t, s)
 
-	job, err := s.CreateJob(ctx, serverID, "apt_upgrade", nil, "admin")
+	job, err := s.CreateJob(ctx, serverID, "apt_upgrade", nil, "admin", "")
 	if err != nil {
 		t.Fatalf("CreateJob: %v", err)
 	}
@@ -161,7 +184,7 @@ func TestUpdateJobStateStoresBrokenUTF8(t *testing.T) {
 	ctx := context.Background()
 	serverID := newTestServerID(t, s)
 
-	job, err := s.CreateJob(ctx, serverID, "stack_action", nil, "admin")
+	job, err := s.CreateJob(ctx, serverID, "stack_action", nil, "admin", "")
 	if err != nil {
 		t.Fatalf("CreateJob: %v", err)
 	}
@@ -181,7 +204,7 @@ func TestFailStaleJob(t *testing.T) {
 	ctx := context.Background()
 	serverID := newTestServerID(t, s)
 
-	job, err := s.CreateJob(ctx, serverID, "container_action", nil, "admin")
+	job, err := s.CreateJob(ctx, serverID, "container_action", nil, "admin", "")
 	if err != nil {
 		t.Fatalf("CreateJob: %v", err)
 	}
@@ -208,7 +231,7 @@ func TestPurgeFinishedJobs(t *testing.T) {
 	// leaves finished_at NULL, as an unfinished job has it.
 	create := func(kind, state string, finishedAgo time.Duration) string {
 		t.Helper()
-		job, err := s.CreateJob(ctx, serverID, kind, nil, "admin")
+		job, err := s.CreateJob(ctx, serverID, kind, nil, "admin", "")
 		if err != nil {
 			t.Fatalf("CreateJob: %v", err)
 		}

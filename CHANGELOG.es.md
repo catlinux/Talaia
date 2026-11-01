@@ -13,6 +13,12 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+## [0.6.60] - 2026-11-01
+
+### Seguridad
+
+- Los trabajos guardan ahora el id del usuario que los creó y su lectura comprueba ese id, de modo que el nombre de un usuario borrado y reutilizado por otra cuenta nunca llega a los trabajos antiguos (migración 0021; los trabajos anteriores conservan la comprobación por nombre).
+
 ## [0.6.59] - 2026-11-01
 
 ### Seguridad
@@ -1060,7 +1066,8 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
   `.gitattributes` y `.gitignore`.
 - Licencia WNCL-1.0 aplicada: archivo `LICENSE` y sección de créditos en los README.
 
-[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.6.59...HEAD
+[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.6.60...HEAD
+[0.6.60]: https://github.com/catlinux/Talaia/releases/tag/v0.6.60
 [0.6.59]: https://github.com/catlinux/Talaia/releases/tag/v0.6.59
 [0.6.58]: https://github.com/catlinux/Talaia/releases/tag/v0.6.58
 [0.6.57]: https://github.com/catlinux/Talaia/releases/tag/v0.6.57

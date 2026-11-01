@@ -109,7 +109,7 @@ of the current phase and the next one.
   - [x] OIDC: when no public URL is configured the redirect URI is built from the request `Host`; refuse to enable OIDC without a public URL (the identity provider's redirect allow-list already blocks abuse)
   - [x] OIDC: the `http://localhost` issuer exception exists for tests; allow it only in development builds so an administrator cannot point discovery at local services
   - [x] Every denied request writes an `authz_denied` audit row: rate-limit or aggregate them per user so a signed-in user cannot grow the audit table at will
-  - [ ] Jobs remember their creator by username; store the user id too so a deleted user's name, reused later, never reaches old job output
+  - [x] Jobs remember their creator by username; store the user id too so a deleted user's name, reused later, never reaches old job output
 
 ## Phase 5 · Monitoring and alerts (0.6.0, see `.agents/plans/fase5/fase5.PLAN.md`)
 

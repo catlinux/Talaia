@@ -239,7 +239,7 @@ func TestSingleStackCriterion(t *testing.T) {
 	}
 
 	otherJob, err := panel.store.CreateJob(context.Background(), serverA, "container_logs",
-		map[string]any{"container": "web"}, "admin")
+		map[string]any{"container": "web"}, "admin", "")
 	if err != nil {
 		t.Fatalf("create another user's job: %v", err)
 	}

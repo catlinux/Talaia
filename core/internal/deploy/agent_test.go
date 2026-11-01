@@ -32,9 +32,12 @@ func newFakeJobs() *fakeJobs {
 	return &fakeJobs{calls: map[string]int{}, outputs: map[string][]store.Job{}}
 }
 
-func (f *fakeJobs) CreateJob(_ context.Context, serverID, kind string, _ map[string]any, _ string) (store.Job, error) {
+func (f *fakeJobs) CreateJob(_ context.Context, serverID, kind string, _ map[string]any, createdBy, createdByID string) (store.Job, error) {
 	f.lastKind = kind
-	job := store.Job{ID: "job-1", ServerID: serverID, Kind: kind, State: store.JobPending}
+	job := store.Job{
+		ID: "job-1", ServerID: serverID, Kind: kind, State: store.JobPending,
+		CreatedBy: createdBy, CreatedByID: createdByID,
+	}
 	f.created = append(f.created, job)
 	return job, nil
 }
@@ -75,6 +78,9 @@ func TestHubAgentSourceAndStackNotFound(t *testing.T) {
 	}
 	if len(dispatcher.messages) != 1 || dispatcher.messages[0].GetAppSource() == nil {
 		t.Errorf("messages = %v", dispatcher.messages)
+	}
+	if len(jobs.created) != 1 || jobs.created[0].CreatedBy != "deploy" || jobs.created[0].CreatedByID != "" {
+		t.Errorf("system job = %+v", jobs.created)
 	}
 
 	jobs.outputs["job-1"] = []store.Job{{ID: "job-1", State: store.JobFailed, Message: "the stack does not exist"}}

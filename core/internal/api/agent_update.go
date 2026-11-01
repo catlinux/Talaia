@@ -83,7 +83,7 @@ func (p AgentPackages) offer(agent hub.AgentInfo) (AgentUpdatePackage, bool) {
 // AgentUpdateJobStore creates the update job and checks for one already in
 // flight. The store implements it; the tests use a fake.
 type AgentUpdateJobStore interface {
-	CreateJob(ctx context.Context, serverID, kind string, params map[string]any, createdBy string) (store.Job, error)
+	CreateJob(ctx context.Context, serverID, kind string, params map[string]any, createdBy, createdByID string) (store.Job, error)
 	UpdateJobState(ctx context.Context, id, serverID, state, message, output string) (bool, error)
 	HasActiveJob(ctx context.Context, serverID, kind string) (bool, error)
 }
@@ -156,16 +156,17 @@ func NewAgentUpdateHandler(deps AgentUpdateDeps) http.Handler {
 			return
 		}
 
-		actor := ""
+		actor, actorID := "", ""
 		if session, ok := sessionFromContext(r.Context()); ok {
 			actor = session.User.Username
+			actorID = session.User.ID
 		}
 		if actor == "" {
 			writeError(w, http.StatusUnauthorized, "session_required")
 			return
 		}
 
-		jobID, err := queueAgentUpdate(r, deps, server, agent, update, actor)
+		jobID, err := queueAgentUpdate(r, deps, server, agent, update, actor, actorID)
 		if err != nil {
 			writeAgentUpdateQueueError(w, err)
 			return
@@ -195,9 +196,10 @@ func NewAgentUpdateAllHandler(deps AgentUpdateDeps) http.Handler {
 			return
 		}
 
-		actor := ""
+		actor, actorID := "", ""
 		if session, ok := sessionFromContext(r.Context()); ok {
 			actor = session.User.Username
+			actorID = session.User.ID
 		}
 		if actor == "" {
 			writeError(w, http.StatusUnauthorized, "session_required")
@@ -240,7 +242,7 @@ func NewAgentUpdateAllHandler(deps AgentUpdateDeps) http.Handler {
 				response.Skipped = append(response.Skipped, agentUpdateSkipped{ID: server.ID, Reason: "update_in_progress"})
 				continue
 			}
-			jobID, err := queueAgentUpdate(r, deps, server, agent, update, actor)
+			jobID, err := queueAgentUpdate(r, deps, server, agent, update, actor, actorID)
 			if err != nil {
 				response.Skipped = append(response.Skipped, agentUpdateSkipped{ID: server.ID, Reason: agentUpdateReason(err)})
 				continue
@@ -265,13 +267,13 @@ func (e *updateQueueError) Unwrap() error { return e.err }
 // queueAgentUpdate creates the job, sends the typed command and audits the
 // request. Success is observed later, when the agent reconnects with the new
 // version; the job remains pending until the agent reports its start.
-func queueAgentUpdate(r *http.Request, deps AgentUpdateDeps, server store.Server, agent hub.AgentInfo, update AgentUpdatePackage, actor string) (string, error) {
+func queueAgentUpdate(r *http.Request, deps AgentUpdateDeps, server store.Server, agent hub.AgentInfo, update AgentUpdatePackage, actor, actorID string) (string, error) {
 	job, err := deps.Jobs.CreateJob(r.Context(), server.ID, agentUpdateKind, map[string]any{
 		"version":      update.Version,
 		"sha256":       update.SHA256,
 		"from_version": agent.AgentVersion,
 		"arch":         update.Arch,
-	}, actor)
+	}, actor, actorID)
 	if err != nil {
 		return "", &updateQueueError{reason: "internal", err: err}
 	}

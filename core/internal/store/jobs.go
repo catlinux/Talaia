@@ -27,11 +27,14 @@ type Job struct {
 	State    string
 	Message  string
 	// Output is the text the job produced, bounded to MaxJobOutput bytes.
-	Output     string
-	CreatedBy  string
-	CreatedAt  time.Time
-	UpdatedAt  time.Time
-	FinishedAt time.Time
+	Output    string
+	CreatedBy string
+	// CreatedByID is the immutable user id of the creator. It is empty on
+	// legacy rows created before the id was stored.
+	CreatedByID string
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
+	FinishedAt  time.Time
 }
 
 // Done reports whether the job has finished, successfully or not.
@@ -42,7 +45,7 @@ func (j Job) Done() bool {
 // MaxJobOutput bounds the output stored for a job.
 const MaxJobOutput = 256 << 10
 
-const jobColumns = `id, server_id, kind, params, state, message, output, created_by, created_at, updated_at, finished_at`
+const jobColumns = `id, server_id, kind, params, state, message, output, created_by, created_by_id, created_at, updated_at, finished_at`
 
 type jobScanner interface {
 	Scan(dest ...any) error
@@ -54,7 +57,7 @@ func scanJob(row jobScanner) (Job, error) {
 		finishedAt *time.Time
 	)
 	if err := row.Scan(&job.ID, &job.ServerID, &job.Kind, &job.Params, &job.State, &job.Message, &job.Output,
-		&job.CreatedBy, &job.CreatedAt, &job.UpdatedAt, &finishedAt); err != nil {
+		&job.CreatedBy, &job.CreatedByID, &job.CreatedAt, &job.UpdatedAt, &finishedAt); err != nil {
 		return Job{}, err
 	}
 	if finishedAt != nil {
@@ -64,7 +67,7 @@ func scanJob(row jobScanner) (Job, error) {
 }
 
 // CreateJob stores a new pending job for a server.
-func (s *Store) CreateJob(ctx context.Context, serverID, kind string, params map[string]any, createdBy string) (Job, error) {
+func (s *Store) CreateJob(ctx context.Context, serverID, kind string, params map[string]any, createdBy, createdByID string) (Job, error) {
 	if strings.TrimSpace(serverID) == "" || strings.TrimSpace(kind) == "" || strings.TrimSpace(createdBy) == "" {
 		return Job{}, errors.New("server id, kind and creator are required")
 	}
@@ -73,10 +76,10 @@ func (s *Store) CreateJob(ctx context.Context, serverID, kind string, params map
 	}
 
 	job, err := scanJob(s.pool.QueryRow(ctx,
-		`INSERT INTO job (server_id, kind, params, state, created_by)
-		 VALUES ($1, $2, $3, 'pending', $4)
+		`INSERT INTO job (server_id, kind, params, state, created_by, created_by_id)
+		 VALUES ($1, $2, $3, 'pending', $4, $5)
 		 RETURNING `+jobColumns,
-		serverID, kind, params, createdBy))
+		serverID, kind, params, createdBy, createdByID))
 	if err != nil {
 		return Job{}, fmt.Errorf("create job: %w", err)
 	}

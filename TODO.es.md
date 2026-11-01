@@ -109,7 +109,7 @@ tareas concretas de la fase actual y de la siguiente.
   - [x] OIDC: sin URL pública configurada, la URI de redirección se construye con el `Host` de la petición; no permitir activar OIDC sin URL pública (la lista de redirecciones del proveedor ya bloquea el abuso)
   - [x] OIDC: la excepción de emisor `http://localhost` es para pruebas; permitirla solo en compilaciones de desarrollo para que un administrador no pueda dirigir el descubrimiento a servicios locales
   - [x] Cada petición denegada escribe un `authz_denied` en la auditoría: limitarlos o agruparlos por usuario para que un usuario con sesión no pueda hacer crecer la tabla a voluntad
-  - [ ] Los trabajos guardan su creador por nombre de usuario; guardar también el id para que el nombre de un usuario borrado, reutilizado después, nunca llegue a la salida de trabajos antiguos
+  - [x] Los trabajos guardan su creador por nombre de usuario; guardar también el id para que el nombre de un usuario borrado, reutilizado después, nunca llegue a la salida de trabajos antiguos
 
 ## Fase 5 · Monitorización y alertas (0.6.0, ver `.agents/plans/fase5/fase5.PLAN.md`)
 

@@ -306,8 +306,8 @@ func serveRoute(t *testing.T, method, pattern, target string, handler http.Handl
 
 type fakeAPIJobs struct{}
 
-func (fakeAPIJobs) CreateJob(_ context.Context, serverID, kind string, _ map[string]any, createdBy string) (store.Job, error) {
-	return store.Job{ID: "job-1", ServerID: serverID, Kind: kind, CreatedBy: createdBy}, nil
+func (fakeAPIJobs) CreateJob(_ context.Context, serverID, kind string, _ map[string]any, createdBy, createdByID string) (store.Job, error) {
+	return store.Job{ID: "job-1", ServerID: serverID, Kind: kind, CreatedBy: createdBy, CreatedByID: createdByID}, nil
 }
 
 func (fakeAPIJobs) GetJob(context.Context, string) (store.Job, error) {

@@ -35,7 +35,7 @@ type Dispatcher interface {
 
 // JobStore is the part of the store used to follow an agent command.
 type JobStore interface {
-	CreateJob(ctx context.Context, serverID, kind string, params map[string]any, createdBy string) (store.Job, error)
+	CreateJob(ctx context.Context, serverID, kind string, params map[string]any, createdBy, createdByID string) (store.Job, error)
 	GetJob(ctx context.Context, id string) (store.Job, error)
 	UpdateJobState(ctx context.Context, id, serverID, state, message, output string) (bool, error)
 }
@@ -205,7 +205,7 @@ func (a *HubAgent) runJob(ctx context.Context, serverID, kind string, command fu
 	if a.dispatcher == nil || a.jobs == nil {
 		return store.Job{}, errors.New("the deployment agent is not configured")
 	}
-	job, err := a.jobs.CreateJob(ctx, serverID, kind, map[string]any{}, "deploy")
+	job, err := a.jobs.CreateJob(ctx, serverID, kind, map[string]any{}, "deploy", "")
 	if err != nil {
 		return store.Job{}, err
 	}

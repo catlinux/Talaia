@@ -82,7 +82,7 @@ type CommandDispatcher interface {
 
 // JobStore is the part of the store the container API needs.
 type JobStore interface {
-	CreateJob(ctx context.Context, serverID, kind string, params map[string]any, createdBy string) (store.Job, error)
+	CreateJob(ctx context.Context, serverID, kind string, params map[string]any, createdBy, createdByID string) (store.Job, error)
 	GetJob(ctx context.Context, id string) (store.Job, error)
 	UpdateJobState(ctx context.Context, id, serverID, state, message, output string) (bool, error)
 	FailStaleJob(ctx context.Context, id string, maxAge time.Duration) (bool, error)
@@ -315,7 +315,7 @@ func NewJobHandler(deps ContainerDeps) http.Handler {
 			writeError(w, http.StatusNotFound, "not_found")
 			return
 		}
-		if job.CreatedBy != session.User.Username {
+		if !jobOwnedBy(job, session) {
 			effective, hasEffective := effectiveFromRequest(r)
 			if !hasEffective || !effective.Can(rbac.PermUsersManage, rbac.Target{}) {
 				writeError(w, http.StatusNotFound, "not_found")
@@ -350,6 +350,14 @@ func NewJobHandler(deps ContainerDeps) http.Handler {
 		w.Header().Set("Cache-Control", "no-store")
 		writeJSON(w, http.StatusOK, response)
 	})
+}
+
+// jobOwnedBy applies the creator id to new jobs and the username to legacy rows.
+func jobOwnedBy(job store.Job, session Session) bool {
+	if job.CreatedByID != "" {
+		return job.CreatedByID == session.User.ID
+	}
+	return job.CreatedBy == session.User.Username
 }
 
 // JobRecorder stores the events the agents report about their jobs. It is the
@@ -427,16 +435,17 @@ func submitJob(w http.ResponseWriter, r *http.Request, deps ContainerDeps, serve
 }
 
 func submitJobWithSuccess(w http.ResponseWriter, r *http.Request, deps ContainerDeps, serverID, kind, auditAction string, params, details map[string]any, command func(jobID string) *agentv1.CoreMsg, onSuccess func()) {
-	actor := ""
+	actor, actorID := "", ""
 	if session, ok := sessionFromContext(r.Context()); ok {
 		actor = session.User.Username
+		actorID = session.User.ID
 	}
 	if actor == "" {
 		writeError(w, http.StatusUnauthorized, "session_required")
 		return
 	}
 
-	job, err := deps.Jobs.CreateJob(r.Context(), serverID, kind, params, actor)
+	job, err := deps.Jobs.CreateJob(r.Context(), serverID, kind, params, actor, actorID)
 	if err != nil {
 		slog.Error("create job", "error", err)
 		writeError(w, http.StatusInternalServerError, "internal")

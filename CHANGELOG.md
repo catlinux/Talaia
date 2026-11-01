@@ -13,6 +13,12 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.6.60] - 2026-11-01
+
+### Security
+
+- Jobs now store the id of the user who created them, and reading a job checks that id, so a deleted user's name reused by a new account never reaches the old jobs (migration 0021; older jobs keep the username check).
+
 ## [0.6.59] - 2026-11-01
 
 ### Security
@@ -1060,7 +1066,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.6.59...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.6.60...HEAD
+[0.6.60]: https://github.com/catlinux/Talaia/releases/tag/v0.6.60
 [0.6.59]: https://github.com/catlinux/Talaia/releases/tag/v0.6.59
 [0.6.58]: https://github.com/catlinux/Talaia/releases/tag/v0.6.58
 [0.6.57]: https://github.com/catlinux/Talaia/releases/tag/v0.6.57

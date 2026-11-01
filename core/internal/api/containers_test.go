@@ -8,6 +8,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/go-chi/chi/v5"
+
 	"github.com/catlinux/Talaia/core/internal/hub"
 	"github.com/catlinux/Talaia/core/internal/store"
 	agentv1 "github.com/catlinux/Talaia/proto/gen/go"
@@ -131,7 +133,7 @@ func TestListContainers(t *testing.T) {
 
 func TestContainerActionCreatesAJobAndSendsTheCommand(t *testing.T) {
 	panel := newTestPanel(t)
-	panel.createUser(t, "admin", testPassword)
+	admin := panel.createUser(t, "admin", testPassword)
 	panel.enableTOTP(t, "admin", testPassword)
 	serverID := enrollTestServer(t, panel)
 	panel.agents.set(agentWithContainers(serverID))
@@ -160,6 +162,13 @@ func TestContainerActionCreatesAJobAndSendsTheCommand(t *testing.T) {
 	decodeBody(t, panel.get(t, "/api/v1/jobs/"+created.JobID), &job)
 	if job.State != store.JobPending || job.CreatedBy != "admin" || job.Params["container"] != "web" {
 		t.Errorf("job = %+v", job)
+	}
+	stored, err := panel.store.GetJob(context.Background(), created.JobID)
+	if err != nil {
+		t.Fatalf("GetJob: %v", err)
+	}
+	if stored.CreatedByID != admin.ID {
+		t.Errorf("created_by_id = %q, want %q", stored.CreatedByID, admin.ID)
 	}
 
 	// The agent's events move it forward.
@@ -244,7 +253,7 @@ func TestStaleJobsAreClosed(t *testing.T) {
 	panel.enableTOTP(t, "admin", testPassword)
 	serverID := enrollTestServer(t, panel)
 
-	job, err := panel.store.CreateJob(context.Background(), serverID, containerActionKind, nil, "admin")
+	job, err := panel.store.CreateJob(context.Background(), serverID, containerActionKind, nil, "admin", "")
 	if err != nil {
 		t.Fatalf("CreateJob: %v", err)
 	}
@@ -280,6 +289,66 @@ func TestJobTimeoutOutlastsTheAgent(t *testing.T) {
 			t.Errorf("jobTimeout(%s) = %s, want more than %s", kind, got, limit)
 		}
 	}
+}
+
+func TestJobOwnershipUsesCreatedByID(t *testing.T) {
+	jobID := "11111111-1111-1111-1111-111111111111"
+	handlerFor := func(job store.Job) http.Handler {
+		router := chi.NewRouter()
+		router.Get("/api/v1/jobs/{jobID}", NewJobHandler(ContainerDeps{Jobs: fixedJobStore{job: job}}).ServeHTTP)
+		return router
+	}
+	request := func() *http.Request {
+		return authzRequest(http.MethodGet, "/api/v1/jobs/"+jobID, Session{
+			User: store.User{ID: "u1", Username: "alice"}, Stage: store.StageFull,
+		})
+	}
+	otherUser := func() *http.Request {
+		return authzRequest(http.MethodGet, "/api/v1/jobs/"+jobID, Session{
+			User: store.User{ID: "u2", Username: "alice"}, Stage: store.StageFull,
+		})
+	}
+
+	newJob := store.Job{
+		ID: jobID, Kind: "container_logs", State: store.JobSucceeded,
+		CreatedBy: "alice", CreatedByID: "u1",
+	}
+	if status := doAuthorized(t, handlerFor(newJob), request()); status != http.StatusOK {
+		t.Fatalf("creator id status = %d, want 200", status)
+	}
+	if status := doAuthorized(t, handlerFor(newJob), otherUser()); status != http.StatusNotFound {
+		t.Fatalf("reused username status = %d, want 404", status)
+	}
+
+	legacy := newJob
+	legacy.CreatedByID = ""
+	if status := doAuthorized(t, handlerFor(legacy), otherUser()); status != http.StatusOK {
+		t.Fatalf("legacy username status = %d, want 200", status)
+	}
+}
+
+type fixedJobStore struct {
+	job store.Job
+}
+
+func (f fixedJobStore) CreateJob(context.Context, string, string, map[string]any, string, string) (store.Job, error) {
+	return store.Job{}, nil
+}
+
+func (f fixedJobStore) GetJob(context.Context, string) (store.Job, error) {
+	return f.job, nil
+}
+
+func (f fixedJobStore) UpdateJobState(context.Context, string, string, string, string, string) (bool, error) {
+	return false, nil
+}
+
+func (f fixedJobStore) FailStaleJob(context.Context, string, time.Duration) (bool, error) {
+	return false, nil
+}
+
+func (f fixedJobStore) HasActiveJobWithin(context.Context, string, string, time.Duration) (bool, error) {
+	return false, nil
 }
 
 // get sends a GET with the session of the panel client.

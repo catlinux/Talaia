@@ -59,7 +59,7 @@ type fakeAgentUpdateJobs struct {
 	next      int
 }
 
-func (f *fakeAgentUpdateJobs) CreateJob(_ context.Context, serverID, kind string, params map[string]any, createdBy string) (store.Job, error) {
+func (f *fakeAgentUpdateJobs) CreateJob(_ context.Context, serverID, kind string, params map[string]any, createdBy, createdByID string) (store.Job, error) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	if f.createErr != nil {
@@ -67,13 +67,14 @@ func (f *fakeAgentUpdateJobs) CreateJob(_ context.Context, serverID, kind string
 	}
 	f.next++
 	job := store.Job{
-		ID:        fmt.Sprintf("job-%d", f.next),
-		ServerID:  serverID,
-		Kind:      kind,
-		Params:    params,
-		State:     store.JobPending,
-		CreatedBy: createdBy,
-		CreatedAt: time.Now(),
+		ID:          fmt.Sprintf("job-%d", f.next),
+		ServerID:    serverID,
+		Kind:        kind,
+		Params:      params,
+		State:       store.JobPending,
+		CreatedBy:   createdBy,
+		CreatedByID: createdByID,
+		CreatedAt:   time.Now(),
 	}
 	f.created = append(f.created, job)
 	return job, nil
@@ -192,7 +193,7 @@ func TestAgentUpdateQueuesTheTypedCommand(t *testing.T) {
 		t.Fatalf("jobs = %v, want one", createdJobs)
 	}
 	job := createdJobs[0]
-	if job.Kind != "agent_update" || job.CreatedBy != "admin" || job.Params["version"] != "1.2.3" ||
+	if job.Kind != "agent_update" || job.CreatedBy != "admin" || job.CreatedByID != "user-1" || job.Params["version"] != "1.2.3" ||
 		job.Params["sha256"] != sha || job.Params["from_version"] != "1.2.2" {
 		t.Errorf("job = %+v", job)
 	}

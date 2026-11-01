@@ -294,7 +294,7 @@ func TestAptWritesRefuseAnActiveOperation(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			panel, serverID := newAptWritePanel(t)
 			connectAptAgent(panel, serverID, "vps-web-01")
-			if _, err := panel.store.CreateJob(context.Background(), serverID, tt.existing, nil, "admin"); err != nil {
+			if _, err := panel.store.CreateJob(context.Background(), serverID, tt.existing, nil, "admin", ""); err != nil {
 				t.Fatalf("create active job: %v", err)
 			}
 
