@@ -13,6 +13,12 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+## [0.6.61] - 2026-11-01
+
+### Corregido
+
+- La pestaña **Alertas** del servidor ya muestra como heredadas las reglas de ámbito grupo: la lista de servidores lleva el `group_id` opcional de cada servidor y el panel lo pasa a la pestaña.
+
 ## [0.6.60] - 2026-11-01
 
 ### Seguridad
@@ -1066,7 +1072,8 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
   `.gitattributes` y `.gitignore`.
 - Licencia WNCL-1.0 aplicada: archivo `LICENSE` y sección de créditos en los README.
 
-[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.6.60...HEAD
+[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.6.61...HEAD
+[0.6.61]: https://github.com/catlinux/Talaia/releases/tag/v0.6.61
 [0.6.60]: https://github.com/catlinux/Talaia/releases/tag/v0.6.60
 [0.6.59]: https://github.com/catlinux/Talaia/releases/tag/v0.6.59
 [0.6.58]: https://github.com/catlinux/Talaia/releases/tag/v0.6.58

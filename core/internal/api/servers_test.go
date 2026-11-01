@@ -160,7 +160,7 @@ func TestServersEndpointMergesTheLiveAgents(t *testing.T) {
 	expiry := seen.Add(90 * 24 * time.Hour)
 
 	servers := []store.Server{
-		{ID: onlineID, Name: "vps-web-01", CreatedAt: seen, LastSeen: seen,
+		{ID: onlineID, Name: "vps-web-01", GroupID: "grp-1", CreatedAt: seen, LastSeen: seen,
 			CertSerial: "serial-of-the-online-server", CertNotAfter: expiry},
 		{ID: offlineID, Name: "vps-db-01", CreatedAt: seen},
 		{ID: revokedID, Name: "vps-old-01", CreatedAt: seen, RevokedAt: seen,
@@ -222,6 +222,9 @@ func TestServersEndpointMergesTheLiveAgents(t *testing.T) {
 	if online.ID != onlineID || online.Name != "vps-web-01" || !online.Connected || online.Revoked {
 		t.Errorf("online server = %+v", online)
 	}
+	if online.GroupID != "grp-1" {
+		t.Errorf("group_id = %q, want grp-1", online.GroupID)
+	}
 	if online.Live == nil {
 		t.Fatal("the online server has no live data")
 	}
@@ -251,6 +254,9 @@ func TestServersEndpointMergesTheLiveAgents(t *testing.T) {
 	}
 
 	offline := body.Servers[1]
+	if offline.GroupID != "" {
+		t.Errorf("offline group_id = %q, want empty", offline.GroupID)
+	}
 	if offline.ID != offlineID || offline.Connected || offline.Live != nil {
 		t.Errorf("offline server = %+v", offline)
 	}

@@ -64,6 +64,8 @@ type serversResponse struct {
 type serverEntry struct {
 	ID   string `json:"id"`
 	Name string `json:"name"`
+	// GroupID is the server group, empty when it belongs to none.
+	GroupID string `json:"group_id,omitempty"`
 	// CreatedAt is null for the development entries, which exist only in memory.
 	CreatedAt    *time.Time `json:"created_at"`
 	LastSeen     *time.Time `json:"last_seen"`
@@ -180,6 +182,7 @@ func NewServersHandler(deps ServerDeps) http.Handler {
 			entry := serverEntry{
 				ID:      server.ID,
 				Name:    server.Name,
+				GroupID: server.GroupID,
 				Revoked: !server.RevokedAt.IsZero(),
 			}
 			if !server.CreatedAt.IsZero() {

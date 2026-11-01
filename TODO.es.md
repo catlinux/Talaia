@@ -126,7 +126,7 @@ tareas concretas de la fase actual y de la siguiente.
 - [ ] Seguimiento de la revisión de la fase 5 (Opus, 2026-10-25), todo de gravedad baja:
   - [ ] El motor lee de la base de datos reglas, silencios, incidentes abiertos y comprobaciones en cada evaluación (cada 5 s y en cada inventario): cachearlos e invalidarlos al cambiar si las flotas crecen
   - [ ] Parar o borrar un contenedor desde la API avisa al motor cuando se acepta el trabajo, no cuando termina bien; una parada fallida se vuelve a vigilar a los 2 minutos
-  - [ ] La pestaña **Alertas** del servidor no muestra como heredadas las reglas de ámbito grupo: el tipo `Server` del panel no lleva el grupo, así que `AlertsSection` nunca recibe `groupId`
+  - [x] La pestaña **Alertas** del servidor no muestra como heredadas las reglas de ámbito grupo: el tipo `Server` del panel no lleva el grupo, así que `AlertsSection` nunca recibe `groupId`
 
 ## Panel v2 · panel profesional y alertas cómodas (entre los pasos 4 y 5 de la fase 6, ver `.agents/plans/panel-v2/panel-v2.PLAN.md`)
 

@@ -68,6 +68,7 @@ interface apiLiveAgent {
 interface apiServer {
   id: string
   name: string
+  group_id?: string
   created_at?: string | null
   last_seen?: string | null
   revoked?: boolean
@@ -174,6 +175,7 @@ function toServer(server: apiServer, latestVersion: string, upgradeCommand: stri
   return {
     id: server.id,
     name: server.name,
+    groupId: server.group_id,
     hostname: live?.hostname ?? '',
     // The name of the system is only known while the agent is connected.
     os: live ? `${live.os_name} ${live.os_version}`.trim() : '',

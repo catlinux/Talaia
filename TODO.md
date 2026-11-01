@@ -126,7 +126,7 @@ of the current phase and the next one.
 - [ ] Follow-ups of the phase 5 review (Opus, 2026-10-25), all low:
   - [ ] The engine reads rules, silences, open incidents and checks from the database on every evaluation (every 5 s and on each inventory): cache them and invalidate on change if fleets grow
   - [ ] Container stop/remove from the API tells the engine when the job is accepted, not when it succeeds; a failed stop is watched again after 2 minutes
-  - [ ] The server **Alerts** tab does not show group-scoped rules as inherited: the panel's `Server` type carries no group, so `AlertsSection` never receives `groupId`
+  - [x] The server **Alerts** tab does not show group-scoped rules as inherited: the panel's `Server` type carries no group, so `AlertsSection` never receives `groupId`
 
 ## Panel v2 · professional panel and easier alerts (between phase 6 steps 4 and 5, see `.agents/plans/panel-v2/panel-v2.PLAN.md`)
 

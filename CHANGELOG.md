@@ -13,6 +13,12 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.6.61] - 2026-11-01
+
+### Fixed
+
+- The server **Alerts** tab now shows the rules scoped to the server group as inherited: the servers list carries the optional `group_id` of each server and the panel passes it to the tab.
+
 ## [0.6.60] - 2026-11-01
 
 ### Security
@@ -1066,7 +1072,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.6.60...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.6.61...HEAD
+[0.6.61]: https://github.com/catlinux/Talaia/releases/tag/v0.6.61
 [0.6.60]: https://github.com/catlinux/Talaia/releases/tag/v0.6.60
 [0.6.59]: https://github.com/catlinux/Talaia/releases/tag/v0.6.59
 [0.6.58]: https://github.com/catlinux/Talaia/releases/tag/v0.6.58

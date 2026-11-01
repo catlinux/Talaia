@@ -209,6 +209,15 @@ describe('api fleet client', () => {
     expect((await critical.client.listServers())[0]?.status).toBe('critical')
   })
 
+  it('maps the server group when the core sends it', async () => {
+    const { client } = clientFor([serverEntry({ group_id: 'grp-1' }), serverEntry({ id: 'other' })])
+
+    const servers = await client.listServers()
+
+    expect(servers[0]?.groupId).toBe('grp-1')
+    expect(servers[1]?.groupId).toBeUndefined()
+  })
+
   it('maps an offline server without live data', async () => {
     const { client } = clientFor([
       serverEntry({ connected: false, live: undefined, last_seen: '2026-10-18T09:00:00Z' }),
