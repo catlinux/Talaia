@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { createAppsApi } from './apps'
+import { createAppsApi, type AppInput } from './apps'
 
 function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
@@ -31,6 +31,24 @@ const app = {
   created_at: '2026-10-31T12:00:00Z',
   updated_at: '2026-10-31T12:00:00Z',
   updated_by: 'alice',
+}
+
+const createInput: AppInput = {
+  stackName: 'shop',
+  source: 'git',
+  repoUrl: 'https://github.com/example/shop.git',
+  branch: 'main',
+  build: 'dockerfile',
+  dockerfilePath: 'Dockerfile',
+  buildContext: '.',
+  image: '',
+  service: 'app',
+  port: 3000,
+  autoDeploy: true,
+  pollEnabled: false,
+  zeroDowntime: true,
+  templateId: '',
+  templateVersion: '',
 }
 
 describe('api apps client', () => {
@@ -85,29 +103,15 @@ describe('api apps client', () => {
       ),
     )
     const api = createAppsApi(fetchImpl as unknown as typeof fetch)
-    const created = await api.create('srv-1', {
-      stackName: 'shop',
-      source: 'git',
-      repoUrl: 'https://github.com/example/shop.git',
-      branch: 'main',
-      build: 'dockerfile',
-      dockerfilePath: 'Dockerfile',
-      buildContext: '.',
-      image: '',
-      service: 'app',
-      port: 3000,
-      autoDeploy: true,
-      pollEnabled: false,
-      zeroDowntime: true,
-      templateId: '',
-      templateVersion: '',
-    })
+    const created = await api.create('srv-1', createInput)
     expect(created).toEqual(
       expect.objectContaining({
         id: 'app-1',
         deployKeyPublic: 'ssh-ed25519 AAAA example',
         webhookSecret: 'hook-secret',
         webhookUrl: 'https://panel.example.com/api/v1/hooks/git/app-1',
+        credentialUser: '',
+        credentialPassword: '',
       }),
     )
     expect(fetchImpl).toHaveBeenLastCalledWith(
@@ -121,6 +125,36 @@ describe('api apps client', () => {
       '/api/v1/servers/srv-1/apps',
       expect.objectContaining({
         body: expect.stringContaining('"repo_url":"https://github.com/example/shop.git"'),
+      }),
+    )
+  })
+
+  it('maps the first-login credential of a template app', async () => {
+    const fetchImpl = vi.fn(() =>
+      Promise.resolve(
+        json({
+          ...app,
+          source: 'template' as const,
+          template_id: 'miniflux',
+          template_version: '1.0.0',
+          image: 'miniflux/miniflux:2.3.4',
+          port: 8080,
+          credential_user: 'admin',
+          credential_password: 'news-password',
+        }),
+      ),
+    )
+    const api = createAppsApi(fetchImpl as unknown as typeof fetch)
+    const created = await api.create('srv-1', {
+      ...createInput,
+      source: 'template',
+      templateId: 'miniflux',
+      templateVersion: '1.0.0',
+    })
+    expect(created).toEqual(
+      expect.objectContaining({
+        credentialUser: 'admin',
+        credentialPassword: 'news-password',
       }),
     )
   })

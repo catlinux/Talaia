@@ -93,11 +93,13 @@ export interface AppInput {
   templateVersion: string
 }
 
-/** CreatedApp carries the one-time Git secrets returned at creation. */
+/** CreatedApp carries the one-time secrets returned at creation. */
 export interface CreatedApp extends App {
   deployKeyPublic: string
   webhookSecret: string
   webhookUrl: string
+  credentialUser: string
+  credentialPassword: string
 }
 
 /** Domain is one hostname routed to an app. */
@@ -238,6 +240,8 @@ interface apiCreatedApp extends apiApp {
   deploy_key_public?: string
   webhook_secret?: string
   webhook_url?: string
+  credential_user?: string
+  credential_password?: string
 }
 
 interface apiDomain {
@@ -339,6 +343,8 @@ function toCreatedApp(item: apiCreatedApp): CreatedApp {
     deployKeyPublic: item.deploy_key_public ?? '',
     webhookSecret: item.webhook_secret ?? '',
     webhookUrl: item.webhook_url ?? '',
+    credentialUser: item.credential_user ?? '',
+    credentialPassword: item.credential_password ?? '',
   }
 }
 

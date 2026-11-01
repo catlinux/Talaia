@@ -13,6 +13,12 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+## [0.6.52] - 2026-11-01
+
+### Añadido
+
+- El asistente de nueva app muestra una sola vez la credencial de primer inicio de sesión de una app de plantilla, al crearla.
+
 ## [0.6.51] - 2026-11-01
 
 ### Añadido
@@ -1011,7 +1017,8 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
   `.gitattributes` y `.gitignore`.
 - Licencia WNCL-1.0 aplicada: archivo `LICENSE` y sección de créditos en los README.
 
-[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.6.51...HEAD
+[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.6.52...HEAD
+[0.6.52]: https://github.com/catlinux/Talaia/releases/tag/v0.6.52
 [0.6.51]: https://github.com/catlinux/Talaia/releases/tag/v0.6.51
 [0.6.50]: https://github.com/catlinux/Talaia/releases/tag/v0.6.50
 [0.6.49]: https://github.com/catlinux/Talaia/releases/tag/v0.6.49

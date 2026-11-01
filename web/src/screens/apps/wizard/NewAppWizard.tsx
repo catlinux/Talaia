@@ -899,6 +899,7 @@ export function NewAppWizard({ api, client }: NewAppWizardProps) {
   if (created !== null) {
     const app = created.app
     const hasGitSecrets = app.source === 'git' && app.deployKeyPublic !== ''
+    const hasCredential = app.source === 'template' && app.credentialPassword !== ''
     return (
       <section className="wizard">
         <PageHeader
@@ -949,7 +950,20 @@ export function NewAppWizard({ api, client }: NewAppWizardProps) {
                     </>
                   ) : null}
                 </div>
-              ) : (
+              ) : hasCredential ? (
+                <div className="wizard__secrets">
+                  <p className="wizard__notice">{t('wizard.success.once')}</p>
+                  <h3>{t('wizard.success.credentialTitle')}</h3>
+                  {app.credentialUser !== '' ? (
+                    <>
+                      <h3>{t('wizard.success.credentialUser')}</h3>
+                      <code className="wizard__secret-value">{app.credentialUser}</code>
+                    </>
+                  ) : null}
+                  <h3>{t('wizard.success.credentialPassword')}</h3>
+                  <code className="wizard__secret-value">{app.credentialPassword}</code>
+                </div>
+              ) : app.source === 'template' ? null : (
                 <p className="wizard__hint">{t('wizard.success.gitOnly')}</p>
               )}
               {created.domain !== null && created.domain.warning !== '' ? (

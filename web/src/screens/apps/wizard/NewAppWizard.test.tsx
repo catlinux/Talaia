@@ -68,6 +68,8 @@ function createdApp(overrides: Partial<CreatedApp> = {}): CreatedApp {
     deployKeyPublic: 'ssh-ed25519 AAAA example',
     webhookSecret: 'hook-secret',
     webhookUrl: 'https://panel.example.com/api/v1/hooks/git/app-1',
+    credentialUser: '',
+    credentialPassword: '',
     ...overrides,
   }
 }
@@ -170,6 +172,23 @@ function renderWizard(api: WizardApi, path = '/apps/new') {
 async function chooseServerAndName(name = 'shop') {
   fireEvent.click(await screen.findByRole('radio', { name: /vps-web-01/ }))
   fireEvent.change(screen.getByLabelText('App name'), { target: { value: name } })
+}
+
+async function createTemplateApp(stack = 'uptime') {
+  fireEvent.click(screen.getByRole('radio', { name: /Template/ }))
+  fireEvent.click(screen.getByRole('button', { name: 'Continue' }))
+  expect(await screen.findByRole('heading', { name: 'Build and runtime' })).toBeTruthy()
+  fireEvent.click(await screen.findByRole('radio', { name: /Uptime Kuma/ }))
+  fireEvent.click(screen.getByRole('button', { name: 'Continue' }))
+  expect(await screen.findByRole('heading', { name: 'Where should it run?' })).toBeTruthy()
+  expect((screen.getByLabelText('App name') as HTMLInputElement).value).toBe('uptime-kuma')
+  await chooseServerAndName(stack)
+  fireEvent.click(screen.getByRole('button', { name: 'Continue' }))
+  expect(await screen.findByRole('heading', { name: 'Domain and proxy' })).toBeTruthy()
+  fireEvent.click(screen.getByRole('button', { name: 'Continue' }))
+  expect(await screen.findByRole('heading', { name: 'Review and create' })).toBeTruthy()
+  fireEvent.click(screen.getByRole('button', { name: 'Create app' }))
+  expect(await screen.findByRole('heading', { name: 'App created' })).toBeTruthy()
 }
 
 beforeEach(async () => {
@@ -282,23 +301,8 @@ describe('new app wizard', () => {
       ),
     })
     renderWizard(api)
+    await createTemplateApp('uptime')
 
-    fireEvent.click(screen.getByRole('radio', { name: /Template/ }))
-    fireEvent.click(screen.getByRole('button', { name: 'Continue' }))
-    expect(await screen.findByRole('heading', { name: 'Build and runtime' })).toBeTruthy()
-    fireEvent.click(await screen.findByRole('radio', { name: /Uptime Kuma/ }))
-    fireEvent.click(screen.getByRole('button', { name: 'Continue' }))
-
-    expect(await screen.findByRole('heading', { name: 'Where should it run?' })).toBeTruthy()
-    expect((screen.getByLabelText('App name') as HTMLInputElement).value).toBe('uptime-kuma')
-    await chooseServerAndName('uptime')
-    fireEvent.click(screen.getByRole('button', { name: 'Continue' }))
-    expect(await screen.findByRole('heading', { name: 'Domain and proxy' })).toBeTruthy()
-    fireEvent.click(screen.getByRole('button', { name: 'Continue' }))
-    expect(await screen.findByRole('heading', { name: 'Review and create' })).toBeTruthy()
-    fireEvent.click(screen.getByRole('button', { name: 'Create app' }))
-
-    expect(await screen.findByRole('heading', { name: 'App created' })).toBeTruthy()
     expect(api.create).toHaveBeenCalledWith(
       'srv-1',
       expect.objectContaining({
@@ -309,7 +313,70 @@ describe('new app wizard', () => {
       }),
     )
     await waitFor(() => expect(api.deploy).toHaveBeenCalledWith('app-1'))
-    expect(screen.getByText(/image and template sources/)).toBeTruthy()
+    expect(screen.queryByText(/image and template sources/)).toBeNull()
+    expect(screen.queryByText('First-login credential')).toBeNull()
+  })
+
+  it('shows a template first-login credential with its user', async () => {
+    const api = fakeApi({
+      create: vi.fn(() =>
+        Promise.resolve(
+          createdApp({
+            source: 'template',
+            templateId: 'miniflux',
+            templateVersion: '1.0.0',
+            image: 'miniflux/miniflux:2.3.4',
+            stackName: 'news',
+            hostPort: 0,
+            deployKeyPublic: '',
+            webhookSecret: '',
+            webhookUrl: '',
+            credentialUser: 'admin',
+            credentialPassword: 'news-password',
+          }),
+        ),
+      ),
+    })
+    renderWizard(api)
+    await createTemplateApp('news')
+
+    expect(screen.getByRole('heading', { name: 'First-login credential' })).toBeTruthy()
+    expect(screen.getByRole('heading', { name: 'Username' })).toBeTruthy()
+    expect(screen.getByRole('heading', { name: 'Password' })).toBeTruthy()
+    expect(screen.getByText('admin')).toBeTruthy()
+    expect(screen.getByText('news-password')).toBeTruthy()
+    expect(screen.getByText('Copy these values now. They will not be shown again.')).toBeTruthy()
+    expect(screen.queryByText(/image and template sources/)).toBeNull()
+  })
+
+  it('shows a template password without a user', async () => {
+    const api = fakeApi({
+      create: vi.fn(() =>
+        Promise.resolve(
+          createdApp({
+            source: 'template',
+            templateId: 'redis',
+            templateVersion: '1.0.0',
+            image: 'redis:7.4.12-alpine',
+            stackName: 'cache',
+            hostPort: 0,
+            deployKeyPublic: '',
+            webhookSecret: '',
+            webhookUrl: '',
+            credentialUser: '',
+            credentialPassword: 'cache-password',
+          }),
+        ),
+      ),
+    })
+    renderWizard(api)
+    await createTemplateApp('cache')
+
+    expect(screen.getByRole('heading', { name: 'First-login credential' })).toBeTruthy()
+    expect(screen.getByRole('heading', { name: 'Password' })).toBeTruthy()
+    expect(screen.queryByRole('heading', { name: 'Username' })).toBeNull()
+    expect(screen.getByText('cache-password')).toBeTruthy()
+    expect(screen.getByText('Copy these values now. They will not be shown again.')).toBeTruthy()
   })
 
   it('prefills the template selected by the gallery', async () => {
