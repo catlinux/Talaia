@@ -153,6 +153,7 @@ func newCoreRouter(st *store.Store, agents api.LiveAgents, options panelOptions)
 	return api.NewRouter(api.RouterDeps{
 		DB:                 st,
 		WebDir:             options.WebDir,
+		Version:            version,
 		Security:           api.SecurityConfig{TLS: options.TLS, Origins: options.Origins},
 		Session:            api.SessionDeps{Store: st, Now: options.Now},
 		Servers:            st,

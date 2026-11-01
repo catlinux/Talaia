@@ -184,6 +184,7 @@ func newTestPanel(t *testing.T, options ...panelOption) *testPanel {
 	router := NewRouter(RouterDeps{
 		DB:                 st,
 		WebDir:             settings.webDir,
+		Version:            testVersion,
 		Security:           SecurityConfig{TLS: true, Origins: []string{testOrigin}},
 		Session:            SessionDeps{Store: st, Now: clock.Now, IdleTimeout: settings.idleTimeout},
 		Servers:            st,

@@ -7,7 +7,12 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/catlinux/Talaia/core/internal/store"
 )
+
+// testVersion is the running version the test panel reports.
+const testVersion = "1.2.3"
 
 type fakePinger struct {
 	err error
@@ -73,4 +78,99 @@ func TestHealthzSetsPingDeadline(t *testing.T) {
 	handler := NewHandler(deadlinePinger{t: t})
 	req := httptest.NewRequest(http.MethodGet, "/healthz", nil)
 	handler.ServeHTTP(httptest.NewRecorder(), req)
+}
+
+func TestSessionVersionHeaderOnlyForFullSessions(t *testing.T) {
+	next := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
+	})
+	handler := sessionVersion(testVersion)(next)
+	tests := []struct {
+		name    string
+		session *Session
+		want    bool
+	}{
+		{name: "anonymous"},
+		{name: "pending second factor", session: &Session{Stage: store.StageMFAPending}},
+		{name: "full session", session: &Session{Stage: store.StageFull}, want: true},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			request := httptest.NewRequest(http.MethodGet, "/api/v1/auth/session", nil)
+			if test.session != nil {
+				request = request.WithContext(withSession(request.Context(), *test.session))
+			}
+			recorder := httptest.NewRecorder()
+			handler.ServeHTTP(recorder, request)
+			values := recorder.Header().Values(versionHeaderName)
+			if test.want {
+				if len(values) != 1 || values[0] != testVersion {
+					t.Fatalf("%s = %v, want [%s]", versionHeaderName, values, testVersion)
+				}
+				return
+			}
+			if len(values) != 0 {
+				t.Fatalf("%s = %v, want no header", versionHeaderName, values)
+			}
+		})
+	}
+
+	empty := sessionVersion("")
+	request := httptest.NewRequest(http.MethodGet, "/api/v1/auth/session", nil)
+	request = request.WithContext(withSession(request.Context(), Session{Stage: store.StageFull}))
+	recorder := httptest.NewRecorder()
+	empty(next).ServeHTTP(recorder, request)
+	values := recorder.Header().Values(versionHeaderName)
+	if len(values) != 1 || values[0] != "" {
+		t.Fatalf("%s = %v, want an empty value", versionHeaderName, values)
+	}
+}
+
+func TestVersionHeaderAbsentOnPublicRoutes(t *testing.T) {
+	router := NewRouter(RouterDeps{
+		DB: fakePinger{}, WebDir: t.TempDir(), Version: testVersion,
+		Authz: NewAuthorizer(AuthorizerDeps{}),
+	})
+	for _, path := range []string{"/healthz", "/index.html", "/api/v1/auth/session"} {
+		t.Run(path, func(t *testing.T) {
+			recorder := httptest.NewRecorder()
+			router.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, path, nil))
+			if values := recorder.Header().Values(versionHeaderName); len(values) != 0 {
+				t.Fatalf("%s = %v, want no header", versionHeaderName, values)
+			}
+		})
+	}
+}
+
+func TestVersionHeaderOnAnAuthenticatedAPI(t *testing.T) {
+	router := NewRouter(RouterDeps{
+		DB: fakePinger{}, WebDir: t.TempDir(), Version: testVersion,
+		Authz: NewAuthorizer(AuthorizerDeps{}),
+	})
+	request := httptest.NewRequest(http.MethodGet, "/api/v1/auth/session", nil)
+	request = request.WithContext(withSession(request.Context(), Session{
+		Stage: store.StageFull, User: store.User{Username: "admin"},
+	}))
+	recorder := httptest.NewRecorder()
+	router.ServeHTTP(recorder, request)
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("session status = %d", recorder.Code)
+	}
+	if got := recorder.Header().Get(versionHeaderName); got != testVersion {
+		t.Fatalf("%s = %q, want %q", versionHeaderName, got, testVersion)
+	}
+}
+
+func TestVersionHeaderOnAnAuthenticatedResponse(t *testing.T) {
+	panel := newTestPanel(t)
+	panel.createUser(t, "admin", testPassword)
+	panel.enableTOTP(t, "admin", testPassword)
+
+	response := panel.do(t, panel.client, http.MethodGet, "/api/v1/auth/session", nil)
+	if response.StatusCode != http.StatusOK {
+		t.Fatalf("session status = %d", response.StatusCode)
+	}
+	if got := response.Header.Get(versionHeaderName); got != testVersion {
+		t.Fatalf("%s = %q, want %q", versionHeaderName, got, testVersion)
+	}
 }

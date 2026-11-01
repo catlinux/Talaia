@@ -13,6 +13,12 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.6.57] - 2026-11-01
+
+### Added
+
+- The API sends the running core version in the `X-Talaia-Version` header on fully authenticated responses, so an open panel tab can notice an update.
+
 ## [0.6.56] - 2026-11-01
 
 ### Changed
@@ -1042,7 +1048,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.6.56...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.6.57...HEAD
+[0.6.57]: https://github.com/catlinux/Talaia/releases/tag/v0.6.57
 [0.6.56]: https://github.com/catlinux/Talaia/releases/tag/v0.6.56
 [0.6.55]: https://github.com/catlinux/Talaia/releases/tag/v0.6.55
 [0.6.54]: https://github.com/catlinux/Talaia/releases/tag/v0.6.54

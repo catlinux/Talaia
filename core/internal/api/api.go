@@ -8,11 +8,15 @@ import (
 	"strings"
 	"time"
 
+	"github.com/catlinux/Talaia/core/internal/store"
 	"github.com/go-chi/chi/v5"
 )
 
 // pingTimeout bounds the dependency check made by the health endpoint.
 const pingTimeout = 2 * time.Second
+
+// versionHeaderName carries the running core version to an open panel tab.
+const versionHeaderName = "X-Talaia-Version"
 
 // Pinger reports whether a dependency is reachable.
 type Pinger interface {
@@ -26,6 +30,9 @@ type RouterDeps struct {
 	Session  SessionDeps
 	Security SecurityConfig
 	WebDir   string
+	// Version is the running core version sent in X-Talaia-Version to fully
+	// authenticated API requests.
+	Version string
 	// Servers and Agents feed GET /api/v1/servers.
 	Servers ServerLister
 	Agents  LiveAgents
@@ -88,6 +95,7 @@ func NewRouter(deps RouterDeps) http.Handler {
 
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Use(Sessions(deps.Session))
+		r.Use(sessionVersion(deps.Version))
 		r.Use(securityOrigin(deps.Security))
 		// The first allowed browser origin is the configured public base URL.
 		publicURL := ""
@@ -312,6 +320,20 @@ func NewRouter(deps RouterDeps) http.Handler {
 		Static(deps.WebDir).ServeHTTP(w, r)
 	})
 	return r
+}
+
+// sessionVersion adds the running version to responses of requests with a
+// fully authenticated session. Anonymous and second-factor-pending requests
+// never receive it.
+func sessionVersion(version string) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if session, ok := sessionFromContext(r.Context()); ok && session.Stage == store.StageFull {
+				w.Header().Set(versionHeaderName, version)
+			}
+			next.ServeHTTP(w, r)
+		})
+	}
 }
 
 // NewHandler returns a handler with the health endpoint only.
