@@ -149,9 +149,24 @@ El catálogo tiene quince aplicaciones —Forgejo, FreshRSS, Ghost, Homepage, Im
 Miniflux, Nextcloud, Paperless-ngx, Plausible, Umami, Uptime Kuma, Vaultwarden y WordPress— y tres bloques:
 PostgreSQL, MariaDB y Redis. Las imágenes están fijadas.
 
-Talaia genera un stack Compose para la plantilla con contraseñas aleatorias. La contraseña de la plantilla
-se guarda como secreto y no se muestra en el panel. Una plantilla no construye nada: el primer despliegue
-descarga la imagen fijada y arranca el stack. La RAM que se muestra es una recomendación, no un límite.
+Talaia genera un stack Compose para la plantilla con contraseñas aleatorias. La contraseña completa de la
+plantilla se guarda como secreto y no se muestra en el panel. Una plantilla no construye nada: el primer
+despliegue descarga la imagen fijada y arranca el stack. La RAM que se muestra es una recomendación, no un
+límite.
+
+Algunas plantillas declaran una credencial de primer inicio de sesión. Al crear una, la pantalla **App
+creada** muestra su usuario y su contraseña una sola vez; cópialos entonces. Talaia no vuelve a mostrar esa
+contraseña y no se puede recuperar después. Una plantilla sin `credential_length` no tiene credencial de
+primer inicio de sesión.
+
+Un archivo de plantilla, `templates/<id>/template.yaml`, contiene los campos de metadatos, `image`,
+`service`, `port`, `ram_mb` y el bloque `compose`. Dos claves opcionales describen la credencial de primer
+inicio de sesión:
+
+- `credential_length`: la `N` del marcador `{{password:N}}` que es el secreto de acceso, un entero de 8 a
+  96. Sin esta clave, la plantilla no tiene credencial de primer inicio de sesión.
+- `credential_user`: el nombre de usuario que se muestra con la contraseña, de hasta 64 caracteres y sin
+  caracteres de control. Es opcional cuando el servicio no usa usuario; requiere `credential_length`.
 
 Las plantillas incluidas publican en `127.0.0.1` y están pensadas para el modo externo. Una plantilla
 desplegada vuelve a generar su archivo Compose a partir de la plantilla, así que los cambios que hagas a
@@ -181,8 +196,9 @@ Abre una app y usa **Variables**. **Añadir variable** pide una **Clave**, un **
   construcción. Las variables secretas nunca se pasan como argumentos, aunque la marca esté activada.
 - Talaia es dueña del archivo `.env`: cada despliegue lo vuelve a generar a partir de las variables de la
   app. El stack generado y un stack de plantilla lo leen con `env_file: [.env]`. `TEMPLATE_PASSWORD` es
-  interna de una plantilla y no se exporta. Edita las variables en el panel, no en `.env`, porque el
-  siguiente despliegue sustituye el archivo.
+  interna de una plantilla y no se exporta. En una plantilla con credencial de primer inicio de sesión, el
+  panel muestra esa credencial una sola vez al crearla y no puede recuperarla después. Edita las variables
+  en el panel, no en `.env`, porque el siguiente despliegue sustituye el archivo.
 - Si la app tiene variables y un stack editado a mano no referencia `.env`, Talaia escribe igualmente el
   archivo pero deja un aviso en el registro. Añade `env_file: [.env]` al servicio de la app de ese stack
   para que el contenedor reciba las variables.

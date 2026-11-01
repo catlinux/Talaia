@@ -10,6 +10,7 @@ image: vaultwarden/server:1.37.4
 service: app
 port: 80
 ram_mb: 512
+credential_length: 48
 compose: |
   services:
     app:

@@ -10,6 +10,8 @@ image: ghcr.io/paperless-ngx/paperless-ngx:2.20.15
 service: app
 port: 8000
 ram_mb: 2048
+credential_user: admin
+credential_length: 32
 compose: |
   services:
     app:

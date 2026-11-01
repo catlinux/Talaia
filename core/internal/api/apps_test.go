@@ -380,6 +380,9 @@ func TestAppCreateShowsSecretsOnceAndNeverInReadEndpoints(t *testing.T) {
 	if created.DeployKeyPublic == "" || created.WebhookSecret == "" || created.WebhookURL == "" {
 		t.Fatalf("created response lacks its once-only secrets: %+v", created)
 	}
+	if created.CredentialUser != "" || created.CredentialPassword != "" {
+		t.Fatalf("a Git app returned a template credential: %+v", created)
+	}
 	if strings.Contains(response.Body.String(), "PRIVATE KEY") ||
 		strings.Contains(response.Body.String(), "deploy_key_enc") ||
 		strings.Contains(response.Body.String(), "webhook_secret_enc") {
@@ -563,6 +566,12 @@ func TestCreateFromTemplateUsesTemplateSource(t *testing.T) {
 	if created.DeployKeyPublic != "" || created.WebhookSecret != "" {
 		t.Error("a template app generated Git secrets")
 	}
+	if created.CredentialUser != "" || created.CredentialPassword != "" {
+		t.Error("a template without credential_length returned a credential")
+	}
+	if strings.Contains(response.Body.String(), "credential_") {
+		t.Errorf("creation response has credential fields for a template without one: %s", response.Body.String())
+	}
 	if len(queue.calls) != 0 {
 		t.Errorf("a template app was deployed before its domain was configured: %+v", queue.calls)
 	}
@@ -572,6 +581,130 @@ func TestCreateFromTemplateUsesTemplateSource(t *testing.T) {
 	}
 	if len(audit.events) == 0 || audit.events[0].Action != "app_created" {
 		t.Errorf("audit = %+v", audit.events)
+	}
+}
+
+func TestCreateFromTemplateReturnsFirstLoginCredentialOnce(t *testing.T) {
+	catalog, err := templates.LoadFS(os.DirFS("../../.."), "templates")
+	if err != nil {
+		t.Fatal(err)
+	}
+	state := newMemAppStore()
+	deps, audit, box := newAppAPI(t, state)
+	deps.Templates = catalog
+	response := serveRoute(t, http.MethodPost, "/api/v1/servers/{serverID}/apps",
+		"/api/v1/servers/s1/apps", NewAppCreateHandler(deps),
+		`{"stack_name":"news","source":"template","template_id":"miniflux"}`)
+	if response.Code != http.StatusCreated {
+		t.Fatalf("status = %d, body %s", response.Code, response.Body.String())
+	}
+	if response.Header().Get("Cache-Control") != "no-store" {
+		t.Errorf("Cache-Control = %q", response.Header().Get("Cache-Control"))
+	}
+	var created appCreatedResponse
+	if err := json.Unmarshal(response.Body.Bytes(), &created); err != nil {
+		t.Fatal(err)
+	}
+	if created.CredentialUser != "admin" || len(created.CredentialPassword) != 32 {
+		t.Fatalf("credential = %q/%q", created.CredentialUser, created.CredentialPassword)
+	}
+	stored := state.envs[created.ID]["TEMPLATE_PASSWORD"]
+	plain, err := box.Open(stored.ValueEnc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	password := string(plain)
+	if created.CredentialPassword != password[:32] {
+		t.Fatalf("credential password is not the stored prefix")
+	}
+	template, ok := catalog.Get("miniflux")
+	if !ok {
+		t.Fatal("miniflux template is missing")
+	}
+	rendered, err := template.Render(templates.RenderValues{
+		Domain: "news.example.com", Password: password, HostPort: 23456,
+		Stack: "news", AppID: created.ID,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(rendered, created.CredentialPassword) {
+		t.Fatalf("the returned credential is not rendered by the template")
+	}
+
+	detail := serveRoute(t, http.MethodGet, "/api/v1/apps/{appID}", "/api/v1/apps/"+created.ID,
+		NewAppHandler(deps), "")
+	if detail.Code != http.StatusOK {
+		t.Fatalf("detail status = %d", detail.Code)
+	}
+	if strings.Contains(detail.Body.String(), created.CredentialPassword) ||
+		strings.Contains(detail.Body.String(), password) ||
+		strings.Contains(detail.Body.String(), "credential_") {
+		t.Fatalf("a read endpoint leaked the template credential: %s", detail.Body.String())
+	}
+	for _, event := range audit.events {
+		if strings.Contains(fmt.Sprint(event.Details), created.CredentialPassword) {
+			t.Fatal("the template credential reached the audit log")
+		}
+	}
+}
+
+func TestCreateAppCredentialResponse(t *testing.T) {
+	catalog, err := templates.LoadFS(os.DirFS("../../.."), "templates")
+	if err != nil {
+		t.Fatal(err)
+	}
+	cases := []struct {
+		name              string
+		body              string
+		wantUser          string
+		wantPasswordChars int
+	}{
+		{
+			name: "git app",
+			body: `{"stack_name":"shop","source":"git","repo_url":"https://github.com/example/shop.git","branch":"main","service":"app","port":3000}`,
+		},
+		{
+			name: "template without credential",
+			body: `{"stack_name":"uptime","source":"template","template_id":"uptime-kuma"}`,
+		},
+		{
+			name:              "template with user",
+			body:              `{"stack_name":"news","source":"template","template_id":"miniflux"}`,
+			wantUser:          "admin",
+			wantPasswordChars: 32,
+		},
+		{
+			name:              "template without user",
+			body:              `{"stack_name":"cache","source":"template","template_id":"redis"}`,
+			wantPasswordChars: 32,
+		},
+	}
+	for _, test := range cases {
+		t.Run(test.name, func(t *testing.T) {
+			state := newMemAppStore()
+			deps, _, _ := newAppAPI(t, state)
+			deps.Templates = catalog
+			response := serveRoute(t, http.MethodPost, "/api/v1/servers/{serverID}/apps",
+				"/api/v1/servers/s1/apps", NewAppCreateHandler(deps), test.body)
+			if response.Code != http.StatusCreated {
+				t.Fatalf("status = %d, body %s", response.Code, response.Body.String())
+			}
+			var created appCreatedResponse
+			if err := json.Unmarshal(response.Body.Bytes(), &created); err != nil {
+				t.Fatal(err)
+			}
+			if created.CredentialUser != test.wantUser {
+				t.Errorf("credential_user = %q, want %q", created.CredentialUser, test.wantUser)
+			}
+			if len(created.CredentialPassword) != test.wantPasswordChars {
+				t.Errorf("credential_password has %d chars, want %d",
+					len(created.CredentialPassword), test.wantPasswordChars)
+			}
+			if test.wantPasswordChars == 0 && strings.Contains(response.Body.String(), "credential_") {
+				t.Errorf("response has credential fields: %s", response.Body.String())
+			}
+		})
 	}
 }
 

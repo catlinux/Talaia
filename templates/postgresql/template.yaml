@@ -10,6 +10,8 @@ image: postgres:17.11-alpine
 service: app
 port: 5432
 ram_mb: 256
+credential_user: talaia
+credential_length: 32
 compose: |
   services:
     app:

@@ -10,6 +10,7 @@ image: redis:7.4.12-alpine
 service: app
 port: 6379
 ram_mb: 128
+credential_length: 32
 compose: |
   services:
     app:

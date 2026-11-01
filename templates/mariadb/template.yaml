@@ -10,6 +10,8 @@ image: mariadb:11.8.9
 service: app
 port: 3306
 ram_mb: 256
+credential_user: talaia
+credential_length: 32
 compose: |
   services:
     app:

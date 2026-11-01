@@ -13,6 +13,12 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.6.51] - 2026-11-01
+
+### Added
+
+- Templates can declare a first-login credential (`credential_user`, `credential_length`) and the app creation response returns it once. Declared for Miniflux, Nextcloud, Paperless-ngx, PostgreSQL, MariaDB, Redis and Vaultwarden.
+
 ## [0.6.50] - 2026-11-01
 
 ### Changed
@@ -1005,7 +1011,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.6.50...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.6.51...HEAD
+[0.6.51]: https://github.com/catlinux/Talaia/releases/tag/v0.6.51
 [0.6.50]: https://github.com/catlinux/Talaia/releases/tag/v0.6.50
 [0.6.49]: https://github.com/catlinux/Talaia/releases/tag/v0.6.49
 [0.6.48]: https://github.com/catlinux/Talaia/releases/tag/v0.6.48

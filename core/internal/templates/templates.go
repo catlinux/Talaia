@@ -13,6 +13,8 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"unicode"
+	"unicode/utf8"
 )
 
 var (
@@ -27,6 +29,7 @@ var (
 		"name_ca": true, "name_es": true, "name_en": true,
 		"description_ca": true, "description_es": true, "description_en": true,
 		"image": true, "service": true, "port": true, "ram_mb": true, "compose": true,
+		"credential_user": true, "credential_length": true,
 	}
 )
 
@@ -41,6 +44,11 @@ type Template struct {
 	Port         int
 	RAMMB        int
 	Compose      string
+	// CredentialUser and CredentialLength describe the first-login credential
+	// when the template renders a password the user must type. A zero length
+	// means the template has no first-login credential.
+	CredentialUser   string
+	CredentialLength int
 }
 
 // Catalog is the set of templates available to the core.
@@ -222,6 +230,17 @@ func readTemplate(fsys fs.FS, file, directory string) (Template, error) {
 	}
 	template.Port, _ = strconv.Atoi(values["port"])
 	template.RAMMB, _ = strconv.Atoi(values["ram_mb"])
+	template.CredentialUser = values["credential_user"]
+	if raw, ok := values["credential_length"]; ok {
+		length, err := strconv.Atoi(raw)
+		if err != nil {
+			return Template{}, fmt.Errorf("%s: credential_length must be an integer", file)
+		}
+		if length == 0 {
+			return Template{}, fmt.Errorf("%s: credential_length must be between 8 and 96", file)
+		}
+		template.CredentialLength = length
+	}
 	for _, language := range requiredLocals {
 		template.Names[language] = values["name_"+language]
 		template.Descriptions[language] = values["description_"+language]
@@ -255,6 +274,18 @@ func (t Template) validate(directory string) error {
 	}
 	if t.RAMMB <= 0 {
 		return errors.New("ram_mb must be positive")
+	}
+	if t.CredentialLength != 0 && (t.CredentialLength < 8 || t.CredentialLength > 96) {
+		return fmt.Errorf("credential_length must be between 8 and 96")
+	}
+	if utf8.RuneCountInString(t.CredentialUser) > 64 {
+		return errors.New("credential_user must be at most 64 characters")
+	}
+	if strings.IndexFunc(t.CredentialUser, unicode.IsControl) >= 0 {
+		return errors.New("credential_user must not contain control characters")
+	}
+	if t.CredentialUser != "" && t.CredentialLength == 0 {
+		return errors.New("credential_user requires credential_length")
 	}
 	if !strings.Contains(t.Compose, "services:") {
 		return errors.New("compose has no services")

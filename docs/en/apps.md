@@ -144,9 +144,21 @@ The catalogue has fifteen applications — Forgejo, FreshRSS, Ghost, Homepage, I
 Miniflux, Nextcloud, Paperless-ngx, Plausible, Umami, Uptime Kuma, Vaultwarden and WordPress — and three
 building blocks: PostgreSQL, MariaDB and Redis. The images are pinned.
 
-Talaia generates a Compose stack for the template with random passwords. The template password is stored
-as a secret and is not shown in the panel. A template does not build anything: the first deployment pulls
-the pinned image and starts the stack. The RAM shown is a recommendation, not a limit.
+Talaia generates a Compose stack for the template with random passwords. The full template password is
+stored as a secret and is not shown in the panel. A template does not build anything: the first deployment
+pulls the pinned image and starts the stack. The RAM shown is a recommendation, not a limit.
+
+Some templates declare a first-login credential. When you create one, the **App created** screen shows
+its username and password once; copy them then. Talaia never shows that password again and it cannot be
+recovered afterwards. A template without `credential_length` has no first-login credential.
+
+A template file, `templates/<id>/template.yaml`, contains the metadata fields, `image`, `service`, `port`,
+`ram_mb` and the `compose` block. Two optional keys describe the first-login credential:
+
+- `credential_length`: the `N` of the `{{password:N}}` placeholder that is the login secret, an integer
+  from 8 to 96. Without this key the template has no first-login credential.
+- `credential_user`: the login name shown with the password, up to 64 characters and without control
+  characters. It is optional when the service has no username; it requires `credential_length`.
 
 The bundled templates publish on `127.0.0.1` and are intended for external mode. A deployed template
 regenerates its Compose file from the template, so changes you make by hand to that stack are replaced on
@@ -174,8 +186,9 @@ Open an app and use **Variables**. **Add variable** asks for a **Key**, a **Valu
   variables are never passed as build arguments, even if the flag is set.
 - Talaia owns the `.env` file: every deployment regenerates it from the app variables. The generated stack
   and a template stack read it with `env_file: [.env]`. `TEMPLATE_PASSWORD` is internal to a template and
-  is not exported. Edit variables in the panel, not in `.env`, because the next deployment replaces the
-  file.
+  is not exported. For a template with a first-login credential, the panel shows that credential once at
+  creation and cannot recover it later. Edit variables in the panel, not in `.env`, because the next
+  deployment replaces the file.
 - If the app has variables and a hand-edited stack does not reference `.env`, Talaia still writes the
   file but logs a warning. Add `env_file: [.env]` to the app service of that stack so the container
   receives the variables.

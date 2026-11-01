@@ -133,9 +133,11 @@ type AppResponse struct {
 
 type appCreatedResponse struct {
 	AppResponse
-	DeployKeyPublic string `json:"deploy_key_public,omitempty"`
-	WebhookSecret   string `json:"webhook_secret,omitempty"`
-	WebhookURL      string `json:"webhook_url,omitempty"`
+	DeployKeyPublic    string `json:"deploy_key_public,omitempty"`
+	WebhookSecret      string `json:"webhook_secret,omitempty"`
+	WebhookURL         string `json:"webhook_url,omitempty"`
+	CredentialUser     string `json:"credential_user,omitempty"`
+	CredentialPassword string `json:"credential_password,omitempty"`
 }
 
 func toAppResponse(app store.App) AppResponse {
@@ -316,6 +318,8 @@ func (h appHandler) create(w http.ResponseWriter, r *http.Request) {
 	if app.Source == store.AppSourceGit && strings.TrimSpace(app.Branch) == "" {
 		app.Branch = "main"
 	}
+	credentialUser, credentialPassword := "", ""
+	credentialLength := 0
 	if app.Source == store.AppSourceTemplate {
 		if h.deps.Templates == nil {
 			writeError(w, http.StatusBadRequest, "template_unavailable")
@@ -336,6 +340,10 @@ func (h appHandler) create(w http.ResponseWriter, r *http.Request) {
 		app.Service = template.Service
 		app.Port = template.Port
 		app.Build = store.AppBuildDockerfile
+		if template.CredentialLength > 0 {
+			credentialUser = template.CredentialUser
+			credentialLength = template.CredentialLength
+		}
 	}
 	if err := validateApp(app); err != nil {
 		writeError(w, http.StatusBadRequest, "invalid_request")
@@ -376,13 +384,17 @@ func (h appHandler) create(w http.ResponseWriter, r *http.Request) {
 			internal(w, "create app template password", err)
 			return
 		}
+		passwordValue := hex.EncodeToString(password)
 		if err := h.deps.Store.SetAppEnv(r.Context(), store.AppEnv{
 			AppID: created.ID, Key: "TEMPLATE_PASSWORD",
-			ValueEnc: h.deps.Box.Seal([]byte(hex.EncodeToString(password))), Secret: true,
+			ValueEnc: h.deps.Box.Seal([]byte(passwordValue)), Secret: true,
 		}); err != nil {
 			_ = h.deps.Store.DeleteApp(r.Context(), created.ID)
 			internal(w, "store app template password", err)
 			return
+		}
+		if credentialLength > 0 && credentialLength <= len(passwordValue) {
+			credentialPassword = passwordValue[:credentialLength]
 		}
 	}
 	h.audit(r, "app_created", map[string]any{
@@ -399,10 +411,12 @@ func (h appHandler) create(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	response := appCreatedResponse{
-		AppResponse:     toAppResponse(created),
-		DeployKeyPublic: publicKey,
-		WebhookSecret:   webhookSecret,
-		WebhookURL:      h.webhookURL(created.ID),
+		AppResponse:        toAppResponse(created),
+		DeployKeyPublic:    publicKey,
+		WebhookSecret:      webhookSecret,
+		WebhookURL:         h.webhookURL(created.ID),
+		CredentialUser:     credentialUser,
+		CredentialPassword: credentialPassword,
 	}
 	w.Header().Set("Cache-Control", "no-store")
 	writeJSON(w, http.StatusCreated, response)

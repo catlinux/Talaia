@@ -10,6 +10,8 @@ image: miniflux/miniflux:2.3.4
 service: app
 port: 8080
 ram_mb: 256
+credential_user: admin
+credential_length: 32
 compose: |
   services:
     app:
