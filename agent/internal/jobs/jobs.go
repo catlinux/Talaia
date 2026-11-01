@@ -26,11 +26,13 @@ import (
 // jobTimeout bounds a container command; the stack commands pull images and
 // start services, so they get longer.
 const (
-	jobTimeout          = 90 * time.Second
-	stackActionTimeout  = 10 * time.Minute
-	stackWriteTimeout   = 2 * time.Minute
-	resourceTimeout     = 5 * time.Minute
-	sourceTimeout       = 5 * time.Minute
+	jobTimeout         = 90 * time.Second
+	stackActionTimeout = 10 * time.Minute
+	stackWriteTimeout  = 2 * time.Minute
+	resourceTimeout    = 5 * time.Minute
+	sourceTimeout      = 5 * time.Minute
+	// probeTimeout bounds one git ls-remote; it never clones or builds.
+	probeTimeout        = 30 * time.Second
 	releaseTimeout      = 10 * time.Minute
 	proxyInstallTimeout = 10 * time.Minute
 	proxyApplyTimeout   = time.Minute
@@ -87,9 +89,11 @@ type ResourceManager interface {
 	RemoveResources(ctx context.Context, items []*agentv1.ResourceRef) (string, error)
 }
 
-// SourceFetcher checks out the source of an app into its build workspace.
+// SourceFetcher checks out the source of an app into its build workspace and
+// probes a branch without cloning.
 type SourceFetcher interface {
 	Fetch(ctx context.Context, app *agentv1.AppSource) (source.Result, error)
+	Probe(ctx context.Context, probe *agentv1.GitProbe) (string, error)
 }
 
 // AppBuilder builds the image of an app from its workspace.
@@ -236,6 +240,7 @@ func (e *Executor) Handle(ctx context.Context, msg *agentv1.CoreMsg, emit func(*
 	action, logs := msg.GetContainerAction(), msg.GetReadLogs()
 	write, stackAction, read, adopt := msg.GetStackWrite(), msg.GetStackAction(), msg.GetStackRead(), msg.GetStackAdopt()
 	appSource, appBuild := msg.GetAppSource(), msg.GetAppBuild()
+	probe := msg.GetGitProbe()
 	appRelease := msg.GetAppRelease()
 	appPortPick := msg.GetAppPortPick()
 	appCleanup := msg.GetAppCleanup()
@@ -246,7 +251,7 @@ func (e *Executor) Handle(ctx context.Context, msg *agentv1.CoreMsg, emit func(*
 	aptUpgrade, hostReboot := msg.GetAptUpgrade(), msg.GetHostReboot()
 	serviceAction := msg.GetServiceAction()
 	readJournal := msg.GetReadJournal()
-	if action == nil && logs == nil && write == nil && stackAction == nil && read == nil && adopt == nil && appSource == nil && appBuild == nil && appRelease == nil && appPortPick == nil && appCleanup == nil && proxyInstall == nil && proxyApply == nil && list == nil && remove == nil && updateCommand == nil && aptStatus == nil && aptUpgrade == nil && hostReboot == nil && serviceAction == nil && readJournal == nil {
+	if action == nil && logs == nil && write == nil && stackAction == nil && read == nil && adopt == nil && appSource == nil && probe == nil && appBuild == nil && appRelease == nil && appPortPick == nil && appCleanup == nil && proxyInstall == nil && proxyApply == nil && list == nil && remove == nil && updateCommand == nil && aptStatus == nil && aptUpgrade == nil && hostReboot == nil && serviceAction == nil && readJournal == nil {
 		return false
 	}
 
@@ -335,6 +340,23 @@ func (e *Executor) Handle(ctx context.Context, msg *agentv1.CoreMsg, emit func(*
 			encoded, err := json.Marshal(result)
 			if err != nil {
 				return "", fmt.Errorf("encode the source result: %w", err)
+			}
+			return string(encoded), nil
+		})
+	case probe != nil:
+		go e.execute(ctx, jobID, "git probe", probeTimeout, emit, func(ctx context.Context) (string, error) {
+			if e.sources == nil {
+				return "", errNoSource
+			}
+			commit, err := e.sources.Probe(ctx, probe)
+			if err != nil {
+				return "", err
+			}
+			encoded, err := json.Marshal(struct {
+				Commit string `json:"commit"`
+			}{Commit: commit})
+			if err != nil {
+				return "", fmt.Errorf("encode the git probe result: %w", err)
 			}
 			return string(encoded), nil
 		})

@@ -25,10 +25,13 @@ func (f *fakeAppBuilder) Build(_ context.Context, app *agentv1.AppBuild) (string
 }
 
 type fakeSourceFetcher struct {
-	mu     sync.Mutex
-	apps   []*agentv1.AppSource
-	result source.Result
-	err    error
+	mu          sync.Mutex
+	apps        []*agentv1.AppSource
+	result      source.Result
+	probes      []*agentv1.GitProbe
+	probeCommit string
+	probeErr    error
+	err         error
 }
 
 func (f *fakeSourceFetcher) Fetch(_ context.Context, app *agentv1.AppSource) (source.Result, error) {
@@ -36,6 +39,13 @@ func (f *fakeSourceFetcher) Fetch(_ context.Context, app *agentv1.AppSource) (so
 	defer f.mu.Unlock()
 	f.apps = append(f.apps, app)
 	return f.result, f.err
+}
+
+func (f *fakeSourceFetcher) Probe(_ context.Context, probe *agentv1.GitProbe) (string, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.probes = append(f.probes, probe)
+	return f.probeCommit, f.probeErr
 }
 
 func appBuildCommand(jobID string) *agentv1.CoreMsg {
