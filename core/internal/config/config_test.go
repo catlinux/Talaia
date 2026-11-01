@@ -27,6 +27,7 @@ func configsEqual(a, b Config) bool {
 		a.DataDir == b.DataDir &&
 		a.WebDir == b.WebDir &&
 		a.InsecureDev == b.InsecureDev &&
+		a.OIDCAllowLocalHTTP == b.OIDCAllowLocalHTTP &&
 		slices.Equal(a.PublicHostnames, b.PublicHostnames) &&
 		slices.Equal(a.AllowedOrigins, b.AllowedOrigins)
 }
@@ -511,6 +512,39 @@ func TestDeviceMFAHours(t *testing.T) {
 		if _, err := load(lookupFrom(with("TALAIA_DEVICE_MFA_HOURS", bad)), path); err == nil {
 			t.Errorf("device_mfa_hours %q was accepted", bad)
 		}
+	}
+}
+
+func TestOIDCAllowLocalHTTP(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "core.toml")
+	base := map[string]string{"TALAIA_DATABASE_URL": testDatabaseURL}
+	with := func(key, value string) map[string]string {
+		env := map[string]string{key: value}
+		for k, v := range base {
+			env[k] = v
+		}
+		return env
+	}
+
+	cfg, err := load(lookupFrom(base), path)
+	if err != nil || cfg.OIDCAllowLocalHTTP {
+		t.Fatalf("default = %v, %v", cfg.OIDCAllowLocalHTTP, err)
+	}
+	cfg, err = load(lookupFrom(with("TALAIA_OIDC_ALLOW_LOCAL_HTTP", " true ")), path)
+	if err != nil || !cfg.OIDCAllowLocalHTTP {
+		t.Errorf("from the environment = %v, %v", cfg.OIDCAllowLocalHTTP, err)
+	}
+	for _, bad := range []string{"maybe", "2"} {
+		if _, err := load(lookupFrom(with("TALAIA_OIDC_ALLOW_LOCAL_HTTP", bad)), path); err == nil {
+			t.Errorf("oidc_allow_local_http %q was accepted", bad)
+		}
+	}
+
+	if err := os.WriteFile(path, []byte("database_url = \""+testDatabaseURL+"\"\noidc_allow_local_http = true\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if cfg, err := load(lookupFrom(map[string]string{"TALAIA_CONFIG": path}), path); err != nil || !cfg.OIDCAllowLocalHTTP {
+		t.Errorf("from the file = %v, %v", cfg.OIDCAllowLocalHTTP, err)
 	}
 }
 

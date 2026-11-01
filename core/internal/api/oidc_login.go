@@ -72,7 +72,7 @@ func (h *authHandler) oidcConfig(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, oidcLoginConfigResponse{
-		Enabled: config.Enabled,
+		Enabled: config.Enabled && h.oidc.redirectURL() != "",
 		Label:   config.ButtonLabel,
 	})
 }
@@ -215,6 +215,9 @@ func (h *authHandler) oidcProvider(r *http.Request) (*coreoidc.Provider, store.O
 	if h.oidc == nil || h.oidc.deps.Store == nil {
 		return nil, store.OIDCConfig{}, errors.New("nil oidc store")
 	}
+	if h.oidc.redirectURL() == "" {
+		return nil, store.OIDCConfig{}, nil
+	}
 	config, err := h.oidc.deps.Store.GetOIDCConfig(r.Context())
 	if err != nil {
 		return nil, store.OIDCConfig{}, err
@@ -222,7 +225,7 @@ func (h *authHandler) oidcProvider(r *http.Request) (*coreoidc.Provider, store.O
 	if !config.Enabled {
 		return nil, config, nil
 	}
-	provider, err := h.oidc.storedProvider(r.Context(), config, h.oidc.redirectURL(r))
+	provider, err := h.oidc.storedProvider(r.Context(), config, h.oidc.redirectURL())
 	if err != nil {
 		return nil, config, err
 	}

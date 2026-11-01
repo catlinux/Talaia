@@ -36,6 +36,9 @@ type Config struct {
 	ClientSecret string
 	RedirectURL  string
 	Label        string
+	// AllowLocalHTTPIssuer permits the development-only http://localhost and
+	// http://127.0.0.1 issuers. It is false in production.
+	AllowLocalHTTPIssuer bool
 }
 
 // Claims are the useful claims of an ID token.
@@ -82,7 +85,7 @@ func New(ctx context.Context, config Config) (*Provider, error) {
 }
 
 func validateConfig(config Config) error {
-	if err := ValidateIssuer(config.Issuer); err != nil {
+	if err := ValidateIssuer(config.Issuer, config.AllowLocalHTTPIssuer); err != nil {
 		return err
 	}
 	if strings.TrimSpace(config.ClientID) == "" {
@@ -94,9 +97,9 @@ func validateConfig(config Config) error {
 	return nil
 }
 
-// ValidateIssuer accepts https issuers and, for development and tests, plain
-// http on localhost or 127.0.0.1.
-func ValidateIssuer(raw string) error {
+// ValidateIssuer accepts https issuers. Plain http on localhost or 127.0.0.1 is
+// accepted only when allowLocalHTTP is true, an explicit development opt-in.
+func ValidateIssuer(raw string, allowLocalHTTP bool) error {
 	raw = strings.TrimSpace(raw)
 	if raw == "" {
 		return errors.New("oidc issuer is required")
@@ -116,10 +119,10 @@ func ValidateIssuer(raw string) error {
 	if scheme == "https" {
 		return nil
 	}
-	if scheme == "http" && (host == "localhost" || host == "127.0.0.1") {
+	if allowLocalHTTP && scheme == "http" && (host == "localhost" || host == "127.0.0.1") {
 		return nil
 	}
-	return errors.New("oidc issuer must use https, except http on localhost or 127.0.0.1")
+	return errors.New("oidc issuer must use https")
 }
 
 // Refresh fetches the discovery document now. Without a context it uses the

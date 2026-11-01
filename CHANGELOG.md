@@ -13,6 +13,13 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.6.55] - 2026-11-01
+
+### Changed
+
+- OIDC needs a configured public URL: without it enabling OIDC is refused (`public_url_required`), login is unavailable and the redirect URL is never derived from the request Host.
+- The `http://localhost` OIDC issuer exception is now a server-operator option (`oidc_allow_local_http`, off by default) instead of being open to panel administrators.
+
 ## [0.6.54] - 2026-11-01
 
 ### Fixed
@@ -1029,7 +1036,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.6.54...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.6.55...HEAD
+[0.6.55]: https://github.com/catlinux/Talaia/releases/tag/v0.6.55
 [0.6.54]: https://github.com/catlinux/Talaia/releases/tag/v0.6.54
 [0.6.53]: https://github.com/catlinux/Talaia/releases/tag/v0.6.53
 [0.6.52]: https://github.com/catlinux/Talaia/releases/tag/v0.6.52

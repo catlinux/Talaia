@@ -7,14 +7,23 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 )
 
 func oidcDiscoveryTestServer(t *testing.T, healthy bool) *httptest.Server {
 	t.Helper()
+	server, _ := oidcDiscoveryTestServerWithCounter(t, healthy)
+	return server
+}
+
+func oidcDiscoveryTestServerWithCounter(t *testing.T, healthy bool) (*httptest.Server, *atomic.Int32) {
+	t.Helper()
+	var calls atomic.Int32
 	var server *httptest.Server
 	server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		calls.Add(1)
 		if !healthy || r.URL.Path != "/.well-known/openid-configuration" {
 			http.Error(w, "discovery failed", http.StatusInternalServerError)
 			return
@@ -31,14 +40,16 @@ func oidcDiscoveryTestServer(t *testing.T, healthy bool) *httptest.Server {
 		})
 	}))
 	t.Cleanup(server.Close)
-	return server
+	return server, &calls
 }
 
-func TestOIDCSettingsRedirectFromRequest(t *testing.T) {
+func TestOIDCSettingsRedirectUsesPublicURL(t *testing.T) {
 	panel := newTestPanel(t)
-	handler := newOIDCSettingsHandler(OIDCSettingsDeps{Store: panel.store})
+	handler := newOIDCSettingsHandler(OIDCSettingsDeps{
+		Store: panel.store, PublicURL: "https://panel.example.com/",
+	})
 	request := httptest.NewRequest(http.MethodGet, "/api/v1/settings/oidc", nil)
-	request.Host = "core.example.com:8443"
+	request.Host = "attacker.example.com:8443"
 	recorder := httptest.NewRecorder()
 	handler.getSettings(recorder, request)
 	if recorder.Code != http.StatusOK {
@@ -48,8 +59,96 @@ func TestOIDCSettingsRedirectFromRequest(t *testing.T) {
 	if err := json.NewDecoder(recorder.Body).Decode(&response); err != nil {
 		t.Fatalf("decode settings: %v", err)
 	}
-	if response.RedirectURL != "https://core.example.com:8443/api/v1/auth/oidc/callback" {
+	if response.RedirectURL != "https://panel.example.com/api/v1/auth/oidc/callback" {
 		t.Fatalf("redirect_url = %q", response.RedirectURL)
+	}
+}
+
+func newOIDCSettingsRequest(method, body string) *http.Request {
+	request := httptest.NewRequest(method, "/api/v1/settings/oidc", strings.NewReader(body))
+	request.Header.Set("Content-Type", "application/json")
+	return request
+}
+
+func TestOIDCSettingsRequirePublicURL(t *testing.T) {
+	panel := newTestPanel(t)
+	idp, discoveryCalls := oidcDiscoveryTestServerWithCounter(t, true)
+	handler := newOIDCSettingsHandler(OIDCSettingsDeps{
+		Store: panel.store, Box: panel.box, PublicURL: "", AllowLocalHTTPIssuer: true,
+	})
+
+	get := httptest.NewRecorder()
+	handler.getSettings(get, newOIDCSettingsRequest(http.MethodGet, ""))
+	if get.Code != http.StatusOK {
+		t.Fatalf("GET status = %d", get.Code)
+	}
+	var initial oidcSettingsResponse
+	if err := json.Unmarshal(get.Body.Bytes(), &initial); err != nil {
+		t.Fatal(err)
+	}
+	if initial.RedirectURL != "" {
+		t.Fatalf("redirect_url = %q, want empty", initial.RedirectURL)
+	}
+
+	enabled := httptest.NewRecorder()
+	handler.updateSettings(enabled, newOIDCSettingsRequest(http.MethodPut,
+		`{"enabled":true,"issuer":"`+idp.URL+`","client_id":"talaia"}`))
+	if enabled.Code != http.StatusUnprocessableEntity || errorCodeOf(t, enabled) != "public_url_required" {
+		t.Fatalf("enabled status = %d, code = %q", enabled.Code, errorCodeOf(t, enabled))
+	}
+	if calls := discoveryCalls.Load(); calls != 0 {
+		t.Fatalf("discovery was called %d times", calls)
+	}
+
+	disabled := httptest.NewRecorder()
+	handler.updateSettings(disabled, newOIDCSettingsRequest(http.MethodPut,
+		`{"enabled":false,"issuer":"`+idp.URL+`","client_id":"talaia"}`))
+	if disabled.Code != http.StatusOK {
+		t.Fatalf("disabled status = %d, body %s", disabled.Code, disabled.Body.String())
+	}
+	var saved oidcSettingsResponse
+	if err := json.Unmarshal(disabled.Body.Bytes(), &saved); err != nil {
+		t.Fatal(err)
+	}
+	if saved.Enabled || saved.RedirectURL != "" {
+		t.Fatalf("saved settings = %+v", saved)
+	}
+	if calls := discoveryCalls.Load(); calls != 0 {
+		t.Fatalf("disabled save called discovery %d times", calls)
+	}
+}
+
+func TestOIDCSettingsLocalHTTPIssuerOption(t *testing.T) {
+	panel := newTestPanel(t)
+	idp, discoveryCalls := oidcDiscoveryTestServerWithCounter(t, true)
+	body := `{"enabled":true,"issuer":"` + idp.URL + `","client_id":"talaia"}`
+	request := func() *http.Request {
+		return newOIDCSettingsRequest(http.MethodPut, body)
+	}
+
+	off := newOIDCSettingsHandler(OIDCSettingsDeps{
+		Store: panel.store, Box: panel.box, PublicURL: "https://panel.example.com",
+	})
+	rejected := httptest.NewRecorder()
+	off.updateSettings(rejected, request())
+	if rejected.Code != http.StatusBadRequest || errorCodeOf(t, rejected) != "invalid_request" {
+		t.Fatalf("off status = %d, code = %q", rejected.Code, errorCodeOf(t, rejected))
+	}
+	if calls := discoveryCalls.Load(); calls != 0 {
+		t.Fatalf("rejected issuer called discovery %d times", calls)
+	}
+
+	on := newOIDCSettingsHandler(OIDCSettingsDeps{
+		Store: panel.store, Box: panel.box, PublicURL: "https://panel.example.com",
+		AllowLocalHTTPIssuer: true,
+	})
+	accepted := httptest.NewRecorder()
+	on.updateSettings(accepted, request())
+	if accepted.Code != http.StatusOK {
+		t.Fatalf("on status = %d, body %s", accepted.Code, accepted.Body.String())
+	}
+	if calls := discoveryCalls.Load(); calls != 1 {
+		t.Fatalf("accepted issuer called discovery %d times, want 1", calls)
 	}
 }
 

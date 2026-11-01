@@ -561,3 +561,39 @@ func TestOIDCLoginDisabled(t *testing.T) {
 		t.Fatal("disabled oidc start set a session cookie")
 	}
 }
+
+func TestOIDCLoginUnavailableWithoutPublicURL(t *testing.T) {
+	panel := newTestPanel(t)
+	idp := newOIDCLoginTestIDP(t)
+	saveOIDCLoginConfig(t, panel, idp)
+
+	handler := newAuthHandler(AuthDeps{Store: panel.store, Box: panel.box})
+	handler.oidc = newOIDCSettingsHandler(OIDCSettingsDeps{
+		Store: panel.store, Box: panel.box, PublicURL: "", AllowLocalHTTPIssuer: true,
+	})
+
+	configRecorder := httptest.NewRecorder()
+	handler.oidcConfig(configRecorder, httptest.NewRequest(http.MethodGet, "/api/v1/auth/oidc/config", nil))
+	if configRecorder.Code != http.StatusOK {
+		t.Fatalf("config status = %d", configRecorder.Code)
+	}
+	var config oidcLoginConfigResponse
+	if err := json.Unmarshal(configRecorder.Body.Bytes(), &config); err != nil {
+		t.Fatal(err)
+	}
+	if config.Enabled {
+		t.Fatal("oidc is enabled without a public URL")
+	}
+
+	startRecorder := httptest.NewRecorder()
+	handler.oidcStart(startRecorder, httptest.NewRequest(http.MethodGet, "/api/v1/auth/oidc/start", nil))
+	if startRecorder.Code != http.StatusNotFound {
+		t.Fatalf("start status = %d, want 404", startRecorder.Code)
+	}
+	idp.mu.Lock()
+	discoveries := idp.discoveryCalls
+	idp.mu.Unlock()
+	if discoveries != 0 {
+		t.Fatalf("start contacted discovery %d times", discoveries)
+	}
+}

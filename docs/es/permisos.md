@@ -196,7 +196,12 @@ OIDC sustituye **solo la contraseña**:
 - El segundo factor (TOTP o clave de acceso) sigue siendo obligatorio.
 - Los fallos vuelven al acceso con un mensaje genérico y se auditan como `oidc_login_denied`.
 
-Usa HTTPS para el emisor, salvo `http://localhost` o `http://127.0.0.1` en desarrollo.
+Usa HTTPS para el emisor. La excepción `http://localhost` y `http://127.0.0.1` es solo para desarrollo y
+está desactivada por defecto. Solo el operador del servidor puede activarla en un núcleo de desarrollo con
+`TALAIA_OIDC_ALLOW_LOCAL_HTTP=true` en el entorno o `oidc_allow_local_http = true` en el fichero TOML del
+núcleo; no la actives nunca en un panel de producción. El panel también necesita una URL pública
+configurada: sin ella la URL de redirección queda vacía y activar OIDC se rechaza con
+`422 public_url_required`.
 
 ## Grabaciones de terminal
 

@@ -143,7 +143,8 @@ Los pasos de uso están en [apps.md](apps.md); la configuración del servidor we
   distinto para el mismo correo se rechaza.
 - El flujo usa descubrimiento, código de autorización con PKCE, `state` y `nonce` en una cookie sellada de
   10 minutos, y verifica el ID token. El secreto de cliente es de solo escritura y se guarda cifrado.
-- Solo se aceptan emisores `https`, salvo `http://localhost` o `http://127.0.0.1` en desarrollo.
+- Solo se aceptan emisores `https`. La excepción de desarrollo `http://localhost` o `http://127.0.0.1`
+  está desactivada salvo que el operador del servidor active `oidc_allow_local_http`.
 - Los fallos redirigen a un error genérico del acceso y se auditan como `oidc_login_denied`; no revelan si
   existe la cuenta. Quien controle el proveedor puede hacerse pasar por sus usuarios después del segundo
   factor, así que protege el proveedor con el mismo cuidado que el panel.

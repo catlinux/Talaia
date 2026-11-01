@@ -102,7 +102,10 @@ type Config struct {
 	UpdateAPIURL string
 	// HostDir is the directory shared with the host update helper.
 	HostDir string
-	Metrics MetricsRetention
+	// OIDCAllowLocalHTTP permits http://localhost and http://127.0.0.1 OIDC
+	// issuers. It is for development only.
+	OIDCAllowLocalHTTP bool
+	Metrics            MetricsRetention
 }
 
 // MetricsRetention configures how long each metrics resolution is kept.
@@ -142,6 +145,7 @@ type fileConfig struct {
 	UpdateCheckInterval   *string            `toml:"update_check_interval"`
 	UpdateAPIURL          *string            `toml:"update_api_url"`
 	HostDir               *string            `toml:"host_dir"`
+	OIDCAllowLocalHTTP    *bool              `toml:"oidc_allow_local_http"`
 	Metrics               *fileMetricsConfig `toml:"metrics"`
 }
 
@@ -292,6 +296,13 @@ func load(lookup func(string) (string, bool), defaultPath string) (Config, error
 	if value, ok := lookup("TALAIA_HOST_DIR"); ok {
 		cfg.HostDir = strings.TrimSpace(value)
 	}
+	if value, ok := lookup("TALAIA_OIDC_ALLOW_LOCAL_HTTP"); ok {
+		allow, err := parseBoolOption(value, "oidc_allow_local_http")
+		if err != nil {
+			return Config{}, err
+		}
+		cfg.OIDCAllowLocalHTTP = allow
+	}
 
 	if err := cfg.validate(); err != nil {
 		return Config{}, err
@@ -402,6 +413,9 @@ func applyFile(cfg *Config, path string, explicit bool) error {
 	if file.HostDir != nil {
 		cfg.HostDir = strings.TrimSpace(*file.HostDir)
 	}
+	if file.OIDCAllowLocalHTTP != nil {
+		cfg.OIDCAllowLocalHTTP = *file.OIDCAllowLocalHTTP
+	}
 	if file.Metrics != nil {
 		values := []struct {
 			value  *int
@@ -446,13 +460,18 @@ func splitList(value string) []string {
 
 // parseInsecureDev accepts 1/true and 0/false.
 func parseInsecureDev(value string) (bool, error) {
+	return parseBoolOption(value, "insecure_dev")
+}
+
+// parseBoolOption accepts 1/true and 0/false for a boolean option.
+func parseBoolOption(value, name string) (bool, error) {
 	switch strings.ToLower(strings.TrimSpace(value)) {
 	case "1", "true":
 		return true, nil
 	case "0", "false":
 		return false, nil
 	default:
-		return false, fmt.Errorf("invalid insecure_dev value %q (expected 1 or true)", value)
+		return false, fmt.Errorf("invalid %s value %q (expected 1 or true)", name, value)
 	}
 }
 

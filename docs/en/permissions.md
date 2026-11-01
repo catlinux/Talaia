@@ -193,7 +193,11 @@ OIDC replaces the **password only**:
 - The second factor (TOTP or passkey) is still required.
 - Failures return to the login with a generic message and are audited as `oidc_login_denied`.
 
-Use HTTPS for the issuer, except `http://localhost` or `http://127.0.0.1` in development.
+Use HTTPS for the issuer. The `http://localhost` and `http://127.0.0.1` exception is for development
+only and is disabled by default. A server operator can enable it only on a development core with
+`TALAIA_OIDC_ALLOW_LOCAL_HTTP=true` in the environment or `oidc_allow_local_http = true` in the core
+TOML file; never enable it on a production panel. The panel also needs a configured public URL: without
+one the redirect URL is empty and enabling OIDC is refused with `422 public_url_required`.
 
 ## Terminal recordings
 

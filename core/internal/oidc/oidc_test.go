@@ -13,11 +13,12 @@ import (
 func oidcTestProvider(t *testing.T, idp *oidcTestIDP) *Provider {
 	t.Helper()
 	provider, err := NewProvider(context.Background(), Config{
-		Issuer:       idp.server.URL,
-		ClientID:     idp.audience,
-		ClientSecret: "test-secret",
-		RedirectURL:  "https://panel.example.com" + RedirectPath,
-		Label:        "SSO",
+		Issuer:               idp.server.URL,
+		ClientID:             idp.audience,
+		ClientSecret:         "test-secret",
+		RedirectURL:          "https://panel.example.com" + RedirectPath,
+		Label:                "SSO",
+		AllowLocalHTTPIssuer: true,
 	})
 	if err != nil {
 		t.Fatalf("create provider: %v", err)
@@ -206,27 +207,37 @@ func TestProviderRejectsInvalidIDTokens(t *testing.T) {
 func TestValidateIssuer(t *testing.T) {
 	tests := []struct {
 		issuer string
+		allow  bool
 		ok     bool
 	}{
-		{"https://accounts.example.com", true},
-		{"https://accounts.example.com/path", true},
-		{"http://localhost:9000", true},
-		{"http://127.0.0.1:9000", true},
-		{"http://localhost.evil.example", false},
-		{"http://127.0.0.1.evil.example", false},
-		{"http://accounts.example.com", false},
-		{"ftp://accounts.example.com", false},
-		{"https://user:pass@accounts.example.com", false},
-		{"https://accounts.example.com?x=1", false},
-		{"", false},
+		{"https://accounts.example.com", false, true},
+		{"https://accounts.example.com", true, true},
+		{"https://accounts.example.com/path", false, true},
+		{"http://localhost:9000", false, false},
+		{"http://localhost:9000", true, true},
+		{"http://127.0.0.1:9000", false, false},
+		{"http://127.0.0.1:9000", true, true},
+		{"http://localhost.evil.example", true, false},
+		{"http://127.0.0.1.evil.example", true, false},
+		{"http://accounts.example.com", true, false},
+		{"ftp://accounts.example.com", true, false},
+		{"https://user:pass@accounts.example.com", false, false},
+		{"https://accounts.example.com?x=1", false, false},
+		{"", false, false},
 	}
 	for _, test := range tests {
-		err := ValidateIssuer(test.issuer)
+		err := ValidateIssuer(test.issuer, test.allow)
 		if (err == nil) != test.ok {
-			t.Errorf("ValidateIssuer(%q) error = %v, want ok=%v", test.issuer, err, test.ok)
+			t.Errorf("ValidateIssuer(%q, %v) error = %v, want ok=%v", test.issuer, test.allow, err, test.ok)
 		}
 	}
 
+	if _, err := NewProvider(context.Background(), Config{
+		Issuer: "http://127.0.0.1:9000", ClientID: "client",
+		RedirectURL: "https://panel.example.com" + RedirectPath,
+	}); err == nil {
+		t.Fatal("NewProvider accepted a local http issuer without the opt-in")
+	}
 	if _, err := NewProvider(context.Background(), Config{
 		Issuer: "http://example.com", ClientID: "client",
 		RedirectURL: "https://panel.example.com" + RedirectPath,

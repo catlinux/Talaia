@@ -137,7 +137,8 @@ The user steps are in [apps.md](apps.md); the external web server setup is in [a
   email is rejected.
 - The flow uses discovery, authorization code with PKCE, `state` and `nonce` in a sealed 10-minute cookie,
   and verifies the ID token. The client secret is write-only and stored encrypted.
-- Only `https` issuers are accepted, except `http://localhost` or `http://127.0.0.1` in development.
+- Only `https` issuers are accepted. The `http://localhost` or `http://127.0.0.1` development exception is
+  off unless the server operator enables `oidc_allow_local_http`.
 - Failures redirect to a generic login error and are audited as `oidc_login_denied`; they do not reveal
   whether the account exists. Anyone who controls the provider can impersonate its users after the second
   factor, so protect the provider as carefully as the panel.

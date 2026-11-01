@@ -48,6 +48,9 @@ type AuthDeps struct {
 	PasskeyRPID string
 	// PasskeyOrigins are the browser origins allowed for WebAuthn ceremonies.
 	PasskeyOrigins []string
+	// AllowLocalHTTPIssuer permits the development-only http://localhost and
+	// http://127.0.0.1 OIDC issuers.
+	AllowLocalHTTPIssuer bool
 }
 
 // NewAuthRateLimiter returns the limiter shared by the login and TOTP
@@ -72,6 +75,7 @@ func newAuthHandler(deps AuthDeps) *authHandler {
 		deps: deps, passkeys: newPasskeyWebAuthn(deps),
 		oidc: newOIDCSettingsHandler(OIDCSettingsDeps{
 			Store: deps.Store, Box: deps.Box, Audit: deps.Store,
+			AllowLocalHTTPIssuer: deps.AllowLocalHTTPIssuer,
 		}),
 	}
 }

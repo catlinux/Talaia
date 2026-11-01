@@ -96,6 +96,7 @@ func NewRouter(deps RouterDeps) http.Handler {
 		}
 		oidcSettings := newOIDCSettingsHandler(OIDCSettingsDeps{
 			Store: deps.Auth.Store, Box: deps.Auth.Box, Audit: deps.Auth.Store, PublicURL: publicURL,
+			AllowLocalHTTPIssuer: deps.Auth.AllowLocalHTTPIssuer,
 		})
 		authHandler := newAuthHandler(deps.Auth)
 		authHandler.oidc = oidcSettings

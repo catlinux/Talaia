@@ -19,8 +19,11 @@ type OIDCSettingsDeps struct {
 	Box   *auth.SecretBox
 	Audit Auditor
 	// PublicURL is the configured public base URL of the panel. When empty,
-	// redirect_url is derived from the request host using https.
+	// redirect_url is empty, OIDC cannot be enabled and login is unavailable.
 	PublicURL string
+	// AllowLocalHTTPIssuer permits http://localhost and http://127.0.0.1
+	// issuers for development only.
+	AllowLocalHTTPIssuer bool
 }
 
 type oidcSettingsRequest struct {
@@ -60,28 +63,23 @@ func (h *oidcSettingsHandler) storeOrError(w http.ResponseWriter) (*store.Store,
 	return h.deps.Store, true
 }
 
-func (h *oidcSettingsHandler) settingsResponse(r *http.Request, config store.OIDCConfig) oidcSettingsResponse {
+func (h *oidcSettingsHandler) settingsResponse(config store.OIDCConfig) oidcSettingsResponse {
 	return oidcSettingsResponse{
 		Enabled:     config.Enabled,
 		Issuer:      config.Issuer,
 		ClientID:    config.ClientID,
 		HasSecret:   len(config.ClientSecretEnc) > 0,
 		ButtonLabel: config.ButtonLabel,
-		RedirectURL: h.redirectURL(r),
+		RedirectURL: h.redirectURL(),
 	}
 }
 
-// redirectURL uses the panel's configured public origin when there is one.
-// Otherwise it falls back to the request's Host over https; a reverse proxy
-// that terminates TLS must therefore pass the public Host through.
-func (h *oidcSettingsHandler) redirectURL(r *http.Request) string {
+// redirectURL uses only the configured public origin. It returns an empty
+// string when PublicURL is empty, so the request Host is never trusted.
+func (h *oidcSettingsHandler) redirectURL() string {
 	base := strings.TrimRight(strings.TrimSpace(h.deps.PublicURL), "/")
 	if base == "" {
-		host := strings.TrimSpace(r.Host)
-		if host == "" {
-			host = "localhost"
-		}
-		base = "https://" + host
+		return ""
 	}
 	return base + coreoidc.RedirectPath
 }
@@ -91,11 +89,12 @@ func (h *oidcSettingsHandler) redirectURL(r *http.Request) string {
 // cannot drift apart.
 func (h *oidcSettingsHandler) provider(ctx context.Context, config store.OIDCConfig, clientSecret, redirectURL string) (*coreoidc.Provider, error) {
 	return coreoidc.NewProvider(ctx, coreoidc.Config{
-		Issuer:       config.Issuer,
-		ClientID:     config.ClientID,
-		ClientSecret: clientSecret,
-		RedirectURL:  redirectURL,
-		Label:        config.ButtonLabel,
+		Issuer:               config.Issuer,
+		ClientID:             config.ClientID,
+		ClientSecret:         clientSecret,
+		RedirectURL:          redirectURL,
+		Label:                config.ButtonLabel,
+		AllowLocalHTTPIssuer: h.deps.AllowLocalHTTPIssuer,
 	})
 }
 
@@ -145,7 +144,7 @@ func (h *oidcSettingsHandler) getSettings(w http.ResponseWriter, r *http.Request
 		internal(w, "get oidc settings", err)
 		return
 	}
-	writeJSON(w, http.StatusOK, h.settingsResponse(r, config))
+	writeJSON(w, http.StatusOK, h.settingsResponse(config))
 }
 
 func (h *oidcSettingsHandler) updateSettings(w http.ResponseWriter, r *http.Request) {
@@ -162,8 +161,12 @@ func (h *oidcSettingsHandler) updateSettings(w http.ResponseWriter, r *http.Requ
 	request.ClientID = strings.TrimSpace(request.ClientID)
 	request.ButtonLabel = strings.TrimSpace(request.ButtonLabel)
 
+	if request.Enabled && h.redirectURL() == "" {
+		writeError(w, http.StatusUnprocessableEntity, "public_url_required")
+		return
+	}
 	if request.Issuer != "" {
-		if err := coreoidc.ValidateIssuer(request.Issuer); err != nil {
+		if err := coreoidc.ValidateIssuer(request.Issuer, h.deps.AllowLocalHTTPIssuer); err != nil {
 			writeInvalid(w, "issuer", "invalid_format")
 			return
 		}
@@ -195,7 +198,7 @@ func (h *oidcSettingsHandler) updateSettings(w http.ResponseWriter, r *http.Requ
 	if request.Enabled {
 		if _, err := h.provider(r.Context(), store.OIDCConfig{
 			Issuer: request.Issuer, ClientID: request.ClientID, ButtonLabel: request.ButtonLabel,
-		}, request.ClientSecret, h.redirectURL(r)); err != nil {
+		}, request.ClientSecret, h.redirectURL()); err != nil {
 			writeError(w, http.StatusUnprocessableEntity, "oidc_discovery_failed")
 			return
 		}
@@ -216,7 +219,7 @@ func (h *oidcSettingsHandler) updateSettings(w http.ResponseWriter, r *http.Requ
 	}
 
 	h.audit(r, saved)
-	writeJSON(w, http.StatusOK, h.settingsResponse(r, saved))
+	writeJSON(w, http.StatusOK, h.settingsResponse(saved))
 }
 
 func (h *oidcSettingsHandler) audit(r *http.Request, config store.OIDCConfig) {

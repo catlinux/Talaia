@@ -126,6 +126,8 @@ type panelOptions struct {
 	DeviceMFAHours int
 	PasskeyRPID    string
 	PasskeyOrigins []string
+	// OIDCAllowLocalHTTP enables the development-only http OIDC issuers.
+	OIDCAllowLocalHTTP bool
 }
 
 // newCoreRouter returns the handler of the health endpoint, the authentication
@@ -181,14 +183,15 @@ func newCoreRouter(st *store.Store, agents api.LiveAgents, options panelOptions)
 			Domains:     st,
 		}),
 		Auth: api.AuthDeps{
-			Store:          st,
-			Box:            options.Box,
-			Limiter:        options.Limiter,
-			Now:            options.Now,
-			LockDuration:   options.LockDuration,
-			DeviceMFAHours: options.DeviceMFAHours,
-			PasskeyRPID:    options.PasskeyRPID,
-			PasskeyOrigins: options.PasskeyOrigins,
+			Store:                st,
+			Box:                  options.Box,
+			Limiter:              options.Limiter,
+			Now:                  options.Now,
+			LockDuration:         options.LockDuration,
+			DeviceMFAHours:       options.DeviceMFAHours,
+			PasskeyRPID:          options.PasskeyRPID,
+			PasskeyOrigins:       options.PasskeyOrigins,
+			AllowLocalHTTPIssuer: options.OIDCAllowLocalHTTP,
 		},
 	})
 }
@@ -354,15 +357,16 @@ func serve() error {
 	}
 
 	panel := panelOptions{
-		Box:            box,
-		WebDir:         cfg.WebDir,
-		DistDir:        cfg.DistDir,
-		Origins:        cfg.AllowedOrigins,
-		TLS:            !cfg.InsecureDev,
-		Limiter:        api.NewAuthRateLimiter(),
-		DeviceMFAHours: cfg.DeviceMFAHours,
-		PasskeyRPID:    cfg.PasskeyRPID(),
-		PasskeyOrigins: cfg.PasskeyOrigins(),
+		Box:                box,
+		WebDir:             cfg.WebDir,
+		DistDir:            cfg.DistDir,
+		Origins:            cfg.AllowedOrigins,
+		TLS:                !cfg.InsecureDev,
+		Limiter:            api.NewAuthRateLimiter(),
+		DeviceMFAHours:     cfg.DeviceMFAHours,
+		PasskeyRPID:        cfg.PasskeyRPID(),
+		PasskeyOrigins:     cfg.PasskeyOrigins(),
+		OIDCAllowLocalHTTP: cfg.OIDCAllowLocalHTTP,
 	}
 
 	var terminals *terminal.Manager

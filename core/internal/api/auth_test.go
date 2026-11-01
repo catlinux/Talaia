@@ -228,11 +228,12 @@ func newTestPanel(t *testing.T, options ...panelOption) *testPanel {
 			ScriptSHA256:  testScriptHash,
 		},
 		Auth: AuthDeps{
-			Store:        st,
-			Box:          box,
-			Limiter:      settings.limiter,
-			Now:          clock.Now,
-			LockDuration: settings.lockDuration,
+			Store:                st,
+			Box:                  box,
+			Limiter:              settings.limiter,
+			Now:                  clock.Now,
+			LockDuration:         settings.lockDuration,
+			AllowLocalHTTPIssuer: true,
 		},
 	})
 	server := httptest.NewTLSServer(router)
