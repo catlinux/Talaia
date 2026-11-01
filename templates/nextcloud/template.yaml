@@ -6,7 +6,7 @@ name_ca: Nextcloud
 description_en: Private file sync and collaboration server.
 description_es: Servidor privado de sincronización de archivos y colaboración.
 description_ca: Servidor privat de sincronització de fitxers i col·laboració.
-image: nextcloud:30.0.4-apache
+image: nextcloud:30.0.17-apache
 service: app
 port: 80
 ram_mb: 1024

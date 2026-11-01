@@ -6,7 +6,7 @@ name_ca: Miniflux
 description_en: Minimalist RSS and Atom feed reader.
 description_es: Lector minimalista de fuentes RSS y Atom.
 description_ca: Lector minimalista de fonts RSS i Atom.
-image: miniflux/miniflux:2.2.3
+image: miniflux/miniflux:2.3.4
 service: app
 port: 8080
 ram_mb: 256
@@ -24,7 +24,7 @@ compose: |
         ADMIN_USERNAME: "admin"
         ADMIN_PASSWORD: "{{password:32}}"
     db:
-      image: postgres:17.2-alpine
+      image: postgres:17.11-alpine
       restart: unless-stopped
       environment:
         POSTGRES_DB: "miniflux"

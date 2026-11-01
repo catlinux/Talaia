@@ -6,7 +6,7 @@ name_ca: PostgreSQL
 description_en: Reliable relational database building block.
 description_es: Bloque de base de datos relacional fiable.
 description_ca: Bloc de base de dades relacional fiable.
-image: postgres:17.2-alpine
+image: postgres:17.11-alpine
 service: app
 port: 5432
 ram_mb: 256

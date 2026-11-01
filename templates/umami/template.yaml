@@ -6,7 +6,7 @@ name_ca: Umami
 description_en: Privacy-friendly web analytics.
 description_es: Analítica web respetuosa con la privacidad.
 description_ca: Analítica web respectuosa amb la privacitat.
-image: ghcr.io/umami-software/umami:postgresql-v2.14.0
+image: ghcr.io/umami-software/umami:postgresql-v2.20.2
 service: app
 port: 3000
 ram_mb: 512
@@ -22,7 +22,7 @@ compose: |
         APP_SECRET: "{{password:32}}"
         BASE_URL: "https://{{domain}}"
     db:
-      image: postgres:17.2-alpine
+      image: postgres:17.11-alpine
       restart: unless-stopped
       environment:
         POSTGRES_DB: "umami"

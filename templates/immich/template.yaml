@@ -6,7 +6,7 @@ name_ca: Immich
 description_en: Self-hosted photo and video library with mobile backup.
 description_es: Biblioteca de fotos y vídeos autoalojada con copia móvil.
 description_ca: Biblioteca de fotos i vídeos autoallotjada amb còpia mòbil.
-image: ghcr.io/immich-app/immich-server:v1.123.0
+image: ghcr.io/immich-app/immich-server:v1.144.1
 service: app
 port: 2283
 ram_mb: 4096
@@ -27,7 +27,7 @@ compose: |
       volumes:
         - immich_upload:/usr/src/app/upload
     db:
-      image: postgres:17.2-alpine
+      image: postgres:17.11-alpine
       restart: unless-stopped
       environment:
         POSTGRES_DB: "immich"
@@ -36,7 +36,7 @@ compose: |
       volumes:
         - immich_db:/var/lib/postgresql/data
     redis:
-      image: redis:7.4.2-alpine
+      image: redis:7.4.12-alpine
       restart: unless-stopped
   volumes:
     immich_upload:

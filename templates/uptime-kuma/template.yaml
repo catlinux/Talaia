@@ -6,7 +6,7 @@ name_ca: Uptime Kuma
 description_en: Self-hosted uptime monitor with status pages and notifications.
 description_es: Monitor de disponibilidad autoalojado con páginas de estado y avisos.
 description_ca: Monitor de disponibilitat autoallotjat amb pàgines d’estat i avisos.
-image: louislam/uptime-kuma:1.23.16
+image: louislam/uptime-kuma:1.23.17
 service: app
 port: 3001
 ram_mb: 512

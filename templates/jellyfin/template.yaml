@@ -6,7 +6,7 @@ name_ca: Jellyfin
 description_en: Media server for films, series, music and live TV.
 description_es: Servidor multimedia para películas, series, música y TV en directo.
 description_ca: Servidor multimèdia per a pel·lícules, sèries, música i TV en directe.
-image: jellyfin/jellyfin:10.10.3
+image: jellyfin/jellyfin:10.11.11
 service: app
 port: 8096
 ram_mb: 2048

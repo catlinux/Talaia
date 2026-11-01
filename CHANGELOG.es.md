@@ -13,6 +13,12 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+## [0.6.50] - 2026-11-01
+
+### Cambiado
+
+- Las imágenes de las plantillas quedan fijadas a la última versión estable de parche o menor de su versión mayor, comprobada en los registros. El nuevo `scripts/update-template-images.mjs` repite la comprobación (por defecto solo informa).
+
 ## [0.6.49] - 2026-10-31
 
 ### Corregido
@@ -999,7 +1005,8 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
   `.gitattributes` y `.gitignore`.
 - Licencia WNCL-1.0 aplicada: archivo `LICENSE` y sección de créditos en los README.
 
-[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.6.49...HEAD
+[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.6.50...HEAD
+[0.6.50]: https://github.com/catlinux/Talaia/releases/tag/v0.6.50
 [0.6.49]: https://github.com/catlinux/Talaia/releases/tag/v0.6.49
 [0.6.48]: https://github.com/catlinux/Talaia/releases/tag/v0.6.48
 [0.6.47]: https://github.com/catlinux/Talaia/releases/tag/v0.6.47

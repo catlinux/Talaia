@@ -6,7 +6,7 @@ name_ca: Paperless-ngx
 description_en: Document management with OCR, tags and full-text search.
 description_es: Gestión documental con OCR, etiquetas y búsqueda completa.
 description_ca: Gestió documental amb OCR, etiquetes i cerca completa.
-image: ghcr.io/paperless-ngx/paperless-ngx:2.14.7
+image: ghcr.io/paperless-ngx/paperless-ngx:2.20.15
 service: app
 port: 8000
 ram_mb: 2048
@@ -26,7 +26,7 @@ compose: |
         - paperless_data:/usr/src/paperless/data
         - paperless_media:/usr/src/paperless/media
     redis:
-      image: redis:7.4.2-alpine
+      image: redis:7.4.12-alpine
       restart: unless-stopped
       volumes:
         - paperless_redis:/data

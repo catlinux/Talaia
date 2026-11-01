@@ -6,7 +6,7 @@ name_ca: Redis
 description_en: In-memory cache and key-value store building block.
 description_es: Bloque de caché en memoria y almacén clave-valor.
 description_ca: Bloc de memòria cau i magatzem clau-valor.
-image: redis:7.4.2-alpine
+image: redis:7.4.12-alpine
 service: app
 port: 6379
 ram_mb: 128

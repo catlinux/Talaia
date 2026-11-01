@@ -6,6 +6,7 @@ Maintenance scripts for the Talaia repository. · Scripts de mantenimiento del r
 |---|---|---|
 | License header script / Script de cabeceras de licencia | Applies the WNCL-TP-1.0 license headers / Aplica las cabeceras de la licencia WNCL-TP-1.0 | Pending: provided by the maintainer / Pendiente: lo aporta el mantenedor |
 | `third-party-notices.mjs` | Writes `THIRD-PARTY-NOTICES.txt` from the Go and web dependencies; `--check` fails if it is out of date / Genera `THIRD-PARTY-NOTICES.txt` a partir de las dependencias Go y web; `--check` falla si está desfasado | Done / Hecho |
+| `update-template-images.mjs` | Pins the images of `templates/*/template.yaml` to the newest stable tag of their major version; dry run unless `--write`, `--major` to allow new majors / Fija las imágenes de `templates/*/template.yaml` a la última versión estable de su versión mayor; solo informa salvo `--write`, `--major` permite versiones mayores nuevas | Done / Hecho |
 | `bump-version.sh` | Updates `VERSION` and both changelogs / Actualiza `VERSION` y los dos changelogs | Phase 0 / Fase 0 |
 | `i18n-check` | Fails if a key is missing in `ca`, `es` or `en` / Falla si falta una clave en `ca`, `es` o `en` | Phase 0 / Fase 0 |
 

@@ -13,6 +13,12 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.6.50] - 2026-11-01
+
+### Changed
+
+- Template images are pinned to the current stable patch or minor release of their major version, checked against the registries. New `scripts/update-template-images.mjs` repeats the check (dry run by default).
+
 ## [0.6.49] - 2026-10-31
 
 ### Fixed
@@ -999,7 +1005,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.6.49...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.6.50...HEAD
+[0.6.50]: https://github.com/catlinux/Talaia/releases/tag/v0.6.50
 [0.6.49]: https://github.com/catlinux/Talaia/releases/tag/v0.6.49
 [0.6.48]: https://github.com/catlinux/Talaia/releases/tag/v0.6.48
 [0.6.47]: https://github.com/catlinux/Talaia/releases/tag/v0.6.47

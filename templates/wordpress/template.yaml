@@ -6,7 +6,7 @@ name_ca: WordPress
 description_en: Publishing platform for blogs and websites.
 description_es: Plataforma de publicación para blogs y sitios web.
 description_ca: Plataforma de publicació per a blogs i llocs web.
-image: wordpress:6.7.1-php8.3-apache
+image: wordpress:6.9.4-php8.3-apache
 service: app
 port: 80
 ram_mb: 1024
@@ -26,7 +26,7 @@ compose: |
       volumes:
         - wordpress_data:/var/www/html
     db:
-      image: mariadb:11.4.4
+      image: mariadb:11.8.9
       restart: unless-stopped
       environment:
         MARIADB_DATABASE: "wordpress"

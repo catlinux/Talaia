@@ -6,7 +6,7 @@ name_ca: Mealie
 description_en: Recipe manager and meal planner.
 description_es: Gestor de recetas y planificador de comidas.
 description_ca: Gestor de receptes i planificador d’àpats.
-image: ghcr.io/mealie-recipes/mealie:v2.2.0
+image: ghcr.io/mealie-recipes/mealie:v2.8.0
 service: app
 port: 9000
 ram_mb: 512

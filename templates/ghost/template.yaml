@@ -6,7 +6,7 @@ name_ca: Ghost
 description_en: Modern publishing platform for independent blogs.
 description_es: Plataforma de publicación moderna para blogs independientes.
 description_ca: Plataforma de publicació moderna per a blogs independents.
-image: ghost:5.103.0
+image: ghost:5.130.6
 service: app
 port: 2368
 ram_mb: 512

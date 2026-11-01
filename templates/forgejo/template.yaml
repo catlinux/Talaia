@@ -6,7 +6,7 @@ name_ca: Forgejo
 description_en: Self-hosted Git forge with issues, pull requests and packages.
 description_es: Forja Git autoalojada con incidencias, pull requests y paquetes.
 description_ca: Forja Git autoallotjada amb incidències, pull requests i paquets.
-image: codeberg.org/forgejo/forgejo:9.0.1
+image: codeberg.org/forgejo/forgejo:9.0.3
 service: app
 port: 3000
 ram_mb: 1024
