@@ -71,6 +71,9 @@ func TestPurgeLoopPurgesJournalReadJobs(t *testing.T) {
 	if !seen[ContainerLogsKind] {
 		t.Error("container_logs jobs are not purged")
 	}
+	if !seen[GitProbeKind] {
+		t.Error("deploy_git_probe jobs are not purged")
+	}
 }
 
 func TestPurgeLoopStopsWithTheContext(t *testing.T) {

@@ -12,25 +12,28 @@ const (
 	ContainerLogsKind = "container_logs"
 	// JournalReadKind is the kind of the jobs that read the systemd journal.
 	JournalReadKind = "journal_read"
-	// LogRetention is how long a finished log or journal job is kept.
+	// GitProbeKind is the kind of the jobs that probe an app Git branch.
+	GitProbeKind = "deploy_git_probe"
+	// LogRetention is how long a finished log, journal or probe job is kept.
 	LogRetention = 15 * time.Minute
 	// PurgeInterval is how often the finished short-lived jobs are purged.
 	PurgeInterval = 5 * time.Minute
 )
 
 // retainedKinds are the short-lived kinds that live logs and journal reads
-// create every few seconds.
-var retainedKinds = []string{ContainerLogsKind, JournalReadKind}
+// create every few seconds, and that branch polling creates every two minutes.
+var retainedKinds = []string{ContainerLogsKind, JournalReadKind, GitProbeKind}
 
 // Purger deletes finished jobs; the store implements it.
 type Purger interface {
 	PurgeFinishedJobs(ctx context.Context, kind string, olderThan time.Duration) (int64, error)
 }
 
-// PurgeLoop deletes finished container_logs and journal_read jobs at start and
-// every interval until ctx ends. Live logs and journal reads create a job every
-// few seconds, so without this the table would only grow; unfinished jobs and
-// other kinds are never touched.
+// PurgeLoop deletes finished container_logs, journal_read and deploy_git_probe
+// jobs at start and every interval until ctx ends. Live logs and journal reads
+// create a job every few seconds and branch polling one every two minutes, so
+// without this the table would only grow; unfinished jobs and other kinds are
+// never touched.
 func PurgeLoop(ctx context.Context, purger Purger, retention, interval time.Duration) {
 	if retention <= 0 {
 		retention = LogRetention

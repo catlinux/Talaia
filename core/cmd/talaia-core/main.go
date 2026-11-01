@@ -436,6 +436,12 @@ func serve() error {
 				logger.Error("deployment worker stopped", "error", err)
 			}
 		}()
+		go deploy.NewPoller(deploy.PollerDeps{
+			Apps:    st,
+			Prober:  deployer,
+			Enqueue: deployer,
+			Logger:  logger,
+		}).Run(ctx)
 		panel.Hooks = &api.HooksDeps{
 			Apps:       st,
 			Box:        box,

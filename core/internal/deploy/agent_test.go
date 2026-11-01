@@ -3,6 +3,7 @@ package deploy
 import (
 	"context"
 	"errors"
+	"strings"
 	"testing"
 	"time"
 
@@ -118,6 +119,58 @@ func TestHubAgentPicksAPort(t *testing.T) {
 	}
 	if len(dispatcher.messages) != 1 || dispatcher.messages[0].GetAppPortPick().GetName() != "shop" {
 		t.Errorf("messages = %v", dispatcher.messages)
+	}
+}
+
+func TestHubAgentProbesTheBranch(t *testing.T) {
+	const commit = "abcdef1234567890abcdef1234567890abcdef12"
+	jobs := newFakeJobs()
+	jobs.outputs["job-1"] = []store.Job{{
+		ID: "job-1", State: store.JobSucceeded, Output: `{"commit":"` + commit + `"}`,
+	}}
+	dispatcher := &fakeDispatcher{}
+	agent := NewHubAgent(HubAgentOptions{Dispatcher: dispatcher, Jobs: jobs, PollInterval: time.Millisecond})
+
+	probe := &agentv1.GitProbe{
+		RepoUrl:   "https://github.com/example/shop.git",
+		Branch:    "main",
+		DeployKey: "private-key",
+	}
+	got, err := agent.Probe(context.Background(), "server-1", probe)
+	if err != nil {
+		t.Fatalf("Probe: %v", err)
+	}
+	if got != commit {
+		t.Errorf("commit = %q", got)
+	}
+	if jobs.lastKind != jobKindProbe {
+		t.Errorf("job kind = %q", jobs.lastKind)
+	}
+	if jobKindProbe != "deploy_git_probe" {
+		t.Errorf("probe job kind = %q", jobKindProbe)
+	}
+	if len(dispatcher.messages) != 1 {
+		t.Fatalf("messages = %v", dispatcher.messages)
+	}
+	sent := dispatcher.messages[0].GetGitProbe()
+	if sent.GetRepoUrl() != probe.GetRepoUrl() || sent.GetBranch() != probe.GetBranch() ||
+		sent.GetDeployKey() != probe.GetDeployKey() {
+		t.Errorf("sent probe = %v", sent)
+	}
+}
+
+func TestHubAgentProbeRejectsBadOutput(t *testing.T) {
+	jobs := newFakeJobs()
+	jobs.outputs["job-1"] = []store.Job{{ID: "job-1", State: store.JobSucceeded, Output: "not json"}}
+	agent := NewHubAgent(HubAgentOptions{Dispatcher: &fakeDispatcher{}, Jobs: jobs, PollInterval: time.Millisecond})
+	if _, err := agent.Probe(context.Background(), "server-1", &agentv1.GitProbe{}); err == nil ||
+		!strings.Contains(err.Error(), "decode the git probe result") {
+		t.Fatalf("Probe error = %v", err)
+	}
+
+	jobs.outputs["job-1"] = []store.Job{{ID: "job-1", State: store.JobSucceeded, Output: `{"commit":""}`}}
+	if _, err := agent.Probe(context.Background(), "server-1", &agentv1.GitProbe{}); err == nil {
+		t.Fatal("Probe accepted an empty commit")
 	}
 }
 

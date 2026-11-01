@@ -49,6 +49,7 @@ type Agent interface {
 	WriteStack(ctx context.Context, serverID string, msg *agentv1.StackWrite) (string, error)
 	UpStack(ctx context.Context, serverID, name string) (string, error)
 	PickPort(ctx context.Context, serverID, name string) (int, error)
+	Probe(ctx context.Context, serverID string, msg *agentv1.GitProbe) (string, error)
 }
 
 // SecretOpener decrypts the sealed deploy key and build variables.

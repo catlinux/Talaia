@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/catlinux/Talaia/core/internal/jobs"
 	"github.com/catlinux/Talaia/core/internal/store"
 	agentv1 "github.com/catlinux/Talaia/proto/gen/go"
 )
@@ -24,6 +25,7 @@ const (
 	jobKindCleanup = "deploy_app_cleanup"
 	jobKindProxy   = "deploy_proxy_apply"
 	jobKindPort    = "deploy_port_pick"
+	jobKindProbe   = jobs.GitProbeKind
 
 	defaultPollInterval = time.Second
 )
@@ -199,6 +201,27 @@ func (a *HubAgent) PickPort(ctx context.Context, serverID, name string) (int, er
 		return 0, fmt.Errorf("decode the app host port: %w", err)
 	}
 	return port, nil
+}
+
+// Probe asks which commit the app branch points at.
+func (a *HubAgent) Probe(ctx context.Context, serverID string, msg *agentv1.GitProbe) (string, error) {
+	job, err := a.runJob(ctx, serverID, jobKindProbe, func(jobID string) *agentv1.CoreMsg {
+		return &agentv1.CoreMsg{JobId: jobID, Cmd: &agentv1.CoreMsg_GitProbe{GitProbe: msg}}
+	})
+	if err != nil {
+		return "", err
+	}
+	var result struct {
+		Commit string `json:"commit"`
+	}
+	if err := json.Unmarshal([]byte(job.Output), &result); err != nil {
+		return "", fmt.Errorf("decode the git probe result: %w", err)
+	}
+	commit := strings.TrimSpace(result.Commit)
+	if commit == "" {
+		return "", errors.New("the git probe returned an empty commit")
+	}
+	return commit, nil
 }
 
 func (a *HubAgent) runJob(ctx context.Context, serverID, kind string, command func(jobID string) *agentv1.CoreMsg) (store.Job, error) {

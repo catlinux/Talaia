@@ -158,26 +158,32 @@ func testApp() store.App {
 }
 
 type fakeAgent struct {
-	calls        []string
-	source       SourceResult
-	sourceErr    error
-	buildErr     error
-	releaseErr   error
-	upErr        error
-	readErr      error
-	writeErr     error
-	stackExists  bool
-	stackCompose string
-	stackEnv     string
-	writes       []string
-	buildArgs    []*agentv1.BuildArg
-	releaseTag   string
-	releaseKeep  []string
-	releaseCalls int
-	upCalls      int
-	port         int
-	portErr      error
-	portCalls    int
+	calls         []string
+	source        SourceResult
+	sourceErr     error
+	buildErr      error
+	releaseErr    error
+	upErr         error
+	readErr       error
+	writeErr      error
+	stackExists   bool
+	stackCompose  string
+	stackEnv      string
+	writes        []string
+	buildArgs     []*agentv1.BuildArg
+	releaseTag    string
+	releaseKeep   []string
+	releaseCalls  int
+	upCalls       int
+	port          int
+	portErr       error
+	portCalls     int
+	probeCommit   string
+	probeErr      error
+	probeCalls    int
+	probeServer   string
+	probeMsg      *agentv1.GitProbe
+	probeDeadline time.Time
 }
 
 func (f *fakeAgent) Source(context.Context, string, *agentv1.AppSource) (SourceResult, error) {
@@ -238,6 +244,17 @@ func (f *fakeAgent) PickPort(context.Context, string, string) (int, error) {
 		return 23456, nil
 	}
 	return f.port, nil
+}
+
+func (f *fakeAgent) Probe(ctx context.Context, serverID string, msg *agentv1.GitProbe) (string, error) {
+	f.calls = append(f.calls, "probe")
+	f.probeCalls++
+	f.probeServer = serverID
+	f.probeMsg = msg
+	if deadline, ok := ctx.Deadline(); ok {
+		f.probeDeadline = deadline
+	}
+	return f.probeCommit, f.probeErr
 }
 
 type fakeBox struct {

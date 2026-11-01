@@ -13,6 +13,12 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.6.64] - 2026-11-02
+
+### Fixed
+
+- Git branch polling now works: the core starts the poller and asks the agent for the branch commit (the agent answers the git probe command). Until now the **Also poll Git every 2 minutes** option was saved but never ran. Update the agents too.
+
 ## [0.6.63] - 2026-11-01
 
 ### Changed
@@ -1084,7 +1090,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.6.63...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.6.64...HEAD
+[0.6.64]: https://github.com/catlinux/Talaia/releases/tag/v0.6.64
 [0.6.63]: https://github.com/catlinux/Talaia/releases/tag/v0.6.63
 [0.6.62]: https://github.com/catlinux/Talaia/releases/tag/v0.6.62
 [0.6.61]: https://github.com/catlinux/Talaia/releases/tag/v0.6.61
