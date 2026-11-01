@@ -144,7 +144,7 @@
       "proxyLoading": "S'està llegint el mode del proxy…",
       "blockUnavailable": "No s'ha pogut llegir el mode del proxy.",
       "external": "Proxy extern",
-      "externalHint": "Talaia no toca Apache. Afegeix tu el bloc de sota.",
+      "externalHint": "Talaia no toca Apache. Hauràs d'afegir el lloc al teu Apache tu mateix després de crear l'app; el bloc és a sota.",
       "managed": "Proxy gestionat",
       "managedHint": "Caddy gestiona l'HTTPS automàticament.",
       "apache": "Bloc d'Apache",
@@ -192,8 +192,17 @@
       "domainError": "L'app s'ha creat, però no s'ha pogut afegir el domini: {{message}}",
       "deployWarning": "L'app s'ha creat, però no s'ha pogut posar el primer desplegament a la cua: {{message}}",
       "deploySkipped": "L'app s'ha creat. Necessites permís de desplegament per engegar-la des de la fitxa de l'app.",
-      "apacheTitle": "Bloc d'Apache",
-      "apachePending": "El bloc d'Apache apareixerà quan el primer desplegament assigni un port d'amfitrió."
+      "publishTitle": "La teva app encara no està publicada",
+      "publishIntro": "Talaia no toca el teu Apache. {{hostname}} no mostrarà l'app fins que afegeixis el lloc a Apache tu mateix.",
+      "publishStepDeploy": "Espera que acabi el primer desplegament; assigna el port d'amfitrió.",
+      "publishDomainsLink": "Obre Dominis",
+      "publishStepDomainsSuffix": ", fes clic a Veure configuració a {{hostname}} i copia el bloc d'Apache.",
+      "publishStepApache": "Al servidor, desa'l com a /etc/apache2/sites-available/{{hostname}}.conf i executa:",
+      "publishApacheCommand": "sudo a2enmod proxy proxy_http proxy_wstunnel headers rewrite && sudo a2ensite {{hostname}} && sudo apachectl configtest && sudo systemctl reload apache2",
+      "publishStepCertificate": "Obtén el certificat HTTPS:",
+      "publishCertbotCommand": "sudo certbot --apache -d {{hostname}}",
+      "publishDocs": "La guia completa és a la documentació: Publica una app darrere d'Apache o nginx.",
+      "apacheTitle": "Bloc d'Apache"
     },
     "validation": {
       "repo": "Fes servir una URL de github.com per HTTPS o SSH.",

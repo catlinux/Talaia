@@ -74,6 +74,7 @@ form to add one later in the panel. If you skip it, the app still deploys, but o
 Apache block is available until a domain exists. A warning such as **The hostname does not resolve.** or
 **The hostname does not point to this server.** does not stop the app from being created; fix the DNS
 record before you request a certificate.
+After creating an app with a domain on an external server, the success screen shows a highlighted warning that the app is **not published yet**, with the steps to add the Apache site and the certificate by hand.
 
 ## Git repositories
 

@@ -18,7 +18,7 @@ import type { Server } from '../../../api/types'
 import { errorMessage } from '../../../auth/AuthGate'
 import { usePermissions } from '../../../auth/permissions'
 import { PageHeader } from '../../../components/ui'
-import { useNavigate, useRoute } from '../../../router'
+import { Link, useNavigate, useRoute } from '../../../router'
 import './wizard.css'
 
 type Step = 'source' | 'build' | 'target' | 'domain' | 'review'
@@ -813,7 +813,9 @@ export function NewAppWizard({ api, client }: NewAppWizardProps) {
         ) : proxy?.mode === 'external' ? (
           <div className="wizard__proxy">
             <h3>{t('wizard.domain.external')}</h3>
-            <p>{t('wizard.domain.externalHint')}</p>
+            <p>
+              <strong>{t('wizard.domain.externalHint')}</strong>
+            </p>
             <h4>{t('wizard.domain.apache')}</h4>
             {block?.apache ? (
               <pre className="wizard__code">{block.apache}</pre>
@@ -900,6 +902,8 @@ export function NewAppWizard({ api, client }: NewAppWizardProps) {
     const app = created.app
     const hasGitSecrets = app.source === 'git' && app.deployKeyPublic !== ''
     const hasCredential = app.source === 'template' && app.credentialPassword !== ''
+    const externalDomain =
+      created.domain !== null && created.proxyMode === 'external' ? created.domain : null
     return (
       <section className="wizard">
         <PageHeader
@@ -986,15 +990,49 @@ export function NewAppWizard({ api, client }: NewAppWizardProps) {
               {created.domain !== null && created.proxyMode === 'managed' ? (
                 <p className="wizard__notice">{t('wizard.domain.managedHint')}</p>
               ) : null}
-              {created.domain !== null && created.proxyMode === 'external' ? (
-                app.hostPort > 0 && created.proxyDomain?.apache ? (
-                  <div className="wizard__proxy">
-                    <h3>{t('wizard.success.apacheTitle')}</h3>
-                    <pre className="wizard__code">{created.proxyDomain.apache}</pre>
+              {externalDomain !== null ? (
+                <>
+                  <div className="wizard__callout">
+                    <h3>{t('wizard.success.publishTitle')}</h3>
+                    <p>{t('wizard.success.publishIntro', { hostname: externalDomain.hostname })}</p>
+                    <ol>
+                      <li>{t('wizard.success.publishStepDeploy')}</li>
+                      <li>
+                        <Link to="/domains">{t('wizard.success.publishDomainsLink')}</Link>
+                        {t('wizard.success.publishStepDomainsSuffix', {
+                          hostname: externalDomain.hostname,
+                        })}
+                      </li>
+                      <li>
+                        <p>
+                          {t('wizard.success.publishStepApache', {
+                            hostname: externalDomain.hostname,
+                          })}
+                        </p>
+                        <pre className="wizard__code">
+                          {t('wizard.success.publishApacheCommand', {
+                            hostname: externalDomain.hostname,
+                          })}
+                        </pre>
+                      </li>
+                      <li>
+                        <p>{t('wizard.success.publishStepCertificate')}</p>
+                        <pre className="wizard__code">
+                          {t('wizard.success.publishCertbotCommand', {
+                            hostname: externalDomain.hostname,
+                          })}
+                        </pre>
+                      </li>
+                    </ol>
+                    <p className="wizard__callout-docs">{t('wizard.success.publishDocs')}</p>
                   </div>
-                ) : (
-                  <p className="wizard__hint">{t('wizard.success.apachePending')}</p>
-                )
+                  {app.hostPort > 0 && created.proxyDomain?.apache ? (
+                    <div className="wizard__proxy">
+                      <h3>{t('wizard.success.apacheTitle')}</h3>
+                      <pre className="wizard__code">{created.proxyDomain.apache}</pre>
+                    </div>
+                  ) : null}
+                </>
               ) : null}
             </section>
           </div>

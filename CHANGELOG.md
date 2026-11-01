@@ -13,6 +13,12 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.6.63] - 2026-11-01
+
+### Changed
+
+- After creating an app with a domain on a server with an external proxy, the wizard shows a highlighted warning that the app is not published yet, with the steps to add the Apache site and the certificate by hand, and the domain step says it more clearly.
+
 ## [0.6.62] - 2026-11-01
 
 ### Fixed
@@ -1078,7 +1084,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.6.62...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.6.63...HEAD
+[0.6.63]: https://github.com/catlinux/Talaia/releases/tag/v0.6.63
 [0.6.62]: https://github.com/catlinux/Talaia/releases/tag/v0.6.62
 [0.6.61]: https://github.com/catlinux/Talaia/releases/tag/v0.6.61
 [0.6.60]: https://github.com/catlinux/Talaia/releases/tag/v0.6.60

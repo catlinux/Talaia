@@ -77,6 +77,8 @@ pero en un servidor externo no hay bloque de Apache hasta que exista un dominio.
 de host no resuelve.** o **El nombre de host no apunta a este servidor.** no impide crear la app; corrige el
 registro DNS antes de pedir el certificado.
 
+Tras crear una app con dominio en un servidor externo, la pantalla de éxito muestra un aviso destacado de que la app **todavía no está publicada**, con los pasos para añadir el sitio de Apache y el certificado a mano.
+
 ## Repositorios Git
 
 Talaia construye las apps de Git en el servidor a partir de un Dockerfile. Solo acepta repositorios de

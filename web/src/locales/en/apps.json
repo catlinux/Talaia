@@ -144,7 +144,7 @@
       "proxyLoading": "Reading the proxy mode…",
       "blockUnavailable": "The proxy mode could not be read.",
       "external": "External proxy",
-      "externalHint": "Talaia does not touch Apache. Add the block below yourself.",
+      "externalHint": "Talaia does not touch Apache. You will have to add the site to your Apache yourself after creating the app; the block is below.",
       "managed": "Managed proxy",
       "managedHint": "Caddy manages HTTPS automatically.",
       "apache": "Apache block",
@@ -192,8 +192,17 @@
       "domainError": "The app was created, but the domain could not be added: {{message}}",
       "deployWarning": "The app was created, but the first deployment could not be queued: {{message}}",
       "deploySkipped": "The app is created. You need deployment permission to start it from the app page.",
-      "apacheTitle": "Apache block",
-      "apachePending": "The Apache block will appear after the first deployment assigns a host port."
+      "publishTitle": "Your app is not published yet",
+      "publishIntro": "Talaia does not touch your Apache. {{hostname}} will not show the app until you add the site to Apache yourself.",
+      "publishStepDeploy": "Wait for the first deployment to finish; it assigns the host port.",
+      "publishDomainsLink": "Open Domains",
+      "publishStepDomainsSuffix": ", click View setup on {{hostname}} and copy the Apache block.",
+      "publishStepApache": "On the server, save it as /etc/apache2/sites-available/{{hostname}}.conf, then run:",
+      "publishApacheCommand": "sudo a2enmod proxy proxy_http proxy_wstunnel headers rewrite && sudo a2ensite {{hostname}} && sudo apachectl configtest && sudo systemctl reload apache2",
+      "publishStepCertificate": "Get the HTTPS certificate:",
+      "publishCertbotCommand": "sudo certbot --apache -d {{hostname}}",
+      "publishDocs": "The full guide is in docs: Publish an app behind Apache or nginx.",
+      "apacheTitle": "Apache block"
     },
     "validation": {
       "repo": "Use a github.com URL over HTTPS or SSH.",

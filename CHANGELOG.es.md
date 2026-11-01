@@ -13,6 +13,12 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+## [0.6.63] - 2026-11-01
+
+### Cambiado
+
+- Al crear una app con dominio en un servidor con proxy externo, el asistente muestra un aviso destacado de que la app todavía no está publicada, con los pasos para añadir el sitio de Apache y el certificado a mano, y el paso del dominio lo dice con más claridad.
+
 ## [0.6.62] - 2026-11-01
 
 ### Corregido
@@ -1078,7 +1084,8 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
   `.gitattributes` y `.gitignore`.
 - Licencia WNCL-1.0 aplicada: archivo `LICENSE` y sección de créditos en los README.
 
-[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.6.62...HEAD
+[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.6.63...HEAD
+[0.6.63]: https://github.com/catlinux/Talaia/releases/tag/v0.6.63
 [0.6.62]: https://github.com/catlinux/Talaia/releases/tag/v0.6.62
 [0.6.61]: https://github.com/catlinux/Talaia/releases/tag/v0.6.61
 [0.6.60]: https://github.com/catlinux/Talaia/releases/tag/v0.6.60

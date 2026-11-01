@@ -359,6 +359,65 @@
   margin: 0;
 }
 
+.wizard__callout {
+  margin: 16px 0;
+  padding: 14px 16px;
+  border: 1px solid color-mix(in srgb, var(--warn) 55%, transparent);
+  border-left: 4px solid var(--warn);
+  border-radius: var(--r);
+  background: var(--warn-soft);
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.wizard__callout h3 {
+  margin: 0 0 6px;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.wizard__callout p {
+  margin: 0 0 10px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.wizard__callout ol {
+  display: grid;
+  gap: 8px;
+  margin: 0 0 10px;
+  padding-left: 22px;
+}
+
+.wizard__callout li {
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.wizard__callout li p {
+  margin: 0;
+}
+
+.wizard__callout li::marker {
+  color: var(--warn);
+  font-weight: 700;
+}
+
+.wizard__callout a {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.wizard__callout .wizard__code {
+  margin-top: 6px;
+}
+
+.wizard__callout .wizard__callout-docs {
+  margin: 0;
+  color: var(--ink-2);
+  font-size: 12px;
+}
+
 .wizard__proxy {
   margin-top: 16px;
   padding-top: 14px;
@@ -436,6 +495,14 @@
 
   .wizard__grid {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .wizard__callout {
+    padding: 12px;
+  }
+
+  .wizard__callout ol {
+    padding-left: 19px;
   }
 
   .wizard__steps {

@@ -144,7 +144,7 @@
       "proxyLoading": "Leyendo el modo del proxy…",
       "blockUnavailable": "No se ha podido leer el modo del proxy.",
       "external": "Proxy externo",
-      "externalHint": "Talaia no toca Apache. Añade tú el bloque de abajo.",
+      "externalHint": "Talaia no toca Apache. Tendrás que añadir el sitio a tu Apache tú mismo después de crear la app; el bloque está abajo.",
       "managed": "Proxy gestionado",
       "managedHint": "Caddy gestiona el HTTPS automáticamente.",
       "apache": "Bloque de Apache",
@@ -192,8 +192,17 @@
       "domainError": "La app se ha creado, pero no se ha podido añadir el dominio: {{message}}",
       "deployWarning": "La app se ha creado, pero no se ha podido poner el primer despliegue en cola: {{message}}",
       "deploySkipped": "La app se ha creado. Necesitas permiso de despliegue para arrancarla desde la ficha de la app.",
-      "apacheTitle": "Bloque de Apache",
-      "apachePending": "El bloque de Apache aparecerá cuando el primer despliegue asigne un puerto de anfitrión."
+      "publishTitle": "Tu app todavía no está publicada",
+      "publishIntro": "Talaia no toca tu Apache. {{hostname}} no mostrará la app hasta que añadas el sitio a Apache tú mismo.",
+      "publishStepDeploy": "Espera a que termine el primer despliegue; asigna el puerto de anfitrión.",
+      "publishDomainsLink": "Abrir Dominios",
+      "publishStepDomainsSuffix": ", pulsa Ver configuración en {{hostname}} y copia el bloque de Apache.",
+      "publishStepApache": "En el servidor, guárdalo como /etc/apache2/sites-available/{{hostname}}.conf y ejecuta:",
+      "publishApacheCommand": "sudo a2enmod proxy proxy_http proxy_wstunnel headers rewrite && sudo a2ensite {{hostname}} && sudo apachectl configtest && sudo systemctl reload apache2",
+      "publishStepCertificate": "Obtén el certificado HTTPS:",
+      "publishCertbotCommand": "sudo certbot --apache -d {{hostname}}",
+      "publishDocs": "La guía completa está en la documentación: Publicar una app detrás de Apache o nginx.",
+      "apacheTitle": "Bloque de Apache"
     },
     "validation": {
       "repo": "Usa una URL de github.com por HTTPS o SSH.",

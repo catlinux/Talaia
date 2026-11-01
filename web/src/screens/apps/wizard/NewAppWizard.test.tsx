@@ -191,6 +191,27 @@ async function createTemplateApp(stack = 'uptime') {
   expect(await screen.findByRole('heading', { name: 'App created' })).toBeTruthy()
 }
 
+async function createGitApp(api: WizardApi, hostname = 'shop.example.com') {
+  renderWizard(api)
+  fireEvent.click(screen.getByRole('button', { name: 'Continue' }))
+  expect(await screen.findByRole('heading', { name: 'Build and runtime' })).toBeTruthy()
+  fireEvent.change(screen.getByLabelText('Repository URL'), {
+    target: { value: 'https://github.com/example/shop.git' },
+  })
+  fireEvent.click(screen.getByRole('button', { name: 'Continue' }))
+  expect(await screen.findByRole('heading', { name: 'Where should it run?' })).toBeTruthy()
+  await chooseServerAndName()
+  fireEvent.click(screen.getByRole('button', { name: 'Continue' }))
+  expect(await screen.findByRole('heading', { name: 'Domain and proxy' })).toBeTruthy()
+  if (hostname !== '') {
+    fireEvent.change(screen.getByLabelText('Hostname'), { target: { value: hostname } })
+  }
+  fireEvent.click(screen.getByRole('button', { name: 'Continue' }))
+  expect(await screen.findByRole('heading', { name: 'Review and create' })).toBeTruthy()
+  fireEvent.click(screen.getByRole('button', { name: 'Create app' }))
+  expect(await screen.findByRole('heading', { name: 'App created' })).toBeTruthy()
+}
+
 beforeEach(async () => {
   localStorage.clear()
   await i18n.changeLanguage('en')
@@ -249,6 +270,56 @@ describe('new app wizard', () => {
     expect(screen.getByText('https://panel.example.com/api/v1/hooks/git/app-1')).toBeTruthy()
     expect(screen.getByText('hook-secret')).toBeTruthy()
     expect(screen.getByText('Copy these values now. They will not be shown again.')).toBeTruthy()
+  })
+
+  it('warns in external mode that the Apache site must be added by hand', async () => {
+    const api = fakeApi()
+    await createGitApp(api)
+
+    expect(screen.getByRole('heading', { name: 'Your app is not published yet' })).toBeTruthy()
+    expect(
+      screen.getByText(
+        'Talaia does not touch your Apache. shop.example.com will not show the app until you add the site to Apache yourself.',
+      ),
+    ).toBeTruthy()
+    expect(
+      screen.getByText('Wait for the first deployment to finish; it assigns the host port.'),
+    ).toBeTruthy()
+    expect(screen.getByRole('link', { name: 'Open Domains' }).getAttribute('href')).toBe('/domains')
+    expect(
+      screen.getByText(/\/etc\/apache2\/sites-available\/shop\.example\.com\.conf/),
+    ).toBeTruthy()
+    expect(
+      screen.getByText(/sudo a2enmod proxy proxy_http proxy_wstunnel headers rewrite/),
+    ).toBeTruthy()
+    expect(screen.getByText(/sudo a2ensite shop\.example\.com/)).toBeTruthy()
+    expect(screen.getByText(/sudo certbot --apache -d shop\.example\.com/)).toBeTruthy()
+    expect(screen.getByText(/ProxyPass \/ http:\/\/127\.0\.0\.1:23456\//)).toBeTruthy()
+    expect(
+      screen.getByText('The full guide is in docs: Publish an app behind Apache or nginx.'),
+    ).toBeTruthy()
+    expect(document.querySelector('.wizard__callout')).not.toBeNull()
+  })
+
+  it('does not warn about Apache in managed mode', async () => {
+    const api = fakeApi({
+      proxy: vi.fn(() =>
+        Promise.resolve({
+          mode: 'managed' as const,
+          domains: [],
+        }),
+      ),
+    })
+    await createGitApp(api)
+
+    expect(screen.queryByRole('heading', { name: 'Your app is not published yet' })).toBeNull()
+  })
+
+  it('does not warn about Apache when no domain was added', async () => {
+    const api = fakeApi()
+    await createGitApp(api, '')
+
+    expect(screen.queryByRole('heading', { name: 'Your app is not published yet' })).toBeNull()
   })
 
   it('creates an app from an existing image', async () => {
