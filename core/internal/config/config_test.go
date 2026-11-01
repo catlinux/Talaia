@@ -827,3 +827,25 @@ update_check_interval = "soon"
 		t.Fatalf("bad interval in the file = %v", err)
 	}
 }
+
+func TestPanelURLPrefersTheOriginWithThePanelPort(t *testing.T) {
+	tests := []struct {
+		name    string
+		origins []string
+		port    string
+		want    string
+	}{
+		{"no origins", nil, "8443", ""},
+		{"default origins on another port", []string{"https://panel.example.com", "https://panel.example.com:8443"}, "8443", "https://panel.example.com:8443"},
+		{"panel on 443", []string{"https://panel.example.com"}, "443", "https://panel.example.com"},
+		{"explicit single origin behind a proxy", []string{"https://panel.example.com"}, "8443", "https://panel.example.com"},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			cfg := Config{AllowedOrigins: test.origins, PanelPort: test.port}
+			if got := cfg.PanelURL(); got != test.want {
+				t.Errorf("PanelURL() = %q, want %q", got, test.want)
+			}
+		})
+	}
+}

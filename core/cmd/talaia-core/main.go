@@ -450,10 +450,7 @@ func serve() error {
 			IPLimiter:  api.NewRateLimiterWithClock(60, time.Minute, time.Now),
 			AppLimiter: api.NewRateLimiterWithClock(30, time.Minute, time.Now),
 		}
-		publicURL := ""
-		if len(cfg.AllowedOrigins) > 0 {
-			publicURL = cfg.AllowedOrigins[0]
-		}
+		publicURL := cfg.PanelURL()
 		appDeps := &api.AppDeps{
 			Store: st, Box: box, Queue: deployer, Cleaner: agentClient, Audit: st, Servers: st, Agents: agentHub,
 			Resolver: net.DefaultResolver, PublicURL: publicURL, Templates: templateCatalog,

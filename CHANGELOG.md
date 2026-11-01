@@ -13,6 +13,12 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.6.65] - 2026-11-02
+
+### Fixed
+
+- The webhook URL (and the other links built from the panel address) now carry the port the panel listens on when it is not 443. It used to show the bare host, which GitHub could not reach.
+
 ## [0.6.64] - 2026-11-02
 
 ### Fixed
@@ -1090,7 +1096,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.6.64...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.6.65...HEAD
+[0.6.65]: https://github.com/catlinux/Talaia/releases/tag/v0.6.65
 [0.6.64]: https://github.com/catlinux/Talaia/releases/tag/v0.6.64
 [0.6.63]: https://github.com/catlinux/Talaia/releases/tag/v0.6.63
 [0.6.62]: https://github.com/catlinux/Talaia/releases/tag/v0.6.62

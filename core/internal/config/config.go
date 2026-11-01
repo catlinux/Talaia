@@ -725,3 +725,21 @@ func normalizeOrigin(value string) (string, error) {
 	}
 	return scheme + "://" + host, nil
 }
+
+// PanelURL is the address of the panel that links shown to users (such as the
+// GitHub webhook URL) are built from: the allowed origin that carries the port
+// the panel really listens on, or else the first origin. The default origins
+// list the bare host first, which is wrong when the panel is not on 443.
+func (c Config) PanelURL() string {
+	if len(c.AllowedOrigins) == 0 {
+		return ""
+	}
+	port := c.panelPort()
+	for _, origin := range c.AllowedOrigins {
+		parsed, err := url.Parse(origin)
+		if err == nil && port != "" && port != "443" && parsed.Port() == port {
+			return origin
+		}
+	}
+	return c.AllowedOrigins[0]
+}
