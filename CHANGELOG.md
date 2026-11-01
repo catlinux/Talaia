@@ -13,6 +13,12 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.6.54] - 2026-11-01
+
+### Fixed
+
+- CI: the not-found test of the panel waited only 1 s for the lazily loaded overview and failed on a slow runner.
+
 ## [0.6.53] - 2026-11-01
 
 ### Changed
@@ -1023,7 +1029,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.6.53...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.6.54...HEAD
+[0.6.54]: https://github.com/catlinux/Talaia/releases/tag/v0.6.54
 [0.6.53]: https://github.com/catlinux/Talaia/releases/tag/v0.6.53
 [0.6.52]: https://github.com/catlinux/Talaia/releases/tag/v0.6.52
 [0.6.51]: https://github.com/catlinux/Talaia/releases/tag/v0.6.51

@@ -647,7 +647,10 @@ describe('App', () => {
     fireEvent.click(screen.getByRole('link', { name: 'Back to overview' }))
 
     expect(window.location.pathname).toBe('/')
-    expect(await screen.findByRole('heading', { level: 1, name: overviewTitles.en })).toBeTruthy()
+    // The overview chunk loads lazily, which can take longer than the default 1 s on a busy CI runner.
+    expect(
+      await screen.findByRole('heading', { level: 1, name: overviewTitles.en }, { timeout: 5000 }),
+    ).toBeTruthy()
   })
 
   it('hides entries and guards routes the user cannot access', async () => {
