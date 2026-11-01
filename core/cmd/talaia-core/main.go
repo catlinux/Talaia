@@ -242,12 +242,13 @@ func newAgentRouter(st *store.Store, authority *ca.CA, h *hub.Hub, distDir strin
 	return mux
 }
 
-// serverCertificate generates the in-memory ECDSA key and the server
-// certificate of the core, valid for the configured hostnames.
-// loadTemplates finds the bundled templates next to the working directory or
-// the core binary. A missing catalog only disables template apps.
+// defaultTemplatesDir is where the container image ships the catalog.
+const defaultTemplatesDir = "/usr/share/talaia/templates"
+
+// loadTemplates finds the bundled templates next to the working directory, the
+// core binary or in the container image. A missing catalog only disables template apps.
 func loadTemplates(logger *slog.Logger) *templates.Catalog {
-	candidates := []string{"templates", filepath.Join("..", "templates")}
+	candidates := []string{"templates", filepath.Join("..", "templates"), defaultTemplatesDir}
 	if executable, err := os.Executable(); err == nil {
 		candidates = append(candidates, filepath.Join(filepath.Dir(executable), "templates"))
 	}
@@ -264,6 +265,8 @@ func loadTemplates(logger *slog.Logger) *templates.Catalog {
 	return nil
 }
 
+// serverCertificate generates the in-memory ECDSA key and the server
+// certificate of the core, valid for the configured hostnames.
 func serverCertificate(authority *ca.CA, hosts []string) (tls.Certificate, error) {
 	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	if err != nil {

@@ -84,6 +84,8 @@ FROM gcr.io/distroless/static-debian12:nonroot
 
 COPY --from=build /out/talaia-core /usr/local/bin/talaia-core
 COPY --from=web /build/web/dist /usr/share/talaia/web
+# The app templates the core offers in the panel.
+COPY templates /usr/share/talaia/templates
 # install.sh and the agent packages, served at /install.sh and /agent/*.deb.
 COPY --from=agentpkg /out /usr/share/talaia/dist
 COPY packaging/install.sh /usr/share/talaia/dist/install.sh

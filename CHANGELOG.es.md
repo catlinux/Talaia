@@ -13,6 +13,12 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+## [0.6.62] - 2026-11-01
+
+### Corregido
+
+- La imagen del núcleo ya incluye las plantillas de apps (`/usr/share/talaia/templates`), así que la pantalla **Plantillas** deja de salir vacía en las instalaciones en contenedor.
+
 ## [0.6.61] - 2026-11-01
 
 ### Corregido
@@ -1072,7 +1078,8 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
   `.gitattributes` y `.gitignore`.
 - Licencia WNCL-1.0 aplicada: archivo `LICENSE` y sección de créditos en los README.
 
-[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.6.61...HEAD
+[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.6.62...HEAD
+[0.6.62]: https://github.com/catlinux/Talaia/releases/tag/v0.6.62
 [0.6.61]: https://github.com/catlinux/Talaia/releases/tag/v0.6.61
 [0.6.60]: https://github.com/catlinux/Talaia/releases/tag/v0.6.60
 [0.6.59]: https://github.com/catlinux/Talaia/releases/tag/v0.6.59
