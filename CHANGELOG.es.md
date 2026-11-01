@@ -13,6 +13,12 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+## [0.6.58] - 2026-11-01
+
+### Añadido
+
+- El panel muestra un aviso para recargar cuando el core informa de una versión distinta de la de la pestaña abierta.
+
 ## [0.6.57] - 2026-11-01
 
 ### Añadido
@@ -1048,7 +1054,8 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
   `.gitattributes` y `.gitignore`.
 - Licencia WNCL-1.0 aplicada: archivo `LICENSE` y sección de créditos en los README.
 
-[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.6.57...HEAD
+[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.6.58...HEAD
+[0.6.58]: https://github.com/catlinux/Talaia/releases/tag/v0.6.58
 [0.6.57]: https://github.com/catlinux/Talaia/releases/tag/v0.6.57
 [0.6.56]: https://github.com/catlinux/Talaia/releases/tag/v0.6.56
 [0.6.55]: https://github.com/catlinux/Talaia/releases/tag/v0.6.55

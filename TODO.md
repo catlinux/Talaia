@@ -103,7 +103,7 @@ of the current phase and the next one.
 - [x] OIDC sign-in for existing users (verified email), second factor still required
 - [x] Panel: Users and permissions screen (mockup 5), API keys, OIDC settings, terminal recordings list and download
 - [x] Terminal session recording (done in phases 2 and 3)
-- [ ] After an update, the panel keeps showing the old version: make it reload itself (or show a "reload" notice) once the core restarts with a new version
+- [x] After an update, the panel keeps showing the old version: make it reload itself (or show a "reload" notice) once the core restarts with a new version
 - [x] Docs EN/ES, security review (done by Sonnet, to repeat with Opus if wanted), real test with a second user, close at 0.5.0 (closed by the maintainer, 2026-10-24)
 - [ ] Security follow-ups of the phase 4 review (Opus, 2026-10-24), all low:
   - [x] OIDC: when no public URL is configured the redirect URI is built from the request `Host`; refuse to enable OIDC without a public URL (the identity provider's redirect allow-list already blocks abuse)

@@ -40,6 +40,8 @@
     "collapse": "Contraer la barra lateral",
     "expand": "Expandir la barra lateral",
     "version": "Talaia {{version}}",
+    "updateAvailable": "Talaia se ha actualizado a la versión {{version}}. Recarga para usar la nueva versión.",
+    "reload": "Recargar",
     "breadcrumbs": "Ruta de navegación",
     "userMenu": "Menú de usuario",
     "alertsCount_one": "{{count}} alerta abierta",

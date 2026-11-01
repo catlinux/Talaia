@@ -151,6 +151,35 @@ function notifySignedOut(code: ApiErrorCode): void {
   }
 }
 
+let reportedVersion: string | null = null
+const versionMismatchListeners = new Set<(version: string) => void>()
+
+/**
+ * onVersionMismatch registers a listener for a core version that differs from
+ * the panel. A listener registered after the mismatch runs immediately with the
+ * remembered version, so a late banner still appears.
+ */
+export function onVersionMismatch(listener: (version: string) => void): () => void {
+  versionMismatchListeners.add(listener)
+  if (reportedVersion !== null) {
+    listener(reportedVersion)
+  }
+  return () => {
+    versionMismatchListeners.delete(listener)
+  }
+}
+
+function checkVersion(response: Response): void {
+  const version = response.headers.get('X-Talaia-Version')?.trim() ?? ''
+  if (version === '' || version === __APP_VERSION__ || version === reportedVersion) {
+    return
+  }
+  reportedVersion = version
+  for (const listener of versionMismatchListeners) {
+    listener(version)
+  }
+}
+
 /** HttpClient is the tiny API client the auth functions share. */
 export interface HttpClient {
   get<T>(path: string): Promise<T>
@@ -226,6 +255,8 @@ export function createHttpClient(fetchImpl: typeof fetch = defaultFetch): HttpCl
     } catch {
       throw new ApiError('network', 0)
     }
+
+    checkVersion(response)
 
     const payload = await parseBody(response)
     if (!response.ok) {

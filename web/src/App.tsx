@@ -22,6 +22,7 @@ import { usePermissions } from './auth/permissions'
 import { CatalogDrawerProvider } from './catalog/CatalogDrawer'
 import { Sidebar } from './components/shell/Sidebar'
 import { Topbar } from './components/shell/Topbar'
+import { UpdateBanner } from './components/shell/UpdateBanner'
 import { ToastProvider } from './components/ui'
 import { Link, matchRoute, RouterProvider, useNavigate, useRoute } from './router'
 import { About } from './screens/About'
@@ -348,6 +349,7 @@ function PanelShell({
           appName={appName}
           onOpenMenu={() => setMobileOpen(true)}
         />
+        <UpdateBanner />
         <main className="shell__main">
           <div className="shell__page" key={pageKey}>
             {page}

@@ -103,7 +103,7 @@ tareas concretas de la fase actual y de la siguiente.
 - [x] Inicio de sesión OIDC para usuarios existentes (correo verificado), con segundo factor igualmente
 - [x] Panel: pantalla Usuarios y permisos (maqueta 5), claves de API, ajustes OIDC, lista y descarga de grabaciones de terminal
 - [x] Grabación de sesiones de terminal (hecha en las fases 2 y 3)
-- [ ] Tras una actualización, el panel sigue mostrando la versión anterior: que se recargue solo (o avise de que hay que recargar) cuando el core se reinicie con una versión nueva
+- [x] Tras una actualización, el panel sigue mostrando la versión anterior: que se recargue solo (o avise de que hay que recargar) cuando el core se reinicie con una versión nueva
 - [x] Docs EN/ES, revisión de seguridad (hecha con Sonnet, repetible con Opus si se quiere), prueba real con un segundo usuario, cierre en 0.5.0 (cerrada por el mantenedor, 2026-10-24)
 - [ ] Seguimiento de seguridad de la revisión de la fase 4 (Opus, 2026-10-24), todo de gravedad baja:
   - [x] OIDC: sin URL pública configurada, la URI de redirección se construye con el `Host` de la petición; no permitir activar OIDC sin URL pública (la lista de redirecciones del proveedor ya bloquea el abuso)

@@ -40,6 +40,8 @@
     "collapse": "Collapse sidebar",
     "expand": "Expand sidebar",
     "version": "Talaia {{version}}",
+    "updateAvailable": "Talaia was updated to version {{version}}. Reload to use the new version.",
+    "reload": "Reload",
     "breadcrumbs": "Breadcrumb",
     "userMenu": "User menu",
     "alertsCount_one": "{{count}} open alert",

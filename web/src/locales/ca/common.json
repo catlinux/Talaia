@@ -40,6 +40,8 @@
     "collapse": "Replega la barra lateral",
     "expand": "Desplega la barra lateral",
     "version": "Talaia {{version}}",
+    "updateAvailable": "Talaia s'ha actualitzat a la versió {{version}}. Recarrega per fer servir la nova versió.",
+    "reload": "Recarrega",
     "breadcrumbs": "Ruta de navegació",
     "userMenu": "Menú d'usuari",
     "alertsCount_one": "{{count}} alerta oberta",

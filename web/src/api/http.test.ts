@@ -1,6 +1,6 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
-import { ApiError, createHttpClient, isSignedOut } from './http'
+import { ApiError, createHttpClient, isSignedOut, onVersionMismatch } from './http'
 
 describe('HTTP API errors', () => {
   it.each(['account_disabled', 'session_revoked'] as const)('treats %s as signed out', (code) => {
@@ -44,5 +44,55 @@ describe('HTTP API errors', () => {
         error.status === 400,
     )
     expect(new ApiError('invalid_request', 400).field).toBeUndefined()
+  })
+
+  it('notifies once when the core version differs from the panel', async () => {
+    const mismatch = '999.0.0'
+    const nextMismatch = '999.0.1'
+    let next: () => Response = () => new Response(null, { status: 204 })
+    const client = createHttpClient(async () => next())
+    const listener = vi.fn()
+    const off = onVersionMismatch(listener)
+
+    next = () => new Response(null, { status: 204 })
+    await client.get('/api/v1/one')
+    expect(listener).not.toHaveBeenCalled()
+
+    next = () =>
+      new Response(null, {
+        status: 204,
+        headers: { 'X-Talaia-Version': __APP_VERSION__ },
+      })
+    await client.get('/api/v1/two')
+    expect(listener).not.toHaveBeenCalled()
+
+    next = () =>
+      new Response(null, {
+        status: 204,
+        headers: { 'X-Talaia-Version': mismatch },
+      })
+    await client.get('/api/v1/three')
+    expect(listener).toHaveBeenCalledTimes(1)
+    expect(listener).toHaveBeenCalledWith(mismatch)
+
+    await client.get('/api/v1/four')
+    expect(listener).toHaveBeenCalledTimes(1)
+
+    next = () => new Response(null, { status: 204 })
+    await client.get('/api/v1/five')
+    expect(listener).toHaveBeenCalledTimes(1)
+
+    const failed = createHttpClient(
+      async () =>
+        new Response(JSON.stringify({ error: { code: 'invalid_request' } }), {
+          status: 400,
+          headers: { 'X-Talaia-Version': nextMismatch },
+        }),
+    )
+    await expect(failed.post('/api/v1/six', {})).rejects.toBeInstanceOf(ApiError)
+    expect(listener).toHaveBeenCalledTimes(2)
+    expect(listener).toHaveBeenLastCalledWith(nextMismatch)
+
+    off()
   })
 })
