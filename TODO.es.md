@@ -161,7 +161,7 @@ Decisiones cerradas el 2026-10-30: proxy externo por defecto (Talaia nunca toca 
   - [x] Actualizar las versiones de imagen fijadas de las plantillas a las estables actuales (son de finales de 2024)
   - [x] Plantillas en modo gestionado (unirlas a la red `talaia-proxy`) o declararlas solo para modo externo
   - [x] Mostrar una vez la contraseña generada de una app de plantilla, para las apps que la piden en el primer acceso
-  - [ ] Prueba e2e del modo gestionado con Docker (equipo Debian de pruebas o CI; el PC con Windows no tiene Docker)
+  - [ ] Prueba e2e del modo gestionado con Docker (necesita un equipo con los puertos 80 y 443 libres: el Debian de casa tiene Apache en ellos y el agente se niega a instalar el proxy allí; el PC con Windows no tiene Docker). Ya comprobado: la configuración de Caddy que genera el agente pasa `caddy validate` con el Caddy 2.10.2 fijado
   - [ ] Licencias de las imágenes de plantillas y de Caddy en `CREDITS.md` (script del mantenedor)
 
 ## Bloque de operación (decidido el 2026-10-20, antes de cerrar la fase 2)
