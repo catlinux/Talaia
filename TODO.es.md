@@ -159,7 +159,7 @@ Decisiones cerradas el 2026-10-30: proxy externo por defecto (Talaia nunca toca 
 - [ ] Docs EN/ES, revisión de seguridad Opus, prueba real del criterio y cierre en 0.7.0
   - [x] Docs EN/ES (guías de apps y de Apache) y revisión Opus de los pasos 5-13 (encontrado y corregido: puerto del anfitrión, variables en ejecución, borrado de apps, formato de la clave de despliegue, bloque de Apache)
   - [x] Actualizar las versiones de imagen fijadas de las plantillas a las estables actuales (son de finales de 2024)
-  - [ ] Plantillas en modo gestionado (unirlas a la red `talaia-proxy`) o declararlas solo para modo externo
+  - [x] Plantillas en modo gestionado (unirlas a la red `talaia-proxy`) o declararlas solo para modo externo
   - [x] Mostrar una vez la contraseña generada de una app de plantilla, para las apps que la piden en el primer acceso
   - [ ] Prueba e2e del modo gestionado con Docker (equipo Debian de pruebas o CI; el PC con Windows no tiene Docker)
   - [ ] Licencias de las imágenes de plantillas y de Caddy en `CREDITS.md` (script del mantenedor)

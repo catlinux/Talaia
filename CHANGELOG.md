@@ -13,6 +13,12 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.6.53] - 2026-11-01
+
+### Changed
+
+- Templates are external-mode only: deploying one on a server in managed proxy mode fails with a clear message and starts nothing.
+
 ## [0.6.52] - 2026-11-01
 
 ### Added
@@ -1017,7 +1023,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.6.52...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.6.53...HEAD
+[0.6.53]: https://github.com/catlinux/Talaia/releases/tag/v0.6.53
 [0.6.52]: https://github.com/catlinux/Talaia/releases/tag/v0.6.52
 [0.6.51]: https://github.com/catlinux/Talaia/releases/tag/v0.6.51
 [0.6.50]: https://github.com/catlinux/Talaia/releases/tag/v0.6.50

@@ -339,6 +339,9 @@ func (m *Manager) deploy(ctx context.Context, app store.App, deployment *store.D
 		if strings.TrimSpace(app.Image) == "" || app.TemplateID == "" {
 			return errors.New("the template app has no template")
 		}
+		if managed {
+			return errors.New("templates are only available in external proxy mode; switch this server to external mode to deploy them")
+		}
 		imageRef = app.Image
 		log.add("deploying template " + app.TemplateID)
 

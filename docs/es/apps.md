@@ -168,7 +168,8 @@ inicio de sesión:
 - `credential_user`: el nombre de usuario que se muestra con la contraseña, de hasta 64 caracteres y sin
   caracteres de control. Es opcional cuando el servicio no usa usuario; requiere `credential_length`.
 
-Las plantillas incluidas publican en `127.0.0.1` y están pensadas para el modo externo. Una plantilla
+Las plantillas incluidas publican en `127.0.0.1` y solo funcionan en modo externo: en un servidor con el
+proxy en modo gestionado el despliegue falla con un mensaje que lo explica y no se arranca nada. Una plantilla
 desplegada vuelve a generar su archivo Compose a partir de la plantilla, así que los cambios que hagas a
 mano en ese stack se sustituyen en el siguiente despliegue. Si necesitas conservar cambios, usa una app de
 imagen o de Git, o mantén un stack aparte.

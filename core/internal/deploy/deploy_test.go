@@ -678,6 +678,39 @@ func TestTemplateAppRendersAndStartsTheStack(t *testing.T) {
 	}
 }
 
+func TestTemplateAppIsRejectedInManagedProxyMode(t *testing.T) {
+	catalog, err := templates.LoadFS(os.DirFS("../../.."), "templates")
+	if err != nil {
+		t.Fatal(err)
+	}
+	app := testApp()
+	app.Source = store.AppSourceTemplate
+	app.TemplateID = "uptime-kuma"
+	app.TemplateVersion = "1.0.0"
+	app.Image = "louislam/uptime-kuma:1.23.16"
+	app.Service = "app"
+	app.Port = 3001
+	agent := &fakeAgent{}
+	manager, state := newTestManager(t, app, agent)
+	manager.templates = catalog
+	manager.modes = fakeModes{mode: agentv1.ProxyMode_PROXY_MODE_MANAGED}
+	state.envs[app.ID] = []store.AppEnv{{AppID: app.ID, Key: "TEMPLATE_PASSWORD", ValueEnc: []byte("sealed"), Secret: true}}
+
+	if err := manager.Enqueue(context.Background(), app.ID, "create", ""); err != nil {
+		t.Fatal(err)
+	}
+	deployment := processQueued(t, manager, state)
+	if deployment.State != store.DeploymentFailed {
+		t.Fatalf("deployment = %+v", deployment)
+	}
+	if !strings.Contains(deployment.Error, "only available in external proxy mode") {
+		t.Errorf("error lacks the reason: %q", deployment.Error)
+	}
+	if agent.upCalls != 0 || len(agent.writes) != 0 {
+		t.Errorf("the agent was used: up=%d writes=%v", agent.upCalls, agent.writes)
+	}
+}
+
 func TestTemplateAppWithoutUserVariablesKeepsEnvFile(t *testing.T) {
 	catalog, err := templates.LoadFS(os.DirFS("../../.."), "templates")
 	if err != nil {

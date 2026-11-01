@@ -160,7 +160,8 @@ A template file, `templates/<id>/template.yaml`, contains the metadata fields, `
 - `credential_user`: the login name shown with the password, up to 64 characters and without control
   characters. It is optional when the service has no username; it requires `credential_length`.
 
-The bundled templates publish on `127.0.0.1` and are intended for external mode. A deployed template
+The bundled templates publish on `127.0.0.1` and work only in external mode: on a server in managed proxy
+mode the deployment fails with a message saying so, and nothing is started. A deployed template
 regenerates its Compose file from the template, so changes you make by hand to that stack are replaced on
 the next deployment. If you need to keep changes, use an image or Git app, or keep a separate stack.
 
