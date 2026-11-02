@@ -13,6 +13,12 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+## [0.6.68] - 2026-11-02
+
+### Seguridad
+
+- El core comprueba que el commit que devuelve un agente al sondear una rama es un hash completo de 40 caracteres antes de poner en cola un despliegue, como ya hacía con los webhooks y la descarga del código.
+
 ## [0.6.67] - 2026-11-02
 
 ### Añadido

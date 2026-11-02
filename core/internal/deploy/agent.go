@@ -221,6 +221,9 @@ func (a *HubAgent) Probe(ctx context.Context, serverID string, msg *agentv1.GitP
 	if commit == "" {
 		return "", errors.New("the git probe returned an empty commit")
 	}
+	if !validCommit(commit) {
+		return "", errors.New("the git probe returned an invalid commit")
+	}
 	return commit, nil
 }
 

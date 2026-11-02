@@ -172,6 +172,12 @@ func TestHubAgentProbeRejectsBadOutput(t *testing.T) {
 	if _, err := agent.Probe(context.Background(), "server-1", &agentv1.GitProbe{}); err == nil {
 		t.Fatal("Probe accepted an empty commit")
 	}
+
+	jobs.outputs["job-1"] = []store.Job{{ID: "job-1", State: store.JobSucceeded, Output: `{"commit":"main; rm -rf /"}`}}
+	if _, err := agent.Probe(context.Background(), "server-1", &agentv1.GitProbe{}); err == nil ||
+		!strings.Contains(err.Error(), "invalid commit") {
+		t.Fatalf("Probe error = %v", err)
+	}
 }
 
 func TestHubAgentRemoveStackAndCleanUp(t *testing.T) {

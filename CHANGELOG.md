@@ -13,6 +13,12 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.6.68] - 2026-11-02
+
+### Security
+
+- The core checks that the commit an agent returns for a branch probe is a full 40-character hash before it queues a deployment, as it already did for webhooks and source fetches.
+
 ## [0.6.67] - 2026-11-02
 
 ### Added
