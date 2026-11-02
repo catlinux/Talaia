@@ -289,6 +289,10 @@ The full walkthrough, including certificates and removal, is in [apache.md](apac
 
 ### Managed proxy (Caddy)
 
+> **Optional, for empty servers only.** Most servers already run a website on ports 80 and 443, so the
+> external mode above is the normal one. The managed mode has not yet been tested end to end on a real
+> server; only its Caddy configuration is checked with `caddy validate`.
+
 On a server where ports 80 and 443 are free, the **App publishing** card on the server page can install a
 managed Caddy proxy. Caddy 2.10.2 is pinned by digest and listens only on those ports; the apps join the
 `talaia-proxy` network and Caddy gets a certificate for each hostname automatically.

@@ -161,7 +161,7 @@ Decisions closed on 2026-10-30: external proxy by default (Talaia never touches 
   - [x] Update the pinned image versions of the templates to current stable ones (they are from late 2024)
   - [x] Templates in managed mode (join the `talaia-proxy` network) or declare them external-only
   - [x] Show the generated password of a template app once, for apps that need it at first login
-  - [ ] End-to-end test of the managed mode with Docker (needs a host with ports 80 and 443 free: the Debian home machine has Apache on them and the agent refuses to install the proxy there; the Windows PC has no Docker). Already checked: the Caddy configuration the agent builds passes `caddy validate` with the pinned Caddy 2.10.2
+  - [ ] Later, optional (does not block 0.7.0; the managed mode stays optional and is documented as untested): end-to-end test of the managed mode with Docker (needs a host with ports 80 and 443 free: the Debian home machine has Apache on them and the agent refuses to install the proxy there; the Windows PC has no Docker). Already checked: the Caddy configuration the agent builds passes `caddy validate` with the pinned Caddy 2.10.2
   - [x] Licences of the template images and Caddy in `CREDITS.md` (maintainer's script)
 
 ## Operations block (decided 2026-10-20, before closing phase 2)

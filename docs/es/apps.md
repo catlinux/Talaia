@@ -306,6 +306,10 @@ La guía completa, con certificados y eliminación, está en [apache.md](apache.
 
 ### Proxy gestionado (Caddy)
 
+> **Opcional, solo para servidores vacíos.** La mayoría de servidores ya sirven una web en los puertos 80 y
+> 443, así que el modo externo de arriba es el normal. El modo gestionado todavía no se ha probado de punta a
+> punta en un servidor real; solo se comprueba su configuración de Caddy con `caddy validate`.
+
 En un servidor donde los puertos 80 y 443 están libres, la tarjeta **Publicación de apps** de la página
 del servidor puede instalar un proxy Caddy gestionado. Caddy 2.10.2 está fijado por digest y escucha solo
 en esos puertos; las apps se unen a la red `talaia-proxy` y Caddy obtiene un certificado para cada nombre

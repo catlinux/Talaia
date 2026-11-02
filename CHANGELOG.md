@@ -13,6 +13,12 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.6.69] - 2026-11-02
+
+### Changed
+
+- The apps guide marks the managed Caddy proxy as optional and only for empty servers: the external mode behind your own Apache or nginx is the normal one, and the managed mode is not yet tested end to end on a real server.
+
 ## [0.6.68] - 2026-11-02
 
 ### Security

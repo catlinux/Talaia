@@ -13,6 +13,12 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+## [0.6.69] - 2026-11-02
+
+### Cambiado
+
+- La guía de apps marca el proxy gestionado de Caddy como opcional y solo para servidores vacíos: el modo externo detrás de tu propio Apache o nginx es el normal, y el modo gestionado aún no se ha probado de punta a punta en un servidor real.
+
 ## [0.6.68] - 2026-11-02
 
 ### Seguridad
