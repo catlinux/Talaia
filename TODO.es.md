@@ -156,7 +156,7 @@ Decisiones cerradas el 2026-10-30: proxy externo por defecto (Talaia nunca toca 
 - [x] Core: canalización de despliegue (un despliegue por app, pushes sustituidos, logs) y su API
 - [x] Catálogo de plantillas (15 apps) publicado con el core
 - [x] Panel: Apps, asistente de nueva app (maqueta 4), Dominios y Plantillas
-- [ ] Docs EN/ES, revisión de seguridad Opus, prueba real del criterio y cierre en 0.7.0
+- [x] Docs EN/ES, revisión de seguridad Opus, prueba real del criterio y cierre en 0.7.0 (prueba real en un VPS detrás de Apache el 2026-11-02; la revisión final se corrigió en 0.6.68)
   - [x] Docs EN/ES (guías de apps y de Apache) y revisión Opus de los pasos 5-13 (encontrado y corregido: puerto del anfitrión, variables en ejecución, borrado de apps, formato de la clave de despliegue, bloque de Apache)
   - [x] Actualizar las versiones de imagen fijadas de las plantillas a las estables actuales (son de finales de 2024)
   - [x] Plantillas en modo gestionado (unirlas a la red `talaia-proxy`) o declararlas solo para modo externo

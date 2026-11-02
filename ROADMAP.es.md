@@ -23,8 +23,8 @@ Semana 0    2        6          11         16      19      22           28      
 | 3 | Servidor entero (**MVP**) | 12–16 | 0.4.0 | 🟢 Terminada |
 | 4 | Usuarios, permisos y auditoría | 17–19 | 0.5.0 | 🟢 Hecha |
 | 5 | Monitorización y alertas | 20–22 | 0.6.0 | 🟢 Hecha |
-| 6 | Despliegues, dominios y plantillas | 23–28 | 0.7.0 | 🟡 Siguiente |
-| 7 | Copias de seguridad | 29–31 | 0.8.0 | ⚪ Pendiente |
+| 6 | Despliegues, dominios y plantillas | 23–28 | 0.7.0 | 🟢 Hecha |
+| 7 | Copias de seguridad | 29–31 | 0.8.0 | 🟡 Siguiente |
 | 8 | Flota y automatización | 32–35 | 0.9.0 | ⚪ Pendiente |
 | 9 | Versión 1.0 | 36–38 | 1.0.0 | ⚪ Pendiente |
 

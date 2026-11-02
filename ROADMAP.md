@@ -23,8 +23,8 @@ Week   0    2        6          11         16      19      22           28      
 | 3 | Whole server (**MVP**) | 12–16 | 0.4.0 | 🟢 Done |
 | 4 | Users, permissions and audit | 17–19 | 0.5.0 | 🟢 Done |
 | 5 | Monitoring and alerts | 20–22 | 0.6.0 | 🟢 Done |
-| 6 | Deploys, domains and templates | 23–28 | 0.7.0 | 🟡 Next |
-| 7 | Backups | 29–31 | 0.8.0 | ⚪ Pending |
+| 6 | Deploys, domains and templates | 23–28 | 0.7.0 | 🟢 Done |
+| 7 | Backups | 29–31 | 0.8.0 | 🟡 Next |
 | 8 | Fleet and automation | 32–35 | 0.9.0 | ⚪ Pending |
 | 9 | Version 1.0 | 36–38 | 1.0.0 | ⚪ Pending |
 

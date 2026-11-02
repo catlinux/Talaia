@@ -13,6 +13,12 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-11-02
+
+### Changed
+
+- Phase 6 is closed after a real test on a VPS behind Apache: a template app (Uptime Kuma) and a Git app with HTTPS, deploys by branch polling, rollback and deletion. The managed Caddy proxy stays optional and is not yet tested end to end.
+
 ## [0.6.69] - 2026-11-02
 
 ### Changed
@@ -1120,7 +1126,11 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.6.66...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/catlinux/Talaia/releases/tag/v0.7.0
+[0.6.69]: https://github.com/catlinux/Talaia/releases/tag/v0.6.69
+[0.6.68]: https://github.com/catlinux/Talaia/releases/tag/v0.6.68
+[0.6.67]: https://github.com/catlinux/Talaia/releases/tag/v0.6.67
 [0.6.66]: https://github.com/catlinux/Talaia/releases/tag/v0.6.66
 [0.6.65]: https://github.com/catlinux/Talaia/releases/tag/v0.6.65
 [0.6.64]: https://github.com/catlinux/Talaia/releases/tag/v0.6.64

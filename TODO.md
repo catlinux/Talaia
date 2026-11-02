@@ -156,7 +156,7 @@ Decisions closed on 2026-10-30: external proxy by default (Talaia never touches 
 - [x] Core: deploy pipeline (one deploy per app, superseded pushes, logs) and its API
 - [x] Template catalog (15 apps) shipped with the core
 - [x] Panel: Apps, new app wizard (mockup 4), Domains and Templates
-- [ ] Docs EN/ES, Opus security review, real test of the criterion and close at 0.7.0
+- [x] Docs EN/ES, Opus security review, real test of the criterion and close at 0.7.0 (real test on a VPS behind Apache on 2026-11-02; final review fixed in 0.6.68)
   - [x] Docs EN/ES (apps and Apache guides) and Opus review of steps 5-13 (found and fixed: host port, variables at runtime, app deletion, deploy key format, Apache block)
   - [x] Update the pinned image versions of the templates to current stable ones (they are from late 2024)
   - [x] Templates in managed mode (join the `talaia-proxy` network) or declare them external-only

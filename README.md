@@ -22,8 +22,8 @@
 
 > [!WARNING]
 > Talaia is in active development. Phase 4 (users, permissions, API keys, OIDC, recordings and
-> `talaiactl`) closed in 0.5.0 and phase 5 (monitoring, alerts, checks and channels) in 0.6.0. Follow
-> the [roadmap](ROADMAP.md) for what comes next.
+> `talaiactl`) closed in 0.5.0, phase 5 (monitoring, alerts, checks and channels) in 0.6.0 and phase 6
+> (deploys, domains and templates) in 0.7.0. Follow the [roadmap](ROADMAP.md) for what comes next.
 
 ---
 
@@ -135,7 +135,7 @@ Each feature is tagged with the release where it is planned. See [ROADMAP.md](RO
 |---|---|---|---|
 | Containers and stacks | Actions, live logs, Compose editor, container terminal, images/volumes/networks, adopt existing | Revision history and rollback, image update notices | Podman |
 | Whole server | Metrics, systemd, journald, apt updates and reboot, host terminal (phase 3 closed in 0.4.0) | Firewall, fail2ban, users and SSH keys, cron, file browser, hardening audit | — |
-| Deploys and apps | — | Stacks from GitHub, Dockerfile builds, zero-downtime deploys, domains behind your existing proxy or managed Caddy, template catalog | Preview environments per pull request |
+| Deploys and apps | — | Stacks from GitHub, Dockerfile builds, zero-downtime deploys, domains behind your existing proxy or managed Caddy, template catalog (0.7.0) | Preview environments per pull request |
 | Monitoring and alerts | — | Metrics history, alert rules, HTTP/TCP checks, certificate expiry, Telegram/ntfy/email/Discord/webhook (0.6.0) | Public status page |
 | Backups | — | restic plans, consistent database dumps, S3/B2/SFTP, restore from the panel | Automatic monthly restore test |
 | Fleet automation | — | Bulk actions, scheduled procedures, GitOps sync | Ansible playbooks, VPS provisioning via provider APIs |
@@ -149,6 +149,11 @@ Each feature is tagged with the release where it is planned. See [ROADMAP.md](RO
 >
 > **Phase 5 status.** Closed in 0.6.0 after a real test of a stopped container with Telegram. The guide is
 > [docs/en/monitoring.md](docs/en/monitoring.md).
+>
+> **Phase 6 status.** Closed in 0.7.0 after a real test on a VPS behind Apache: a template app and a Git
+> app with HTTPS, deploys by branch polling, rollback and deletion. The managed Caddy proxy is optional and
+> not yet tested end to end. The guides are [docs/en/apps.md](docs/en/apps.md) and
+> [docs/en/apache.md](docs/en/apache.md).
 
 ## Architecture
 
@@ -328,7 +333,8 @@ While in development (`0.y.z`), each completed roadmap phase raises the minor ve
 | **0.4.0** | **Phase 3: whole server — MVP** |
 | **0.5.0** | **Phase 4: users, permissions and audit** |
 | **0.6.0** | **Phase 5: monitoring and alerts** |
-| 0.7.0 – 0.9.0 | Phases 6 to 8 |
+| **0.7.0** | **Phase 6: deploys, domains and templates** |
+| 0.8.0 – 0.9.0 | Phases 7 and 8 |
 | **1.0.0** | **Phase 9: first stable release** |
 
 Patch versions (`z`) are used for fixes and small changes inside a phase.
