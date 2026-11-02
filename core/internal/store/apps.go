@@ -487,13 +487,17 @@ func (s *Store) GetDeployment(ctx context.Context, id string) (Deployment, error
 
 // UpdateDeployment replaces the mutable state of a deployment. The caller
 // passes the whole row so a state change never silently keeps a stale log.
+// The commit and the image are decided while the deployment runs (a manual
+// deployment only learns its commit from the agent), so they are saved too.
 func (s *Store) UpdateDeployment(ctx context.Context, deployment Deployment) error {
 	tag, err := s.pool.Exec(ctx,
 		`UPDATE deployment SET
-		     state = $2, error = $3, started_at = $4, finished_at = $5, log = $6
+		     state = $2, error = $3, started_at = $4, finished_at = $5, log = $6,
+		     commit_sha = $7, commit_subject = $8, image_ref = $9
 		 WHERE id = $1`,
 		deployment.ID, deployment.State, deployment.Error, nullableTime(deployment.StartedAt),
-		nullableTime(deployment.FinishedAt), capDeploymentLog(deployment.Log))
+		nullableTime(deployment.FinishedAt), capDeploymentLog(deployment.Log),
+		deployment.CommitSHA, deployment.CommitSubject, deployment.ImageRef)
 	if err != nil {
 		return fmt.Errorf("update deployment %q: %w", deployment.ID, err)
 	}

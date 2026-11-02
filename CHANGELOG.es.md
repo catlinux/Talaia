@@ -13,6 +13,12 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+## [0.6.66] - 2026-11-02
+
+### Corregido
+
+- Los despliegues ya guardan el commit, su asunto y la imagen que construyeron: un despliegue manual o el primero mostraba el commit vacío y no ofrecía **Volver atrás** (tampoco se podaban nunca las imágenes antiguas), porque solo se guardaba el estado. Los despliegues anteriores a esta versión siguen sin commit.
+
 ## [0.6.65] - 2026-11-02
 
 ### Corregido
@@ -1096,7 +1102,8 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
   `.gitattributes` y `.gitignore`.
 - Licencia WNCL-1.0 aplicada: archivo `LICENSE` y sección de créditos en los README.
 
-[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.6.65...HEAD
+[Sin publicar]: https://github.com/catlinux/Talaia/compare/v0.6.66...HEAD
+[0.6.66]: https://github.com/catlinux/Talaia/releases/tag/v0.6.66
 [0.6.65]: https://github.com/catlinux/Talaia/releases/tag/v0.6.65
 [0.6.64]: https://github.com/catlinux/Talaia/releases/tag/v0.6.64
 [0.6.63]: https://github.com/catlinux/Talaia/releases/tag/v0.6.63

@@ -292,6 +292,9 @@ func TestDeploymentNumberingLogAndSupersede(t *testing.T) {
 
 	first.State = DeploymentBuilding
 	first.StartedAt = time.Now().UTC()
+	first.CommitSHA = "0123456789abcdef0123456789abcdef01234567"
+	first.CommitSubject = "add the page"
+	first.ImageRef = "talaia/shop:0123456789ab"
 	if err := s.UpdateDeployment(ctx, first); err != nil {
 		t.Fatalf("UpdateDeployment: %v", err)
 	}
@@ -307,6 +310,9 @@ func TestDeploymentNumberingLogAndSupersede(t *testing.T) {
 	}
 	if got.State != DeploymentBuilding || got.StartedAt.IsZero() || !got.FinishedAt.IsZero() {
 		t.Fatalf("updated deployment = %+v", got)
+	}
+	if got.CommitSHA != first.CommitSHA || got.CommitSubject != "add the page" || got.ImageRef != "talaia/shop:0123456789ab" {
+		t.Fatalf("the commit and the image were not saved: %+v", got)
 	}
 	if len(got.Log) != MaxDeploymentLog || !strings.HasSuffix(got.Log, "END") {
 		t.Fatalf("log length = %d, want %d and the END suffix", len(got.Log), MaxDeploymentLog)

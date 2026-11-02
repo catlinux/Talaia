@@ -13,6 +13,12 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.6.66] - 2026-11-02
+
+### Fixed
+
+- Deployments now keep the commit, its subject and the image they built: a manual or first deployment showed an empty commit and **Roll back** was not offered (nor were old images ever pruned), because only the state was saved. Deployments made before this version stay without a commit.
+
 ## [0.6.65] - 2026-11-02
 
 ### Fixed
@@ -1096,7 +1102,8 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
   `.gitignore`.
 - WNCL-1.0 license applied: `LICENSE` file and credits section in the READMEs.
 
-[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.6.65...HEAD
+[Unreleased]: https://github.com/catlinux/Talaia/compare/v0.6.66...HEAD
+[0.6.66]: https://github.com/catlinux/Talaia/releases/tag/v0.6.66
 [0.6.65]: https://github.com/catlinux/Talaia/releases/tag/v0.6.65
 [0.6.64]: https://github.com/catlinux/Talaia/releases/tag/v0.6.64
 [0.6.63]: https://github.com/catlinux/Talaia/releases/tag/v0.6.63
