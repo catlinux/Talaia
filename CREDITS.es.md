@@ -22,6 +22,39 @@ El texto completo de la licencia y el aviso de copyright de cada componente est�
 
 Las fuentes se incluyen en el panel web a través de los paquetes `@fontsource` de la lista de abajo.
 
+## Imágenes de contenedor que se arrancan en los servidores
+
+Talaia **no** incluye ni redistribuye estas imágenes: el agente las descarga de sus registros cuando se
+crea una app desde una plantilla (o cuando se activa el proxy gestionado opcional). Cada proyecto conserva
+su propia licencia; las licencias de abajo se han comprobado en los repositorios originales.
+
+| Imagen | Proyecto | Licencia | Enlace |
+| --- | --- | --- | --- |
+| caddy | Caddy | Apache-2.0 | https://github.com/caddyserver/caddy |
+| clickhouse/clickhouse-server | ClickHouse | Apache-2.0 | https://github.com/ClickHouse/ClickHouse |
+| codeberg.org/forgejo/forgejo | Forgejo | GPL-3.0-or-later | https://codeberg.org/forgejo/forgejo |
+| freshrss/freshrss | FreshRSS | AGPL-3.0 | https://github.com/FreshRSS/FreshRSS |
+| ghost | Ghost | MIT | https://github.com/TryGhost/Ghost |
+| ghcr.io/gethomepage/homepage | Homepage | GPL-3.0 | https://github.com/gethomepage/homepage |
+| ghcr.io/immich-app/immich-server | Immich | AGPL-3.0 | https://github.com/immich-app/immich |
+| jellyfin/jellyfin | Jellyfin | GPL-2.0 | https://github.com/jellyfin/jellyfin |
+| mariadb | MariaDB Server | GPL-2.0 | https://github.com/MariaDB/server |
+| ghcr.io/mealie-recipes/mealie | Mealie | AGPL-3.0 | https://github.com/mealie-recipes/mealie |
+| miniflux/miniflux | Miniflux | Apache-2.0 | https://github.com/miniflux/v2 |
+| nextcloud | Nextcloud server | AGPL-3.0 | https://github.com/nextcloud/server |
+| ghcr.io/paperless-ngx/paperless-ngx | Paperless-ngx | GPL-3.0 | https://github.com/paperless-ngx/paperless-ngx |
+| ghcr.io/plausible/community-edition | Plausible Community Edition | AGPL-3.0 | https://github.com/plausible/analytics |
+| postgres | PostgreSQL | Licencia PostgreSQL | https://github.com/postgres/postgres |
+| redis (7.4) | Redis | RSALv2 o SSPLv1 (código disponible, no código abierto) | https://github.com/redis/redis |
+| ghcr.io/umami-software/umami | Umami | MIT | https://github.com/umami-software/umami |
+| louislam/uptime-kuma | Uptime Kuma | MIT | https://github.com/louislam/uptime-kuma |
+| vaultwarden/server | Vaultwarden | AGPL-3.0 | https://github.com/dani-garcia/vaultwarden |
+| wordpress | WordPress | GPL-2.0-or-later | https://github.com/WordPress/WordPress |
+
+Redis 7.4 es la primera versión de Redis con una licencia de código disponible. Talaia solo lo arranca
+para el usuario, en su propio servidor, como caché de algunas plantillas; no se ofrece como servicio a
+terceros.
+
 ## Módulos Go enlazados en los binarios
 
 | Módulo | Versión | Licencia | Enlace |

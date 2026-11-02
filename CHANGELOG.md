@@ -13,6 +13,12 @@ Sections used in each release: **Added**, **Changed**, **Deprecated**, **Removed
 
 ## [Unreleased]
 
+## [0.6.67] - 2026-11-02
+
+### Added
+
+- `CREDITS.md` lists the license of every container image Talaia starts on the servers (the 15 templates, their databases and Caddy), checked in the upstream repositories. Redis 7.4 is marked as source-available (RSALv2 or SSPLv1).
+
 ## [0.6.66] - 2026-11-02
 
 ### Fixed

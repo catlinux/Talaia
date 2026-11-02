@@ -13,6 +13,12 @@ Secciones de cada versión: **Añadido**, **Cambiado**, **Obsoleto**, **Eliminad
 
 ## [Sin publicar]
 
+## [0.6.67] - 2026-11-02
+
+### Añadido
+
+- `CREDITS.es.md` recoge la licencia de cada imagen de contenedor que Talaia arranca en los servidores (las 15 plantillas, sus bases de datos y Caddy), comprobada en los repositorios originales. Redis 7.4 consta como código disponible (RSALv2 o SSPLv1).
+
 ## [0.6.66] - 2026-11-02
 
 ### Corregido
